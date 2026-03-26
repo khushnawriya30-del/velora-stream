@@ -1,0 +1,446 @@
+package com.cinevault.app.ui.screen
+
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.BookmarkBorder
+import androidx.compose.material.icons.filled.Bookmark
+import androidx.compose.material3.*
+import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
+import coil.compose.AsyncImage
+import com.cinevault.app.data.model.*
+import com.cinevault.app.ui.components.*
+import com.cinevault.app.ui.theme.CineVaultTheme
+import com.cinevault.app.ui.viewmodel.MovieDetailViewModel
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun MovieDetailScreen(
+    onBack: () -> Unit,
+    onPlay: (contentId: String, episodeId: String?) -> Unit,
+    onRelatedClick: (String) -> Unit,
+    viewModel: MovieDetailViewModel = hiltViewModel(),
+) {
+    val uiState by viewModel.uiState.collectAsState()
+
+    if (uiState.isLoading) {
+        MovieDetailShimmer(onBack = onBack)
+        return
+    }
+
+    if (uiState.error != null && uiState.movie == null) {
+        ErrorScreen(message = uiState.error!!, onRetry = { /* reload */ })
+        return
+    }
+
+    val movie = uiState.movie ?: return
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(CineVaultTheme.colors.background)
+            .verticalScroll(rememberScrollState()),
+    ) {
+        // Backdrop
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(360.dp),
+        ) {
+            AsyncImage(
+                model = movie.backdropUrl ?: movie.posterUrl,
+                contentDescription = movie.title,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize(),
+            )
+            // Gradient overlay
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        Brush.verticalGradient(
+                            colors = listOf(
+                                Color.Transparent,
+                                CineVaultTheme.colors.background.copy(alpha = 0.7f),
+                                CineVaultTheme.colors.background,
+                            ),
+                            startY = 150f,
+                        )
+                    ),
+            )
+            // Back button
+            IconButton(
+                onClick = onBack,
+                modifier = Modifier
+                    .statusBarsPadding()
+                    .padding(8.dp),
+            ) {
+                Icon(
+                    Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = "Back",
+                    tint = CineVaultTheme.colors.textPrimary,
+                    modifier = Modifier
+                        .size(32.dp)
+                        .clip(CircleShape)
+                        .background(CineVaultTheme.colors.background.copy(alpha = 0.5f))
+                        .padding(4.dp),
+                )
+            }
+        }
+
+        // Content
+        Column(modifier = Modifier.padding(horizontal = 16.dp)) {
+            // Title
+            Text(
+                movie.title,
+                style = CineVaultTheme.typography.displayLarge.copy(fontSize = 26.sp),
+                color = CineVaultTheme.colors.textPrimary,
+            )
+            Spacer(Modifier.height(8.dp))
+
+            // Meta info row
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                if (movie.averageRating > 0) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Filled.Star, contentDescription = null, modifier = Modifier.size(16.dp), tint = CineVaultTheme.colors.accentGold)
+                        Spacer(Modifier.width(4.dp))
+                        Text(
+                            String.format("%.1f", movie.averageRating),
+                            style = CineVaultTheme.typography.label,
+                            color = CineVaultTheme.colors.accentGold,
+                        )
+                    }
+                }
+                Text("${movie.releaseYear}", style = CineVaultTheme.typography.label, color = CineVaultTheme.colors.textSecondary)
+                if (movie.duration != null) {
+                    Text("${movie.duration}min", style = CineVaultTheme.typography.label, color = CineVaultTheme.colors.textSecondary)
+                }
+                if (movie.contentRating != null) {
+                    Surface(
+                        shape = RoundedCornerShape(4.dp),
+                        color = CineVaultTheme.colors.surface,
+                    ) {
+                        Text(
+                            movie.contentRating!!,
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                            style = CineVaultTheme.typography.labelSmall,
+                            color = CineVaultTheme.colors.textSecondary,
+                        )
+                    }
+                }
+            }
+
+            Spacer(Modifier.height(12.dp))
+
+            // Genre chips
+            if (movie.genres.isNotEmpty()) {
+                LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    items(movie.genres) { genre ->
+                        GenreChip(label = genre)
+                    }
+                }
+                Spacer(Modifier.height(16.dp))
+            }
+
+            // Action buttons
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                PlayButton(
+                    onClick = { onPlay(movie.id, null) },
+                    modifier = Modifier.weight(1f),
+                )
+                OutlinedButton(
+                    onClick = { viewModel.toggleWatchlist() },
+                    shape = RoundedCornerShape(8.dp),
+                    modifier = Modifier.height(44.dp),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        contentColor = if (uiState.isInWatchlist) CineVaultTheme.colors.accentGold
+                        else CineVaultTheme.colors.textPrimary,
+                    ),
+                    border = BorderStroke(
+                        width = 1.dp,
+                        color = if (uiState.isInWatchlist) CineVaultTheme.colors.accentGold else CineVaultTheme.colors.border,
+                    ),
+                ) {
+                    Icon(
+                        if (uiState.isInWatchlist) Icons.Filled.Bookmark else Icons.Outlined.BookmarkBorder,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp),
+                    )
+                    Spacer(Modifier.width(6.dp))
+                    Text(
+                        if (uiState.isInWatchlist) "Saved" else "Watchlist",
+                        style = CineVaultTheme.typography.button,
+                    )
+                }
+            }
+
+            Spacer(Modifier.height(20.dp))
+
+            // Description
+            Text(
+                movie.description ?: "",
+                style = CineVaultTheme.typography.body,
+                color = CineVaultTheme.colors.textSecondary,
+            )
+
+            // Cast
+            if (!movie.cast.isNullOrEmpty()) {
+                Spacer(Modifier.height(16.dp))
+                Text("Cast", style = CineVaultTheme.typography.sectionTitle, color = CineVaultTheme.colors.textPrimary)
+                Spacer(Modifier.height(8.dp))
+                LazyRow(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                    items(movie.cast!!) { member ->
+                        CastItem(member)
+                    }
+                }
+            }
+
+            Spacer(Modifier.height(20.dp))
+
+            // Tabs: Episodes (if series) | Related | Reviews
+            val tabs = buildList {
+                if (movie.contentType == "series") add("Episodes")
+                add("Related")
+                add("Reviews")
+            }
+
+            TabRow(
+                selectedTabIndex = uiState.selectedTab,
+                containerColor = Color.Transparent,
+                contentColor = CineVaultTheme.colors.textPrimary,
+                indicator = { tabPositions ->
+                    if (uiState.selectedTab < tabPositions.size) {
+                        @Suppress("DEPRECATION")
+                        TabRowDefaults.Indicator(
+                            modifier = Modifier.tabIndicatorOffset(tabPositions[uiState.selectedTab]),
+                            color = CineVaultTheme.colors.accentGold,
+                        )
+                    }
+                },
+            ) {
+                tabs.forEachIndexed { index, title ->
+                    Tab(
+                        selected = uiState.selectedTab == index,
+                        onClick = { viewModel.selectTab(index) },
+                        text = {
+                            Text(
+                                title,
+                                style = CineVaultTheme.typography.label,
+                                color = if (uiState.selectedTab == index) CineVaultTheme.colors.accentGold
+                                else CineVaultTheme.colors.textSecondary,
+                            )
+                        },
+                    )
+                }
+            }
+
+            Spacer(Modifier.height(12.dp))
+
+            // Tab content
+            val tabOffset = if (movie.contentType == "series") 0 else -1
+            when (uiState.selectedTab) {
+                0 + tabOffset + 1 -> {
+                    // Episodes tab (only for series)
+                    if (movie.contentType == "series" && uiState.selectedTab == 0) {
+                        EpisodesSection(seasons = uiState.seasons, onEpisodeClick = { ep -> onPlay(movie.id, ep.id) })
+                    } else {
+                        // Related
+                        RelatedSection(related = uiState.related, onClick = onRelatedClick)
+                    }
+                }
+                else -> {
+                    val isReviewsTab = (movie.contentType == "series" && uiState.selectedTab == 2) ||
+                            (movie.contentType != "series" && uiState.selectedTab == 1)
+                    if (isReviewsTab) {
+                        ReviewsSection(reviews = uiState.reviews)
+                    } else {
+                        RelatedSection(related = uiState.related, onClick = onRelatedClick)
+                    }
+                }
+            }
+
+            Spacer(Modifier.height(80.dp))
+        }
+    }
+}
+
+@Composable
+private fun CastItem(member: CastMemberDto) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier.width(72.dp),
+    ) {
+        AsyncImage(
+            model = member.photoUrl,
+            contentDescription = member.name,
+            contentScale = ContentScale.Crop,
+            modifier = Modifier
+                .size(56.dp)
+                .clip(CircleShape)
+                .background(CineVaultTheme.colors.surface),
+        )
+        Spacer(Modifier.height(4.dp))
+        Text(
+            member.name,
+            style = CineVaultTheme.typography.labelSmall,
+            color = CineVaultTheme.colors.textPrimary,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+        Text(
+            member.role ?: "",
+            style = CineVaultTheme.typography.labelSmall,
+            color = CineVaultTheme.colors.textSecondary,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+    }
+}
+
+@Composable
+private fun EpisodesSection(seasons: List<SeasonDto>, onEpisodeClick: (EpisodeDto) -> Unit) {
+    if (seasons.isEmpty()) {
+        Text("No episodes available", style = CineVaultTheme.typography.body, color = CineVaultTheme.colors.textSecondary)
+        return
+    }
+    var selectedSeason by remember { mutableIntStateOf(0) }
+
+    // Season selector
+    ScrollableTabRow(
+        selectedTabIndex = selectedSeason,
+        containerColor = Color.Transparent,
+        edgePadding = 0.dp,
+        indicator = {},
+        divider = {},
+    ) {
+        seasons.forEachIndexed { index, season ->
+            GenreChip(
+                label = season.title ?: "Season ${season.seasonNumber}",
+                selected = selectedSeason == index,
+                onClick = { selectedSeason = index },
+            )
+        }
+    }
+
+    Spacer(Modifier.height(12.dp))
+
+    // Show episode count since episodes are loaded separately
+    val season = seasons.getOrNull(selectedSeason)
+    if (season != null) {
+        Text(
+            "${season.episodeCount} episodes",
+            style = CineVaultTheme.typography.body,
+            color = CineVaultTheme.colors.textSecondary,
+        )
+    }
+}
+
+@Composable
+private fun RelatedSection(related: List<MovieDto>, onClick: (String) -> Unit) {
+    if (related.isEmpty()) {
+        Text("No related content", style = CineVaultTheme.typography.body, color = CineVaultTheme.colors.textSecondary)
+        return
+    }
+    LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        items(related, key = { it.id }) { movie ->
+            MovieCard(movie = movie, onClick = { onClick(movie.id) })
+        }
+    }
+}
+
+@Composable
+private fun ReviewsSection(reviews: List<ReviewDto>) {
+    if (reviews.isEmpty()) {
+        Text("No reviews yet", style = CineVaultTheme.typography.body, color = CineVaultTheme.colors.textSecondary)
+        return
+    }
+    reviews.forEach { review ->
+        Surface(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 4.dp),
+            shape = RoundedCornerShape(12.dp),
+            color = CineVaultTheme.colors.surface,
+        ) {
+            Column(modifier = Modifier.padding(12.dp)) {
+                Row(
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text(
+                        review.userName,
+                        style = CineVaultTheme.typography.label,
+                        color = CineVaultTheme.colors.textPrimary,
+                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Filled.Star, contentDescription = null, modifier = Modifier.size(14.dp), tint = CineVaultTheme.colors.accentGold)
+                        Spacer(Modifier.width(4.dp))
+                        Text(
+                            "${review.rating}",
+                            style = CineVaultTheme.typography.label,
+                            color = CineVaultTheme.colors.accentGold,
+                        )
+                    }
+                }
+                Spacer(Modifier.height(6.dp))
+                Text(
+                    review.text ?: "",
+                    style = CineVaultTheme.typography.bodySmall,
+                    color = CineVaultTheme.colors.textSecondary,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun MovieDetailShimmer(onBack: () -> Unit) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(CineVaultTheme.colors.background),
+    ) {
+        ShimmerBox(
+            modifier = Modifier.fillMaxWidth().height(360.dp),
+            shape = RoundedCornerShape(0.dp),
+        )
+        Column(modifier = Modifier.padding(16.dp)) {
+            ShimmerBox(modifier = Modifier.width(220.dp).height(28.dp))
+            Spacer(Modifier.height(12.dp))
+            ShimmerBox(modifier = Modifier.width(160.dp).height(16.dp))
+            Spacer(Modifier.height(16.dp))
+            ShimmerBox(modifier = Modifier.fillMaxWidth().height(44.dp))
+            Spacer(Modifier.height(16.dp))
+            repeat(4) {
+                ShimmerBox(modifier = Modifier.fillMaxWidth().height(14.dp))
+                Spacer(Modifier.height(6.dp))
+            }
+        }
+    }
+}

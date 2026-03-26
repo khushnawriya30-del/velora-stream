@@ -1,0 +1,18 @@
+import { Module } from '@nestjs/common';
+import { MongooseModule } from '@nestjs/mongoose';
+import { SeriesController } from './series.controller';
+import { SeriesService } from './series.service';
+import { Season, SeasonSchema, Episode, EpisodeSchema } from '../../schemas/series.schema';
+
+@Module({
+  imports: [
+    MongooseModule.forFeature([
+      { name: Season.name, schema: SeasonSchema },
+      { name: Episode.name, schema: EpisodeSchema },
+    ]),
+  ],
+  controllers: [SeriesController],
+  providers: [SeriesService],
+  exports: [SeriesService],
+})
+export class SeriesModule {}

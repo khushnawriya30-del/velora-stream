@@ -1,0 +1,139 @@
+package com.cinevault.app.ui.viewmodel
+
+import androidx.lifecycle.SavedStateHandle
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.cinevault.app.data.local.SessionManager
+import com.cinevault.app.data.model.*
+import com.cinevault.app.data.repository.ContentRepository
+import com.cinevault.app.data.repository.ReviewRepository
+import com.cinevault.app.data.repository.WatchlistRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.async
+import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.launch
+import javax.inject.Inject
+
+data class MovieDetailUiState(
+    val isLoading: Boolean = true,
+    val error: String? = null,
+    val movie: MovieDto? = null,
+    val related: List<MovieDto> = emptyList(),
+    val seasons: List<SeasonDto> = emptyList(),
+    val reviews: List<ReviewDto> = emptyList(),
+    val isInWatchlist: Boolean = false,
+    val selectedTab: Int = 0,
+)
+
+@HiltViewModel
+class MovieDetailViewModel @Inject constructor(
+    savedStateHandle: SavedStateHandle,
+    private val contentRepository: ContentRepository,
+    private val watchlistRepository: WatchlistRepository,
+    private val reviewRepository: ReviewRepository,
+    private val sessionManager: SessionManager,
+) : ViewModel() {
+
+    private val movieId: String = savedStateHandle.get<String>("movieId") ?: ""
+
+    private val _uiState = MutableStateFlow(MovieDetailUiState())
+    val uiState: StateFlow<MovieDetailUiState> = _uiState.asStateFlow()
+
+    init {
+        if (movieId.isNotEmpty()) loadMovieDetail()
+    }
+
+    private fun loadMovieDetail() {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true, error = null) }
+
+            val movieDeferred = async { contentRepository.getMovie(movieId) }
+            val relatedDeferred = async { contentRepository.getRelated(movieId) }
+            val reviewsDeferred = async { reviewRepository.getReviews(movieId) }
+
+            val profileId = sessionManager.activeProfileId.firstOrNull()
+            val watchlistDeferred = if (profileId != null) {
+                async { watchlistRepository.isInWatchlist(profileId, movieId) }
+            } else null
+
+            when (val movieResult = movieDeferred.await()) {
+                is Result.Success -> {
+                    val movie = movieResult.data
+                    val related = when (val r = relatedDeferred.await()) {
+                        is Result.Success -> r.data
+                        else -> emptyList()
+                    }
+                    val reviews = when (val r = reviewsDeferred.await()) {
+                        is Result.Success -> r.data
+                        else -> emptyList()
+                    }
+                    val inWatchlist = watchlistDeferred?.let {
+                        when (val r = it.await()) {
+                            is Result.Success -> r.data
+                            else -> false
+                        }
+                    } ?: false
+
+                    // Load seasons if it's a series
+                    val seasons = if (movie.contentType == "series") {
+                        when (val r = contentRepository.getSeasons(movieId)) {
+                            is Result.Success -> r.data
+                            else -> emptyList()
+                        }
+                    } else emptyList()
+
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            movie = movie,
+                            related = related,
+                            seasons = seasons,
+                            reviews = reviews,
+                            isInWatchlist = inWatchlist,
+                        )
+                    }
+                }
+                is Result.Error -> {
+                    _uiState.update { it.copy(isLoading = false, error = movieResult.message) }
+                }
+                is Result.Loading -> {}
+            }
+        }
+    }
+
+    fun toggleWatchlist() {
+        viewModelScope.launch {
+            val profileId = sessionManager.activeProfileId.firstOrNull() ?: return@launch
+            val inWatchlist = _uiState.value.isInWatchlist
+            val result = if (inWatchlist) {
+                watchlistRepository.removeFromWatchlist(profileId, movieId)
+            } else {
+                watchlistRepository.addToWatchlist(profileId, movieId)
+            }
+            if (result is Result.Success) {
+                _uiState.update { it.copy(isInWatchlist = !inWatchlist) }
+            }
+        }
+    }
+
+    fun submitReview(rating: Double, text: String) {
+        viewModelScope.launch {
+            when (val result = reviewRepository.createReview(movieId, rating, text)) {
+                is Result.Success -> {
+                    val updatedReviews = listOf(result.data) + _uiState.value.reviews
+                    _uiState.update { it.copy(reviews = updatedReviews) }
+                }
+                is Result.Error -> _uiState.update { it.copy(error = result.message) }
+                is Result.Loading -> {}
+            }
+        }
+    }
+
+    fun selectTab(index: Int) {
+        _uiState.update { it.copy(selectedTab = index) }
+    }
+
+    fun clearError() {
+        _uiState.update { it.copy(error = null) }
+    }
+}

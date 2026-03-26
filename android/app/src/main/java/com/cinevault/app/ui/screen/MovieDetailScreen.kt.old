@@ -1,0 +1,435 @@
+package com.cinevault.app.ui.screen
+
+import androidx.compose.foundation.*
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
+import coil.compose.AsyncImage
+import com.cinevault.app.data.model.*
+import com.cinevault.app.ui.theme.CineVaultTheme
+import com.cinevault.app.ui.viewmodel.MovieDetailViewModel
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun MovieDetailScreen(
+    onBack: () -> Unit,
+    onPlay: (contentId: String, episodeId: String?) -> Unit,
+    onRelatedClick: (String) -> Unit,
+    viewModel: MovieDetailViewModel = hiltViewModel(),
+) {
+    val uiState by viewModel.uiState.collectAsState()
+    var selectedTab by remember { mutableIntStateOf(0) }
+
+    if (uiState.isLoading) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(CineVaultTheme.colors.background),
+            contentAlignment = Alignment.Center
+        ) {
+            CircularProgressIndicator(color = CineVaultTheme.colors.accentGold)
+        }
+        return
+    }
+
+    val movie = uiState.movie ?: return
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(CineVaultTheme.colors.background)
+            .verticalScroll(rememberScrollState())
+    ) {
+        // Hero/Trailer Section
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(300.dp)
+                .background(CineVaultTheme.colors.surface)
+        ) {
+            AsyncImage(
+                model = movie.backdropUrl ?: movie.posterUrl,
+                contentDescription = "Trailer",
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize()
+            )
+
+            // Gradient overlay
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        Brush.verticalGradient(
+                            colors = listOf(
+                                Color.Black.copy(alpha = 0.3f),
+                                Color.Black.copy(alpha = 0.7f)
+                            )
+                        )
+                    )
+            )
+
+            // Play button
+            Icon(
+                Icons.Default.PlayArrow,
+                contentDescription = "Play Trailer",
+                modifier = Modifier
+                    .align(Alignment.Center)
+                    .size(64.dp),
+                tint = CineVaultTheme.colors.accentGold
+            )
+
+            // Back button
+            IconButton(
+                onClick = onBack,
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .padding(12.dp)
+                    .background(Color.Black.copy(alpha = 0.5f), CircleShape)
+                    .size(44.dp)
+            ) {
+                Icon(
+                    Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = "Back",
+                    tint = CineVaultTheme.colors.textPrimary
+                )
+            }
+        }
+
+        // Movie Info
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(24.dp)
+        ) {
+            // Ranking Badge
+            Row(
+                modifier = Modifier
+                    .background(
+                        CineVaultTheme.colors.accentGold.copy(alpha = 0.15f),
+                        RoundedCornerShape(4.dp)
+                    )
+                    .padding(horizontal = 8.dp, vertical = 4.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    "Thriller #3 in India Today",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = CineVaultTheme.colors.accentGold
+                )
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Title
+            Text(
+                movie.title,
+                fontSize = 28.sp,
+                fontWeight = FontWeight.Bold,
+                color = CineVaultTheme.colors.textPrimary,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Rating and metadata
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                if (movie.rating != null) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .background(
+                                Color(0xFFFFD700).copy(alpha = 0.15f),
+                                RoundedCornerShape(4.dp)
+                            )
+                            .padding(horizontal = 8.dp, vertical = 4.dp)
+                    ) {
+                        Icon(
+                            Icons.Default.Star,
+                            contentDescription = "Rating",
+                            tint = Color(0xFFFFD700),
+                            modifier = Modifier.size(12.dp)
+                        )
+                        Text(
+                            String.format("%.1f", movie.rating),
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = CineVaultTheme.colors.textPrimary,
+                            modifier = Modifier.padding(start = 4.dp)
+                        )
+                    }
+                }
+
+                Text(
+                    "2.4M views",
+                    fontSize = 12.sp,
+                    color = CineVaultTheme.colors.textSecondary
+                )
+
+                if (movie.releaseYear != null) {
+                    Text(
+                        movie.releaseYear.toString(),
+                        fontSize = 12.sp,
+                        color = CineVaultTheme.colors.textSecondary
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(14.dp))
+
+            // WATCH NOW button
+            Button(
+                onClick = { onPlay(movie.id, null) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(48.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = CineVaultTheme.colors.accentGold
+                ),
+                shape = RoundedCornerShape(8.dp)
+            ) {
+                Icon(
+                    Icons.Default.PlayArrow,
+                    contentDescription = "Play",
+                    tint = CineVaultTheme.colors.background,
+                    modifier = Modifier.size(20.dp)
+                )
+                Text(
+                    "WATCH NOW",
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = CineVaultTheme.colors.background,
+                    modifier = Modifier.padding(start = 8.dp)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Action buttons
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                ActionButton("My List", Icons.Default.BookmarkBorder, Modifier.weight(1f))
+                ActionButton("Rate", Icons.Default.Star, Modifier.weight(1f))
+                ActionButton("Share", Icons.Default.Share, Modifier.weight(1f))
+                ActionButton("Download", Icons.Default.Download, Modifier.weight(1f))
+            }
+        }
+
+        Divider(
+            color = CineVaultTheme.colors.borderSubtle,
+            thickness = 1.dp,
+            modifier = Modifier.padding(horizontal = 24.dp)
+        )
+
+        // Tabs
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(CineVaultTheme.colors.background)
+                .padding(horizontal = 24.dp)
+        ) {
+            listOf("Details", "Comments", "Trailer").forEachIndexed { index, title ->
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .clickable { selectedTab = index }
+                        .padding(vertical = 16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        title,
+                        fontSize = 12.sp,
+                        fontWeight = if (selectedTab == index) FontWeight.Bold else FontWeight.Normal,
+                        color = if (selectedTab == index)
+                            CineVaultTheme.colors.accentGold
+                        else
+                            CineVaultTheme.colors.textSecondary
+                    )
+                    if (selectedTab == index) {
+                        Box(
+                            modifier = Modifier
+                                .height(3.dp)
+                                .fillMaxWidth(0.6f)
+                                .background(CineVaultTheme.colors.accentGold)
+                                .padding(top = 8.dp)
+                        )
+                    }
+                }
+            }
+        }
+
+        Divider(
+            color = CineVaultTheme.colors.borderSubtle,
+            thickness = 1.dp
+        )
+
+        // Tab content
+        when (selectedTab) {
+            0 -> DetailsTabContent(movie)
+            1 -> CommentsTabContent()
+            2 -> TrailerTabContent()
+        }
+
+        Spacer(modifier = Modifier.height(40.dp))
+    }
+}
+
+@Composable
+fun ActionButton(
+    label: String,
+    icon: ImageVector,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier
+            .background(
+                CineVaultTheme.colors.surface,
+                RoundedCornerShape(8.dp)
+            )
+            .clickable { }
+            .padding(12.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Icon(
+            icon,
+            contentDescription = label,
+            tint = CineVaultTheme.colors.accentGold,
+            modifier = Modifier.size(20.dp)
+        )
+        Text(
+            label,
+            fontSize = 10.sp,
+            color = CineVaultTheme.colors.textSecondary,
+            modifier = Modifier.padding(top = 4.dp)
+        )
+    }
+}
+
+@Composable
+fun DetailsTabContent(movie: MovieDto) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(24.dp)
+    ) {
+        val description = movie.description
+        if (description != null) {
+            Text(
+                description,
+                fontSize = 14.sp,
+                lineHeight = 20.sp,
+                color = CineVaultTheme.colors.textSecondary,
+                modifier = Modifier.padding(bottom = 16.dp)
+            )
+        }
+
+        Text(
+            "CAST & CREW",
+            fontSize = 14.sp,
+            fontWeight = FontWeight.Bold,
+            color = CineVaultTheme.colors.textPrimary,
+            letterSpacing = 1.sp,
+            modifier = Modifier.padding(bottom = 12.dp)
+        )
+
+        LazyRow(
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            items(movie.cast?.size ?: 4) { index ->
+                val castMember = if (index < (movie.cast?.size ?: 0)) movie.cast!![index] else null
+                CastCardItem(castMember?.name ?: "Actor ${index + 1}")
+            }
+        }
+    }
+}
+
+@Composable
+fun CastCardItem(name: String) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier.width(100.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .size(80.dp)
+                .background(
+                    CineVaultTheme.colors.surface,
+                    RoundedCornerShape(8.dp)
+                ),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                Icons.Default.Person,
+                contentDescription = "Cast",
+                tint = CineVaultTheme.colors.textSecondary,
+                modifier = Modifier.size(40.dp)
+            )
+        }
+        Text(
+            name,
+            fontSize = 12.sp,
+            color = CineVaultTheme.colors.textPrimary,
+            modifier = Modifier.padding(top = 8.dp),
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
+    }
+}
+
+@Composable
+fun CommentsTabContent() {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(200.dp)
+            .padding(24.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            "No comments yet",
+            color = CineVaultTheme.colors.textSecondary
+        )
+    }
+}
+
+@Composable
+fun TrailerTabContent() {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(200.dp)
+            .padding(24.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            "Trailer available",
+            color = CineVaultTheme.colors.textSecondary
+        )
+    }
+}

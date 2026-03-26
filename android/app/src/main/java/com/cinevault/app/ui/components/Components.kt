@@ -1,0 +1,698 @@
+package com.cinevault.app.ui.components
+
+import androidx.compose.animation.core.*
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material3.*
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
+import com.cinevault.app.data.model.BannerDto
+import com.cinevault.app.data.model.HomeSectionDto
+import com.cinevault.app.data.model.MovieDto
+import com.cinevault.app.ui.theme.CineVaultTheme
+
+@Composable
+fun MovieCard(
+    movie: MovieDto,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    width: Dp = 130.dp,
+) {
+    Column(
+        modifier = modifier
+            .width(width)
+            .clickable(onClick = onClick),
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .aspectRatio(2f / 3f)
+                .clip(RoundedCornerShape(8.dp))
+                .background(CineVaultTheme.colors.surface),
+        ) {
+            AsyncImage(
+                model = movie.posterUrl,
+                contentDescription = movie.title,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize(),
+            )
+            // Rating badge
+            if (movie.averageRating > 0) {
+                Surface(
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(6.dp),
+                    shape = RoundedCornerShape(4.dp),
+                    color = CineVaultTheme.colors.background.copy(alpha = 0.8f),
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(2.dp),
+                    ) {
+                        Icon(
+                            Icons.Filled.Star,
+                            contentDescription = null,
+                            modifier = Modifier.size(10.dp),
+                            tint = CineVaultTheme.colors.accentGold,
+                        )
+                        Text(
+                            String.format("%.1f", movie.averageRating),
+                            style = CineVaultTheme.typography.labelSmall,
+                            color = CineVaultTheme.colors.textPrimary,
+                        )
+                    }
+                }
+            }
+        }
+        Spacer(Modifier.height(6.dp))
+        Text(
+            movie.title,
+            style = CineVaultTheme.typography.bodySmall,
+            color = CineVaultTheme.colors.textPrimary,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+        Text(
+            movie.releaseYear.toString(),
+            style = CineVaultTheme.typography.labelSmall,
+            color = CineVaultTheme.colors.textSecondary,
+        )
+    }
+}
+
+@Composable
+fun GoldButton(
+    text: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    isLoading: Boolean = false,
+    enabled: Boolean = true,
+) {
+    Button(
+        onClick = onClick,
+        modifier = modifier
+            .fillMaxWidth()
+            .height(52.dp),
+        enabled = enabled && !isLoading,
+        shape = RoundedCornerShape(12.dp),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = CineVaultTheme.colors.accentGold,
+            contentColor = CineVaultTheme.colors.background,
+            disabledContainerColor = CineVaultTheme.colors.accentGold.copy(alpha = 0.4f),
+        ),
+    ) {
+        if (isLoading) {
+            CircularProgressIndicator(
+                modifier = Modifier.size(22.dp),
+                color = CineVaultTheme.colors.background,
+                strokeWidth = 2.dp,
+            )
+        } else {
+            Text(text, style = CineVaultTheme.typography.button)
+        }
+    }
+}
+
+@Composable
+fun PlayButton(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    text: String = "Play",
+) {
+    Button(
+        onClick = onClick,
+        modifier = modifier.height(44.dp),
+        shape = RoundedCornerShape(8.dp),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = CineVaultTheme.colors.accentGold,
+            contentColor = CineVaultTheme.colors.background,
+        ),
+    ) {
+        Icon(Icons.Filled.PlayArrow, contentDescription = null, modifier = Modifier.size(20.dp))
+        Spacer(Modifier.width(6.dp))
+        Text(text, style = CineVaultTheme.typography.button)
+    }
+}
+
+@Composable
+fun GenreChip(
+    label: String,
+    selected: Boolean = false,
+    onClick: () -> Unit = {},
+) {
+    Surface(
+        modifier = Modifier.clickable(onClick = onClick),
+        shape = RoundedCornerShape(20.dp),
+        color = if (selected) CineVaultTheme.colors.accentGold else CineVaultTheme.colors.surface,
+    ) {
+        Text(
+            label,
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
+            style = CineVaultTheme.typography.label,
+            color = if (selected) CineVaultTheme.colors.background else CineVaultTheme.colors.textSecondary,
+        )
+    }
+}
+
+@Composable
+fun ShimmerBox(
+    modifier: Modifier = Modifier,
+    shape: RoundedCornerShape = RoundedCornerShape(8.dp),
+) {
+    val transition = rememberInfiniteTransition(label = "shimmer")
+    val translateAnim = transition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1000f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 1200, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart,
+        ),
+        label = "shimmer_translate",
+    )
+    val brush = Brush.linearGradient(
+        colors = listOf(
+            CineVaultTheme.colors.surface,
+            CineVaultTheme.colors.surface.copy(alpha = 0.5f),
+            CineVaultTheme.colors.surface,
+        ),
+        start = Offset(translateAnim.value - 500f, 0f),
+        end = Offset(translateAnim.value, 0f),
+    )
+    Box(
+        modifier = modifier
+            .clip(shape)
+            .background(brush),
+    )
+}
+
+@Composable
+fun ShimmerMovieCard(modifier: Modifier = Modifier, width: Dp = 130.dp) {
+    Column(modifier = modifier.width(width)) {
+        ShimmerBox(
+            modifier = Modifier
+                .fillMaxWidth()
+                .aspectRatio(2f / 3f),
+        )
+        Spacer(Modifier.height(6.dp))
+        ShimmerBox(modifier = Modifier.fillMaxWidth().height(14.dp))
+        Spacer(Modifier.height(4.dp))
+        ShimmerBox(modifier = Modifier.width(50.dp).height(10.dp))
+    }
+}
+
+@Composable
+fun ErrorScreen(
+    message: String,
+    onRetry: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier = modifier.fillMaxSize(),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
+    ) {
+        Text(
+            message,
+            style = CineVaultTheme.typography.body,
+            color = CineVaultTheme.colors.textSecondary,
+        )
+        Spacer(Modifier.height(16.dp))
+        GoldButton(text = "Retry", onClick = onRetry, modifier = Modifier.width(160.dp))
+    }
+}
+
+
+@Composable
+fun SectionHeader(
+    title: String,
+    modifier: Modifier = Modifier,
+    onSeeAll: (() -> Unit)? = null,
+) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            title,
+            style = CineVaultTheme.typography.sectionTitle,
+            color = CineVaultTheme.colors.textPrimary,
+        )
+        if (onSeeAll != null) {
+            IconButton(onClick = onSeeAll, modifier = Modifier.size(24.dp)) {
+                Icon(
+                    Icons.Default.ChevronRight,
+                    contentDescription = "View more",
+                    tint = CineVaultTheme.colors.textSecondary
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun HorizontalMovieSection(
+    section: HomeSectionDto,
+    onMovieClick: (String) -> Unit,
+    onSeeMore: (() -> Unit)? = null,
+    modifier: Modifier = Modifier,
+) {
+    Column(modifier = modifier.fillMaxWidth()) {
+        // Section Header
+        SectionHeader(
+            title = section.title,
+            onSeeAll = onSeeMore
+        )
+        
+        when (section.type) {
+            "trending" -> {
+                // Trending section with numbered cards
+                LazyRow(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    contentPadding = PaddingValues(horizontal = 8.dp)
+                ) {
+                    itemsIndexed(section.items.take(10)) { index, movie ->
+                        TrendingMovieCard(
+                            movie = movie,
+                            rank = index + 1,
+                            onClick = { onMovieClick(movie.id) }
+                        )
+                    }
+                }
+            }
+            "mid_banner" -> {
+                // Mid-page banner section
+                if (section.bannerImageUrl != null) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp)
+                            .aspectRatio(1f)
+                            .clip(RoundedCornerShape(16.dp))
+                            .background(CineVaultTheme.colors.surface)
+                            .clickable { section.items.firstOrNull()?.let { onMovieClick(it.id) } }
+                    ) {
+                        AsyncImage(
+                            model = section.bannerImageUrl,
+                            contentDescription = section.title,
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop
+                        )
+                    }
+                }
+            }
+            "large_card" -> {
+                // Large card horizontal section
+                LazyRow(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    contentPadding = PaddingValues(horizontal = 8.dp)
+                ) {
+                    items(section.items) { movie ->
+                        LargeMovieCard(
+                            movie = movie,
+                            onClick = { onMovieClick(movie.id) }
+                        )
+                    }
+                }
+            }
+            else -> {
+                // Standard horizontal section with square cards
+                LazyRow(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    contentPadding = PaddingValues(horizontal = 8.dp)
+                ) {
+                    items(section.items) { movie ->
+                        SquareMovieCard(
+                            movie = movie,
+                            onClick = { onMovieClick(movie.id) }
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun SquareMovieCard(
+    movie: MovieDto,
+    onClick: (String) -> Unit,
+    modifier: Modifier = Modifier,
+    cardWidth: Dp = 130.dp,
+) {
+    Column(
+        modifier = modifier
+            .width(cardWidth)
+            .clickable { onClick(movie.id) }
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .aspectRatio(1f)
+                .clip(RoundedCornerShape(8.dp))
+                .background(CineVaultTheme.colors.surface)
+        ) {
+            AsyncImage(
+                model = movie.posterUrl,
+                contentDescription = movie.title,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize(),
+            )
+            
+            // Quality tag
+            if (movie.contentRating?.isNotEmpty() == true) {
+                Surface(
+                    modifier = Modifier
+                        .align(Alignment.TopStart)
+                        .padding(6.dp),
+                    shape = RoundedCornerShape(4.dp),
+                    color = CineVaultTheme.colors.background.copy(alpha = 0.85f),
+                ) {
+                    Text(
+                        movie.contentRating ?: "N/A",
+                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
+                        style = CineVaultTheme.typography.labelSmall,
+                        color = CineVaultTheme.colors.accentGold,
+                    )
+                }
+            }
+            
+            // Rating badge
+            if (movie.rating != null && movie.rating!! > 0) {
+                Surface(
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .padding(6.dp),
+                    shape = RoundedCornerShape(4.dp),
+                    color = CineVaultTheme.colors.background.copy(alpha = 0.85f),
+                ) {
+                    Text(
+                        String.format("%.1f", movie.rating),
+                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
+                        style = CineVaultTheme.typography.labelSmall,
+                        color = CineVaultTheme.colors.accentGold,
+                    )
+                }
+            }
+        }
+        
+        Spacer(Modifier.height(6.dp))
+        Text(
+            movie.title,
+            style = CineVaultTheme.typography.bodySmall,
+            color = CineVaultTheme.colors.textPrimary,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.fillMaxWidth()
+        )
+    }
+}
+
+@Composable
+fun LargeMovieCard(
+    movie: MovieDto,
+    onClick: (String) -> Unit,
+    modifier: Modifier = Modifier,
+    cardWidth: Dp = 180.dp,
+) {
+    Column(
+        modifier = modifier
+            .width(cardWidth)
+            .clickable { onClick(movie.id) }
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .aspectRatio(2f / 3f)
+                .clip(RoundedCornerShape(12.dp))
+                .background(CineVaultTheme.colors.surface)
+        ) {
+            AsyncImage(
+                model = movie.posterUrl,
+                contentDescription = movie.title,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize(),
+            )
+            
+            // Overlay gradient for large cards
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        Brush.verticalGradient(
+                            colors = listOf(Color.Transparent, CineVaultTheme.colors.background.copy(alpha = 0.8f)),
+                            startY = 100f
+                        )
+                    )
+            )
+            
+            // Quality tag
+            if (movie.contentRating?.isNotEmpty() == true) {
+                Surface(
+                    modifier = Modifier
+                        .align(Alignment.TopStart)
+                        .padding(8.dp),
+                    shape = RoundedCornerShape(6.dp),
+                    color = CineVaultTheme.colors.background.copy(alpha = 0.85f),
+                ) {
+                    Text(
+                        movie.contentRating ?: "N/A",
+                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp),
+                        style = CineVaultTheme.typography.labelSmall,
+                        color = CineVaultTheme.colors.accentGold,
+                    )
+                }
+            }
+            
+            // Rating at bottom
+            if (movie.rating != null && movie.rating!! > 0) {
+                Surface(
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .padding(8.dp),
+                    shape = RoundedCornerShape(6.dp),
+                    color = CineVaultTheme.colors.background.copy(alpha = 0.85f),
+                ) {
+                    Text(
+                        String.format("%.1f", movie.rating),
+                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp),
+                        style = CineVaultTheme.typography.labelSmall,
+                        color = CineVaultTheme.colors.accentGold,
+                    )
+                }
+            }
+        }
+        
+        Spacer(Modifier.height(8.dp))
+        Text(
+            movie.title,
+            style = CineVaultTheme.typography.bodySmall,
+            color = CineVaultTheme.colors.textPrimary,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.fillMaxWidth()
+        )
+    }
+}
+
+@Composable
+fun TrendingMovieCard(
+    movie: MovieDto,
+    rank: Int,
+    onClick: (String) -> Unit,
+    modifier: Modifier = Modifier,
+    cardWidth: Dp = 110.dp,
+) {
+    Box(
+        modifier = modifier
+            .width(cardWidth)
+            .aspectRatio(2f / 3f)
+            .clip(RoundedCornerShape(8.dp))
+            .background(CineVaultTheme.colors.surface)
+            .clickable { onClick(movie.id) }
+    ) {
+        AsyncImage(
+            model = movie.posterUrl,
+            contentDescription = movie.title,
+            contentScale = ContentScale.Crop,
+            modifier = Modifier.fillMaxSize(),
+        )
+        
+        // Gradient overlay
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(
+                    Brush.verticalGradient(
+                        colors = listOf(Color.Transparent, CineVaultTheme.colors.background.copy(alpha = 0.7f)),
+                        startY = 50f
+                    )
+                )
+        )
+        
+        // Large ranking number
+        Text(
+            rank.toString(),
+            modifier = Modifier
+                .align(Alignment.BottomStart)
+                .padding(8.dp),
+            style = TextStyle(
+                fontSize = 48.sp,
+                fontWeight = FontWeight.Bold,
+                color = CineVaultTheme.colors.accentGold
+            )
+        )
+    }
+}
+
+@Composable
+fun BannerCarousel(
+    banners: List<BannerDto>,
+    onBannerClick: (String) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    // Premium landscape banner with Play button
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(220.dp)
+            .background(CineVaultTheme.colors.surface)
+    ) {
+        if (banners.isNotEmpty()) {
+            val banner = banners[0]
+            AsyncImage(
+                model = banner.imageUrl,
+                contentDescription = banner.title,
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop
+            )
+            
+            // Gradient overlay: transparent to dark
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        Brush.verticalGradient(
+                            colors = listOf(Color.Transparent, CineVaultTheme.colors.background),
+                            startY = 100f
+                        )
+                    )
+            )
+
+            // Play Button centered
+            IconButton(
+                onClick = { 
+                    banner.contentIdString?.let { contentId -> onBannerClick(contentId) }
+                },
+                modifier = Modifier
+                    .align(Alignment.Center)
+                    .size(80.dp)
+            ) {
+                Surface(
+                    modifier = Modifier
+                        .size(70.dp),
+                    shape = CircleShape,
+                    color = CineVaultTheme.colors.accentGold.copy(alpha = 0.9f)
+                ) {
+                    Icon(
+                        Icons.Filled.PlayArrow,
+                        contentDescription = "Play",
+                        modifier = Modifier
+                            .align(Alignment.Center)
+                            .size(40.dp),
+                        tint = CineVaultTheme.colors.background
+                    )
+                }
+            }
+        } else {
+            // Empty state
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(CineVaultTheme.colors.surface),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    "No banners available",
+                    color = CineVaultTheme.colors.textSecondary
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun HomeTopBar(
+    onSearchClick: () -> Unit,
+    onProfileClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .statusBarsPadding()
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            "CineVault",
+            style = CineVaultTheme.typography.displayLarge,
+            color = CineVaultTheme.colors.accentGold,
+        )
+        Row {
+            IconButton(onClick = onSearchClick) {
+                Icon(
+                    Icons.Default.Search,
+                    contentDescription = "Search",
+                    tint = CineVaultTheme.colors.textPrimary
+                )
+            }
+            IconButton(onClick = onProfileClick) {
+                Surface(
+                    modifier = Modifier.size(32.dp),
+                    shape = CircleShape,
+                    color = CineVaultTheme.colors.surface
+                ) {
+                    // Avatar placeholder
+                }
+            }
+        }
+    }
+}
