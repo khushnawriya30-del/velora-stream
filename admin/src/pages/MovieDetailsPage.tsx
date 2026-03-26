@@ -1,14 +1,16 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { ArrowLeft, Play, Star, Calendar, Clock, Volume2, Users } from 'lucide-react';
+import { ArrowLeft, Play, Star, Calendar, Clock, Volume2, Users, X } from 'lucide-react';
 import api from '../lib/api';
 import type { Movie } from '../types';
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 
 export default function MovieDetailsPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [showTrailer, setShowTrailer] = useState(false);
+  const [showPlayer, setShowPlayer] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
 
   const { data: movie, isLoading, isError } = useQuery({
     queryKey: ['movie', id],
@@ -221,7 +223,10 @@ export default function MovieDetailsPage() {
 
         {/* Watch Now Button */}
         <div className="pt-4">
-          <button className="w-full sm:w-auto px-8 py-3 bg-gold hover:bg-gold-light text-background font-semibold rounded-xl transition-colors flex items-center justify-center gap-2 text-lg">
+          <button 
+            onClick={() => setShowPlayer(true)}
+            className="w-full sm:w-auto px-8 py-3 bg-gold hover:bg-gold-light text-background font-semibold rounded-xl transition-colors flex items-center justify-center gap-2 text-lg"
+          >
             <Play size={20} className="fill-current" />
             Watch Now
           </button>
@@ -238,6 +243,60 @@ export default function MovieDetailsPage() {
           )}
         </div>
       </div>
+
+      {/* Video Player Modal */}
+      {showPlayer && (
+        <div className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4">
+          <div className="relative w-full max-w-5xl">
+            {/* Close Button */}
+            <button
+              onClick={() => {
+                setShowPlayer(false);
+                if (videoRef.current) {
+                  videoRef.current.pause();
+                }
+              }}
+              className="absolute -top-12 right-0 z-50 p-2 rounded-lg hover:bg-surface transition-colors"
+            >
+              <X size={24} className="text-text-primary" />
+            </button>
+
+            {/* Video Player */}
+            <div className="relative aspect-video bg-black rounded-lg overflow-hidden">
+              {videoUrl && videoUrl.includes('youtube') ? (
+                <iframe
+                  width="100%"
+                  height="100%"
+                  src={videoUrl}
+                  title={m.title}
+                  allowFullScreen
+                  className="w-full h-full"
+                />
+              ) : videoUrl ? (
+                <video
+                  ref={videoRef}
+                  width="100%"
+                  height="100%"
+                  controls
+                  autoPlay
+                  className="w-full h-full object-cover"
+                  src={videoUrl}
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-text-secondary">
+                  <p>No video available for this content</p>
+                </div>
+              )}
+            </div>
+
+            {/* Video Info */}
+            <div className="mt-6 text-text-primary">
+              <h2 className="text-2xl font-bold mb-2">{m.title}</h2>
+              <p className="text-text-secondary mb-4">{m.description}</p>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
