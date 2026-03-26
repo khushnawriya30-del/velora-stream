@@ -157,7 +157,7 @@ export default function BannersPage() {
               </button>
               <button
                 onClick={() => {
-                  const dataToSubmit = { ...form };
+                  const dataToSubmit = { ...form } as any;
                   if (!dataToSubmit.contentId || dataToSubmit.contentId.trim() === '') {
                     delete dataToSubmit.contentId;
                   }

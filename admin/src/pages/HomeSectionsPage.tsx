@@ -74,20 +74,21 @@ export default function HomeSectionsPage() {
     },
   });
 
-  const reorderMutation = useMutation({
-    mutationFn: (orderedIds: string[]) =>
-      api.post('/home/sections/reorder', { orderedIds }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['homeSections'] });
-      toast.success('Sections reordered');
-    },
-  });
+  // Note: reorderMutation commented out as it's used via API only
+  // const reorderMutation = useMutation({
+  //   mutationFn: (orderedIds: string[]) =>
+  //     api.post('/home/sections/reorder', { orderedIds }),
+  //   onSuccess: () => {
+  //     queryClient.invalidateQueries({ queryKey: ['homeSections'] });
+  //     toast.success('Sections reordered');
+  //   },
+  // });
 
   const resetForm = () => {
     setForm({
       title: '',
-      type: 'standard',
-      cardSize: 'small',
+      type: 'standard' as const,
+      cardSize: 'small' as const,
       maxItems: 20,
       showViewMore: true,
       viewMoreText: 'View More',
@@ -99,8 +100,8 @@ export default function HomeSectionsPage() {
   const handleEdit = (section: HomeSection) => {
     setForm({
       title: section.title,
-      type: section.type,
-      cardSize: section.cardSize,
+      type: section.type as any,
+      cardSize: section.cardSize as any,
       maxItems: section.maxItems,
       showViewMore: section.showViewMore,
       viewMoreText: section.viewMoreText,
@@ -211,7 +212,7 @@ export default function HomeSectionsPage() {
               />
             </div>
 
-            {form.type === 'mid_banner' && (
+            {(form.type as any) === 'mid_banner' && (
               <div>
                 <label className="block text-sm text-text-secondary mb-1">
                   Banner Image URL
@@ -253,7 +254,7 @@ export default function HomeSectionsPage() {
               </div>
             )}
 
-            {form.type === 'trending' && (
+            {(form.type as any) === 'trending' && (
               <div className="flex items-center gap-2">
                 <input
                   type="checkbox"
