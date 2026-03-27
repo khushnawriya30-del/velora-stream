@@ -110,18 +110,34 @@ class MovieDetailViewModel @Inject constructor(
 
                     // Load seasons if it's a series
                     val seriesTypes = listOf("web_series", "tv_show", "anime")
+                    android.util.Log.d("MovieDetail", "contentType: ${movie.contentType}, isSeries: ${movie.contentType in seriesTypes}")
                     val seasons = if (movie.contentType in seriesTypes) {
                         when (val r = contentRepository.getSeasons(movieId)) {
-                            is Result.Success -> r.data
+                            is Result.Success -> {
+                                android.util.Log.d("MovieDetail", "Seasons loaded: ${r.data.size}")
+                                r.data
+                            }
+                            is Result.Error -> {
+                                android.util.Log.e("MovieDetail", "Seasons error: ${r.message}")
+                                emptyList()
+                            }
                             else -> emptyList()
                         }
                     } else emptyList()
 
                     // Auto-load episodes for first season
                     val firstSeason = seasons.firstOrNull()
+                    android.util.Log.d("MovieDetail", "First season: ${firstSeason?.id}, total seasons: ${seasons.size}")
                     val episodes = if (firstSeason != null) {
                         when (val r = contentRepository.getEpisodes(firstSeason.id)) {
-                            is Result.Success -> r.data
+                            is Result.Success -> {
+                                android.util.Log.d("MovieDetail", "Episodes loaded: ${r.data.size}")
+                                r.data
+                            }
+                            is Result.Error -> {
+                                android.util.Log.e("MovieDetail", "Episodes error: ${r.message}")
+                                emptyList()
+                            }
                             else -> emptyList()
                         }
                     } else emptyList()
