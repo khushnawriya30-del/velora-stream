@@ -69,16 +69,13 @@ class PlayerViewModel @Inject constructor(
 
     private fun loadContent() {
         viewModelScope.launch {
-            Log.d("CineVaultPlayer", "Loading content: $contentId")
+            Log.d("CineVaultPlayer", "Loading content: $contentId, episodeId: $episodeId")
             _uiState.update { it.copy(isLoading = true, error = null) }
 
             when (val movieResult = contentRepository.getMovie(contentId)) {
                 is Result.Success -> {
                     val movie = movieResult.data
                     Log.d("CineVaultPlayer", "Movie loaded: ${movie.title}, hlsUrl=${movie.hlsUrl}, sources=${movie.streamingSources?.size ?: 0}")
-                    movie.streamingSources?.forEachIndexed { i, src ->
-                        Log.d("CineVaultPlayer", "  Source[$i]: quality=${src.quality}, url=${src.url.take(100)}")
-                    }
                     _uiState.update { it.copy(movie = movie) }
 
                     // Fetch saved progress BEFORE loading streaming URL
@@ -96,7 +93,29 @@ class PlayerViewModel @Inject constructor(
                             else -> Log.w("CineVaultPlayer", "Could not fetch saved progress")
                         }
                     }
-                    loadStreamingUrl(resumePosition = savedPosition)
+
+                    // If episodeId is provided, load episode streaming sources instead
+                    if (!episodeId.isNullOrBlank()) {
+                        Log.d("CineVaultPlayer", "Loading episode: $episodeId")
+                        when (val epResult = contentRepository.getEpisode(episodeId)) {
+                            is Result.Success -> {
+                                val episode = epResult.data
+                                Log.d("CineVaultPlayer", "Episode loaded: ${episode.title}, sources=${episode.streamingSources?.size ?: 0}")
+                                episode.streamingSources?.forEachIndexed { i, src ->
+                                    Log.d("CineVaultPlayer", "  EpSource[$i]: quality=${src.quality}, url=${src.url.take(100)}")
+                                }
+                                loadStreamingUrl(resumePosition = savedPosition, episodeSources = episode.streamingSources)
+                            }
+                            is Result.Error -> {
+                                Log.e("CineVaultPlayer", "Failed to load episode: ${epResult.message}")
+                                // Fallback to movie sources
+                                loadStreamingUrl(resumePosition = savedPosition)
+                            }
+                            else -> {}
+                        }
+                    } else {
+                        loadStreamingUrl(resumePosition = savedPosition)
+                    }
                 }
                 is Result.Error -> {
                     Log.e("CineVaultPlayer", "Failed to load movie: ${movieResult.message}")
@@ -107,9 +126,27 @@ class PlayerViewModel @Inject constructor(
         }
     }
 
-    private fun loadStreamingUrl(resumePosition: Long = -1L) {
+    private fun loadStreamingUrl(resumePosition: Long = -1L, episodeSources: List<StreamingSourceDto>? = null) {
         viewModelScope.launch {
             val movie = _uiState.value.movie
+
+            // If episode sources are provided, use them directly
+            if (!episodeSources.isNullOrEmpty()) {
+                val source = episodeSources.firstOrNull()
+                val streamUrl = source?.url ?: ""
+                Log.d("CineVaultPlayer", "Using episode source URL: ${streamUrl.take(100)}")
+                if (streamUrl.startsWith("http://") || streamUrl.startsWith("https://")) {
+                    _uiState.update { it.copy(
+                        isLoading = false,
+                        streamingUrl = streamUrl,
+                        availableQualities = listOf(source?.quality ?: "Original"),
+                        isAdaptive = false,
+                        selectedQuality = source?.quality ?: "Original",
+                        currentPosition = if (resumePosition >= 0) resumePosition else it.currentPosition,
+                    ) }
+                    return@launch
+                }
+            }
 
             // Prefer HLS URL for adaptive streaming (auto quality based on internet speed)
             val hlsUrl = movie?.hlsUrl

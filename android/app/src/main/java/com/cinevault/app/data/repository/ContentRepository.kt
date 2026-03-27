@@ -86,6 +86,19 @@ class ContentRepository @Inject constructor(private val api: CineVaultApi) {
         }
     }
 
+    suspend fun getEpisode(episodeId: String): Result<EpisodeDto> {
+        return try {
+            val response = api.getEpisode(episodeId)
+            if (response.isSuccessful && response.body() != null) {
+                Result.Success(response.body()!!)
+            } else {
+                Result.Error(response.message())
+            }
+        } catch (e: Exception) {
+            Result.Error(e.localizedMessage ?: "Failed to load episode")
+        }
+    }
+
     suspend fun search(
         query: String? = null,
         contentType: String? = null,
