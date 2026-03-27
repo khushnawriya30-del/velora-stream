@@ -27,6 +27,13 @@ import coil.compose.AsyncImage
 import com.cinevault.app.data.model.*
 import com.cinevault.app.ui.theme.CineVaultTheme
 import com.cinevault.app.ui.viewmodel.MovieDetailViewModel
+import android.annotation.SuppressLint
+import android.view.MotionEvent
+import android.view.View
+import android.webkit.WebChromeClient
+import android.webkit.WebView
+import android.webkit.WebViewClient
+import androidx.compose.ui.viewinterop.AndroidView
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -138,6 +145,19 @@ fun MovieDetailScreen(
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxSize()
             )
+
+            // Auto-play YouTube trailer in hero background
+            val heroVideoId = remember(movie.trailerUrl) {
+                movie.trailerUrl?.let { extractYouTubeVideoId(it) }
+            }
+            if (heroVideoId != null) {
+                YouTubeTrailerPlayer(
+                    videoId = heroVideoId,
+                    modifier = Modifier.fillMaxSize(),
+                    coverMode = true,
+                    interactionEnabled = false
+                )
+            }
 
             // Top gradient for status bar / back button
             Box(
@@ -425,7 +445,7 @@ fun MovieDetailScreen(
         when (selectedTab) {
             0 -> DetailsTabContent(movie)
             1 -> CommentsTabContent()
-            2 -> TrailerTabContent()
+            2 -> TrailerTabContent(movie.trailerUrl)
         }
 
         Spacer(modifier = Modifier.height(40.dp))
@@ -569,18 +589,102 @@ private fun CommentsTabContent() {
 }
 
 @Composable
-private fun TrailerTabContent() {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(150.dp)
-            .padding(16.dp),
-        contentAlignment = Alignment.Center
-    ) {
-        Text(
-            "Trailer available on watch",
-            color = CineVaultTheme.colors.textSecondary,
-            fontSize = 14.sp
+private fun TrailerTabContent(trailerUrl: String?) {
+    val videoId = remember(trailerUrl) { trailerUrl?.let { extractYouTubeVideoId(it) } }
+    if (videoId != null) {
+        YouTubeTrailerPlayer(
+            videoId = videoId,
+            modifier = Modifier
+                .fillMaxWidth()
+                .aspectRatio(16f / 9f)
+                .padding(16.dp),
+            coverMode = false,
+            interactionEnabled = false
         )
+    } else {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(150.dp)
+                .padding(16.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                "No trailer available",
+                color = CineVaultTheme.colors.textSecondary,
+                fontSize = 14.sp
+            )
+        }
     }
+}
+
+@SuppressLint("SetJavaScriptEnabled")
+@Composable
+private fun YouTubeTrailerPlayer(
+    videoId: String,
+    modifier: Modifier = Modifier,
+    coverMode: Boolean = false,
+    interactionEnabled: Boolean = false,
+) {
+    val safeVideoId = remember(videoId) {
+        videoId.replace(Regex("[^a-zA-Z0-9_-]"), "")
+    }
+
+    val iframeCss = if (coverMode) {
+        "position:absolute;top:50%;left:50%;width:100vw;height:56.25vw;" +
+            "min-height:100vh;min-width:177.78vh;transform:translate(-50%,-50%);border:0"
+    } else {
+        "width:100%;height:100%;border:0"
+    }
+
+    val html = remember(safeVideoId, coverMode) {
+        """
+        <!DOCTYPE html>
+        <html><head>
+        <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
+        <style>
+        *{margin:0;padding:0;overflow:hidden}
+        body{background:#000}
+        .wrap{position:relative;width:100%;height:100%;overflow:hidden}
+        iframe{${iframeCss}}
+        </style></head><body>
+        <div class="wrap">
+        <iframe src="https://www.youtube.com/embed/${safeVideoId}?autoplay=1&mute=1&loop=1&playlist=${safeVideoId}&controls=0&showinfo=0&modestbranding=1&rel=0&fs=0&iv_load_policy=3&disablekb=1&playsinline=1&cc_load_policy=0"
+        allow="autoplay;encrypted-media" allowfullscreen></iframe>
+        </div></body></html>
+        """.trimIndent()
+    }
+
+    AndroidView(
+        factory = { context ->
+            object : WebView(context) {
+                override fun onTouchEvent(event: MotionEvent?): Boolean {
+                    if (!interactionEnabled) return false
+                    return super.onTouchEvent(event)
+                }
+            }.apply {
+                settings.javaScriptEnabled = true
+                settings.mediaPlaybackRequiresUserGesture = false
+                settings.domStorageEnabled = true
+                settings.loadWithOverviewMode = true
+                settings.useWideViewPort = true
+                setLayerType(View.LAYER_TYPE_HARDWARE, null)
+                setBackgroundColor(android.graphics.Color.BLACK)
+                webChromeClient = WebChromeClient()
+                webViewClient = WebViewClient()
+                loadDataWithBaseURL(
+                    "https://www.youtube.com", html, "text/html", "UTF-8", null
+                )
+            }
+        },
+        onRelease = { it.destroy() },
+        modifier = modifier
+    )
+}
+
+private fun extractYouTubeVideoId(url: String): String? {
+    val pattern = Regex(
+        "(?:youtube\\.com/watch\\?.*v=|youtu\\.be/|youtube\\.com/embed/|youtube\\.com/v/)([a-zA-Z0-9_-]{11})"
+    )
+    return pattern.find(url)?.groupValues?.getOrNull(1)
 }
