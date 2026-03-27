@@ -12,6 +12,7 @@ import {
   LogOut,
   Menu,
   X,
+  UserCircle,
 } from 'lucide-react';
 import { useState } from 'react';
 import { useAuthStore } from '../store/auth';
@@ -25,6 +26,7 @@ const navItems = [
   { to: '/users', icon: Users, label: 'Users' },
   { to: '/banners', icon: Image, label: 'Banners' },
   { to: '/home-sections', icon: LayoutIcon, label: 'Home Sections' },
+  { to: '/me-sections', icon: UserCircle, label: 'Me Sections' },
   { to: '/reviews', icon: MessageSquare, label: 'Reviews' },
   { to: '/notifications', icon: Bell, label: 'Notifications' },
 ];

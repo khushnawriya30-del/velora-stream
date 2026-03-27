@@ -11,6 +11,7 @@ import AnimePage from './pages/AnimePage';
 import UsersPage from './pages/UsersPage';
 import BannersPage from './pages/BannersPage';
 import HomeSectionsPage from './pages/HomeSectionsPage';
+import MeSectionsPage from './pages/MeSectionsPage';
 import ReviewsPage from './pages/ReviewsPage';
 import NotificationsPage from './pages/NotificationsPage';
 
@@ -42,6 +43,7 @@ export default function App() {
         <Route path="users" element={<UsersPage />} />
         <Route path="banners" element={<BannersPage />} />
         <Route path="home-sections" element={<HomeSectionsPage />} />
+        <Route path="me-sections" element={<MeSectionsPage />} />
         <Route path="reviews" element={<ReviewsPage />} />
         <Route path="notifications" element={<NotificationsPage />} />
       </Route>

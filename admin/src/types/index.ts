@@ -1,14 +1,21 @@
 export interface Movie {
   _id: string;
   title: string;
+  alternateTitle?: string;
   synopsis: string;
   posterUrl: string;
   bannerUrl?: string;
+  logoUrl?: string;
   trailerUrl?: string;
+  cbfcCertificateUrl?: string;
   genres: string[];
+  languages: string[];
   releaseYear: number;
   duration?: number;
-  contentType: 'movie' | 'series' | 'documentary' | 'anime' | 'web_series' | 'tv_show' | 'short_film';
+  country?: string;
+  director?: string;
+  studio?: string;
+  contentType: 'movie' | 'documentary' | 'anime' | 'web_series' | 'tv_show' | 'short_film';
   contentRating?: string;
   status: 'draft' | 'published' | 'archived';
   averageRating: number;
@@ -20,6 +27,13 @@ export interface Movie {
   streamingSources: StreamingSource[];
   tags: string[];
   videoQuality?: string;
+  rankingLabel?: string;
+  isFeatured?: boolean;
+  platformOrigin?: string;
+  imdbId?: string;
+  tmdbId?: string;
+  hlsUrl?: string;
+  hlsStatus?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -92,12 +106,9 @@ export interface Episode {
 }
 
 export interface DashboardStats {
-  totalUsers: number;
-  totalContent: number;
-  totalViews: number;
-  activeToday: number;
-  signupChart: { date: string; count: number }[];
-  topWatched: { title: string; views: number; id: string }[];
+  users: { total: number; newToday: number; newThisMonth: number; dau: number; mau: number };
+  content: { total: number };
+  topWatched: { title: string; viewCount: number; _id: string; rating: number; posterUrl: string; contentType: string }[];
 }
 
 export interface PaginatedResponse<T> {

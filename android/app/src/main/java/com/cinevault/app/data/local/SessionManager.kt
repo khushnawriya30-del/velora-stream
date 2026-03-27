@@ -27,9 +27,13 @@ class SessionManager @Inject constructor(@ApplicationContext private val context
         private val ONBOARDING_COMPLETED = booleanPreferencesKey("onboarding_completed")
         private val DEFAULT_QUALITY = stringPreferencesKey("default_quality")
         private val AUTOPLAY_ENABLED = booleanPreferencesKey("autoplay_enabled")
+        private val LIKED_MOVIE_IDS = stringSetPreferencesKey("liked_movie_ids")
+        private val REFRESH_TOKEN = stringPreferencesKey("refresh_token")
     }
 
     val accessToken: Flow<String?> = context.dataStore.data.map { it[ACCESS_TOKEN] }
+
+    val refreshToken: Flow<String?> = context.dataStore.data.map { it[REFRESH_TOKEN] }
 
     val isLoggedIn: Flow<Boolean> = context.dataStore.data.map { it[ACCESS_TOKEN] != null }
 
@@ -45,6 +49,15 @@ class SessionManager @Inject constructor(@ApplicationContext private val context
 
     val autoplayEnabled: Flow<Boolean> = context.dataStore.data.map { it[AUTOPLAY_ENABLED] ?: true }
 
+    val likedMovieIds: Flow<Set<String>> = context.dataStore.data.map { it[LIKED_MOVIE_IDS] ?: emptySet() }
+
+    suspend fun toggleLikedMovie(movieId: String) {
+        context.dataStore.edit { prefs ->
+            val current = prefs[LIKED_MOVIE_IDS] ?: emptySet()
+            prefs[LIKED_MOVIE_IDS] = if (movieId in current) current - movieId else current + movieId
+        }
+    }
+
     suspend fun saveSession(token: String, userId: String, name: String, email: String, avatar: String?, role: String) {
         context.dataStore.edit { prefs ->
             prefs[ACCESS_TOKEN] = token
@@ -59,6 +72,12 @@ class SessionManager @Inject constructor(@ApplicationContext private val context
     suspend fun updateToken(token: String) {
         context.dataStore.edit { prefs ->
             prefs[ACCESS_TOKEN] = token
+        }
+    }
+
+    suspend fun saveRefreshToken(token: String) {
+        context.dataStore.edit { prefs ->
+            prefs[REFRESH_TOKEN] = token
         }
     }
 

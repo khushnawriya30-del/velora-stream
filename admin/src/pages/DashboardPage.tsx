@@ -2,14 +2,21 @@ import { useQuery } from '@tanstack/react-query';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
 import { Users, Film, Eye, TrendingUp } from 'lucide-react';
 import api from '../lib/api';
-import type { DashboardStats } from '../types';
 
 export default function DashboardPage() {
-  const { data: stats, isLoading } = useQuery<DashboardStats>({
+  const { data: stats, isLoading } = useQuery<any>({
     queryKey: ['dashboard'],
     queryFn: async () => {
       const { data } = await api.get('/analytics/dashboard');
       return data;
+    },
+  });
+
+  const { data: signupData } = useQuery<any[]>({
+    queryKey: ['signups'],
+    queryFn: async () => {
+      const { data } = await api.get('/analytics/signups?days=30');
+      return data.map((d: any) => ({ date: d._id, count: d.count }));
     },
   });
 
@@ -27,10 +34,10 @@ export default function DashboardPage() {
   }
 
   const statCards = [
-    { label: 'Total Users', value: stats?.totalUsers ?? 0, icon: Users, color: 'text-blue-400' },
-    { label: 'Total Content', value: stats?.totalContent ?? 0, icon: Film, color: 'text-gold' },
-    { label: 'Total Views', value: stats?.totalViews ?? 0, icon: Eye, color: 'text-green-400' },
-    { label: 'Active Today', value: stats?.activeToday ?? 0, icon: TrendingUp, color: 'text-purple-400' },
+    { label: 'Total Users', value: stats?.users?.total ?? 0, icon: Users, color: 'text-blue-400' },
+    { label: 'Total Content', value: stats?.content?.total ?? 0, icon: Film, color: 'text-gold' },
+    { label: 'Total Views', value: stats?.topWatched?.reduce((sum: number, m: any) => sum + (m.viewCount || 0), 0) ?? 0, icon: Eye, color: 'text-green-400' },
+    { label: 'Active Today', value: stats?.users?.dau ?? 0, icon: TrendingUp, color: 'text-purple-400' },
   ];
 
   return (
@@ -60,7 +67,7 @@ export default function DashboardPage() {
         <div className="bg-surface border border-border rounded-xl p-5">
           <h2 className="text-lg font-medium mb-4">User Signups</h2>
           <ResponsiveContainer width="100%" height={280}>
-            <AreaChart data={stats?.signupChart ?? []}>
+            <AreaChart data={signupData ?? []}>
               <defs>
                 <linearGradient id="goldGradient" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor="#F5A623" stopOpacity={0.3} />
@@ -97,7 +104,7 @@ export default function DashboardPage() {
                   color: '#FFFFFF',
                 }}
               />
-              <Bar dataKey="views" fill="#F5A623" radius={[0, 4, 4, 0]} />
+              <Bar dataKey="viewCount" fill="#F5A623" radius={[0, 4, 4, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>

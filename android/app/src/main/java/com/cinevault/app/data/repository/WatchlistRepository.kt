@@ -8,13 +8,12 @@ import javax.inject.Singleton
 @Singleton
 class WatchlistRepository @Inject constructor(private val api: CineVaultApi) {
 
-    @Suppress("UNCHECKED_CAST")
     suspend fun getWatchlist(profileId: String): Result<List<MovieDto>> {
         return try {
             val response = api.getWatchlist(profileId)
             if (response.isSuccessful && response.body() != null) {
-                val items = response.body()!!.filterIsInstance<MovieDto>()
-                Result.Success(items)
+                val movies = response.body()!!.map { it.contentId }
+                Result.Success(movies)
             } else {
                 Result.Error(response.message())
             }

@@ -12,7 +12,9 @@ sealed class Screen(val route: String) {
     data object Watchlist : Screen("watchlist")
     data object Me : Screen("me")
     data object Notifications : Screen("notifications")
+    data object Downloads : Screen("downloads")
     data object WatchHistory : Screen("watch_history")
+    data object Settings : Screen("settings")
 
     data object SectionDetail : Screen("section/{sectionId}") {
         fun createRoute(sectionId: String) = "section/$sectionId"

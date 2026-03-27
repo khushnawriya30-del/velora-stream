@@ -26,7 +26,7 @@ data class BottomNavItem(val label: String, val icon: ImageVector, val route: St
 
 val bottomNavItems = listOf(
     BottomNavItem("Home", Icons.Filled.Home, Screen.Home.route),
-    BottomNavItem("Downloads", Icons.Filled.Download, Screen.Notifications.route),
+    BottomNavItem("Downloads", Icons.Filled.Download, Screen.Downloads.route),
     BottomNavItem("Watchlist", Icons.Outlined.BookmarkBorder, Screen.Watchlist.route),
     BottomNavItem("Me", Icons.Filled.Person, Screen.Me.route),
 )
@@ -165,6 +165,15 @@ fun CineVaultNavHost(navController: NavHostController = rememberNavController())
 
             composable(Screen.Me.route) {
                 MeScreen(
+                    onNavigateToNotifications = { navController.navigate(Screen.Notifications.route) },
+                    onNavigateToSettings = { navController.navigate(Screen.Settings.route) },
+                    onMovieClick = { movieId -> navController.navigate(Screen.MovieDetail.createRoute(movieId)) },
+                )
+            }
+
+            composable(Screen.Settings.route) {
+                SettingsScreen(
+                    onBack = { navController.popBackStack() },
                     onLogout = {
                         navController.navigate(Screen.Login.route) {
                             popUpTo(0) { inclusive = true }
@@ -180,6 +189,10 @@ fun CineVaultNavHost(navController: NavHostController = rememberNavController())
                     onBack = { navController.popBackStack() },
                     onMovieClick = { movieId -> navController.navigate(Screen.MovieDetail.createRoute(movieId)) },
                 )
+            }
+
+            composable(Screen.Downloads.route) {
+                DownloadsScreen()
             }
 
             composable(Screen.WatchHistory.route) {

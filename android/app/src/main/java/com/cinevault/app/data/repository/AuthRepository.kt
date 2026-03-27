@@ -24,6 +24,8 @@ class AuthRepository @Inject constructor(
                     avatar = body.user.avatarUrl,
                     role = body.user.role,
                 )
+                body.refreshToken?.let { sessionManager.saveRefreshToken(it) }
+                ensureActiveProfile()
                 Result.Success(body.user)
             } else {
                 Result.Error(response.message(), response.code())
@@ -46,12 +48,48 @@ class AuthRepository @Inject constructor(
                     avatar = body.user.avatarUrl,
                     role = body.user.role,
                 )
+                body.refreshToken?.let { sessionManager.saveRefreshToken(it) }
+                ensureActiveProfile()
                 Result.Success(body.user)
             } else {
                 Result.Error(response.message(), response.code())
             }
         } catch (e: Exception) {
             Result.Error(e.localizedMessage ?: "An error occurred")
+        }
+    }
+
+    /**
+     * After login/register, ensure there's an active profile set.
+     * If no profiles exist, create a default one.
+     */
+    private suspend fun ensureActiveProfile() {
+        try {
+            val profilesResponse = api.getProfiles()
+            if (profilesResponse.isSuccessful) {
+                val profiles = profilesResponse.body() ?: emptyList()
+                val profile = profiles.firstOrNull()
+                if (profile != null) {
+                    sessionManager.setActiveProfileId(profile.id)
+                    android.util.Log.d("CineVaultAuth", "Active profile set: ${profile.id}")
+                } else {
+                    // No profiles exist — create a default one
+                    val createResponse = api.createProfile(
+                        CreateProfileRequest(
+                            displayName = "Default",
+                            avatarUrl = null,
+                            maturityRating = "PG",
+                        )
+                    )
+                    if (createResponse.isSuccessful && createResponse.body() != null) {
+                        val newProfile = createResponse.body()!!
+                        sessionManager.setActiveProfileId(newProfile.id)
+                        android.util.Log.d("CineVaultAuth", "Default profile created & set: ${newProfile.id}")
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("CineVaultAuth", "Failed to ensure active profile", e)
         }
     }
 

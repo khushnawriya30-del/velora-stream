@@ -9,10 +9,15 @@ import com.cinevault.app.data.model.*
 import com.cinevault.app.data.repository.ContentRepository
 import com.cinevault.app.data.repository.WatchProgressRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 data class PlayerUiState(
@@ -52,8 +57,14 @@ class PlayerViewModel @Inject constructor(
 
     private var progressJob: Job? = null
 
+    /** Scope that survives ViewModel destruction — ensures save HTTP calls complete. */
+    private val saveScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
     init {
-        if (contentId.isNotEmpty()) loadContent()
+        if (contentId.isNotEmpty()) {
+            loadContent()
+            startProgressTimer()
+        }
     }
 
     private fun loadContent() {
@@ -69,7 +80,23 @@ class PlayerViewModel @Inject constructor(
                         Log.d("CineVaultPlayer", "  Source[$i]: quality=${src.quality}, url=${src.url.take(100)}")
                     }
                     _uiState.update { it.copy(movie = movie) }
-                    loadStreamingUrl()
+
+                    // Fetch saved progress BEFORE loading streaming URL
+                    var savedPosition = 0L
+                    val profileId = sessionManager.activeProfileId.firstOrNull()
+                    if (profileId != null) {
+                        when (val progressResult = watchProgressRepository.getProgress(profileId, contentId)) {
+                            is Result.Success -> {
+                                val progress = progressResult.data
+                                if (progress != null && !progress.isCompleted) {
+                                    savedPosition = progress.currentTime.toLong()
+                                    Log.d("CineVaultPlayer", "Restored saved position: $savedPosition ms")
+                                }
+                            }
+                            else -> Log.w("CineVaultPlayer", "Could not fetch saved progress")
+                        }
+                    }
+                    loadStreamingUrl(resumePosition = savedPosition)
                 }
                 is Result.Error -> {
                     Log.e("CineVaultPlayer", "Failed to load movie: ${movieResult.message}")
@@ -159,26 +186,88 @@ class PlayerViewModel @Inject constructor(
 
     fun onPositionChange(position: Long, duration: Long) {
         _uiState.update { it.copy(currentPosition = position, totalDuration = duration) }
-        scheduleProgressUpdate(position, duration)
     }
 
-    private fun scheduleProgressUpdate(position: Long, duration: Long) {
+    private fun startProgressTimer() {
         progressJob?.cancel()
         progressJob = viewModelScope.launch {
-            delay(10_000) // save every 10 seconds
-            val profileId = sessionManager.activeProfileId.firstOrNull() ?: return@launch
-            watchProgressRepository.updateProgress(contentId, profileId, position, duration)
+            // Wait 20s before first save to let the player seek to saved position
+            delay(20_000)
+            while (true) {
+                val state = _uiState.value
+                // Save regardless of play/pause — just need a valid position and duration
+                if (state.totalDuration <= 0 || state.currentPosition <= 0) {
+                    delay(15_000)
+                    continue
+                }
+                val profileId = sessionManager.activeProfileId.firstOrNull()
+                if (profileId == null) {
+                    Log.w("CineVaultPlayer", "Timer: profileId is NULL — cannot save progress!")
+                    delay(15_000)
+                    continue
+                }
+                Log.d("CineVaultPlayer", "Timer saving progress: ${state.currentPosition}/${state.totalDuration} profileId=$profileId")
+                watchProgressRepository.updateProgress(
+                    contentId = contentId,
+                    profileId = profileId,
+                    position = state.currentPosition,
+                    duration = state.totalDuration,
+                    contentTitle = state.movie?.title,
+                    thumbnailUrl = state.movie?.posterUrl,
+                )
+                delay(15_000)
+            }
+        }
+    }
+
+    /** Called when user presses Back — pass real ExoPlayer values directly.
+     *  Uses NonCancellable so the HTTP save survives ViewModel destruction. */
+    fun saveExplicitProgress(position: Long, duration: Long) {
+        if (duration <= 0) return
+        // Use a scope that survives ViewModel clearing
+        saveScope.launch {
+            withContext(NonCancellable) {
+                val state = _uiState.value
+                val profileId = sessionManager.activeProfileId.firstOrNull()
+                if (profileId == null) {
+                    Log.e("CineVaultPlayer", "Explicit save FAILED: profileId is NULL!")
+                    return@withContext
+                }
+                Log.d("CineVaultPlayer", "Explicit save: $position/$duration title=${state.movie?.title} profileId=$profileId")
+                watchProgressRepository.updateProgress(
+                    contentId = contentId,
+                    profileId = profileId,
+                    position = position,
+                    duration = duration,
+                    contentTitle = state.movie?.title,
+                    thumbnailUrl = state.movie?.posterUrl,
+                )
+                Log.d("CineVaultPlayer", "Explicit save COMPLETED")
+            }
         }
     }
 
     fun saveProgressNow() {
-        viewModelScope.launch {
-            val state = _uiState.value
-            val profileId = sessionManager.activeProfileId.firstOrNull() ?: return@launch
-            if (state.totalDuration > 0) {
-                watchProgressRepository.updateProgress(
-                    contentId, profileId, state.currentPosition, state.totalDuration
-                )
+        saveScope.launch {
+            withContext(NonCancellable) {
+                val state = _uiState.value
+                val profileId = sessionManager.activeProfileId.firstOrNull()
+                if (profileId == null) {
+                    Log.e("CineVaultPlayer", "saveProgressNow FAILED: profileId is NULL!")
+                    return@withContext
+                }
+                if (state.totalDuration > 0 && state.currentPosition > 0) {
+                    Log.d("CineVaultPlayer", "saveProgressNow: ${state.currentPosition}/${state.totalDuration} profileId=$profileId")
+                    watchProgressRepository.updateProgress(
+                        contentId = contentId,
+                        profileId = profileId,
+                        position = state.currentPosition,
+                        duration = state.totalDuration,
+                        contentTitle = state.movie?.title,
+                        thumbnailUrl = state.movie?.posterUrl,
+                    )
+                    Log.d("CineVaultPlayer", "saveProgressNow COMPLETED")
+                }
             }
         }
     }
@@ -217,5 +306,28 @@ class PlayerViewModel @Inject constructor(
     override fun onCleared() {
         super.onCleared()
         progressJob?.cancel()
+        // Final save using the persistent scope
+        val state = _uiState.value
+        if (state.totalDuration > 0 && state.currentPosition > 0) {
+            saveScope.launch {
+                withContext(NonCancellable) {
+                    val profileId = sessionManager.activeProfileId.firstOrNull()
+                    if (profileId == null) {
+                        Log.e("CineVaultPlayer", "onCleared final save FAILED: profileId is NULL!")
+                        return@withContext
+                    }
+                    Log.d("CineVaultPlayer", "onCleared final save: ${state.currentPosition}/${state.totalDuration} profileId=$profileId")
+                    watchProgressRepository.updateProgress(
+                        contentId = contentId,
+                        profileId = profileId,
+                        position = state.currentPosition,
+                        duration = state.totalDuration,
+                        contentTitle = state.movie?.title,
+                        thumbnailUrl = state.movie?.posterUrl,
+                    )
+                    Log.d("CineVaultPlayer", "onCleared final save COMPLETED")
+                }
+            }
+        }
     }
 }

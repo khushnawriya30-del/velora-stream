@@ -30,7 +30,7 @@ export class AuthController {
   async register(@Body() dto: RegisterDto, @Res({ passthrough: true }) res: Response) {
     const result = await this.authService.register(dto);
     this.setRefreshTokenCookie(res, result.refreshToken);
-    return { accessToken: result.accessToken, user: result.user };
+    return { accessToken: result.accessToken, refreshToken: result.refreshToken, user: result.user };
   }
 
   @Post('login')
@@ -41,7 +41,7 @@ export class AuthController {
   async login(@Body() dto: LoginDto, @Res({ passthrough: true }) res: Response) {
     const result = await this.authService.login(dto);
     this.setRefreshTokenCookie(res, result.refreshToken);
-    return { accessToken: result.accessToken, user: result.user };
+    return { accessToken: result.accessToken, refreshToken: result.refreshToken, user: result.user };
   }
 
   @Get('google')
@@ -57,17 +57,17 @@ export class AuthController {
   async googleCallback(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
     const result = await this.authService.googleLogin(req.user);
     this.setRefreshTokenCookie(res, result.refreshToken);
-    return { accessToken: result.accessToken, user: result.user };
+    return { accessToken: result.accessToken, refreshToken: result.refreshToken, user: result.user };
   }
 
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Refresh access token using refresh token cookie' })
+  @ApiOperation({ summary: 'Refresh access token using refresh token (cookie or body)' })
   async refresh(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
-    const refreshToken = req.cookies?.refreshToken;
+    const refreshToken = req.cookies?.refreshToken || req.body?.refreshToken;
     const result = await this.authService.refreshToken(refreshToken);
     this.setRefreshTokenCookie(res, result.refreshToken);
-    return { accessToken: result.accessToken };
+    return { accessToken: result.accessToken, refreshToken: result.refreshToken };
   }
 
   @Post('forgot-password')

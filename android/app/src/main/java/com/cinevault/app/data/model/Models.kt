@@ -7,9 +7,13 @@ data class LoginRequest(val email: String, val password: String)
 data class RegisterRequest(val name: String, val email: String, val password: String)
 data class AuthResponse(
     val accessToken: String,
+    val refreshToken: String?,
     val user: UserDto
 )
-data class RefreshResponse(val accessToken: String)
+data class RefreshResponse(
+    val accessToken: String,
+    val refreshToken: String?,
+)
 data class ForgotPasswordRequest(val email: String)
 data class ResetPasswordRequest(val token: String, val password: String)
 data class MessageResponse(val message: String)
@@ -145,6 +149,36 @@ data class BannerDto(
             is Map<*, *> -> (contentId as Map<*, *>)["contentType"]?.toString()
             else -> null
         }
+
+    val releaseYear: Int?
+        get() = when (contentId) {
+            is Map<*, *> -> (contentId as Map<*, *>)["releaseYear"]?.let {
+                when (it) {
+                    is Number -> it.toInt()
+                    is String -> it.toIntOrNull()
+                    else -> null
+                }
+            }
+            else -> null
+        }
+
+    val contentRating: String?
+        get() = when (contentId) {
+            is Map<*, *> -> (contentId as Map<*, *>)["contentRating"]?.toString()
+            else -> null
+        }
+
+    val starRating: Double?
+        get() = when (contentId) {
+            is Map<*, *> -> (contentId as Map<*, *>)["starRating"]?.let {
+                when (it) {
+                    is Number -> it.toDouble()
+                    is String -> it.toDoubleOrNull()
+                    else -> null
+                }
+            }
+            else -> null
+        }
 }
 
 // Home Feed
@@ -222,7 +256,17 @@ data class UpdateProgressRequest(
 )
 
 // Watchlist
+data class WatchlistItemDto(
+    @SerializedName("_id") val id: String?,
+    val contentId: MovieDto,
+)
 data class WatchlistCheckResponse(val inWatchlist: Boolean)
+
+// Watch History paginated response
+data class WatchHistoryResponse(
+    val items: List<WatchProgressDto>,
+    val total: Int,
+)
 
 // Review
 data class ReviewDto(

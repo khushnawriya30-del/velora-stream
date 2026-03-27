@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.cinevault.app.data.local.SessionManager
 import com.cinevault.app.data.model.*
+import com.cinevault.app.data.repository.ContentRepository
 import com.cinevault.app.data.repository.ProfileRepository
 import com.cinevault.app.data.repository.WatchProgressRepository
 import com.cinevault.app.data.repository.WatchlistRepository
@@ -19,6 +20,7 @@ data class ProfileUiState(
     val activeProfile: ProfileDto? = null,
     val watchHistory: List<WatchProgressDto> = emptyList(),
     val watchlist: List<MovieDto> = emptyList(),
+    val likedMovies: List<MovieDto> = emptyList(),
     val userName: String = "",
     val userEmail: String = "",
 )
@@ -28,6 +30,7 @@ class ProfileViewModel @Inject constructor(
     private val profileRepository: ProfileRepository,
     private val watchProgressRepository: WatchProgressRepository,
     private val watchlistRepository: WatchlistRepository,
+    private val contentRepository: ContentRepository,
     private val sessionManager: SessionManager,
 ) : ViewModel() {
 
@@ -37,6 +40,7 @@ class ProfileViewModel @Inject constructor(
     init {
         loadProfiles()
         loadUserInfo()
+        loadLikedMovies()
     }
 
     private fun loadUserInfo() {
@@ -52,6 +56,20 @@ class ProfileViewModel @Inject constructor(
         }
     }
 
+    private fun loadLikedMovies() {
+        viewModelScope.launch {
+            sessionManager.likedMovieIds.collect { ids ->
+                val movies = ids.mapNotNull { id ->
+                    when (val r = contentRepository.getMovie(id)) {
+                        is Result.Success -> r.data
+                        else -> null
+                    }
+                }
+                _uiState.update { it.copy(likedMovies = movies) }
+            }
+        }
+    }
+
     fun loadProfiles() {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
@@ -62,7 +80,11 @@ class ProfileViewModel @Inject constructor(
                     _uiState.update {
                         it.copy(isLoading = false, profiles = result.data, activeProfile = active)
                     }
-                    active?.let { loadProfileContent(it.id) }
+                    // Persist the active profile selection so other ViewModels can use it
+                    active?.let {
+                        sessionManager.setActiveProfileId(it.id)
+                        loadProfileContent(it.id)
+                    }
                 }
                 is Result.Error -> _uiState.update { it.copy(isLoading = false, error = result.message) }
                 is Result.Loading -> {}

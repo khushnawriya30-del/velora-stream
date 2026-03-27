@@ -12,6 +12,7 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.PlayArrow
@@ -37,7 +38,6 @@ import coil.compose.AsyncImage
 import com.cinevault.app.data.model.BannerDto
 import com.cinevault.app.data.model.HomeSectionDto
 import com.cinevault.app.data.model.MovieDto
-import com.cinevault.app.data.model.WatchProgressDto
 import com.cinevault.app.ui.theme.CineVaultTheme
 import com.cinevault.app.ui.viewmodel.HomeViewModel
 import com.google.accompanist.swiperefresh.SwipeRefresh
@@ -52,6 +52,7 @@ fun HomeScreen(
     onSearchClick: () -> Unit,
     onNotificationsClick: () -> Unit = {},
     onSectionClick: ((HomeSectionDto) -> Unit)? = null,
+    onAddToWatchlist: ((String) -> Unit)? = null,
     viewModel: HomeViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -115,6 +116,7 @@ fun HomeScreen(
                         banner = if (uiState.tabBanners.isNotEmpty()) uiState.tabBanners[currentBannerIndex.coerceIn(0, (uiState.tabBanners.size - 1).coerceAtLeast(0))] else null,
                         onBannerClick = { contentId -> onMovieClick(contentId) },
                         onPlayClick = { contentId -> onPlayClick(contentId) },
+                        onAddToWatchlist = { contentId -> onAddToWatchlist?.invoke(contentId) },
                         bannerCount = uiState.tabBanners.size,
                         currentIndex = currentBannerIndex.coerceIn(0, (uiState.tabBanners.size - 1).coerceAtLeast(0)),
                     )
@@ -122,21 +124,7 @@ fun HomeScreen(
 
                 // ── Content based on selected tab ──
                 if (uiState.selectedTab == 0) {
-                    // HOME TAB — show continue watching + dynamic sections
-                    if (uiState.continueWatching.isNotEmpty()) {
-                        item {
-                            PremiumSectionHeader(
-                                title = "Continue Watching",
-                                onArrowClick = null
-                            )
-                        }
-                        item {
-                            ContinueWatchingRow(
-                                items = uiState.continueWatching,
-                                onItemClick = { onMovieClick(it) }
-                            )
-                        }
-                    }
+                    // HOME TAB — show dynamic sections
 
                     itemsIndexed(uiState.homeSections) { _, section ->
                         Column {
@@ -425,7 +413,7 @@ fun TopNavTabs(
 }
 
 // ═══════════════════════════════════════════════════════════════
-// HERO BANNER - fade edges, smaller, premium play button
+// HERO BANNER - cinematic style with title, info & action buttons
 // ═══════════════════════════════════════════════════════════════
 
 @Composable
@@ -433,6 +421,7 @@ fun SquareHeroBanner(
     banner: BannerDto?,
     onBannerClick: (String) -> Unit,
     onPlayClick: (String) -> Unit,
+    onAddToWatchlist: (String) -> Unit,
     bannerCount: Int,
     currentIndex: Int,
 ) {
@@ -445,11 +434,11 @@ fun SquareHeroBanner(
             .fillMaxWidth()
             .padding(vertical = 2.dp)
     ) {
-        // Banner container — NO rounded corners
+        // Banner container — wider aspect ratio for cinematic feel
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .aspectRatio(1.25f)
+                .aspectRatio(0.75f)
                 .background(CineVaultTheme.colors.surface)
                 .clickable { onBannerClick(movieId) },
         ) {
@@ -465,7 +454,7 @@ fun SquareHeroBanner(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(80.dp)
+                    .height(100.dp)
                     .align(Alignment.TopCenter)
                     .background(
                         Brush.verticalGradient(
@@ -478,17 +467,18 @@ fun SquareHeroBanner(
                     )
             )
 
-            // Bottom fade
+            // Bottom gradient — taller for text readability
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(100.dp)
+                    .fillMaxHeight(0.50f)
                     .align(Alignment.BottomCenter)
                     .background(
                         Brush.verticalGradient(
                             colors = listOf(
                                 Color.Transparent,
-                                CineVaultTheme.colors.background.copy(alpha = 0.5f),
+                                CineVaultTheme.colors.background.copy(alpha = 0.6f),
+                                CineVaultTheme.colors.background.copy(alpha = 0.9f),
                                 CineVaultTheme.colors.background,
                             )
                         )
@@ -499,13 +489,12 @@ fun SquareHeroBanner(
             Box(
                 modifier = Modifier
                     .fillMaxHeight()
-                    .width(50.dp)
+                    .width(40.dp)
                     .align(Alignment.CenterStart)
                     .background(
                         Brush.horizontalGradient(
                             colors = listOf(
-                                CineVaultTheme.colors.background,
-                                CineVaultTheme.colors.background.copy(alpha = 0.3f),
+                                CineVaultTheme.colors.background.copy(alpha = 0.6f),
                                 Color.Transparent,
                             )
                         )
@@ -516,58 +505,150 @@ fun SquareHeroBanner(
             Box(
                 modifier = Modifier
                     .fillMaxHeight()
-                    .width(50.dp)
+                    .width(40.dp)
                     .align(Alignment.CenterEnd)
                     .background(
                         Brush.horizontalGradient(
                             colors = listOf(
                                 Color.Transparent,
-                                CineVaultTheme.colors.background.copy(alpha = 0.3f),
-                                CineVaultTheme.colors.background,
+                                CineVaultTheme.colors.background.copy(alpha = 0.6f),
                             )
                         )
                     )
             )
 
-            // ── Premium Play Button at bottom center ──
-            Box(
+            // ── Bottom content: Title + Info + Buttons ──
+            Column(
                 modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .padding(bottom = 24.dp)
+                    .align(Alignment.BottomStart)
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp)
+                    .padding(bottom = 32.dp),
             ) {
-                Box(
-                    modifier = Modifier
-                        .width(150.dp)
-                        .height(44.dp)
-                        .clip(RoundedCornerShape(22.dp))
-                        .background(
-                            CineVaultTheme.colors.background.copy(alpha = 0.55f)
+                // Title — always show as text
+                if (banner.title != null) {
+                    Text(
+                        text = banner.title.uppercase(),
+                        fontSize = 26.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = Color.White,
+                        letterSpacing = 1.sp,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    Spacer(modifier = Modifier.height(6.dp))
+                }
+
+                // Movie info line: ⭐ 8.5 · 2020 · TV SERIES
+                val infoParts = mutableListOf<String>()
+                banner.starRating?.let { infoParts.add("%.1f".format(it)) }
+                banner.releaseYear?.let { infoParts.add(it.toString()) }
+                banner.contentType?.let {
+                    infoParts.add(it.replace("_", " ").uppercase())
+                }
+                banner.contentRating?.let { infoParts.add(it) }
+                if (infoParts.isNotEmpty()) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            Icons.Filled.Star,
+                            contentDescription = null,
+                            modifier = Modifier.size(14.dp),
+                            tint = CineVaultTheme.colors.accentGold,
                         )
-                        .border(
-                            width = 1.dp,
-                            color = Color.White.copy(alpha = 0.25f),
-                            shape = RoundedCornerShape(22.dp)
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = infoParts.joinToString("  •  "),
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = Color.White.copy(alpha = 0.85f),
                         )
-                        .clickable { onPlayClick(movieId) },
-                    contentAlignment = Alignment.Center
+                    }
+                    Spacer(modifier = Modifier.height(6.dp))
+                }
+
+                // Subtitle / tagline
+                val infoText = banner.subtitle ?: banner.tagline
+                if (infoText != null) {
+                    Text(
+                        text = infoText,
+                        fontSize = 13.sp,
+                        color = Color.White.copy(alpha = 0.85f),
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                        lineHeight = 18.sp,
+                    )
+                    Spacer(modifier = Modifier.height(6.dp))
+                }
+
+                // Genre tags
+                if (!banner.genreTags.isNullOrEmpty()) {
+                    Text(
+                        text = banner.genreTags.joinToString("  •  "),
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = CineVaultTheme.colors.accentGold.copy(alpha = 0.9f),
+                        letterSpacing = 0.8.sp,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    Spacer(modifier = Modifier.height(14.dp))
+                } else {
+                    Spacer(modifier = Modifier.height(10.dp))
+                }
+
+                // ── Action buttons ──
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Row(
-                        horizontalArrangement = Arrangement.Center,
-                        verticalAlignment = Alignment.CenterVertically,
+                    // Play button
+                    Button(
+                        onClick = { onPlayClick(movieId) },
+                        modifier = Modifier.height(42.dp),
+                        shape = RoundedCornerShape(6.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color.White,
+                        ),
+                        contentPadding = PaddingValues(horizontal = 20.dp),
                     ) {
                         Icon(
                             Icons.Filled.PlayArrow,
                             contentDescription = "Play",
                             modifier = Modifier.size(22.dp),
-                            tint = Color.White
+                            tint = Color.Black,
                         )
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
-                            "PLAY",
+                            "Play",
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.Black,
+                        )
+                    }
+
+                    // My List button
+                    OutlinedButton(
+                        onClick = { onAddToWatchlist(movieId) },
+                        modifier = Modifier.height(42.dp),
+                        shape = RoundedCornerShape(6.dp),
+                        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.6f)),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            containerColor = Color.White.copy(alpha = 0.1f),
+                        ),
+                        contentPadding = PaddingValues(horizontal = 16.dp),
+                    ) {
+                        Icon(
+                            Icons.Filled.Add,
+                            contentDescription = "My List",
+                            modifier = Modifier.size(20.dp),
+                            tint = Color.White,
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            "My List",
                             fontSize = 14.sp,
                             fontWeight = FontWeight.SemiBold,
                             color = Color.White,
-                            letterSpacing = 1.5.sp
                         )
                     }
                 }
@@ -578,7 +659,7 @@ fun SquareHeroBanner(
                 Row(
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
-                        .padding(bottom = 6.dp),
+                        .padding(bottom = 8.dp),
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     repeat(bannerCount.coerceAtMost(5)) { index ->
@@ -848,115 +929,5 @@ fun PremiumMovieCard(
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
         )
-    }
-}
-
-// ═══════════════════════════════════════════════════════════════
-// CONTINUE WATCHING ROW
-// ═══════════════════════════════════════════════════════════════
-
-@Composable
-fun ContinueWatchingRow(
-    items: List<WatchProgressDto>,
-    onItemClick: (String) -> Unit,
-) {
-    LazyRow(
-        contentPadding = PaddingValues(horizontal = 20.dp),
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        items(items.size) { index ->
-            val progress = items[index]
-            ContinueWatchingCardItem(
-                progress = progress,
-                onClick = { onItemClick(progress.contentId) }
-            )
-        }
-    }
-}
-
-@Composable
-fun ContinueWatchingCardItem(
-    progress: WatchProgressDto,
-    onClick: () -> Unit,
-) {
-    Column(
-        modifier = Modifier
-            .width(170.dp)
-            .clickable(onClick = onClick)
-    ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(100.dp)
-                .clip(RoundedCornerShape(10.dp))
-                .background(CineVaultTheme.colors.surface)
-        ) {
-            AsyncImage(
-                model = progress.thumbnailUrl,
-                contentDescription = null,
-                modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Crop
-            )
-
-            // Play overlay
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(Color.Black.copy(alpha = 0.3f)),
-                contentAlignment = Alignment.Center
-            ) {
-                Surface(
-                    modifier = Modifier.size(36.dp),
-                    shape = CircleShape,
-                    color = CineVaultTheme.colors.accentGold.copy(alpha = 0.9f),
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Icon(
-                            Icons.Filled.PlayArrow,
-                            contentDescription = "Continue",
-                            modifier = Modifier.size(20.dp),
-                            tint = CineVaultTheme.colors.background
-                        )
-                    }
-                }
-            }
-
-            // Progress bar
-            val fraction = if (progress.duration > 0) progress.position.toFloat() / progress.duration else 0f
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(3.dp)
-                    .align(Alignment.BottomCenter)
-                    .background(CineVaultTheme.colors.surface.copy(alpha = 0.5f))
-            ) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxHeight()
-                        .fillMaxWidth(fraction.coerceIn(0f, 1f))
-                        .background(CineVaultTheme.colors.accentGold)
-                )
-            }
-        }
-
-        Spacer(Modifier.height(6.dp))
-        Text(
-            progress.contentTitle ?: progress.episodeTitle ?: "",
-            fontSize = 12.sp,
-            fontWeight = FontWeight.Medium,
-            color = CineVaultTheme.colors.textPrimary,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
-
-        // Time remaining
-        val remainingMin = ((progress.duration - progress.position) / 60).coerceAtLeast(0)
-        if (remainingMin > 0) {
-            Text(
-                "${remainingMin} min left",
-                fontSize = 10.sp,
-                color = CineVaultTheme.colors.textMuted,
-            )
-        }
     }
 }

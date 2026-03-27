@@ -46,7 +46,7 @@ export class BannersService {
       // Populate only valid banners — only include published movies
       const populatedBanners = await this.bannerModel.populate(validBanners, {
         path: 'contentId',
-        select: 'title contentType genres contentRating duration releaseYear',
+        select: 'title contentType genres contentRating duration releaseYear starRating',
         match: { status: ContentStatus.PUBLISHED },
       });
 
@@ -64,7 +64,7 @@ export class BannersService {
         .find({ status: ContentStatus.PUBLISHED })
         .sort({ createdAt: -1 })
         .limit(5)
-        .select('title synopsis bannerUrl posterUrl logoUrl genres contentType contentRating duration releaseYear');
+        .select('title synopsis bannerUrl posterUrl logoUrl genres contentType contentRating duration releaseYear starRating');
 
       return recentMovies.map((movie, index) => ({
         _id: `auto_${movie._id}`,

@@ -7,9 +7,11 @@ import com.cinevault.app.data.local.SessionManager
 import com.cinevault.app.data.model.*
 import com.cinevault.app.data.repository.ContentRepository
 import com.cinevault.app.data.repository.ReviewRepository
+import com.cinevault.app.data.repository.WatchProgressRepository
 import com.cinevault.app.data.repository.WatchlistRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.async
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -22,7 +24,9 @@ data class MovieDetailUiState(
     val seasons: List<SeasonDto> = emptyList(),
     val reviews: List<ReviewDto> = emptyList(),
     val isInWatchlist: Boolean = false,
+    val isLiked: Boolean = false,
     val selectedTab: Int = 0,
+    val watchProgress: WatchProgressDto? = null,
 )
 
 @HiltViewModel
@@ -31,6 +35,7 @@ class MovieDetailViewModel @Inject constructor(
     private val contentRepository: ContentRepository,
     private val watchlistRepository: WatchlistRepository,
     private val reviewRepository: ReviewRepository,
+    private val watchProgressRepository: WatchProgressRepository,
     private val sessionManager: SessionManager,
 ) : ViewModel() {
 
@@ -40,7 +45,24 @@ class MovieDetailViewModel @Inject constructor(
     val uiState: StateFlow<MovieDetailUiState> = _uiState.asStateFlow()
 
     init {
-        if (movieId.isNotEmpty()) loadMovieDetail()
+        if (movieId.isNotEmpty()) {
+            loadMovieDetail()
+            observeLikedState()
+        }
+    }
+
+    private fun observeLikedState() {
+        viewModelScope.launch {
+            sessionManager.likedMovieIds.collect { ids ->
+                _uiState.update { it.copy(isLiked = movieId in ids) }
+            }
+        }
+    }
+
+    fun toggleLike() {
+        viewModelScope.launch {
+            sessionManager.toggleLikedMovie(movieId)
+        }
     }
 
     private fun loadMovieDetail() {
@@ -54,6 +76,9 @@ class MovieDetailViewModel @Inject constructor(
             val profileId = sessionManager.activeProfileId.firstOrNull()
             val watchlistDeferred = if (profileId != null) {
                 async { watchlistRepository.isInWatchlist(profileId, movieId) }
+            } else null
+            val watchProgressDeferred = if (profileId != null) {
+                async { watchProgressRepository.getProgress(profileId, movieId) }
             } else null
 
             when (val movieResult = movieDeferred.await()) {
@@ -74,6 +99,13 @@ class MovieDetailViewModel @Inject constructor(
                         }
                     } ?: false
 
+                    val watchProgress = watchProgressDeferred?.let {
+                        when (val r = it.await()) {
+                            is Result.Success -> r.data
+                            else -> null
+                        }
+                    }
+
                     // Load seasons if it's a series
                     val seasons = if (movie.contentType == "series") {
                         when (val r = contentRepository.getSeasons(movieId)) {
@@ -90,6 +122,7 @@ class MovieDetailViewModel @Inject constructor(
                             seasons = seasons,
                             reviews = reviews,
                             isInWatchlist = inWatchlist,
+                            watchProgress = watchProgress,
                         )
                     }
                 }
@@ -131,6 +164,18 @@ class MovieDetailViewModel @Inject constructor(
 
     fun selectTab(index: Int) {
         _uiState.update { it.copy(selectedTab = index) }
+    }
+
+    fun refreshProgress() {
+        viewModelScope.launch {
+            // Small delay to let the player's final save API call complete before we fetch
+            delay(2_000)
+            val profileId = sessionManager.activeProfileId.firstOrNull() ?: return@launch
+            when (val r = watchProgressRepository.getProgress(profileId, movieId)) {
+                is Result.Success -> _uiState.update { it.copy(watchProgress = r.data) }
+                else -> {}
+            }
+        }
     }
 
     fun clearError() {

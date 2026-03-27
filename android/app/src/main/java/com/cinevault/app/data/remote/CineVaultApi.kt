@@ -14,7 +14,7 @@ interface CineVaultApi {
     suspend fun login(@Body request: LoginRequest): Response<AuthResponse>
 
     @POST("auth/refresh")
-    suspend fun refreshToken(): Response<RefreshResponse>
+    suspend fun refreshToken(@Body body: Map<String, String>): Response<RefreshResponse>
 
     @POST("auth/forgot-password")
     suspend fun forgotPassword(@Body request: ForgotPasswordRequest): Response<MessageResponse>
@@ -141,7 +141,7 @@ interface CineVaultApi {
         @Header("x-profile-id") profileId: String,
         @Query("page") page: Int = 1,
         @Query("limit") limit: Int = 20,
-    ): Response<Map<String, Any>>
+    ): Response<WatchHistoryResponse>
 
     @GET("watch-progress/{contentId}")
     suspend fun getProgress(
@@ -153,7 +153,7 @@ interface CineVaultApi {
     @GET("watchlist")
     suspend fun getWatchlist(
         @Header("x-profile-id") profileId: String,
-    ): Response<List<Any>>
+    ): Response<List<WatchlistItemDto>>
 
     @POST("watchlist/{contentId}")
     suspend fun addToWatchlist(

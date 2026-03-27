@@ -93,13 +93,16 @@ export default function MovieFormPage() {
 
   const [form, setForm] = useState({
     title: '',
+    alternateTitle: '',
     synopsis: '',
     posterUrl: '',
     bannerUrl: '',
+    logoUrl: '',
     trailerUrl: '',
+    cbfcCertificateUrl: '',
     genres: [] as string[],
-    contentType: 'movie' as 'movie' | 'series' | 'documentary' | 'anime' | 'web_series' | 'tv_show' | 'short_film',
-    contentRating: '',
+    contentType: 'movie' as 'movie' | 'documentary' | 'anime' | 'web_series' | 'tv_show' | 'short_film',
+    contentRating: 'UA',
     releaseYear: new Date().getFullYear(),
     duration: 0,
     status: 'draft' as 'draft' | 'published' | 'archived',
@@ -108,8 +111,15 @@ export default function MovieFormPage() {
     tags: [] as string[],
     starRating: 0,
     country: '',
+    director: '',
+    studio: '',
     videoQuality: '',
     languages: [] as string[],
+    rankingLabel: '',
+    isFeatured: false,
+    platformOrigin: '',
+    imdbId: '',
+    tmdbId: '',
   });
 
   const [durationHours, setDurationHours] = useState(0);
@@ -136,13 +146,16 @@ export default function MovieFormPage() {
       setDurationMinutes(minutes);
       setForm({
         title: movie.title,
+        alternateTitle: movie.alternateTitle ?? '',
         synopsis: movie.synopsis ?? '',
         posterUrl: movie.posterUrl,
         bannerUrl: movie.bannerUrl ?? '',
+        logoUrl: movie.logoUrl ?? '',
         trailerUrl: movie.trailerUrl ?? '',
+        cbfcCertificateUrl: movie.cbfcCertificateUrl ?? '',
         genres: movie.genres,
         contentType: movie.contentType,
-        contentRating: movie.contentRating ?? '',
+        contentRating: movie.contentRating ?? 'UA',
         releaseYear: movie.releaseYear,
         duration: movie.duration ?? 0,
         status: movie.status,
@@ -153,10 +166,17 @@ export default function MovieFormPage() {
           label: src.label || '',
         })),
         tags: movie.tags,
-        starRating: (movie as any).starRating ?? 0,
-        country: (movie as any).country ?? '',
-        videoQuality: (movie as any).videoQuality ?? '',
-        languages: (movie as any).languages ?? [],
+        starRating: movie.starRating ?? 0,
+        country: movie.country ?? '',
+        director: movie.director ?? '',
+        studio: movie.studio ?? '',
+        videoQuality: movie.videoQuality ?? '',
+        languages: movie.languages ?? [],
+        rankingLabel: movie.rankingLabel ?? '',
+        isFeatured: movie.isFeatured ?? false,
+        platformOrigin: movie.platformOrigin ?? '',
+        imdbId: movie.imdbId ?? '',
+        tmdbId: movie.tmdbId ?? '',
       });
     }
   }, [movie]);
@@ -255,6 +275,19 @@ export default function MovieFormPage() {
               />
             </div>
             <div>
+              <label className="block text-sm text-text-secondary mb-1">Alternate Title</label>
+              <input
+                type="text"
+                value={form.alternateTitle}
+                onChange={(e) => setForm({ ...form, alternateTitle: e.target.value })}
+                placeholder="Original or alternate language title"
+                className="w-full bg-surface-light border border-border rounded-xl px-4 py-2.5 text-text-primary focus:outline-none focus:border-gold"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
               <label className="block text-sm text-text-secondary mb-1">Content Type *</label>
               <select
                 value={form.contentType}
@@ -268,6 +301,16 @@ export default function MovieFormPage() {
                 <option value="anime">Anime</option>
                 <option value="short_film">Short Film</option>
               </select>
+            </div>
+            <div>
+              <label className="block text-sm text-text-secondary mb-1">Director</label>
+              <input
+                type="text"
+                value={form.director}
+                onChange={(e) => setForm({ ...form, director: e.target.value })}
+                placeholder="Director name"
+                className="w-full bg-surface-light border border-border rounded-xl px-4 py-2.5 text-text-primary focus:outline-none focus:border-gold"
+              />
             </div>
           </div>
 
@@ -373,6 +416,19 @@ export default function MovieFormPage() {
               />
             </div>
             <div>
+              <label className="block text-sm text-text-secondary mb-1">Studio / Production</label>
+              <input
+                type="text"
+                value={form.studio}
+                onChange={(e) => setForm({ ...form, studio: e.target.value })}
+                placeholder="e.g. Dharma Productions"
+                className="w-full bg-surface-light border border-border rounded-xl px-4 py-2.5 text-text-primary focus:outline-none focus:border-gold"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
               <label className="block text-sm text-text-secondary mb-1">Video Quality</label>
               <select
                 value={form.videoQuality}
@@ -387,6 +443,16 @@ export default function MovieFormPage() {
                 <option value="4K">4K</option>
                 <option value="UHD">UHD</option>
               </select>
+            </div>
+            <div>
+              <label className="block text-sm text-text-secondary mb-1">Platform Origin</label>
+              <input
+                type="text"
+                value={form.platformOrigin}
+                onChange={(e) => setForm({ ...form, platformOrigin: e.target.value })}
+                placeholder="e.g. Netflix, Amazon Prime, Original"
+                className="w-full bg-surface-light border border-border rounded-xl px-4 py-2.5 text-text-primary focus:outline-none focus:border-gold"
+              />
             </div>
           </div>
         </section>
@@ -415,14 +481,89 @@ export default function MovieFormPage() {
               />
             </div>
           </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm text-text-secondary mb-1">Logo URL (transparent PNG)</label>
+              <input
+                type="url"
+                value={form.logoUrl}
+                onChange={(e) => setForm({ ...form, logoUrl: e.target.value })}
+                placeholder="Title logo with transparent background"
+                className="w-full bg-surface-light border border-border rounded-xl px-4 py-2.5 text-text-primary focus:outline-none focus:border-gold"
+              />
+            </div>
+            <div>
+              <label className="block text-sm text-text-secondary mb-1">CBFC Certificate URL</label>
+              <input
+                type="url"
+                value={form.cbfcCertificateUrl}
+                onChange={(e) => setForm({ ...form, cbfcCertificateUrl: e.target.value })}
+                placeholder="Link to CBFC certificate document"
+                className="w-full bg-surface-light border border-border rounded-xl px-4 py-2.5 text-text-primary focus:outline-none focus:border-gold"
+              />
+            </div>
+          </div>
           <div>
-            <label className="block text-sm text-text-secondary mb-1">Trailer URL</label>
+            <label className="block text-sm text-text-secondary mb-1">Trailer URL (Google Drive share link)</label>
             <input
               type="url"
               value={form.trailerUrl}
               onChange={(e) => setForm({ ...form, trailerUrl: e.target.value })}
+              placeholder="https://drive.google.com/file/d/.../view?usp=sharing"
               className="w-full bg-surface-light border border-border rounded-xl px-4 py-2.5 text-text-primary focus:outline-none focus:border-gold"
             />
+            <p className="text-xs text-text-secondary mt-1">Paste the Google Drive share link. The app will auto-convert it for playback.</p>
+          </div>
+        </section>
+
+        {/* Discovery & Ranking */}
+        <section className="bg-surface border border-border rounded-xl p-6 space-y-4">
+          <h2 className="text-lg font-medium">Discovery & Ranking</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm text-text-secondary mb-1">Ranking Label</label>
+              <input
+                type="text"
+                value={form.rankingLabel}
+                onChange={(e) => setForm({ ...form, rankingLabel: e.target.value })}
+                placeholder="e.g. Thriller #3 in India Today"
+                className="w-full bg-surface-light border border-border rounded-xl px-4 py-2.5 text-text-primary focus:outline-none focus:border-gold"
+              />
+            </div>
+            <div className="flex items-center gap-3 pt-6">
+              <input
+                type="checkbox"
+                id="isFeatured"
+                checked={form.isFeatured}
+                onChange={(e) => setForm({ ...form, isFeatured: e.target.checked })}
+                className="w-4 h-4 accent-gold"
+              />
+              <label htmlFor="isFeatured" className="text-sm text-text-primary cursor-pointer">
+                Feature this content (show in hero banners)
+              </label>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm text-text-secondary mb-1">IMDb ID</label>
+              <input
+                type="text"
+                value={form.imdbId}
+                onChange={(e) => setForm({ ...form, imdbId: e.target.value })}
+                placeholder="e.g. tt1234567"
+                className="w-full bg-surface-light border border-border rounded-xl px-4 py-2.5 text-text-primary focus:outline-none focus:border-gold"
+              />
+            </div>
+            <div>
+              <label className="block text-sm text-text-secondary mb-1">TMDB ID</label>
+              <input
+                type="text"
+                value={form.tmdbId}
+                onChange={(e) => setForm({ ...form, tmdbId: e.target.value })}
+                placeholder="e.g. 123456"
+                className="w-full bg-surface-light border border-border rounded-xl px-4 py-2.5 text-text-primary focus:outline-none focus:border-gold"
+              />
+            </div>
           </div>
         </section>
 

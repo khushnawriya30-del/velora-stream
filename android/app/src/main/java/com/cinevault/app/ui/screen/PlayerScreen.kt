@@ -3,7 +3,9 @@ package com.cinevault.app.ui.screen
 import android.app.Activity
 import android.content.pm.ActivityInfo
 import androidx.compose.animation.*
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
@@ -17,6 +19,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -27,6 +30,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.hilt.navigation.compose.hiltViewModel
 import android.util.Log
+import androidx.activity.compose.BackHandler
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackException
@@ -92,10 +96,24 @@ fun PlayerScreen(
                     else -> "UNKNOWN"
                 }
                 Log.d("CineVaultPlayer", "Playback state: $stateName")
+                // Mark as complete when video finishes
+                if (playbackState == Player.STATE_ENDED) {
+                    val dur = exoPlayer.duration.coerceAtLeast(1)
+                    viewModel.saveExplicitProgress(dur, dur)
+                }
             }
         }
         exoPlayer.addListener(listener)
         onDispose { exoPlayer.removeListener(listener) }
+    }
+
+    // System back button — save progress then navigate
+    BackHandler {
+        viewModel.saveExplicitProgress(
+            exoPlayer.currentPosition,
+            exoPlayer.duration.coerceAtLeast(0)
+        )
+        onBack()
     }
 
     // Apply quality constraints via track selector
@@ -112,11 +130,13 @@ fun PlayerScreen(
                 "1080p" -> 1080
                 "720p" -> 720
                 "480p" -> 480
+                "360p" -> 360
                 else -> Int.MAX_VALUE
             }
             trackSelector.parameters = trackSelector.buildUponParameters()
                 .setMaxVideoSize(Int.MAX_VALUE, maxHeight)
                 .setForceHighestSupportedBitrate(false)
+                .setForceLowestBitrate(quality == "360p")
                 .build()
         }
     }
@@ -166,16 +186,17 @@ fun PlayerScreen(
         exoPlayer.setPlaybackSpeed(speed)
     }
 
-    // Track position and discover audio tracks
+    // Track position ALWAYS (not just when playing) — captures paused position too
     var audioTracks by remember { mutableStateOf<List<Pair<String, Int>>>(emptyList()) }
     var selectedAudioIndex by remember { mutableIntStateOf(0) }
 
     LaunchedEffect(exoPlayer) {
         while (true) {
             delay(1000)
-            if (exoPlayer.isPlaying) {
-                viewModel.onPositionChange(exoPlayer.currentPosition, exoPlayer.duration.coerceAtLeast(0))
-            }
+            val dur = exoPlayer.duration.coerceAtLeast(0)
+            val pos = exoPlayer.currentPosition
+            // Always update position regardless of play/pause state
+            if (dur > 0) viewModel.onPositionChange(pos, dur)
             viewModel.onPlaybackStateChange(exoPlayer.isPlaying)
 
             // Discover audio tracks with proper language names
@@ -205,10 +226,13 @@ fun PlayerScreen(
         }
     }
 
-    // Save progress on leave
+    // Save progress on leave — use real ExoPlayer values, not stale ViewModel state
     DisposableEffect(Unit) {
         onDispose {
-            viewModel.saveProgressNow()
+            viewModel.saveExplicitProgress(
+                exoPlayer.currentPosition,
+                exoPlayer.duration.coerceAtLeast(0)
+            )
             exoPlayer.release()
         }
     }
@@ -351,16 +375,19 @@ fun PlayerScreen(
                         .fillMaxSize()
                         .background(Color.Black.copy(alpha = 0.4f)),
                 ) {
-                    // Top bar
+                    // Top bar — positioned higher with proper alignment
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
                             .statusBarsPadding()
-                            .padding(horizontal = 8.dp, vertical = 8.dp),
+                            .padding(horizontal = 4.dp, vertical = 4.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         IconButton(onClick = {
-                            viewModel.saveProgressNow()
+                            viewModel.saveExplicitProgress(
+                                exoPlayer.currentPosition,
+                                exoPlayer.duration.coerceAtLeast(0)
+                            )
                             onBack()
                         }) {
                             Icon(
@@ -369,119 +396,56 @@ fun PlayerScreen(
                                 tint = Color.White,
                             )
                         }
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                uiState.movie?.title ?: "",
-                                style = CineVaultTheme.typography.body,
-                                color = Color.White,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                            )
-                        }
-                        // Settings dropdown
+                        Text(
+                            uiState.movie?.title ?: "",
+                            style = CineVaultTheme.typography.body,
+                            color = Color.White,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f).padding(horizontal = 8.dp),
+                        )
+                        // Settings button
                         var showSettings by remember { mutableStateOf(false) }
-                        Box {
-                            IconButton(onClick = { showSettings = true }) {
-                                Icon(Icons.Filled.Settings, contentDescription = "Settings", tint = Color.White)
-                            }
-                            DropdownMenu(
-                                expanded = showSettings,
-                                onDismissRequest = { showSettings = false },
-                            ) {
-                                // Quality section
-                                Text("Quality", modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp), style = CineVaultTheme.typography.label)
-                                if (uiState.isAdaptive) {
-                                    // HLS or multiple sources — allow switching
-                                    uiState.availableQualities.forEach { quality ->
-                                        val displayText = if (quality == "auto") autoQualityLabel else quality
-                                        DropdownMenuItem(
-                                            text = { Text(displayText) },
-                                            onClick = {
-                                                viewModel.setQuality(quality)
-                                                showSettings = false
-                                            },
-                                            leadingIcon = {
-                                                if (uiState.selectedQuality == quality) {
-                                                    Icon(Icons.Filled.Check, contentDescription = null, modifier = Modifier.size(16.dp))
-                                                }
-                                            },
-                                        )
-                                    }
-                                } else {
-                                    // Single file — show detected quality, no switching
-                                    val detectedQuality = autoQualityLabel.replace("Auto", "").trim().let {
-                                        if (it.startsWith("(") && it.endsWith(")")) it.substring(1, it.length - 1) else it
-                                    }.ifEmpty { uiState.selectedQuality }
-                                    DropdownMenuItem(
-                                        text = { Text("$detectedQuality (Original)") },
-                                        onClick = { showSettings = false },
-                                        leadingIcon = { Icon(Icons.Filled.Check, contentDescription = null, modifier = Modifier.size(16.dp)) },
-                                    )
-                                    DropdownMenuItem(
-                                        text = {
-                                            Text(
-                                                "Quality switching requires HLS",
-                                                fontSize = 11.sp,
-                                                color = Color.White.copy(alpha = 0.5f),
-                                            )
-                                        },
-                                        onClick = {},
-                                        enabled = false,
-                                    )
-                                }
-                                @Suppress("DEPRECATION")
-                                Divider()
+                        IconButton(onClick = { showSettings = true }) {
+                            Icon(Icons.Filled.Settings, contentDescription = "Settings", tint = Color.White)
+                        }
 
-                                // Audio tracks section
-                                if (audioTracks.size > 1) {
-                                    Text("Audio Language", modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp), style = CineVaultTheme.typography.label)
-                                    audioTracks.forEachIndexed { index, (trackName, trackIndex) ->
-                                        DropdownMenuItem(
-                                            text = { Text(trackName) },
-                                            onClick = {
-                                                selectedAudioIndex = index
-                                                val tracks = exoPlayer.currentTracks
-                                                for (group in tracks.groups) {
-                                                    if (group.type == C.TRACK_TYPE_AUDIO) {
-                                                        exoPlayer.trackSelectionParameters = exoPlayer.trackSelectionParameters
-                                                            .buildUpon()
-                                                            .setOverrideForType(
-                                                                TrackSelectionOverride(group.mediaTrackGroup, listOf(trackIndex))
-                                                            )
-                                                            .build()
-                                                        break
-                                                    }
-                                                }
-                                                showSettings = false
-                                            },
-                                            leadingIcon = {
-                                                if (selectedAudioIndex == index) {
-                                                    Icon(Icons.Filled.Check, contentDescription = null, modifier = Modifier.size(16.dp))
-                                                }
-                                            },
-                                        )
+                        // Premium Settings Dialog
+                        if (showSettings) {
+                            PremiumSettingsSheet(
+                                isAdaptive = uiState.isAdaptive,
+                                availableQualities = uiState.availableQualities,
+                                selectedQuality = uiState.selectedQuality,
+                                autoQualityLabel = autoQualityLabel,
+                                audioTracks = audioTracks,
+                                selectedAudioIndex = selectedAudioIndex,
+                                playbackSpeed = uiState.playbackSpeed,
+                                onQualitySelected = { quality ->
+                                    viewModel.setQuality(quality)
+                                    showSettings = false
+                                },
+                                onAudioSelected = { index, trackIndex ->
+                                    selectedAudioIndex = index
+                                    val tracks = exoPlayer.currentTracks
+                                    for (group in tracks.groups) {
+                                        if (group.type == C.TRACK_TYPE_AUDIO) {
+                                            exoPlayer.trackSelectionParameters = exoPlayer.trackSelectionParameters
+                                                .buildUpon()
+                                                .setOverrideForType(
+                                                    TrackSelectionOverride(group.mediaTrackGroup, listOf(trackIndex))
+                                                )
+                                                .build()
+                                            break
+                                        }
                                     }
-                                    @Suppress("DEPRECATION")
-                                    Divider()
-                                }
-
-                                // Speed section
-                                Text("Speed", modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp), style = CineVaultTheme.typography.label)
-                                listOf(0.5f, 0.75f, 1.0f, 1.25f, 1.5f, 2.0f).forEach { speed ->
-                                    DropdownMenuItem(
-                                        text = { Text("${speed}x") },
-                                        onClick = {
-                                            viewModel.setPlaybackSpeed(speed)
-                                            showSettings = false
-                                        },
-                                        leadingIcon = {
-                                            if (uiState.playbackSpeed == speed) {
-                                                Icon(Icons.Filled.Check, contentDescription = null, modifier = Modifier.size(16.dp))
-                                            }
-                                        },
-                                    )
-                                }
-                            }
+                                    showSettings = false
+                                },
+                                onSpeedSelected = { speed ->
+                                    viewModel.setPlaybackSpeed(speed)
+                                    showSettings = false
+                                },
+                                onDismiss = { showSettings = false },
+                            )
                         }
                     }
 
@@ -581,4 +545,161 @@ private fun formatDuration(ms: Long): String {
     val seconds = totalSeconds % 60
     return if (hours > 0) String.format("%d:%02d:%02d", hours, minutes, seconds)
     else String.format("%d:%02d", minutes, seconds)
+}
+
+// ── Premium Settings Sheet ──
+
+@Composable
+private fun PremiumSettingsSheet(
+    isAdaptive: Boolean,
+    availableQualities: List<String>,
+    selectedQuality: String,
+    autoQualityLabel: String,
+    audioTracks: List<Pair<String, Int>>,
+    selectedAudioIndex: Int,
+    playbackSpeed: Float,
+    onQualitySelected: (String) -> Unit,
+    onAudioSelected: (index: Int, trackIndex: Int) -> Unit,
+    onSpeedSelected: (Float) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = Color(0xFF1A1A1A),
+        shape = RoundedCornerShape(20.dp),
+        title = {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    "Settings",
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White,
+                )
+                IconButton(onClick = onDismiss, modifier = Modifier.size(32.dp)) {
+                    Icon(Icons.Filled.Close, "Close", tint = Color.White.copy(alpha = 0.7f), modifier = Modifier.size(20.dp))
+                }
+            }
+        },
+        text = {
+            Column(modifier = Modifier.fillMaxWidth()) {
+                // Quality Section
+                SettingsSectionCard(title = "Quality", icon = Icons.Filled.HighQuality) {
+                    if (isAdaptive) {
+                        availableQualities.forEach { quality ->
+                            val displayText = if (quality == "auto") autoQualityLabel else quality
+                            SettingsOptionRow(
+                                text = displayText,
+                                isSelected = selectedQuality == quality,
+                                onClick = { onQualitySelected(quality) }
+                            )
+                        }
+                    } else {
+                        val detectedQuality = autoQualityLabel.replace("Auto", "").trim().let {
+                            if (it.startsWith("(") && it.endsWith(")")) it.substring(1, it.length - 1) else it
+                        }.ifEmpty { selectedQuality }
+                        SettingsOptionRow(
+                            text = "$detectedQuality (Original)",
+                            isSelected = true,
+                            onClick = onDismiss
+                        )
+                    }
+                }
+
+                if (audioTracks.size > 1) {
+                    Spacer(modifier = Modifier.height(12.dp))
+                    SettingsSectionCard(title = "Audio", icon = Icons.Filled.Audiotrack) {
+                        audioTracks.forEachIndexed { index, (trackName, trackIndex) ->
+                            SettingsOptionRow(
+                                text = trackName,
+                                isSelected = selectedAudioIndex == index,
+                                onClick = { onAudioSelected(index, trackIndex) }
+                            )
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // Speed Section
+                SettingsSectionCard(title = "Speed", icon = Icons.Filled.Speed) {
+                    listOf(0.5f, 0.75f, 1.0f, 1.25f, 1.5f, 2.0f).forEach { speed ->
+                        SettingsOptionRow(
+                            text = if (speed == 1.0f) "Normal" else "${speed}x",
+                            isSelected = playbackSpeed == speed,
+                            onClick = { onSpeedSelected(speed) }
+                        )
+                    }
+                }
+            }
+        },
+        confirmButton = {},
+    )
+}
+
+@Composable
+private fun SettingsSectionCard(
+    title: String,
+    icon: ImageVector,
+    content: @Composable () -> Unit,
+) {
+    Surface(
+        shape = RoundedCornerShape(14.dp),
+        color = Color.White.copy(alpha = 0.06f),
+        border = BorderStroke(0.5.dp, Color.White.copy(alpha = 0.08f)),
+    ) {
+        Column(modifier = Modifier.padding(12.dp)) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.padding(bottom = 8.dp)
+            ) {
+                Icon(icon, title, tint = Color(0xFFF5A623), modifier = Modifier.size(18.dp))
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    title,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = Color(0xFFF5A623),
+                    letterSpacing = 0.5.sp
+                )
+            }
+            content()
+        }
+    }
+}
+
+@Composable
+private fun SettingsOptionRow(
+    text: String,
+    isSelected: Boolean,
+    onClick: () -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(8.dp))
+            .background(if (isSelected) Color(0xFFF5A623).copy(alpha = 0.1f) else Color.Transparent)
+            .clickable(onClick = onClick)
+            .padding(horizontal = 12.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween,
+    ) {
+        Text(
+            text,
+            fontSize = 13.sp,
+            color = if (isSelected) Color(0xFFF5A623) else Color.White.copy(alpha = 0.8f),
+            fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
+        )
+        if (isSelected) {
+            Icon(
+                Icons.Filled.CheckCircle,
+                contentDescription = null,
+                tint = Color(0xFFF5A623),
+                modifier = Modifier.size(18.dp)
+            )
+        }
+    }
 }
