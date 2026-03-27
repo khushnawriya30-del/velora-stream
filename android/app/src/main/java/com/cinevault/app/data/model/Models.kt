@@ -68,6 +68,7 @@ data class MovieDto(
     val cbfcCertificateUrl: String?,
     val streamingSources: List<StreamingSourceDto>?,
     val rating: Double?,
+    val starRating: Double?,
     val voteCount: Int?,
     val viewCount: Int?,
     val popularityScore: Double?,
@@ -75,12 +76,23 @@ data class MovieDto(
     val platformOrigin: String?,
     val isFeatured: Boolean?,
     val rankingLabel: String?,
+    val videoQuality: String?,
+    val hlsUrl: String?,
     val createdAt: String?,
     val updatedAt: String?
 ) {
     val averageRating: Double get() = rating ?: 0.0
     val backdropUrl: String? get() = bannerUrl
     val description: String? get() = synopsis
+
+    val languageLabel: String?
+        get() {
+            val langs = languages ?: return null
+            if (langs.isEmpty()) return null
+            if (langs.size >= 3) return "MULTILINGUAL"
+            if (langs.size == 2) return "DUAL AUDIO"
+            return langs.first().uppercase()
+        }
 }
 
 data class CastMemberDto(
@@ -117,7 +129,22 @@ data class BannerDto(
     val displayOrder: Int,
     val isActive: Boolean
 ) {
-    val contentIdString: String? get() = contentId as? String
+    /** Extract movie ID from contentId which can be:
+     *  - a plain String (unpopulated ObjectId)
+     *  - a populated Map with "_id" key (when backend populates the ref)
+     */
+    val contentIdString: String?
+        get() = when (contentId) {
+            is String -> contentId
+            is Map<*, *> -> (contentId as Map<*, *>)["_id"]?.toString()
+            else -> null
+        }
+
+    val contentType: String?
+        get() = when (contentId) {
+            is Map<*, *> -> (contentId as Map<*, *>)["contentType"]?.toString()
+            else -> null
+        }
 }
 
 // Home Feed

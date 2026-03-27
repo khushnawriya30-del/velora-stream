@@ -125,6 +125,9 @@ export class Movie {
   @Prop({ default: 0 })
   rating: number;
 
+  @Prop({ default: 0, min: 0, max: 10 })
+  starRating: number; // Admin-set star rating (0-10, e.g. 8.2)
+
   @Prop({ default: 0 })
   voteCount: number;
 
@@ -154,6 +157,15 @@ export class Movie {
 
   @Prop()
   rankingLabel: string; // e.g., "Thriller #3 in India Today"
+
+  @Prop()
+  videoQuality: string; // e.g., HD, FHD, 4K, UHD, HDTS, CAM
+
+  @Prop()
+  hlsUrl: string; // HLS master.m3u8 URL for adaptive streaming
+
+  @Prop({ default: 'none' })
+  hlsStatus: string; // none, processing, completed, failed
 }
 
 export const MovieSchema = SchemaFactory.createForClass(Movie);

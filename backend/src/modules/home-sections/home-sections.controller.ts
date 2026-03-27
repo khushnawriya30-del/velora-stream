@@ -62,4 +62,22 @@ export class HomeSectionsController {
     await this.homeSectionsService.reorder(orderedIds);
     return { message: 'Sections reordered' };
   }
+
+  @Post('sections/:id/add-content')
+  @ApiBearerAuth()
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles('admin', 'content_manager')
+  @ApiOperation({ summary: 'Add content to section (Admin)' })
+  async addContent(@Param('id') id: string, @Body('movieIds') movieIds: string[]) {
+    return this.homeSectionsService.addContent(id, movieIds);
+  }
+
+  @Post('sections/:id/remove-content')
+  @ApiBearerAuth()
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles('admin', 'content_manager')
+  @ApiOperation({ summary: 'Remove content from section (Admin)' })
+  async removeContent(@Param('id') id: string, @Body('movieIds') movieIds: string[]) {
+    return this.homeSectionsService.removeContent(id, movieIds);
+  }
 }

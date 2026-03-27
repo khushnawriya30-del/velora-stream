@@ -3,7 +3,7 @@ export interface Movie {
   title: string;
   synopsis: string;
   posterUrl: string;
-  backdropUrl?: string;
+  bannerUrl?: string;
   trailerUrl?: string;
   genres: string[];
   releaseYear: number;
@@ -13,11 +13,13 @@ export interface Movie {
   status: 'draft' | 'published' | 'archived';
   averageRating: number;
   rating: number;
+  starRating: number;
   totalReviews: number;
   viewCount: number;
   cast: CastMember[];
   streamingSources: StreamingSource[];
   tags: string[];
+  videoQuality?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -32,7 +34,7 @@ export interface CastMember {
 export interface StreamingSource {
   quality: string;
   url: string;
-  type: 'hls' | 'dash' | 'mp4';
+  label: string;
 }
 
 export interface Banner {

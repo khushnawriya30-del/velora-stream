@@ -33,6 +33,8 @@ import com.cinevault.app.ui.viewmodel.ProfileViewModel
 @Composable
 fun MeScreen(
     onLogout: () -> Unit,
+    onNavigateToNotifications: () -> Unit = {},
+    onNavigateToWatchHistory: () -> Unit = {},
     profileViewModel: ProfileViewModel = hiltViewModel(),
     authViewModel: AuthViewModel = hiltViewModel(),
 ) {
@@ -143,8 +145,10 @@ fun MeScreen(
         Divider(color = CineVaultTheme.colors.border, modifier = Modifier.padding(horizontal = 16.dp))
 
         SettingsItem(icon = Icons.Filled.Person, title = "Account Settings", onClick = { })
-        SettingsItem(icon = Icons.Filled.Notifications, title = "Notifications", onClick = { })
-        SettingsItem(icon = Icons.Filled.Download, title = "Downloads", onClick = { })
+        SettingsItem(icon = Icons.Filled.History, title = "Watch History", onClick = onNavigateToWatchHistory)
+        SettingsItem(icon = Icons.Filled.Notifications, title = "Notifications", onClick = onNavigateToNotifications)
+        SettingsItem(icon = Icons.Filled.Download, title = "Downloads", onClick = onNavigateToNotifications)
+        SettingsItem(icon = Icons.Filled.Settings, title = "Settings", onClick = { })
         SettingsItem(icon = Icons.Filled.Security, title = "Privacy & Security", onClick = { })
         SettingsItem(icon = Icons.Filled.Info, title = "About CineVault", onClick = { })
 

@@ -4,6 +4,7 @@ import androidx.compose.animation.*
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
@@ -25,9 +26,9 @@ data class BottomNavItem(val label: String, val icon: ImageVector, val route: St
 
 val bottomNavItems = listOf(
     BottomNavItem("Home", Icons.Filled.Home, Screen.Home.route),
-    BottomNavItem("Search", Icons.Filled.Search, Screen.Search.route),
+    BottomNavItem("Downloads", Icons.Filled.Download, Screen.Notifications.route),
     BottomNavItem("Watchlist", Icons.Outlined.BookmarkBorder, Screen.Watchlist.route),
-    // Removed "Me" option as per requirements
+    BottomNavItem("Me", Icons.Filled.Person, Screen.Me.route),
 )
 
 @Composable
@@ -140,7 +141,13 @@ fun CineVaultNavHost(navController: NavHostController = rememberNavController())
             composable(Screen.Home.route) {
                 HomeScreen(
                     onMovieClick = { movieId -> navController.navigate(Screen.MovieDetail.createRoute(movieId)) },
+                    onPlayClick = { contentId -> navController.navigate(Screen.Player.createRoute(contentId, null)) },
                     onSearchClick = { navController.navigate(Screen.Search.route) },
+                    onNotificationsClick = { navController.navigate(Screen.Notifications.route) },
+                    onSectionClick = { section ->
+                        SectionDataHolder.set(section)
+                        navController.navigate(Screen.SectionDetail.createRoute(section.id))
+                    },
                 )
             }
 
@@ -163,6 +170,35 @@ fun CineVaultNavHost(navController: NavHostController = rememberNavController())
                             popUpTo(0) { inclusive = true }
                         }
                     },
+                    onNavigateToNotifications = { navController.navigate(Screen.Notifications.route) },
+                    onNavigateToWatchHistory = { navController.navigate(Screen.WatchHistory.route) },
+                )
+            }
+
+            composable(Screen.Notifications.route) {
+                NotificationsScreen(
+                    onBack = { navController.popBackStack() },
+                    onMovieClick = { movieId -> navController.navigate(Screen.MovieDetail.createRoute(movieId)) },
+                )
+            }
+
+            composable(Screen.WatchHistory.route) {
+                WatchHistoryScreen(
+                    onBack = { navController.popBackStack() },
+                    onMovieClick = { movieId -> navController.navigate(Screen.MovieDetail.createRoute(movieId)) },
+                )
+            }
+
+            composable(
+                Screen.SectionDetail.route,
+                arguments = listOf(navArgument("sectionId") { type = NavType.StringType }),
+            ) {
+                val section = SectionDataHolder.get()
+                SectionDetailScreen(
+                    sectionTitle = section?.title ?: "Section",
+                    movies = section?.items ?: emptyList(),
+                    onMovieClick = { movieId -> navController.navigate(Screen.MovieDetail.createRoute(movieId)) },
+                    onBack = { navController.popBackStack() },
                 )
             }
 

@@ -154,4 +154,17 @@ class ContentRepository @Inject constructor(private val api: CineVaultApi) {
             Result.Error(e.localizedMessage ?: "Failed to load languages")
         }
     }
+
+    suspend fun getMoviesByType(contentType: String?, page: Int = 1, limit: Int = 20): Result<List<MovieDto>> {
+        return try {
+            val response = api.getMovies(page = page, limit = limit, contentType = contentType)
+            if (response.isSuccessful && response.body() != null) {
+                Result.Success(response.body()!!.movies)
+            } else {
+                Result.Error(response.message())
+            }
+        } catch (e: Exception) {
+            Result.Error(e.localizedMessage ?: "Failed to load content")
+        }
+    }
 }

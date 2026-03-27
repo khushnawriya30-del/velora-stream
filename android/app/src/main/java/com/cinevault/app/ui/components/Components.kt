@@ -24,6 +24,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -60,32 +61,101 @@ fun MovieCard(
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxSize(),
             )
-            // Rating badge
-            if (movie.averageRating > 0) {
+
+            // Bottom gradient
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(50.dp)
+                    .align(Alignment.BottomCenter)
+                    .background(
+                        Brush.verticalGradient(
+                            colors = listOf(
+                                Color.Transparent,
+                                Color.Black.copy(alpha = 0.7f),
+                            )
+                        )
+                    )
+            )
+
+            // Language label — top-right
+            val langLabel = movie.languageLabel
+            if (!langLabel.isNullOrBlank()) {
                 Surface(
                     modifier = Modifier
                         .align(Alignment.TopEnd)
                         .padding(6.dp),
                     shape = RoundedCornerShape(4.dp),
-                    color = CineVaultTheme.colors.background.copy(alpha = 0.8f),
+                    color = Color.White.copy(alpha = 0.15f),
                 ) {
-                    Row(
+                    Text(
+                        langLabel,
                         modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(2.dp),
-                    ) {
-                        Icon(
-                            Icons.Filled.Star,
-                            contentDescription = null,
-                            modifier = Modifier.size(10.dp),
-                            tint = CineVaultTheme.colors.accentGold,
-                        )
-                        Text(
-                            String.format("%.1f", movie.averageRating),
-                            style = CineVaultTheme.typography.labelSmall,
-                            color = CineVaultTheme.colors.textPrimary,
-                        )
-                    }
+                        style = CineVaultTheme.typography.labelSmall,
+                        fontSize = 7.sp,
+                        fontWeight = FontWeight.Medium,
+                        fontStyle = FontStyle.Italic,
+                        color = Color.White.copy(alpha = 0.85f),
+                        letterSpacing = 0.3.sp,
+                    )
+                }
+            }
+
+            // Content rating — top-left, white faded
+            if (!movie.contentRating.isNullOrEmpty()) {
+                Surface(
+                    modifier = Modifier
+                        .align(Alignment.TopStart)
+                        .padding(6.dp),
+                    shape = RoundedCornerShape(4.dp),
+                    color = Color.White.copy(alpha = 0.2f),
+                ) {
+                    Text(
+                        movie.contentRating!!,
+                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
+                        style = CineVaultTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White.copy(alpha = 0.9f),
+                    )
+                }
+            }
+
+            // Video quality — bottom-left
+            if (!movie.videoQuality.isNullOrBlank()) {
+                Surface(
+                    modifier = Modifier
+                        .align(Alignment.BottomStart)
+                        .padding(6.dp),
+                    shape = RoundedCornerShape(4.dp),
+                    color = Color.White.copy(alpha = 0.2f),
+                ) {
+                    Text(
+                        movie.videoQuality!!,
+                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
+                        style = CineVaultTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White.copy(alpha = 0.9f),
+                    )
+                }
+            }
+
+            // Star rating — bottom-right
+            val displayRating = movie.starRating ?: movie.rating
+            if (displayRating != null && displayRating > 0) {
+                Surface(
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .padding(6.dp),
+                    shape = RoundedCornerShape(4.dp),
+                    color = CineVaultTheme.colors.background.copy(alpha = 0.85f),
+                ) {
+                    Text(
+                        String.format("%.1f", displayRating),
+                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
+                        style = CineVaultTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = CineVaultTheme.colors.ratingGold,
+                    )
                 }
             }
         }
@@ -96,11 +166,6 @@ fun MovieCard(
             color = CineVaultTheme.colors.textPrimary,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
-        )
-        Text(
-            movie.releaseYear.toString(),
-            style = CineVaultTheme.typography.labelSmall,
-            color = CineVaultTheme.colors.textSecondary,
         )
     }
 }
@@ -394,27 +459,71 @@ fun SquareMovieCard(
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxSize(),
             )
+
+            // Language label — top-right
+            val langLabel = movie.languageLabel
+            if (!langLabel.isNullOrBlank()) {
+                Surface(
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(6.dp),
+                    shape = RoundedCornerShape(4.dp),
+                    color = Color.White.copy(alpha = 0.15f),
+                ) {
+                    Text(
+                        langLabel,
+                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
+                        style = CineVaultTheme.typography.labelSmall,
+                        fontSize = 7.sp,
+                        fontWeight = FontWeight.Medium,
+                        fontStyle = FontStyle.Italic,
+                        color = Color.White.copy(alpha = 0.85f),
+                        letterSpacing = 0.3.sp,
+                    )
+                }
+            }
             
-            // Quality tag
+            // Content rating — top-left, white faded
             if (movie.contentRating?.isNotEmpty() == true) {
                 Surface(
                     modifier = Modifier
                         .align(Alignment.TopStart)
                         .padding(6.dp),
                     shape = RoundedCornerShape(4.dp),
-                    color = CineVaultTheme.colors.background.copy(alpha = 0.85f),
+                    color = Color.White.copy(alpha = 0.2f),
                 ) {
                     Text(
-                        movie.contentRating ?: "N/A",
+                        movie.contentRating ?: "",
                         modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
                         style = CineVaultTheme.typography.labelSmall,
-                        color = CineVaultTheme.colors.accentGold,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White.copy(alpha = 0.9f),
+                    )
+                }
+            }
+
+            // Video quality — bottom-left
+            if (!movie.videoQuality.isNullOrBlank()) {
+                Surface(
+                    modifier = Modifier
+                        .align(Alignment.BottomStart)
+                        .padding(6.dp),
+                    shape = RoundedCornerShape(4.dp),
+                    color = Color.White.copy(alpha = 0.2f),
+                ) {
+                    Text(
+                        movie.videoQuality!!,
+                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
+                        style = CineVaultTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White.copy(alpha = 0.9f),
                     )
                 }
             }
             
-            // Rating badge
-            if (movie.rating != null && movie.rating!! > 0) {
+            // Star rating — bottom-right
+            val displayRating = movie.starRating ?: movie.rating
+            if (displayRating != null && displayRating > 0) {
                 Surface(
                     modifier = Modifier
                         .align(Alignment.BottomEnd)
@@ -423,10 +532,11 @@ fun SquareMovieCard(
                     color = CineVaultTheme.colors.background.copy(alpha = 0.85f),
                 ) {
                     Text(
-                        String.format("%.1f", movie.rating),
+                        String.format("%.1f", displayRating),
                         modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
                         style = CineVaultTheme.typography.labelSmall,
-                        color = CineVaultTheme.colors.accentGold,
+                        fontWeight = FontWeight.Bold,
+                        color = CineVaultTheme.colors.ratingGold,
                     )
                 }
             }
@@ -470,7 +580,7 @@ fun LargeMovieCard(
                 modifier = Modifier.fillMaxSize(),
             )
             
-            // Overlay gradient for large cards
+            // Overlay gradient
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -481,27 +591,71 @@ fun LargeMovieCard(
                         )
                     )
             )
+
+            // Language label — top-right
+            val langLabel = movie.languageLabel
+            if (!langLabel.isNullOrBlank()) {
+                Surface(
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(8.dp),
+                    shape = RoundedCornerShape(4.dp),
+                    color = Color.White.copy(alpha = 0.15f),
+                ) {
+                    Text(
+                        langLabel,
+                        modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp),
+                        style = CineVaultTheme.typography.labelSmall,
+                        fontSize = 7.sp,
+                        fontWeight = FontWeight.Medium,
+                        fontStyle = FontStyle.Italic,
+                        color = Color.White.copy(alpha = 0.85f),
+                        letterSpacing = 0.3.sp,
+                    )
+                }
+            }
             
-            // Quality tag
+            // Content rating — top-left, white faded
             if (movie.contentRating?.isNotEmpty() == true) {
                 Surface(
                     modifier = Modifier
                         .align(Alignment.TopStart)
                         .padding(8.dp),
                     shape = RoundedCornerShape(6.dp),
-                    color = CineVaultTheme.colors.background.copy(alpha = 0.85f),
+                    color = Color.White.copy(alpha = 0.2f),
                 ) {
                     Text(
-                        movie.contentRating ?: "N/A",
+                        movie.contentRating ?: "",
                         modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp),
                         style = CineVaultTheme.typography.labelSmall,
-                        color = CineVaultTheme.colors.accentGold,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White.copy(alpha = 0.9f),
+                    )
+                }
+            }
+
+            // Video quality — bottom-left
+            if (!movie.videoQuality.isNullOrBlank()) {
+                Surface(
+                    modifier = Modifier
+                        .align(Alignment.BottomStart)
+                        .padding(8.dp),
+                    shape = RoundedCornerShape(6.dp),
+                    color = Color.White.copy(alpha = 0.2f),
+                ) {
+                    Text(
+                        movie.videoQuality!!,
+                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp),
+                        style = CineVaultTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White.copy(alpha = 0.9f),
                     )
                 }
             }
             
-            // Rating at bottom
-            if (movie.rating != null && movie.rating!! > 0) {
+            // Star rating — bottom-right
+            val displayRating = movie.starRating ?: movie.rating
+            if (displayRating != null && displayRating > 0) {
                 Surface(
                     modifier = Modifier
                         .align(Alignment.BottomEnd)
@@ -510,10 +664,11 @@ fun LargeMovieCard(
                     color = CineVaultTheme.colors.background.copy(alpha = 0.85f),
                 ) {
                     Text(
-                        String.format("%.1f", movie.rating),
+                        String.format("%.1f", displayRating),
                         modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp),
                         style = CineVaultTheme.typography.labelSmall,
-                        color = CineVaultTheme.colors.accentGold,
+                        fontWeight = FontWeight.Bold,
+                        color = CineVaultTheme.colors.ratingGold,
                     )
                 }
             }

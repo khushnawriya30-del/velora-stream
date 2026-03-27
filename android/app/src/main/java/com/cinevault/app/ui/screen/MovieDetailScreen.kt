@@ -51,7 +51,6 @@ fun MovieDetailScreen(
         return
     }
 
-    // Show error if loading failed
     if (uiState.error != null && uiState.movie == null) {
         Box(
             modifier = Modifier
@@ -127,182 +126,198 @@ fun MovieDetailScreen(
             .background(CineVaultTheme.colors.background)
             .verticalScroll(rememberScrollState())
     ) {
-        // Trailer Video Section
+        // ── Full-bleed hero image with seamless fade into background ──
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(250.dp)
-                .background(CineVaultTheme.colors.surface)
-                .clip(RoundedCornerShape(12.dp))
-                .padding(12.dp)
+                .aspectRatio(0.85f) // Compact hero — less gap before details
         ) {
             AsyncImage(
                 model = movie.backdropUrl ?: movie.posterUrl,
-                contentDescription = "Trailer",
+                contentDescription = movie.title,
                 contentScale = ContentScale.Crop,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .clip(RoundedCornerShape(8.dp))
+                modifier = Modifier.fillMaxSize()
             )
 
-            // Gradient overlay
+            // Top gradient for status bar / back button
             Box(
                 modifier = Modifier
-                    .fillMaxSize()
+                    .fillMaxWidth()
+                    .height(120.dp)
+                    .align(Alignment.TopCenter)
                     .background(
                         Brush.verticalGradient(
                             colors = listOf(
-                                Color.Black.copy(alpha = 0.2f),
-                                Color.Black.copy(alpha = 0.6f)
+                                Color.Black.copy(alpha = 0.6f),
+                                Color.Transparent
                             )
                         )
                     )
-                    .clip(RoundedCornerShape(8.dp))
             )
 
-            // Play button
-            Icon(
-                Icons.Default.PlayArrow,
-                contentDescription = "Play",
+            // Bottom gradient — heavy fade into background
+            Box(
                 modifier = Modifier
-                    .align(Alignment.Center)
-                    .size(80.dp),
-                tint = CineVaultTheme.colors.accentGold
+                    .fillMaxWidth()
+                    .fillMaxHeight(0.55f)
+                    .align(Alignment.BottomCenter)
+                    .background(
+                        Brush.verticalGradient(
+                            colors = listOf(
+                                Color.Transparent,
+                                CineVaultTheme.colors.background.copy(alpha = 0.7f),
+                                CineVaultTheme.colors.background.copy(alpha = 0.95f),
+                                CineVaultTheme.colors.background
+                            )
+                        )
+                    )
             )
 
             // Back button
             IconButton(
                 onClick = onBack,
                 modifier = Modifier
+                    .statusBarsPadding()
+                    .padding(start = 8.dp, top = 8.dp)
                     .align(Alignment.TopStart)
-                    .padding(8.dp)
-                    .background(Color.Black.copy(alpha = 0.5f), CircleShape)
+                    .background(Color.Black.copy(alpha = 0.4f), CircleShape)
                     .size(40.dp)
             ) {
                 Icon(
                     Icons.AutoMirrored.Filled.ArrowBack,
                     contentDescription = "Back",
-                    tint = CineVaultTheme.colors.textPrimary,
+                    tint = Color.White,
                     modifier = Modifier.size(20.dp)
                 )
             }
-        }
 
-        // Movie Info Section
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp)
-        ) {
-            // Ranking badge
-            if (movie.rankingLabel != null || true) {
-                Surface(
-                    modifier = Modifier
-                        .wrapContentWidth()
-                        .clip(RoundedCornerShape(4.dp)),
-                    color = CineVaultTheme.colors.accentGold
-                ) {
+            // ── Overlaid content at bottom of hero ──
+            Column(
+                modifier = Modifier
+                    .align(Alignment.BottomStart)
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp, vertical = 16.dp)
+            ) {
+                // Ranking label — subtle & faded
+                if (!movie.rankingLabel.isNullOrBlank()) {
                     Text(
-                        "Thriller #3 in India Today",
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.Black,
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                        movie.rankingLabel!!,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = CineVaultTheme.colors.accentGold.copy(alpha = 0.7f),
+                        letterSpacing = 0.5.sp
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
+
+                // Movie Title
+                Text(
+                    movie.title,
+                    fontSize = 28.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                // ── Single-line metadata: UA • 2024 • 180 min • India • Drama • History ──
+                val metaParts = buildList {
+                    movie.contentRating?.let { add(it) }
+                    movie.releaseYear?.let { add(it.toString()) }
+                    movie.duration?.let { add("$it min") }
+                    movie.country?.let { if (it.isNotBlank()) add(it) }
+                    movie.genres.forEach { add(it) }
+                }
+                if (metaParts.isNotEmpty()) {
+                    Text(
+                        metaParts.joinToString(" • "),
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = Color.White.copy(alpha = 0.7f),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
                 }
             }
+        }
 
-            Spacer(modifier = Modifier.height(12.dp))
+        // ── Content area below hero (seamless, no box separation) ──
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp)
+        ) {
+            Spacer(modifier = Modifier.height(4.dp))
 
-            // Movie Title
-            Text(
-                movie.title,
-                fontSize = 28.sp,
-                fontWeight = FontWeight.Bold,
-                color = CineVaultTheme.colors.textPrimary,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis
-            )
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            // Metadata badges row 1
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .wrapContentHeight(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                // Content rating
-                MetadataBadge("UA")
-
-                // Year
-                MetadataBadge("2024")
-
-                // Duration
-                MetadataBadge("180 min")
-
-                // Country
-                MetadataBadge("USA")
-            }
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            // Metadata badges row 2
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .wrapContentHeight(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                // Genre tags
-                MetadataBadge("Drama")
-                MetadataBadge("History")
-            }
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            // IMDB Rating
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Surface(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(4.dp)),
-                    color = Color(0xFFFFD700)
+            // ── IMDb Rating with star icons ──
+            val starRating = movie.starRating ?: movie.rating ?: 0.0
+            if (starRating > 0) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp)
+                    // IMDb badge
+                    Surface(
+                        shape = RoundedCornerShape(4.dp),
+                        color = Color(0xFFE6B91E)
                     ) {
                         Text(
-                            "IMDB",
-                            fontSize = 10.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.Black
+                            "IMDb",
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = Color.Black,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
                         )
-                        Text(
-                            "  8.2",
-                            fontSize = 10.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.Black
-                        )
+                    }
+
+                    // Rating number
+                    Text(
+                        String.format("%.1f", starRating),
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
+
+                    // Star icons (5 stars, based on rating out of 10)
+                    val starsOut5 = (starRating / 2.0).coerceIn(0.0, 5.0)
+                    val fullStars = starsOut5.toInt()
+                    val hasHalf = (starsOut5 - fullStars) >= 0.25
+                    val emptyStars = 5 - fullStars - if (hasHalf) 1 else 0
+
+                    Row(horizontalArrangement = Arrangement.spacedBy(1.dp)) {
+                        repeat(fullStars) {
+                            Icon(
+                                Icons.Default.Star,
+                                contentDescription = null,
+                                tint = Color(0xFFFFD700),
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
+                        if (hasHalf) {
+                            Icon(
+                                Icons.Default.StarHalf,
+                                contentDescription = null,
+                                tint = Color(0xFFFFD700),
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
+                        repeat(emptyStars) {
+                            Icon(
+                                Icons.Default.StarBorder,
+                                contentDescription = null,
+                                tint = Color(0xFFFFD700).copy(alpha = 0.4f),
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
                     }
                 }
 
-                Text(
-                    "2.4M views",
-                    fontSize = 12.sp,
-                    color = CineVaultTheme.colors.textSecondary
-                )
+                Spacer(modifier = Modifier.height(20.dp))
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // WATCH NOW button - Cyan/Teal color
+            // ── WATCH NOW button — premium gold/accent themed ──
             Button(
                 onClick = {
                     if (movie.id.isNotBlank()) {
@@ -311,49 +326,56 @@ fun MovieDetailScreen(
                 },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(48.dp),
+                    .height(50.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF00BCD4) // Cyan color
+                    containerColor = CineVaultTheme.colors.accentGold
                 ),
-                shape = RoundedCornerShape(6.dp),
+                shape = RoundedCornerShape(8.dp),
                 enabled = movie.id.isNotBlank()
             ) {
                 Icon(
                     Icons.Default.PlayArrow,
                     contentDescription = "Play",
                     tint = Color.Black,
-                    modifier = Modifier.size(20.dp)
+                    modifier = Modifier.size(22.dp)
                 )
+                Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    "WATCH NOW - FULL HD 1080P",
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.Bold,
+                    "WATCH NOW",
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.ExtraBold,
                     color = Color.Black,
-                    modifier = Modifier.padding(start = 8.dp)
+                    letterSpacing = 1.sp
                 )
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(20.dp))
 
-            // Action buttons
+            // ── Premium action buttons ──
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                horizontalArrangement = Arrangement.SpaceEvenly
             ) {
-                MovieActionButton("MY LIST", Icons.Default.Add, Modifier.weight(1f))
-                MovieActionButton("RATING", Icons.Default.Star, Modifier.weight(1f))
-                MovieActionButton("SHARE", Icons.Default.Share, Modifier.weight(1f))
-                MovieActionButton("DOWNLOAD", Icons.Default.Download, Modifier.weight(1f))
+                MovieActionButton(
+                    "My List",
+                    Icons.Default.Add,
+                    onClick = { viewModel.toggleWatchlist() },
+                    isActive = uiState.isInWatchlist
+                )
+                MovieActionButton("Thumbs Up", Icons.Default.ThumbUp)
+                MovieActionButton("Share", Icons.Default.Share)
+                MovieActionButton("Download", Icons.Default.Download)
             }
+
+            Spacer(modifier = Modifier.height(24.dp))
         }
 
+        // ── Tabs ──
         Divider(
-            color = CineVaultTheme.colors.borderSubtle,
-            thickness = 1.dp,
-            modifier = Modifier.padding(horizontal = 16.dp)
+            color = CineVaultTheme.colors.borderSubtle.copy(alpha = 0.5f),
+            thickness = 0.5.dp
         )
 
-        // Tabs
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -365,7 +387,7 @@ fun MovieDetailScreen(
                     modifier = Modifier
                         .weight(1f)
                         .clickable { selectedTab = index }
-                        .padding(vertical = 16.dp),
+                        .padding(vertical = 14.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
@@ -378,13 +400,16 @@ fun MovieDetailScreen(
                             CineVaultTheme.colors.textSecondary,
                         letterSpacing = 0.5.sp
                     )
+                    Spacer(modifier = Modifier.height(6.dp))
                     if (selectedTab == index) {
                         Box(
                             modifier = Modifier
                                 .height(2.dp)
-                                .fillMaxWidth(0.8f)
-                                .background(CineVaultTheme.colors.accentGold)
-                                .padding(top = 8.dp)
+                                .fillMaxWidth(0.6f)
+                                .background(
+                                    CineVaultTheme.colors.accentGold,
+                                    RoundedCornerShape(1.dp)
+                                )
                         )
                     }
                 }
@@ -392,8 +417,8 @@ fun MovieDetailScreen(
         }
 
         Divider(
-            color = CineVaultTheme.colors.borderSubtle,
-            thickness = 1.dp
+            color = CineVaultTheme.colors.borderSubtle.copy(alpha = 0.5f),
+            thickness = 0.5.dp
         )
 
         // Tab content
@@ -408,55 +433,32 @@ fun MovieDetailScreen(
 }
 
 @Composable
-fun MetadataBadge(
-    text: String,
-    modifier: Modifier = Modifier
-) {
-    Surface(
-        modifier = modifier
-            .wrapContentWidth()
-            .clip(RoundedCornerShape(4.dp)),
-        color = CineVaultTheme.colors.surface
-    ) {
-        Text(
-            text,
-            fontSize = 11.sp,
-            fontWeight = FontWeight.Medium,
-            color = CineVaultTheme.colors.textSecondary,
-            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-        )
-    }
-}
-
-@Composable
-fun MovieActionButton(
+private fun MovieActionButton(
     label: String,
     icon: ImageVector,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit = {},
+    isActive: Boolean = false
 ) {
     Column(
         modifier = modifier
-            .background(
-                CineVaultTheme.colors.surface,
-                RoundedCornerShape(6.dp)
-            )
-            .clickable { }
-            .padding(12.dp),
+            .clickable(onClick = onClick)
+            .padding(vertical = 8.dp, horizontal = 12.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
         Icon(
             icon,
             contentDescription = label,
-            tint = CineVaultTheme.colors.accentGold,
-            modifier = Modifier.size(18.dp)
+            tint = if (isActive) CineVaultTheme.colors.accentGold else Color.White,
+            modifier = Modifier.size(24.dp)
         )
+        Spacer(modifier = Modifier.height(6.dp))
         Text(
             label,
-            fontSize = 9.sp,
-            fontWeight = FontWeight.Bold,
-            color = CineVaultTheme.colors.textSecondary,
-            modifier = Modifier.padding(top = 4.dp),
+            fontSize = 10.sp,
+            fontWeight = FontWeight.Medium,
+            color = if (isActive) CineVaultTheme.colors.accentGold else CineVaultTheme.colors.textSecondary,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis
         )
@@ -464,7 +466,7 @@ fun MovieActionButton(
 }
 
 @Composable
-fun DetailsTabContent(movie: MovieDto) {
+private fun DetailsTabContent(movie: MovieDto) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -480,28 +482,32 @@ fun DetailsTabContent(movie: MovieDto) {
             )
         }
 
-        Text(
-            "CAST & CREW",
-            fontSize = 13.sp,
-            fontWeight = FontWeight.Bold,
-            color = CineVaultTheme.colors.textPrimary,
-            letterSpacing = 0.5.sp,
-            modifier = Modifier.padding(bottom = 12.dp)
-        )
+        if (!movie.cast.isNullOrEmpty()) {
+            Text(
+                "CAST & CREW",
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Bold,
+                color = CineVaultTheme.colors.textPrimary,
+                letterSpacing = 0.5.sp,
+                modifier = Modifier.padding(bottom = 12.dp)
+            )
 
-        LazyRow(
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            items(movie.cast?.size ?: 5) { index ->
-                val castMember = if (index < (movie.cast?.size ?: 0)) movie.cast!![index] else null
-                CastCardWidget(castMember?.name ?: "Actor ${index + 1}")
+            LazyRow(
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                items(movie.cast!!.size) { index ->
+                    CastCardWidget(
+                        name = movie.cast!![index].name,
+                        photoUrl = movie.cast!![index].photoUrl
+                    )
+                }
             }
         }
     }
 }
 
 @Composable
-fun CastCardWidget(name: String) {
+private fun CastCardWidget(name: String, photoUrl: String? = null) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier.width(85.dp)
@@ -512,15 +518,25 @@ fun CastCardWidget(name: String) {
                 .background(
                     CineVaultTheme.colors.surface,
                     RoundedCornerShape(6.dp)
-                ),
+                )
+                .clip(RoundedCornerShape(6.dp)),
             contentAlignment = Alignment.Center
         ) {
-            Icon(
-                Icons.Default.Person,
-                contentDescription = "Cast",
-                tint = CineVaultTheme.colors.textSecondary,
-                modifier = Modifier.size(35.dp)
-            )
+            if (!photoUrl.isNullOrBlank()) {
+                AsyncImage(
+                    model = photoUrl,
+                    contentDescription = name,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize()
+                )
+            } else {
+                Icon(
+                    Icons.Default.Person,
+                    contentDescription = "Cast",
+                    tint = CineVaultTheme.colors.textSecondary,
+                    modifier = Modifier.size(35.dp)
+                )
+            }
         }
         Text(
             name,
@@ -536,7 +552,7 @@ fun CastCardWidget(name: String) {
 }
 
 @Composable
-fun CommentsTabContent() {
+private fun CommentsTabContent() {
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -553,7 +569,7 @@ fun CommentsTabContent() {
 }
 
 @Composable
-fun TrailerTabContent() {
+private fun TrailerTabContent() {
     Box(
         modifier = Modifier
             .fillMaxWidth()

@@ -132,7 +132,7 @@ export default function MoviesPage() {
                   {/* Poster */}
                   <div className="relative aspect-video bg-surface-light overflow-hidden">
                     <img
-                      src={movie.backdropUrl || movie.posterUrl}
+                      src={movie.bannerUrl || movie.posterUrl}
                       alt={movie.title}
                       className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
                     />

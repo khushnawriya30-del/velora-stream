@@ -66,4 +66,6 @@ export class CreateMovieDto {
   @ApiPropertyOptional() @IsDate() @Type(() => Date) @IsOptional() scheduledPublishDate?: Date;
   @ApiPropertyOptional() @IsBoolean() @IsOptional() isFeatured?: boolean;
   @ApiPropertyOptional() @IsString() @IsOptional() rankingLabel?: string;
+  @ApiPropertyOptional() @IsNumber() @IsOptional() starRating?: number;
+  @ApiPropertyOptional() @IsString() @IsOptional() videoQuality?: string;
 }

@@ -36,7 +36,7 @@ export default function SeriesPage() {
             <div key={s._id} className="bg-surface border border-border rounded-xl overflow-hidden hover:border-border/80 transition-colors">
               <div className="aspect-video bg-surface-light relative">
                 <img
-                  src={s.backdropUrl || s.posterUrl}
+                  src={s.bannerUrl || s.posterUrl}
                   alt={s.title}
                   className="w-full h-full object-cover"
                 />

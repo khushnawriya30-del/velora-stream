@@ -82,7 +82,7 @@ export default function MovieDetailsPage() {
       {/* Trailer Section - Using backdrop as placeholder */}
       <div className="relative w-full h-[60vh] bg-black overflow-hidden">
         <img
-          src={m.backdropUrl || m.posterUrl}
+          src={m.bannerUrl || m.posterUrl}
           alt={m.title}
           className="w-full h-full object-cover"
         />

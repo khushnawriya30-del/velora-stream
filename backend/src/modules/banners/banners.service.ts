@@ -2,12 +2,16 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Banner, BannerDocument } from '../../schemas/banner.schema';
+import { Movie, MovieDocument, ContentStatus } from '../../schemas/movie.schema';
 
 @Injectable()
 export class BannersService {
-  constructor(@InjectModel(Banner.name) private bannerModel: Model<BannerDocument>) {}
+  constructor(
+    @InjectModel(Banner.name) private bannerModel: Model<BannerDocument>,
+    @InjectModel(Movie.name) private movieModel: Model<MovieDocument>,
+  ) {}
 
-  async getActiveBanners(): Promise<BannerDocument[]> {
+  async getActiveBanners(): Promise<any[]> {
     try {
       const now = new Date();
       const banners = await this.bannerModel
@@ -24,29 +28,57 @@ export class BannersService {
       
       // Filter out banners with invalid contentId before populating
       const validBanners = banners.filter((banner) => {
-        if (!banner.contentId) return true; // null or undefined is okay
+        if (!banner.contentId) return true;
         
         const contentIdStr = String(banner.contentId);
         if (contentIdStr.trim() === '') {
-          return false; // Empty string
+          return false;
         }
         
         try {
-          // Check if contentId is a valid ObjectId
           new Types.ObjectId(contentIdStr);
           return true;
         } catch {
-          return false; // Invalid ObjectId
+          return false;
         }
       });
       
-      // Populate only valid banners
-      return this.bannerModel.populate(validBanners, {
+      // Populate only valid banners — only include published movies
+      const populatedBanners = await this.bannerModel.populate(validBanners, {
         path: 'contentId',
         select: 'title contentType genres contentRating duration releaseYear',
+        match: { status: ContentStatus.PUBLISHED },
       });
+
+      // Filter out banners where contentId became null (movie deleted or not published)
+      const validPopulatedBanners = populatedBanners.filter(
+        (b: any) => b.contentId != null,
+      );
+
+      if (validPopulatedBanners.length > 0) {
+        return validPopulatedBanners;
+      }
+
+      // Fallback: auto-generate banners from recent published movies
+      const recentMovies = await this.movieModel
+        .find({ status: ContentStatus.PUBLISHED })
+        .sort({ createdAt: -1 })
+        .limit(5)
+        .select('title synopsis bannerUrl posterUrl logoUrl genres contentType contentRating duration releaseYear');
+
+      return recentMovies.map((movie, index) => ({
+        _id: `auto_${movie._id}`,
+        title: movie.title,
+        subtitle: movie.synopsis ? movie.synopsis.substring(0, 100) : '',
+        imageUrl: movie.bannerUrl || movie.posterUrl || '',
+        contentId: movie.toObject(),
+        actionType: 'movie',
+        logoUrl: movie.logoUrl || '',
+        genreTags: movie.genres || [],
+        displayOrder: index,
+        isActive: true,
+      }));
     } catch (error) {
-      // If there's an error (e.g., invalid ObjectId in database), return empty array
       console.error('Error fetching active banners:', error);
       return [];
     }

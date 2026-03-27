@@ -1,10 +1,89 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Plus, X } from 'lucide-react';
 import api from '../lib/api';
 import type { Movie, CastMember, StreamingSource } from '../types';
 import toast from 'react-hot-toast';
+
+function HlsTranscodeSection({ movieId }: { movieId: string }) {
+  const [status, setStatus] = useState<string>('none');
+  const [hlsUrl, setHlsUrl] = useState<string>('');
+  const [loading, setLoading] = useState(false);
+
+  const fetchStatus = useCallback(async () => {
+    try {
+      const { data } = await api.get(`/transcode/${movieId}/status`);
+      setStatus(data.status);
+      if (data.hlsUrl) setHlsUrl(data.hlsUrl);
+    } catch {
+      // ignore
+    }
+  }, [movieId]);
+
+  useEffect(() => {
+    fetchStatus();
+  }, [fetchStatus]);
+
+  // Poll while processing
+  useEffect(() => {
+    if (status !== 'processing') return;
+    const interval = setInterval(fetchStatus, 5000);
+    return () => clearInterval(interval);
+  }, [status, fetchStatus]);
+
+  const handleTranscode = async () => {
+    setLoading(true);
+    try {
+      await api.post(`/transcode/${movieId}`);
+      setStatus('processing');
+      toast.success('HLS transcoding started!');
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || 'Failed to start transcoding');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center gap-3">
+        <span className="text-sm font-medium">Status:</span>
+        {status === 'none' && (
+          <span className="px-2 py-1 rounded-md bg-surface-light text-text-secondary text-xs">Not Generated</span>
+        )}
+        {status === 'processing' && (
+          <span className="px-2 py-1 rounded-md bg-yellow-500/20 text-yellow-400 text-xs animate-pulse">
+            Processing... (this may take several minutes)
+          </span>
+        )}
+        {status === 'completed' && (
+          <span className="px-2 py-1 rounded-md bg-green-500/20 text-green-400 text-xs">Completed</span>
+        )}
+        {status === 'failed' && (
+          <span className="px-2 py-1 rounded-md bg-red-500/20 text-red-400 text-xs">Failed</span>
+        )}
+      </div>
+
+      {hlsUrl && (
+        <div className="text-xs text-text-secondary bg-background rounded-lg p-3 break-all">
+          <span className="font-medium text-text-primary">HLS URL: </span>{hlsUrl}
+        </div>
+      )}
+
+      {(status === 'none' || status === 'failed') && (
+        <button
+          type="button"
+          onClick={handleTranscode}
+          disabled={loading}
+          className="px-4 py-2 rounded-lg bg-gold hover:bg-gold-light text-background font-semibold text-sm transition-colors disabled:opacity-50"
+        >
+          {loading ? 'Starting...' : status === 'failed' ? 'Retry HLS Generation' : 'Generate HLS Variants'}
+        </button>
+      )}
+    </div>
+  );
+}
 
 export default function MovieFormPage() {
   const { id } = useParams();
@@ -16,7 +95,7 @@ export default function MovieFormPage() {
     title: '',
     synopsis: '',
     posterUrl: '',
-    backdropUrl: '',
+    bannerUrl: '',
     trailerUrl: '',
     genres: [] as string[],
     contentType: 'movie' as 'movie' | 'series' | 'documentary' | 'anime' | 'web_series' | 'tv_show' | 'short_film',
@@ -27,7 +106,14 @@ export default function MovieFormPage() {
     cast: [] as CastMember[],
     streamingSources: [] as StreamingSource[],
     tags: [] as string[],
+    starRating: 0,
+    country: '',
+    videoQuality: '',
+    languages: [] as string[],
   });
+
+  const [durationHours, setDurationHours] = useState(0);
+  const [durationMinutes, setDurationMinutes] = useState(0);
 
   const [genreInput, setGenreInput] = useState('');
   const [tagInput, setTagInput] = useState('');
@@ -43,11 +129,16 @@ export default function MovieFormPage() {
 
   useEffect(() => {
     if (movie) {
+      const totalMinutes = movie.duration ?? 0;
+      const hours = Math.floor(totalMinutes / 60);
+      const minutes = totalMinutes % 60;
+      setDurationHours(hours);
+      setDurationMinutes(minutes);
       setForm({
         title: movie.title,
         synopsis: movie.synopsis ?? '',
         posterUrl: movie.posterUrl,
-        backdropUrl: movie.backdropUrl ?? '',
+        bannerUrl: movie.bannerUrl ?? '',
         trailerUrl: movie.trailerUrl ?? '',
         genres: movie.genres,
         contentType: movie.contentType,
@@ -56,8 +147,16 @@ export default function MovieFormPage() {
         duration: movie.duration ?? 0,
         status: movie.status,
         cast: movie.cast,
-        streamingSources: movie.streamingSources,
+        streamingSources: (movie.streamingSources || []).map((src: any) => ({
+          quality: src.quality,
+          url: src.url,
+          label: src.label || '',
+        })),
         tags: movie.tags,
+        starRating: (movie as any).starRating ?? 0,
+        country: (movie as any).country ?? '',
+        videoQuality: (movie as any).videoQuality ?? '',
+        languages: (movie as any).languages ?? [],
       });
     }
   }, [movie]);
@@ -78,7 +177,22 @@ export default function MovieFormPage() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    mutation.mutate(form);
+    const totalMinutes = (durationHours * 60) + durationMinutes;
+    const submitForm = {
+      ...form,
+      duration: totalMinutes,
+      contentRating: ['U', 'UA', 'A', 'S'].includes(form.contentRating) ? form.contentRating : 'U',
+      streamingSources: form.streamingSources
+        .filter((src) => src.url && src.label && typeof src.label === 'string')
+        .map(({ quality, url, label }) => ({ quality, url, label })),
+    };
+    mutation.mutate(submitForm, {
+      onError: (error: any) => {
+        const message = error?.response?.data?.message || 'Failed to save';
+        console.error('Save error:', error?.response?.data || error);
+        toast.error(message);
+      },
+    });
   };
 
   const addGenre = () => {
@@ -106,7 +220,7 @@ export default function MovieFormPage() {
   };
 
   const addStreamingSource = () => {
-    setForm({ ...form, streamingSources: [...form.streamingSources, { quality: '1080p', url: '', type: 'hls' }] });
+    setForm({ ...form, streamingSources: [...form.streamingSources, { quality: '1080p', url: '', label: '' }] });
   };
 
   const updateSource = (idx: number, field: string, value: string) => {
@@ -168,7 +282,7 @@ export default function MovieFormPage() {
             />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div>
               <label className="block text-sm text-text-secondary mb-1">Release Year</label>
               <input
@@ -179,13 +293,31 @@ export default function MovieFormPage() {
               />
             </div>
             <div>
-              <label className="block text-sm text-text-secondary mb-1">Duration (min)</label>
+              <label className="block text-sm text-text-secondary mb-1">Duration - Hours</label>
               <input
                 type="number"
-                value={form.duration}
-                onChange={(e) => setForm({ ...form, duration: parseInt(e.target.value) || 0 })}
+                min="0"
+                value={durationHours}
+                onChange={(e) => setDurationHours(parseInt(e.target.value) || 0)}
                 className="w-full bg-surface-light border border-border rounded-xl px-4 py-2.5 text-text-primary focus:outline-none focus:border-gold"
               />
+            </div>
+            <div>
+              <label className="block text-sm text-text-secondary mb-1">Duration - Minutes</label>
+              <input
+                type="number"
+                min="0"
+                max="59"
+                value={durationMinutes}
+                onChange={(e) => setDurationMinutes(Math.min(59, parseInt(e.target.value) || 0))}
+                className="w-full bg-surface-light border border-border rounded-xl px-4 py-2.5 text-text-primary focus:outline-none focus:border-gold"
+              />
+            </div>
+            <div>
+              <label className="block text-sm text-text-secondary mb-1">Total Duration</label>
+              <div className="w-full bg-surface-light border border-border rounded-xl px-4 py-2.5 text-text-secondary flex items-center">
+                {durationHours}h {durationMinutes}m ({durationHours * 60 + durationMinutes} min)
+              </div>
             </div>
           </div>
 
@@ -197,12 +329,10 @@ export default function MovieFormPage() {
                 onChange={(e) => setForm({ ...form, contentRating: e.target.value })}
                 className="w-full bg-surface-light border border-border rounded-xl px-4 py-2.5 text-text-primary focus:outline-none focus:border-gold"
               >
-                <option value="">None</option>
-                <option value="G">G</option>
-                <option value="PG">PG</option>
-                <option value="PG-13">PG-13</option>
-                <option value="R">R</option>
-                <option value="NC-17">NC-17</option>
+                <option value="U">U</option>
+                <option value="UA">UA</option>
+                <option value="A">A</option>
+                <option value="S">S</option>
               </select>
             </div>
             <div>
@@ -218,6 +348,47 @@ export default function MovieFormPage() {
               </select>
             </div>
           </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label className="block text-sm text-text-secondary mb-1">Star Rating (0-10)</label>
+              <input
+                type="number"
+                min="0"
+                max="10"
+                step="0.1"
+                value={form.starRating}
+                onChange={(e) => setForm({ ...form, starRating: Math.min(10, Math.max(0, parseFloat(e.target.value) || 0)) })}
+                className="w-full bg-surface-light border border-border rounded-xl px-4 py-2.5 text-text-primary focus:outline-none focus:border-gold"
+              />
+            </div>
+            <div>
+              <label className="block text-sm text-text-secondary mb-1">Country</label>
+              <input
+                type="text"
+                value={form.country}
+                onChange={(e) => setForm({ ...form, country: e.target.value })}
+                placeholder="e.g. India, USA"
+                className="w-full bg-surface-light border border-border rounded-xl px-4 py-2.5 text-text-primary focus:outline-none focus:border-gold"
+              />
+            </div>
+            <div>
+              <label className="block text-sm text-text-secondary mb-1">Video Quality</label>
+              <select
+                value={form.videoQuality}
+                onChange={(e) => setForm({ ...form, videoQuality: e.target.value })}
+                className="w-full bg-surface-light border border-border rounded-xl px-4 py-2.5 text-text-primary focus:outline-none focus:border-gold"
+              >
+                <option value="">None</option>
+                <option value="CAM">CAM</option>
+                <option value="HDTS">HDTS</option>
+                <option value="HD">HD</option>
+                <option value="FHD">FHD</option>
+                <option value="4K">4K</option>
+                <option value="UHD">UHD</option>
+              </select>
+            </div>
+          </div>
         </section>
 
         {/* Media URLs */}
@@ -225,7 +396,7 @@ export default function MovieFormPage() {
           <h2 className="text-lg font-medium">Media</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm text-text-secondary mb-1">Poster URL *</label>
+              <label className="block text-sm text-text-secondary mb-1">Poster URL * (2:3 portrait)</label>
               <input
                 type="url"
                 value={form.posterUrl}
@@ -235,11 +406,11 @@ export default function MovieFormPage() {
               />
             </div>
             <div>
-              <label className="block text-sm text-text-secondary mb-1">Backdrop URL</label>
+              <label className="block text-sm text-text-secondary mb-1">Banner URL (16:9 landscape)</label>
               <input
                 type="url"
-                value={form.backdropUrl}
-                onChange={(e) => setForm({ ...form, backdropUrl: e.target.value })}
+                value={form.bannerUrl}
+                onChange={(e) => setForm({ ...form, bannerUrl: e.target.value })}
                 className="w-full bg-surface-light border border-border rounded-xl px-4 py-2.5 text-text-primary focus:outline-none focus:border-gold"
               />
             </div>
@@ -310,6 +481,63 @@ export default function MovieFormPage() {
           </div>
         </section>
 
+        {/* Languages */}
+        <section className="bg-surface border border-border rounded-xl p-6 space-y-4">
+          <h2 className="text-lg font-medium">Languages</h2>
+          <div className="flex gap-2 mb-2 flex-wrap">
+            {form.languages.map((lang) => (
+              <span key={lang} className="flex items-center gap-1 bg-gold/10 text-gold px-3 py-1 rounded-full text-sm">
+                {lang}
+                <button type="button" onClick={() => setForm({ ...form, languages: form.languages.filter((l) => l !== lang) })}>
+                  <X size={12} />
+                </button>
+              </span>
+            ))}
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-2">
+            {[
+              'Multi Language',
+              'Afrikaans', 'Albanian', 'Amharic', 'Arabic', 'Armenian', 'Assamese',
+              'Azerbaijani', 'Bangla', 'Basque', 'Belarusian', 'Bosnian', 'Bulgarian',
+              'Burmese', 'Cantonese', 'Catalan', 'Chinese', 'Croatian', 'Czech',
+              'Danish', 'Dutch', 'English', 'Estonian', 'Filipino', 'Finnish',
+              'French', 'Galician', 'Georgian', 'German', 'Greek', 'Gujarati',
+              'Hausa', 'Hebrew', 'Hindi', 'Hungarian', 'Icelandic', 'Indonesian',
+              'Irish', 'Italian', 'Japanese', 'Javanese', 'Kannada', 'Kazakh',
+              'Khmer', 'Korean', 'Kurdish', 'Kyrgyz', 'Lao', 'Latvian',
+              'Lithuanian', 'Macedonian', 'Malay', 'Malayalam', 'Maltese', 'Mandarin',
+              'Marathi', 'Mongolian', 'Nepali', 'Norwegian', 'Odia', 'Pashto',
+              'Persian', 'Polish', 'Portuguese', 'Punjabi', 'Romanian', 'Russian',
+              'Serbian', 'Sindhi', 'Sinhala', 'Slovak', 'Slovenian', 'Somali',
+              'Spanish', 'Swahili', 'Swedish', 'Tagalog', 'Tajik', 'Tamil',
+              'Tatar', 'Telugu', 'Thai', 'Tibetan', 'Turkish', 'Turkmen',
+              'Ukrainian', 'Urdu', 'Uzbek', 'Vietnamese', 'Welsh', 'Yoruba', 'Zulu',
+            ].map((lang) => {
+              const isSelected = form.languages.includes(lang);
+              return (
+                <button
+                  key={lang}
+                  type="button"
+                  onClick={() => {
+                    if (isSelected) {
+                      setForm({ ...form, languages: form.languages.filter((l) => l !== lang) });
+                    } else {
+                      setForm({ ...form, languages: [...form.languages, lang] });
+                    }
+                  }}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors border ${
+                    isSelected
+                      ? 'bg-gold/20 border-gold text-gold'
+                      : 'bg-surface-light border-border text-text-secondary hover:border-gold/50'
+                  }`}
+                >
+                  {lang}
+                </button>
+              );
+            })}
+          </div>
+        </section>
+
         {/* Cast */}
         <section className="bg-surface border border-border rounded-xl p-6 space-y-4">
           <div className="flex items-center justify-between">
@@ -377,15 +605,12 @@ export default function MovieFormPage() {
                 <option value="720p">720p</option>
                 <option value="480p">480p</option>
               </select>
-              <select
-                value={src.type}
-                onChange={(e) => updateSource(idx, 'type', e.target.value)}
+              <input
+                placeholder="Label"
+                value={src.label || ''}
+                onChange={(e) => updateSource(idx, 'label', e.target.value)}
                 className="bg-background border border-border rounded-lg px-3 py-2 text-sm text-text-primary focus:outline-none focus:border-gold"
-              >
-                <option value="hls">HLS</option>
-                <option value="dash">DASH</option>
-                <option value="mp4">MP4</option>
-              </select>
+              />
               <input
                 placeholder="Stream URL"
                 value={src.url}
@@ -402,6 +627,18 @@ export default function MovieFormPage() {
             </div>
           ))}
         </section>
+
+        {/* HLS Adaptive Streaming */}
+        {isEdit && id && (
+          <section className="bg-surface border border-border rounded-xl p-6 space-y-4">
+            <h2 className="text-lg font-medium">HLS Adaptive Streaming</h2>
+            <p className="text-sm text-text-secondary">
+              Generate HLS variants (1080p, 720p, 480p, 360p) from your source video using Google Cloud Transcoder.
+              Fast cloud-based encoding — no CPU load on your machine. Quality auto-adjusts based on internet speed.
+            </p>
+            <HlsTranscodeSection movieId={id} />
+          </section>
+        )}
 
         {/* Submit */}
         <div className="flex gap-3 justify-end">

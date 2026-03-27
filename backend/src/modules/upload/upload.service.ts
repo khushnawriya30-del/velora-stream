@@ -4,6 +4,7 @@ import { S3Client, PutObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { v4 as uuidv4 } from 'uuid';
 import * as crypto from 'crypto';
+import { createReadStream } from 'fs';
 
 @Injectable()
 export class UploadService {
@@ -42,6 +43,18 @@ export class UploadService {
     const publicUrl = this.cdnBaseUrl ? `${this.cdnBaseUrl}/${key}` : `https://${this.bucket}.s3.amazonaws.com/${key}`;
 
     return { uploadUrl, key, publicUrl };
+  }
+
+  async uploadFileFromDisk(key: string, filePath: string, contentType: string): Promise<string> {
+    const fileStream = createReadStream(filePath);
+    const command = new PutObjectCommand({
+      Bucket: this.bucket,
+      Key: key,
+      Body: fileStream,
+      ContentType: contentType,
+    });
+    await this.s3Client.send(command);
+    return this.cdnBaseUrl ? `${this.cdnBaseUrl}/${key}` : `https://${this.bucket}.s3.amazonaws.com/${key}`;
   }
 
   generateSignedVideoUrl(videoPath: string): string {

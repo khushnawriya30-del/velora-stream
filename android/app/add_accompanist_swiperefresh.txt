@@ -1,0 +1,2 @@
+// Add this dependency to your build.gradle.kts for pull-to-refresh:
+// implementation("com.google.accompanist:accompanist-swiperefresh:0.33.2-alpha")

@@ -19,6 +19,7 @@ import { StreamingModule } from './modules/streaming/streaming.module';
 import { AdminModule } from './modules/admin/admin.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { HealthModule } from './modules/health/health.module';
+import { TranscodeModule } from './modules/transcode/transcode.module';
 
 @Module({
   imports: [
@@ -59,6 +60,7 @@ import { HealthModule } from './modules/health/health.module';
     AdminModule,
     AnalyticsModule,
     HealthModule,
+    TranscodeModule,
   ],
 })
 export class AppModule {}

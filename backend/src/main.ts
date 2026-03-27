@@ -5,14 +5,28 @@ import { ConfigService } from '@nestjs/config';
 import * as cookieParser from 'cookie-parser';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
+import { NestExpressApplication } from '@nestjs/platform-express';
+import { join } from 'path';
+import * as fs from 'fs';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
   const configService = app.get(ConfigService);
 
   // Security
   app.use(helmet());
   app.use(cookieParser());
+
+  // Serve HLS files statically (before global prefix)
+  const hlsDir = join(process.cwd(), 'public', 'hls');
+  if (!fs.existsSync(hlsDir)) fs.mkdirSync(hlsDir, { recursive: true });
+  app.useStaticAssets(hlsDir, {
+    prefix: '/hls/',
+    setHeaders: (res) => {
+      res.set('Access-Control-Allow-Origin', '*');
+      res.set('Cache-Control', 'no-cache');
+    },
+  });
 
   // CORS
   app.enableCors({

@@ -1,5 +1,6 @@
 package com.cinevault.app.ui.viewmodel
 
+import android.util.Log
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -26,9 +27,13 @@ data class PlayerUiState(
     val currentPosition: Long = 0L,
     val totalDuration: Long = 0L,
     val selectedQuality: String = "auto",
-    val availableQualities: List<String> = listOf("auto", "1080p", "720p", "480p"),
+    val availableQualities: List<String> = listOf("auto"),
+    val isAdaptive: Boolean = false,
     val playbackSpeed: Float = 1.0f,
-    val isFullscreen: Boolean = false,
+    val isFullscreen: Boolean = true,
+    val availableAudioTracks: List<String> = emptyList(),
+    val selectedAudioTrack: String = "default",
+    val isSpeedOverride: Boolean = false,
 )
 
 @HiltViewModel
@@ -53,27 +58,92 @@ class PlayerViewModel @Inject constructor(
 
     private fun loadContent() {
         viewModelScope.launch {
+            Log.d("CineVaultPlayer", "Loading content: $contentId")
             _uiState.update { it.copy(isLoading = true, error = null) }
 
             when (val movieResult = contentRepository.getMovie(contentId)) {
                 is Result.Success -> {
                     val movie = movieResult.data
+                    Log.d("CineVaultPlayer", "Movie loaded: ${movie.title}, hlsUrl=${movie.hlsUrl}, sources=${movie.streamingSources?.size ?: 0}")
+                    movie.streamingSources?.forEachIndexed { i, src ->
+                        Log.d("CineVaultPlayer", "  Source[$i]: quality=${src.quality}, url=${src.url.take(100)}")
+                    }
                     _uiState.update { it.copy(movie = movie) }
                     loadStreamingUrl()
                 }
-                is Result.Error -> _uiState.update { it.copy(isLoading = false, error = movieResult.message) }
+                is Result.Error -> {
+                    Log.e("CineVaultPlayer", "Failed to load movie: ${movieResult.message}")
+                    _uiState.update { it.copy(isLoading = false, error = movieResult.message) }
+                }
                 is Result.Loading -> {}
             }
         }
     }
 
-    private fun loadStreamingUrl() {
+    private fun loadStreamingUrl(resumePosition: Long = -1L) {
         viewModelScope.launch {
             val movie = _uiState.value.movie
-            val streamPath = movie?.streamingSources?.firstOrNull()?.url ?: contentId
+
+            // Prefer HLS URL for adaptive streaming (auto quality based on internet speed)
+            val hlsUrl = movie?.hlsUrl
+            if (!hlsUrl.isNullOrBlank()) {
+                val qualities = listOf("auto", "1080p", "720p", "480p", "360p")
+                _uiState.update { it.copy(
+                    isLoading = false,
+                    streamingUrl = hlsUrl,
+                    availableQualities = qualities,
+                    isAdaptive = true,
+                    currentPosition = if (resumePosition >= 0) resumePosition else it.currentPosition,
+                ) }
+                return@launch
+            }
+
+            // Fallback: use direct streaming source URL (single file — no quality switching)
+            val sources = movie?.streamingSources ?: emptyList()
+
+            // For multiple sources with different qualities, allow switching between them
+            val hasMultipleSources = sources.size > 1
+            val qualities = if (hasMultipleSources) {
+                listOf("auto") + sources.mapNotNull { it.quality }.distinct()
+            } else {
+                // Single file: just show the detected quality
+                val sourceQuality = sources.firstOrNull()?.quality ?: "Original"
+                listOf(sourceQuality)
+            }
+
+            // Pick source based on selected quality
+            val selectedQuality = _uiState.value.selectedQuality
+            val source = if (selectedQuality == "auto" || !hasMultipleSources) {
+                sources.minByOrNull { it.priority ?: Int.MAX_VALUE }
+            } else {
+                // Try exact match first, then fall back to best available
+                sources.find { it.quality?.lowercase() == selectedQuality.lowercase() }
+                    ?: sources.minByOrNull { it.priority ?: Int.MAX_VALUE }
+            }
+
+            val streamUrl = source?.url ?: ""
+
+            if (streamUrl.startsWith("http://") || streamUrl.startsWith("https://")) {
+                _uiState.update { it.copy(
+                    isLoading = false,
+                    streamingUrl = streamUrl,
+                    availableQualities = qualities,
+                    isAdaptive = hasMultipleSources,
+                    selectedQuality = if (!hasMultipleSources) (sources.firstOrNull()?.quality ?: "Original") else it.selectedQuality,
+                    currentPosition = if (resumePosition >= 0) resumePosition else it.currentPosition,
+                ) }
+                return@launch
+            }
+
+            val streamPath = streamUrl.ifEmpty { contentId }
             when (val result = watchProgressRepository.getStreamingUrl(streamPath)) {
                 is Result.Success -> _uiState.update {
-                    it.copy(isLoading = false, streamingUrl = result.data.url)
+                    it.copy(
+                        isLoading = false,
+                        streamingUrl = result.data.url,
+                        availableQualities = qualities,
+                        currentPosition = if (resumePosition >= 0) resumePosition else it.currentPosition,
+                    )
                 }
                 is Result.Error -> _uiState.update {
                     it.copy(isLoading = false, error = result.message)
@@ -118,12 +188,22 @@ class PlayerViewModel @Inject constructor(
     }
 
     fun setQuality(quality: String) {
+        val oldQuality = _uiState.value.selectedQuality
         _uiState.update { it.copy(selectedQuality = quality) }
-        loadStreamingUrl()
+        // For multiple sources (non-HLS), reload URL with new quality source
+        val movie = _uiState.value.movie
+        if (movie?.hlsUrl.isNullOrBlank() && (movie?.streamingSources?.size ?: 0) > 1 && quality != oldQuality) {
+            val currentPos = _uiState.value.currentPosition
+            loadStreamingUrl(resumePosition = currentPos)
+        }
     }
 
     fun setPlaybackSpeed(speed: Float) {
         _uiState.update { it.copy(playbackSpeed = speed) }
+    }
+
+    fun setSpeedOverride(active: Boolean) {
+        _uiState.update { it.copy(isSpeedOverride = active) }
     }
 
     fun toggleFullscreen() {

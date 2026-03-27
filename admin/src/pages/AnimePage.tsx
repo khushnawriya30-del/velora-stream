@@ -52,7 +52,7 @@ export default function AnimePage() {
             >
               <div className="aspect-[2/3] relative overflow-hidden">
                 <img
-                  src={anime.posterUrl || anime.backdropUrl}
+                  src={anime.posterUrl || anime.bannerUrl}
                   alt={anime.title}
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                 />

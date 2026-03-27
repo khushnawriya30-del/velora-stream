@@ -44,6 +44,10 @@ android {
         jvmTarget = "17"
     }
 
+    kotlin {
+        jvmToolchain(17)
+    }
+
     buildFeatures {
         compose = true
         buildConfig = true
@@ -129,6 +133,9 @@ dependencies {
     implementation("com.google.accompanist:accompanist-placeholder-material:0.32.0")
     implementation("com.google.accompanist:accompanist-pager:0.32.0")
     implementation("com.google.accompanist:accompanist-pager-indicators:0.32.0")
+
+    // Pull-to-refresh (Accompanist)
+    implementation("com.google.accompanist:accompanist-swiperefresh:0.33.2-alpha")
 
     // Testing
     testImplementation("junit:junit:4.13.2")
