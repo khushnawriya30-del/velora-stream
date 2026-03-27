@@ -565,8 +565,6 @@ fun SquareHeroBanner(
                         text = infoText,
                         fontSize = 13.sp,
                         color = Color.White.copy(alpha = 0.85f),
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis,
                         lineHeight = 18.sp,
                     )
                     Spacer(modifier = Modifier.height(6.dp))
