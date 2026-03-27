@@ -126,6 +126,26 @@ class PlayerViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Convert Google Drive share/view URLs to direct download URLs that ExoPlayer can stream.
+     * e.g. https://drive.google.com/file/d/FILE_ID/view?usp=sharing
+     *   -> https://drive.google.com/uc?id=FILE_ID&export=download
+     */
+    private fun toDirectUrl(url: String): String {
+        // Google Drive file view link
+        val driveMatch = Regex("drive\\.google\\.com/file/d/([a-zA-Z0-9_-]+)").find(url)
+        if (driveMatch != null) {
+            val fileId = driveMatch.groupValues[1]
+            return "https://drive.google.com/uc?id=$fileId&export=download"
+        }
+        // Google Drive open link
+        val openMatch = Regex("drive\\.google\\.com/open\\?id=([a-zA-Z0-9_-]+)").find(url)
+        if (openMatch != null) {
+            return "https://drive.google.com/uc?id=${openMatch.groupValues[1]}&export=download"
+        }
+        return url
+    }
+
     private fun loadStreamingUrl(resumePosition: Long = -1L, episodeSources: List<StreamingSourceDto>? = null) {
         viewModelScope.launch {
             val movie = _uiState.value.movie
@@ -133,8 +153,9 @@ class PlayerViewModel @Inject constructor(
             // If episode sources are provided, use them directly
             if (!episodeSources.isNullOrEmpty()) {
                 val source = episodeSources.firstOrNull()
-                val streamUrl = source?.url ?: ""
-                Log.d("CineVaultPlayer", "Using episode source URL: ${streamUrl.take(100)}")
+                val rawUrl = source?.url ?: ""
+                val streamUrl = toDirectUrl(rawUrl)
+                Log.d("CineVaultPlayer", "Using episode source URL: ${streamUrl.take(150)}")
                 if (streamUrl.startsWith("http://") || streamUrl.startsWith("https://")) {
                     _uiState.update { it.copy(
                         isLoading = false,
