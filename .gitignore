@@ -45,3 +45,4 @@ backend/uploads/
 # Admin
 admin/dist/
 admin/.vite/
+*.mp4
