@@ -488,8 +488,12 @@ function BulkAddForm({ seasonId, onClose }: { seasonId: string; onClose: () => v
         <button onClick={onClose} className="text-text-muted hover:text-text-primary"><X size={16} /></button>
       </div>
       <p className="text-xs text-text-muted">
-        Paste one video URL per line (Google Drive links, direct URLs, etc). Each line becomes an episode, automatically numbered.
+        Paste one video URL per line. Each line becomes an episode, automatically numbered.
       </p>
+      <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-green-500/10 border border-green-500/30 text-xs text-green-400">
+        <span>✓</span>
+        <span>Google Drive links are <strong>automatically converted</strong> to streaming URLs. Just paste the share link — no manual conversion needed.</span>
+      </div>
       <div className="flex gap-3">
         <input
           value={titlePrefix}
@@ -509,6 +513,7 @@ function BulkAddForm({ seasonId, onClose }: { seasonId: string; onClose: () => v
       <div className="flex items-center justify-between">
         <span className="text-xs text-text-muted">
           {urls.split('\n').filter((l) => l.trim()).length} episode(s) to add
+          {urls.includes('drive.google.com') && <span className="ml-2 text-green-400">• Drive links detected — will auto-convert</span>}
         </span>
         <button
           onClick={() => bulkCreate.mutate()}
@@ -580,6 +585,9 @@ function EditEpisodeForm({ episode, seasonId, onClose }: { episode: Episode; sea
         placeholder="Video URL (Google Drive / Direct)"
         className="w-full bg-surface border border-border rounded-lg px-3 py-2 text-sm font-mono"
       />
+      {form.streamingUrl.includes('drive.google.com') && (
+        <p className="text-xs text-green-400">✓ Google Drive link detected — will be auto-converted to streaming URL on save</p>
+      )}
       <input
         value={form.thumbnailUrl}
         onChange={(e) => setForm({ ...form, thumbnailUrl: e.target.value })}

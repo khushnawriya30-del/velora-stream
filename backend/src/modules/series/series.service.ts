@@ -3,6 +3,37 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Season, SeasonDocument, Episode, EpisodeDocument } from '../../schemas/series.schema';
 
+/**
+ * Convert any Google Drive link to a direct-download URL that video players can stream.
+ * Handles: /file/d/ID/view, /open?id=ID, /uc?id=ID, and already-converted URLs.
+ */
+function toDirectDriveUrl(url: string): string {
+  const patterns = [
+    /drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)/,
+    /drive\.google\.com\/open\?id=([a-zA-Z0-9_-]+)/,
+    /drive\.google\.com\/uc\?.*id=([a-zA-Z0-9_-]+)/,
+    /drive\.usercontent\.google\.com\/.*id=([a-zA-Z0-9_-]+)/,
+  ];
+  for (const pattern of patterns) {
+    const match = url.match(pattern);
+    if (match) {
+      return `https://drive.usercontent.google.com/download?id=${match[1]}&export=download&confirm=t`;
+    }
+  }
+  return url;
+}
+
+/** Convert all streaming source URLs in an episode's data. */
+function convertStreamingSources<T extends { streamingSources?: { quality: string; url: string; label?: string }[] }>(data: T): T {
+  if (data.streamingSources && Array.isArray(data.streamingSources)) {
+    data.streamingSources = data.streamingSources.map((src) => ({
+      ...src,
+      url: toDirectDriveUrl(src.url),
+    }));
+  }
+  return data;
+}
+
 @Injectable()
 export class SeriesService {
   constructor(
@@ -66,6 +97,8 @@ export class SeriesService {
     if (data.seasonId && typeof data.seasonId === 'string') {
       data.seasonId = new Types.ObjectId(data.seasonId) as any;
     }
+    // Auto-convert Google Drive URLs to direct download format
+    convertStreamingSources(data);
     const episode = await this.episodeModel.create(data);
     await this.seasonModel.findByIdAndUpdate(data.seasonId, { $inc: { episodeCount: 1 } });
     return episode;
@@ -79,7 +112,7 @@ export class SeriesService {
     let nextNumber = (lastEpisode?.episodeNumber ?? 0) + 1;
 
     const docs = episodes.map((ep) => ({
-      ...ep,
+      ...convertStreamingSources(ep),
       seasonId: new Types.ObjectId(seasonId),
       episodeNumber: ep.episodeNumber ?? nextNumber++,
     }));
@@ -90,6 +123,8 @@ export class SeriesService {
   }
 
   async updateEpisode(id: string, data: Partial<Episode>): Promise<EpisodeDocument> {
+    // Auto-convert Google Drive URLs to direct download format
+    convertStreamingSources(data);
     const episode = await this.episodeModel.findByIdAndUpdate(id, data, { new: true });
     if (!episode) throw new NotFoundException('Episode not found');
     return episode;
