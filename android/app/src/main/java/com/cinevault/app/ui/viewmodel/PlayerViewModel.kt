@@ -128,22 +128,27 @@ class PlayerViewModel @Inject constructor(
 
     /**
      * Convert Google Drive share/view URLs to direct download URLs that ExoPlayer can stream.
-     * e.g. https://drive.google.com/file/d/FILE_ID/view?usp=sharing
-     *   -> https://drive.google.com/uc?id=FILE_ID&export=download
+     * Uses drive.usercontent.google.com with confirm=t to bypass virus scan interstitial.
      */
     private fun toDirectUrl(url: String): String {
-        // Google Drive file view link
-        val driveMatch = Regex("drive\\.google\\.com/file/d/([a-zA-Z0-9_-]+)").find(url)
-        if (driveMatch != null) {
-            val fileId = driveMatch.groupValues[1]
-            return "https://drive.google.com/uc?id=$fileId&export=download"
+        val fileId = extractDriveFileId(url) ?: return url
+        return "https://drive.usercontent.google.com/download?id=$fileId&export=download&confirm=t"
+    }
+
+    private fun extractDriveFileId(url: String): String? {
+        // /file/d/FILE_ID/
+        Regex("drive\\.google\\.com/file/d/([a-zA-Z0-9_-]+)").find(url)?.let {
+            return it.groupValues[1]
         }
-        // Google Drive open link
-        val openMatch = Regex("drive\\.google\\.com/open\\?id=([a-zA-Z0-9_-]+)").find(url)
-        if (openMatch != null) {
-            return "https://drive.google.com/uc?id=${openMatch.groupValues[1]}&export=download"
+        // /open?id=FILE_ID
+        Regex("drive\\.google\\.com/open\\?id=([a-zA-Z0-9_-]+)").find(url)?.let {
+            return it.groupValues[1]
         }
-        return url
+        // /uc?...id=FILE_ID
+        Regex("drive\\.google\\.com/uc\\?.*id=([a-zA-Z0-9_-]+)").find(url)?.let {
+            return it.groupValues[1]
+        }
+        return null
     }
 
     private fun loadStreamingUrl(resumePosition: Long = -1L, episodeSources: List<StreamingSourceDto>? = null) {
