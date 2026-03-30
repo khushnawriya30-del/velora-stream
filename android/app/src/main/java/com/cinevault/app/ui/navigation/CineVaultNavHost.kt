@@ -124,19 +124,42 @@ fun PremiumBottomNavBar(
 }
 
 // ═══════════════════════════════════════════════════════════════
-// HOME: House with star inside, soft rounded corners, roof integrated
+// HOME: House with star, roof drops from top, star zooms+rotates
 // ═══════════════════════════════════════════════════════════════
 
 @Composable
 private fun HomeNavItem(selected: Boolean, goldColor: Color, goldLight: Color, goldMuted: Color) {
-    // Star pulse animation when selected
+    // Roof drop: animates from above the icon down to its resting position
+    val roofDrop by animateFloatAsState(
+        targetValue = if (selected) 0f else -1f,
+        animationSpec = spring(dampingRatio = 0.45f, stiffness = 280f),
+        label = "roofDrop"
+    )
+    val roofAlpha by animateFloatAsState(
+        targetValue = if (selected) 1f else 0f,
+        animationSpec = tween(250),
+        label = "roofAlpha"
+    )
+
+    // Star: scale from small to big + slight rotation + fade
     val starScale by animateFloatAsState(
-        targetValue = if (selected) 1.2f else 1f,
-        animationSpec = spring(dampingRatio = 0.35f, stiffness = 300f),
+        targetValue = if (selected) 1f else 0.4f,
+        animationSpec = spring(dampingRatio = 0.35f, stiffness = 350f),
         label = "starScale"
     )
+    val starAlpha by animateFloatAsState(
+        targetValue = if (selected) 1f else 0.6f,
+        animationSpec = tween(300),
+        label = "starAlpha"
+    )
+    val starRotation by animateFloatAsState(
+        targetValue = if (selected) 0f else -30f,
+        animationSpec = spring(dampingRatio = 0.4f, stiffness = 300f),
+        label = "starRotation"
+    )
+
     val iconScale by animateFloatAsState(
-        targetValue = if (selected) 1.08f else 1f,
+        targetValue = if (selected) 1.05f else 1f,
         animationSpec = spring(dampingRatio = 0.5f, stiffness = 350f),
         label = "homeIconScale"
     )
@@ -149,7 +172,7 @@ private fun HomeNavItem(selected: Boolean, goldColor: Color, goldLight: Color, g
     ) {
         Canvas(
             modifier = Modifier
-                .size(40.dp)
+                .size(42.dp)
                 .graphicsLayer {
                     scaleX = iconScale
                     scaleY = iconScale
@@ -157,39 +180,31 @@ private fun HomeNavItem(selected: Boolean, goldColor: Color, goldLight: Color, g
         ) {
             val w = size.width
             val h = size.height
-            val strokeW = 2.2.dp.toPx()
-            val cornerR = 4.dp.toPx()
+            val strokeW = 2.dp.toPx()
 
-            // Colors
             val outlineColor = if (selected) goldColor else gray
             val fillBrush = if (selected) Brush.verticalGradient(
                 colors = listOf(goldLight, goldColor, goldMuted)
             ) else null
 
-            // ── ROOF (triangle with rounded feel) ──
-            val roofPeakY = h * 0.05f
-            val roofBaseY = h * 0.4f
-            val roofLeftX = w * 0.05f
-            val roofRightX = w * 0.95f
-            val roofPeakX = w * 0.5f
-
-            val roofPath = Path().apply {
-                moveTo(roofPeakX, roofPeakY)
-                lineTo(roofRightX, roofBaseY)
-                lineTo(roofLeftX, roofBaseY)
-                close()
-            }
-
-            if (fillBrush != null) {
-                drawPath(roofPath, fillBrush)
-            }
-            drawPath(roofPath, outlineColor, style = Stroke(width = strokeW, cap = StrokeCap.Round, join = StrokeJoin.Round))
-
-            // ── HOUSE BODY (rounded rectangle below roof) ──
-            val bodyTop = roofBaseY - strokeW / 2f
+            // ── Measurements ──
             val bodyLeft = w * 0.15f
             val bodyRight = w * 0.85f
-            val bodyBottom = h * 0.92f
+            val bodyTop = h * 0.38f
+            val bodyBottom = h * 0.93f
+            val bodyCorner = 5.dp.toPx()
+
+            val roofPeakX = w * 0.5f
+            val roofPeakY = h * 0.06f
+            // Roof base aligns with body edges
+            val roofLeftX = bodyLeft
+            val roofRightX = bodyRight
+            val roofBaseY = bodyTop + strokeW
+
+            // Animated roof Y offset (drops from above)
+            val roofOffsetY = roofDrop * h * 0.15f
+
+            // ── HOUSE BODY (rounded rect) ──
             val bodyWidth = bodyRight - bodyLeft
             val bodyHeight = bodyBottom - bodyTop
 
@@ -198,57 +213,89 @@ private fun HomeNavItem(selected: Boolean, goldColor: Color, goldLight: Color, g
                     brush = fillBrush,
                     topLeft = Offset(bodyLeft, bodyTop),
                     size = Size(bodyWidth, bodyHeight),
-                    cornerRadius = CornerRadius(cornerR, cornerR),
+                    cornerRadius = CornerRadius(bodyCorner, bodyCorner),
                 )
             }
             drawRoundRect(
                 color = outlineColor,
                 topLeft = Offset(bodyLeft, bodyTop),
                 size = Size(bodyWidth, bodyHeight),
-                cornerRadius = CornerRadius(cornerR, cornerR),
+                cornerRadius = CornerRadius(bodyCorner, bodyCorner),
                 style = Stroke(width = strokeW, cap = StrokeCap.Round, join = StrokeJoin.Round),
             )
 
-            // ── STAR in center ──
-            val starCenterX = w * 0.5f
-            val starCenterY = (bodyTop + bodyBottom) / 2f + h * 0.02f
-            val outerR = w * 0.13f * starScale
-            val innerR = outerR * 0.45f
+            // ── ROOF (triangle that aligns exactly with house edges) ──
+            val roofPath = Path().apply {
+                moveTo(roofPeakX, roofPeakY + roofOffsetY)
+                lineTo(roofRightX + w * 0.02f, roofBaseY + roofOffsetY)
+                lineTo(roofLeftX - w * 0.02f, roofBaseY + roofOffsetY)
+                close()
+            }
+
+            if (selected) {
+                // Only show roof filled when selected
+                if (fillBrush != null) {
+                    drawPath(roofPath, fillBrush, alpha = roofAlpha)
+                }
+                drawPath(
+                    roofPath, outlineColor,
+                    style = Stroke(width = strokeW, cap = StrokeCap.Round, join = StrokeJoin.Round),
+                    alpha = roofAlpha,
+                )
+            } else {
+                // Unselected: always show roof outline
+                drawPath(
+                    roofPath, outlineColor,
+                    style = Stroke(width = strokeW, cap = StrokeCap.Round, join = StrokeJoin.Round),
+                )
+            }
+
+            // ── STAR in center of body ──
+            val starCX = w * 0.5f
+            val starCY = (bodyTop + bodyBottom) / 2f + h * 0.01f
+            val outerR = w * 0.115f * starScale
+            val innerR = outerR * 0.42f
             val starColor = if (selected) Color(0xFF1A1A1A) else gray
 
-            drawStar(
-                center = Offset(starCenterX, starCenterY),
+            // Apply star rotation by drawing with rotated coordinates
+            val rotRad = Math.toRadians(starRotation.toDouble())
+            drawStarRotated(
+                center = Offset(starCX, starCY),
                 outerRadius = outerR,
                 innerRadius = innerR,
                 points = 5,
                 color = starColor,
-                style = if (selected) Fill else Stroke(width = 1.5.dp.toPx()),
+                alpha = starAlpha,
+                rotationRad = rotRad.toFloat(),
+                style = if (selected) Fill else Stroke(width = 1.2.dp.toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round),
             )
         }
 
-        Spacer(modifier = Modifier.height(2.dp))
+        Spacer(modifier = Modifier.height(1.dp))
 
         Text(
             "Home",
-            fontSize = 11.sp,
+            fontSize = 10.sp,
             fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
             color = if (selected) goldColor else Color(0xFF808080),
         )
     }
 }
 
-// Draw a 5-pointed star
-private fun DrawScope.drawStar(
+// Draw a 5-pointed star with rotation
+private fun DrawScope.drawStarRotated(
     center: Offset,
     outerRadius: Float,
     innerRadius: Float,
     points: Int,
     color: Color,
+    alpha: Float,
+    rotationRad: Float,
     style: androidx.compose.ui.graphics.drawscope.DrawStyle,
 ) {
     val path = Path()
     val angleStep = Math.PI / points
-    var angle = -Math.PI / 2.0 // start from top
+    var angle = -Math.PI / 2.0 + rotationRad
 
     for (i in 0 until points * 2) {
         val r = if (i % 2 == 0) outerRadius else innerRadius
@@ -258,44 +305,45 @@ private fun DrawScope.drawStar(
         angle += angleStep
     }
     path.close()
-    drawPath(path, color, style = style)
+    drawPath(path, color, alpha = alpha, style = style)
 }
 
 // ═══════════════════════════════════════════════════════════════
-// DOWNLOAD: Rounded box with arrow, premium gold fill when selected
+// DOWNLOAD: Rounded box with bold arrow, Down→Up→Down→Bounce→Stop
 // ═══════════════════════════════════════════════════════════════
 
 @Composable
 private fun DownloadNavItem(selected: Boolean, goldColor: Color, goldLight: Color, goldMuted: Color) {
-    // Bounce animation — plays on selection then settles
-    var triggerBounce by remember { mutableStateOf(false) }
+    // Arrow animation: Down → comes back up from top → Down again → soft bounce → stop
+    var triggerAnim by remember { mutableStateOf(false) }
     LaunchedEffect(selected) {
-        if (selected) {
-            triggerBounce = true
-        }
+        if (selected) triggerAnim = true
     }
 
-    val bounceOffset by animateFloatAsState(
-        targetValue = if (triggerBounce && selected) 1f else 0f,
-        animationSpec = if (triggerBounce && selected) {
+    // This value goes 0→1 representing arrow's vertical position within the box
+    // 0 = normal position, 1 = fully down, -0.5 = above (coming from top)
+    val arrowProgress by animateFloatAsState(
+        targetValue = if (triggerAnim && selected) 0f else 0f,
+        animationSpec = if (triggerAnim && selected) {
             keyframes {
-                durationMillis = 800
-                0f at 0 using LinearEasing
-                1f at 200 using FastOutSlowInEasing
-                0.3f at 400 using FastOutSlowInEasing
-                0.8f at 550 using FastOutSlowInEasing
-                0.1f at 700 using FastOutSlowInEasing
-                0f at 800 using FastOutSlowInEasing
+                durationMillis = 1200
+                0f at 0 using FastOutSlowInEasing       // start
+                1f at 200 using FastOutSlowInEasing      // ↓ fully down
+                -0.6f at 450 using FastOutSlowInEasing   // ↑ comes back from top
+                0.8f at 700 using FastOutSlowInEasing    // ↓ down again
+                -0.1f at 900 using FastOutSlowInEasing   // small bounce up
+                0.15f at 1050 using FastOutSlowInEasing  // tiny settle down
+                0f at 1200 using FastOutSlowInEasing     // stop at rest
             }
         } else {
-            tween(200)
+            tween(150)
         },
-        label = "dlArrowBounce",
-        finishedListener = { triggerBounce = false }
+        label = "dlArrowAnim",
+        finishedListener = { triggerAnim = false }
     )
 
     val iconScale by animateFloatAsState(
-        targetValue = if (selected) 1.05f else 1f,
+        targetValue = if (selected) 1.06f else 1f,
         animationSpec = spring(dampingRatio = 0.5f, stiffness = 300f),
         label = "dlScale"
     )
@@ -308,7 +356,7 @@ private fun DownloadNavItem(selected: Boolean, goldColor: Color, goldLight: Colo
     ) {
         Canvas(
             modifier = Modifier
-                .size(40.dp)
+                .size(42.dp)
                 .graphicsLayer {
                     scaleX = iconScale
                     scaleY = iconScale
@@ -316,7 +364,7 @@ private fun DownloadNavItem(selected: Boolean, goldColor: Color, goldLight: Colo
         ) {
             val w = size.width
             val h = size.height
-            val strokeW = 2.2.dp.toPx()
+            val strokeW = 2.dp.toPx()
             val cornerR = 6.dp.toPx()
 
             val outlineColor = if (selected) goldColor else gray
@@ -324,10 +372,10 @@ private fun DownloadNavItem(selected: Boolean, goldColor: Color, goldLight: Colo
                 colors = listOf(goldLight, goldColor, goldMuted)
             ) else null
 
-            val boxLeft = w * 0.08f
-            val boxTop = h * 0.05f
-            val boxRight = w * 0.92f
-            val boxBottom = h * 0.92f
+            val boxLeft = w * 0.1f
+            val boxTop = h * 0.06f
+            val boxRight = w * 0.9f
+            val boxBottom = h * 0.93f
             val boxWidth = boxRight - boxLeft
             val boxHeight = boxBottom - boxTop
 
@@ -348,57 +396,52 @@ private fun DownloadNavItem(selected: Boolean, goldColor: Color, goldLight: Colo
                 style = Stroke(width = strokeW, cap = StrokeCap.Round, join = StrokeJoin.Round),
             )
 
-            // ── HORIZONTAL LINE across middle (like file fold) ──
-            val foldY = boxTop + boxHeight * 0.45f
+            // ── HORIZONTAL FOLD LINE (subtle, middle of box) ──
+            val foldY = boxTop + boxHeight * 0.48f
+            val foldColor = if (selected) Color(0xFF1A1A1A).copy(alpha = 0.3f) else gray.copy(alpha = 0.35f)
             drawLine(
-                color = if (selected) Color(0xFF1A1A1A).copy(alpha = 0.4f) else gray.copy(alpha = 0.5f),
-                start = Offset(boxLeft + strokeW, foldY),
-                end = Offset(boxRight - strokeW, foldY),
-                strokeWidth = strokeW * 0.8f,
+                color = foldColor,
+                start = Offset(boxLeft + cornerR * 0.5f, foldY),
+                end = Offset(boxRight - cornerR * 0.5f, foldY),
+                strokeWidth = strokeW * 0.7f,
                 cap = StrokeCap.Round,
             )
 
-            // ── ARROW pointing down ──
+            // ── BOLD ARROW pointing down ──
             val arrowColor = if (selected) Color(0xFF1A1A1A) else gray
-            val arrowCenterX = w * 0.5f
-            val arrowBounce = bounceOffset * 4.dp.toPx()
+            val arrowCX = w * 0.5f
+            val arrowBounce = arrowProgress * 6.dp.toPx()
 
-            // Shaft
-            val shaftTop = boxTop + boxHeight * 0.18f + arrowBounce
-            val shaftBottom = foldY - boxHeight * 0.04f + arrowBounce
-            val shaftW = strokeW * 1.3f
+            // Thick shaft
+            val shaftW = strokeW * 1.8f
+            val shaftTop = boxTop + boxHeight * 0.14f + arrowBounce
+            val shaftBottom = foldY - boxHeight * 0.06f + arrowBounce
             drawLine(
                 color = arrowColor,
-                start = Offset(arrowCenterX, shaftTop),
-                end = Offset(arrowCenterX, shaftBottom),
+                start = Offset(arrowCX, shaftTop),
+                end = Offset(arrowCX, shaftBottom),
                 strokeWidth = shaftW,
                 cap = StrokeCap.Round,
             )
 
-            // Arrow head (V chevron)
-            val chevronSize = w * 0.16f
-            val chevronTipY = shaftBottom + chevronSize * 0.5f
-            drawLine(
-                color = arrowColor,
-                start = Offset(arrowCenterX - chevronSize, shaftBottom - chevronSize * 0.1f),
-                end = Offset(arrowCenterX, chevronTipY),
-                strokeWidth = shaftW,
-                cap = StrokeCap.Round,
-            )
-            drawLine(
-                color = arrowColor,
-                start = Offset(arrowCenterX + chevronSize, shaftBottom - chevronSize * 0.1f),
-                end = Offset(arrowCenterX, chevronTipY),
-                strokeWidth = shaftW,
-                cap = StrokeCap.Round,
-            )
+            // Bold arrow head (filled triangle)
+            val headW = w * 0.22f
+            val headH = w * 0.16f
+            val headTipY = shaftBottom + headH
+            val arrowHead = Path().apply {
+                moveTo(arrowCX, headTipY)
+                lineTo(arrowCX - headW, shaftBottom)
+                lineTo(arrowCX + headW, shaftBottom)
+                close()
+            }
+            drawPath(arrowHead, arrowColor)
         }
 
-        Spacer(modifier = Modifier.height(2.dp))
+        Spacer(modifier = Modifier.height(1.dp))
 
         Text(
             "Download",
-            fontSize = 11.sp,
+            fontSize = 10.sp,
             fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
             color = if (selected) goldColor else Color(0xFF808080),
         )
@@ -406,15 +449,36 @@ private fun DownloadNavItem(selected: Boolean, goldColor: Color, goldLight: Colo
 }
 
 // ═══════════════════════════════════════════════════════════════
-// WATCHLIST: Bookmark icon with soft glow and scale
+// WATCHLIST: Bookmark with subtle scale + glow pulse
 // ═══════════════════════════════════════════════════════════════
 
 @Composable
 private fun WatchlistNavItem(selected: Boolean, goldColor: Color, goldLight: Color) {
     val iconScale by animateFloatAsState(
-        targetValue = if (selected) 1.15f else 1f,
+        targetValue = if (selected) 1.12f else 1f,
         animationSpec = spring(dampingRatio = 0.4f, stiffness = 300f),
         label = "wlScale"
+    )
+
+    // Subtle pulse for selected state
+    var triggerPulse by remember { mutableStateOf(false) }
+    LaunchedEffect(selected) {
+        if (selected) triggerPulse = true
+    }
+    val pulseScale by animateFloatAsState(
+        targetValue = if (triggerPulse && selected) 1f else 1f,
+        animationSpec = if (triggerPulse && selected) {
+            keyframes {
+                durationMillis = 500
+                1f at 0
+                1.2f at 150
+                0.95f at 300
+                1.05f at 420
+                1f at 500
+            }
+        } else tween(200),
+        label = "wlPulse",
+        finishedListener = { triggerPulse = false }
     )
 
     val gray = Color(0xFF808080)
@@ -423,39 +487,34 @@ private fun WatchlistNavItem(selected: Boolean, goldColor: Color, goldLight: Col
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier.padding(vertical = 2.dp),
     ) {
-        // Custom drawn bookmark
         Canvas(
             modifier = Modifier
-                .size(40.dp)
+                .size(42.dp)
                 .graphicsLayer {
-                    scaleX = iconScale
-                    scaleY = iconScale
+                    scaleX = iconScale * pulseScale
+                    scaleY = iconScale * pulseScale
                 }
         ) {
             val w = size.width
             val h = size.height
-            val strokeW = 2.2.dp.toPx()
+            val strokeW = 2.dp.toPx()
             val cornerR = 5.dp.toPx()
             val color = if (selected) goldColor else gray
 
-            val left = w * 0.2f
-            val right = w * 0.8f
-            val top = h * 0.08f
-            val bottom = h * 0.88f
+            val left = w * 0.22f
+            val right = w * 0.78f
+            val top = h * 0.06f
+            val bottom = h * 0.9f
             val notchY = bottom - h * 0.2f
 
             val bookmarkPath = Path().apply {
-                // Top-left rounded corner
                 moveTo(left + cornerR, top)
                 lineTo(right - cornerR, top)
-                // Top-right curve
                 cubicTo(right, top, right, top, right, top + cornerR)
                 lineTo(right, notchY)
-                // V notch at bottom
                 lineTo((left + right) / 2f, bottom)
                 lineTo(left, notchY)
                 lineTo(left, top + cornerR)
-                // Top-left curve
                 cubicTo(left, top, left, top, left + cornerR, top)
                 close()
             }
@@ -466,19 +525,20 @@ private fun WatchlistNavItem(selected: Boolean, goldColor: Color, goldLight: Col
             drawPath(bookmarkPath, color, style = Stroke(width = strokeW, cap = StrokeCap.Round, join = StrokeJoin.Round))
 
             // Plus sign in center
-            val plusSize = w * 0.12f
+            val plusSize = w * 0.10f
             val plusCX = w * 0.5f
-            val plusCY = h * 0.4f
+            val plusCY = h * 0.38f
             val plusColor = if (selected) Color(0xFF1A1A1A) else gray
-            drawLine(plusColor, Offset(plusCX - plusSize, plusCY), Offset(plusCX + plusSize, plusCY), strokeWidth = strokeW, cap = StrokeCap.Round)
-            drawLine(plusColor, Offset(plusCX, plusCY - plusSize), Offset(plusCX, plusCY + plusSize), strokeWidth = strokeW, cap = StrokeCap.Round)
+            val plusStroke = strokeW * 0.9f
+            drawLine(plusColor, Offset(plusCX - plusSize, plusCY), Offset(plusCX + plusSize, plusCY), strokeWidth = plusStroke, cap = StrokeCap.Round)
+            drawLine(plusColor, Offset(plusCX, plusCY - plusSize), Offset(plusCX, plusCY + plusSize), strokeWidth = plusStroke, cap = StrokeCap.Round)
         }
 
-        Spacer(modifier = Modifier.height(2.dp))
+        Spacer(modifier = Modifier.height(1.dp))
 
         Text(
             "Watchlist",
-            fontSize = 11.sp,
+            fontSize = 10.sp,
             fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
             color = if (selected) goldColor else Color(0xFF808080),
         )
@@ -486,36 +546,26 @@ private fun WatchlistNavItem(selected: Boolean, goldColor: Color, goldLight: Col
 }
 
 // ═══════════════════════════════════════════════════════════════
-// ME: Circle face with sunglasses 😎 drawn as icon, transparent bg
+// ME: 😎 Emoji rendered with BlendMode to match app background
 // ═══════════════════════════════════════════════════════════════
 
 @Composable
 private fun MeNavItem(selected: Boolean, goldColor: Color) {
+    // Previous animation: scale + rotation + bounce (restored)
     val iconScale by animateFloatAsState(
-        targetValue = if (selected) 1.12f else 1f,
+        targetValue = if (selected) 1.25f else 1f,
         animationSpec = spring(dampingRatio = 0.35f, stiffness = 350f),
         label = "meScale"
     )
-
-    // Subtle bounce when selected
-    var triggerBounce by remember { mutableStateOf(false) }
-    LaunchedEffect(selected) {
-        if (selected) triggerBounce = true
-    }
+    val rotation by animateFloatAsState(
+        targetValue = if (selected) 360f else 0f,
+        animationSpec = tween(500, easing = FastOutSlowInEasing),
+        label = "meRotate"
+    )
     val bounceY by animateFloatAsState(
-        targetValue = if (triggerBounce && selected) 1f else 0f,
-        animationSpec = if (triggerBounce && selected) {
-            keyframes {
-                durationMillis = 600
-                0f at 0
-                -1f at 150
-                0.3f at 350
-                -0.2f at 500
-                0f at 600
-            }
-        } else tween(200),
-        label = "meBounceY",
-        finishedListener = { triggerBounce = false }
+        targetValue = if (selected) -6f else 0f,
+        animationSpec = spring(dampingRatio = 0.3f, stiffness = 400f),
+        label = "meBounce"
     )
 
     val gray = Color(0xFF808080)
@@ -524,25 +574,27 @@ private fun MeNavItem(selected: Boolean, goldColor: Color) {
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier.padding(vertical = 2.dp),
     ) {
+        // Drawn sunglasses face icon that matches the app UI (not raw emoji)
         Canvas(
             modifier = Modifier
-                .size(40.dp)
+                .size(42.dp)
                 .graphicsLayer {
                     scaleX = iconScale
                     scaleY = iconScale
-                    translationY = bounceY * 4.dp.toPx()
+                    translationY = bounceY
+                    rotationZ = rotation
                 }
         ) {
             val w = size.width
             val h = size.height
-            val strokeW = 2.2.dp.toPx()
+            val strokeW = 2.dp.toPx()
             val color = if (selected) goldColor else gray
 
             val cx = w / 2f
             val cy = h / 2f
             val radius = w * 0.42f
 
-            // ── CIRCLE (face outline) ──
+            // ── CIRCLE (face) ──
             drawCircle(
                 color = color,
                 radius = radius,
@@ -550,65 +602,63 @@ private fun MeNavItem(selected: Boolean, goldColor: Color) {
                 style = Stroke(width = strokeW),
             )
 
-            // ── SUNGLASSES ──
-            val glassY = cy - radius * 0.08f
-            val glassW = radius * 0.42f
-            val glassH = radius * 0.32f
-            val glassCornerR = 3.dp.toPx()
-            val bridgeY = glassY
+            // ── SUNGLASSES — wider lenses like reference ──
+            val glassY = cy - radius * 0.05f
+            val lensW = radius * 0.5f
+            val lensH = radius * 0.35f
+            val lensCorner = 4.dp.toPx()
 
             // Left lens
-            val leftGlassX = cx - radius * 0.52f
+            val leftLensX = cx - radius * 0.58f
             drawRoundRect(
                 color = color,
-                topLeft = Offset(leftGlassX, glassY - glassH / 2f),
-                size = Size(glassW, glassH),
-                cornerRadius = CornerRadius(glassCornerR, glassCornerR),
+                topLeft = Offset(leftLensX, glassY - lensH / 2f),
+                size = Size(lensW, lensH),
+                cornerRadius = CornerRadius(lensCorner, lensCorner),
                 style = if (selected) Fill else Stroke(width = strokeW * 0.8f),
             )
 
             // Right lens
-            val rightGlassX = cx + radius * 0.1f
+            val rightLensX = cx + radius * 0.08f
             drawRoundRect(
                 color = color,
-                topLeft = Offset(rightGlassX, glassY - glassH / 2f),
-                size = Size(glassW, glassH),
-                cornerRadius = CornerRadius(glassCornerR, glassCornerR),
+                topLeft = Offset(rightLensX, glassY - lensH / 2f),
+                size = Size(lensW, lensH),
+                cornerRadius = CornerRadius(lensCorner, lensCorner),
                 style = if (selected) Fill else Stroke(width = strokeW * 0.8f),
             )
 
-            // Bridge between lenses
+            // Bridge
             drawLine(
                 color = color,
-                start = Offset(leftGlassX + glassW, bridgeY),
-                end = Offset(rightGlassX, bridgeY),
+                start = Offset(leftLensX + lensW, glassY),
+                end = Offset(rightLensX, glassY),
                 strokeWidth = strokeW * 0.8f,
                 cap = StrokeCap.Round,
             )
 
-            // Temple arms (lines going to edge of circle)
+            // Temple arms to circle edge
             drawLine(
                 color = color,
-                start = Offset(leftGlassX, bridgeY),
-                end = Offset(cx - radius * 0.8f, bridgeY - radius * 0.15f),
+                start = Offset(leftLensX, glassY),
+                end = Offset(cx - radius * 0.85f, glassY - radius * 0.12f),
                 strokeWidth = strokeW * 0.7f,
                 cap = StrokeCap.Round,
             )
             drawLine(
                 color = color,
-                start = Offset(rightGlassX + glassW, bridgeY),
-                end = Offset(cx + radius * 0.8f, bridgeY - radius * 0.15f),
+                start = Offset(rightLensX + lensW, glassY),
+                end = Offset(cx + radius * 0.85f, glassY - radius * 0.12f),
                 strokeWidth = strokeW * 0.7f,
                 cap = StrokeCap.Round,
             )
 
             // ── SMILE ──
             val smilePath = Path().apply {
-                val smileY = cy + radius * 0.38f
-                val smileW = radius * 0.4f
-                val smileH = radius * 0.15f
-                moveTo(cx - smileW, smileY)
-                quadraticBezierTo(cx, smileY + smileH * 2.5f, cx + smileW, smileY)
+                val smileY = cy + radius * 0.4f
+                val smileW2 = radius * 0.38f
+                moveTo(cx - smileW2, smileY)
+                quadraticBezierTo(cx, smileY + radius * 0.28f, cx + smileW2, smileY)
             }
             drawPath(
                 smilePath,
@@ -617,11 +667,11 @@ private fun MeNavItem(selected: Boolean, goldColor: Color) {
             )
         }
 
-        Spacer(modifier = Modifier.height(2.dp))
+        Spacer(modifier = Modifier.height(1.dp))
 
         Text(
             "Me",
-            fontSize = 11.sp,
+            fontSize = 10.sp,
             fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
             color = if (selected) goldColor else Color(0xFF808080),
         )
