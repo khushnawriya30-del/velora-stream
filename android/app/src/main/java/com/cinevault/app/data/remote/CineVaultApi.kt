@@ -193,4 +193,8 @@ interface CineVaultApi {
     // Streaming
     @GET("streaming/url")
     suspend fun getStreamUrl(@Query("path") path: String): Response<SignedUrlResponse>
+
+    // App Version
+    @GET("app-version")
+    suspend fun getAppVersion(): Response<AppVersionResponse>
 }

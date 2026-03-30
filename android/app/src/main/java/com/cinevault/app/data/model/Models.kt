@@ -18,6 +18,15 @@ data class ForgotPasswordRequest(val email: String)
 data class ResetPasswordRequest(val token: String, val password: String)
 data class MessageResponse(val message: String)
 
+// App Version (for auto-update)
+data class AppVersionResponse(
+    val versionCode: Int,
+    val versionName: String,
+    val forceUpdate: Boolean,
+    val apkUrl: String,
+    val releaseNotes: String?
+)
+
 // User
 data class UserDto(
     val id: String,

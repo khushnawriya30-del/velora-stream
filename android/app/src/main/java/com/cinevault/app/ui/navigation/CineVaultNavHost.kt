@@ -13,14 +13,17 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.*
 import androidx.navigation.navArgument
+import com.cinevault.app.ui.components.UpdateDialog
 import com.cinevault.app.ui.screen.*
 import com.cinevault.app.ui.theme.CineVaultTheme
+import com.cinevault.app.ui.viewmodel.AppViewModel
 
 data class BottomNavItem(val label: String, val icon: ImageVector, val route: String)
 
@@ -33,6 +36,9 @@ val bottomNavItems = listOf(
 
 @Composable
 fun CineVaultNavHost(navController: NavHostController = rememberNavController()) {
+    val appViewModel: AppViewModel = hiltViewModel()
+    val updateInfo by appViewModel.updateInfo.collectAsState()
+
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
 
@@ -251,5 +257,13 @@ fun CineVaultNavHost(navController: NavHostController = rememberNavController())
                 )
             }
         }
+    }
+
+    // Show update dialog on top of everything when an update is available
+    updateInfo?.let { info ->
+        UpdateDialog(
+            info = info,
+            onDismiss = { appViewModel.dismissUpdate() }
+        )
     }
 }

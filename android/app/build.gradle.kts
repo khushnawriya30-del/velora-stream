@@ -31,7 +31,7 @@ android {
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
-            buildConfigField("String", "BASE_URL", "\"https://api.cinevault.app/api/v1/\"")
+            buildConfigField("String", "BASE_URL", "\"https://cinevault-api.fly.dev/api/v1/\"")
         }
     }
 
