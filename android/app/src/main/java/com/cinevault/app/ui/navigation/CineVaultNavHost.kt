@@ -172,7 +172,7 @@ private fun HomeNavItem(selected: Boolean, goldColor: Color, goldLight: Color, g
     ) {
         Canvas(
             modifier = Modifier
-                .size(42.dp)
+                .size(28.dp)
                 .graphicsLayer {
                     scaleX = iconScale
                     scaleY = iconScale
@@ -180,7 +180,7 @@ private fun HomeNavItem(selected: Boolean, goldColor: Color, goldLight: Color, g
         ) {
             val w = size.width
             val h = size.height
-            val strokeW = 2.dp.toPx()
+            val strokeW = 1.5.dp.toPx()
 
             val outlineColor = if (selected) goldColor else gray
             val fillBrush = if (selected) Brush.verticalGradient(
@@ -275,7 +275,7 @@ private fun HomeNavItem(selected: Boolean, goldColor: Color, goldLight: Color, g
 
         Text(
             "Home",
-            fontSize = 10.sp,
+            fontSize = 8.sp,
             fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
             color = if (selected) goldColor else Color(0xFF808080),
         )
@@ -309,38 +309,32 @@ private fun DrawScope.drawStarRotated(
 }
 
 // ═══════════════════════════════════════════════════════════════
-// DOWNLOAD: Rounded box with bold arrow, Down→Up→Down→Bounce→Stop
+// DOWNLOAD: Rounded box with bold arrow, Top→Down→Up→Down→Stop
 // ═══════════════════════════════════════════════════════════════
 
 @Composable
 private fun DownloadNavItem(selected: Boolean, goldColor: Color, goldLight: Color, goldMuted: Color) {
-    // Arrow animation: Down → comes back up from top → Down again → soft bounce → stop
-    var triggerAnim by remember { mutableStateOf(false) }
+    // Arrow animation using Animatable for proper one-shot keyframe playback
+    val arrowOffset = remember { Animatable(0f) }
     LaunchedEffect(selected) {
-        if (selected) triggerAnim = true
-    }
-
-    // This value goes 0→1 representing arrow's vertical position within the box
-    // 0 = normal position, 1 = fully down, -0.5 = above (coming from top)
-    val arrowProgress by animateFloatAsState(
-        targetValue = if (triggerAnim && selected) 0f else 0f,
-        animationSpec = if (triggerAnim && selected) {
-            keyframes {
-                durationMillis = 1200
-                0f at 0 using FastOutSlowInEasing       // start
-                1f at 200 using FastOutSlowInEasing      // ↓ fully down
-                -0.6f at 450 using FastOutSlowInEasing   // ↑ comes back from top
-                0.8f at 700 using FastOutSlowInEasing    // ↓ down again
-                -0.1f at 900 using FastOutSlowInEasing   // small bounce up
-                0.15f at 1050 using FastOutSlowInEasing  // tiny settle down
-                0f at 1200 using FastOutSlowInEasing     // stop at rest
-            }
+        if (selected) {
+            arrowOffset.snapTo(-1f) // start from top
+            arrowOffset.animateTo(
+                targetValue = 0f,
+                animationSpec = keyframes {
+                    durationMillis = 1000
+                    -1f at 0 using FastOutSlowInEasing       // top
+                    1f at 250 using FastOutSlowInEasing      // ↓ down
+                    -0.5f at 500 using FastOutSlowInEasing   // ↑ back up
+                    0.7f at 720 using FastOutSlowInEasing    // ↓ down again
+                    -0.05f at 880 using FastOutSlowInEasing  // tiny overshoot
+                    0f at 1000 using FastOutSlowInEasing     // soft stop
+                }
+            )
         } else {
-            tween(150)
-        },
-        label = "dlArrowAnim",
-        finishedListener = { triggerAnim = false }
-    )
+            arrowOffset.snapTo(0f)
+        }
+    }
 
     val iconScale by animateFloatAsState(
         targetValue = if (selected) 1.06f else 1f,
@@ -356,7 +350,7 @@ private fun DownloadNavItem(selected: Boolean, goldColor: Color, goldLight: Colo
     ) {
         Canvas(
             modifier = Modifier
-                .size(42.dp)
+                .size(28.dp)
                 .graphicsLayer {
                     scaleX = iconScale
                     scaleY = iconScale
@@ -364,8 +358,8 @@ private fun DownloadNavItem(selected: Boolean, goldColor: Color, goldLight: Colo
         ) {
             val w = size.width
             val h = size.height
-            val strokeW = 2.dp.toPx()
-            val cornerR = 6.dp.toPx()
+            val strokeW = 1.5.dp.toPx()
+            val cornerR = 4.dp.toPx()
 
             val outlineColor = if (selected) goldColor else gray
             val fillBrush = if (selected) Brush.verticalGradient(
@@ -379,7 +373,7 @@ private fun DownloadNavItem(selected: Boolean, goldColor: Color, goldLight: Colo
             val boxWidth = boxRight - boxLeft
             val boxHeight = boxBottom - boxTop
 
-            // ── OUTER BOX (rounded rectangle) ──
+            // ── OUTER BOX ──
             if (fillBrush != null) {
                 drawRoundRect(
                     brush = fillBrush,
@@ -396,7 +390,7 @@ private fun DownloadNavItem(selected: Boolean, goldColor: Color, goldLight: Colo
                 style = Stroke(width = strokeW, cap = StrokeCap.Round, join = StrokeJoin.Round),
             )
 
-            // ── HORIZONTAL FOLD LINE (subtle, middle of box) ──
+            // ── FOLD LINE ──
             val foldY = boxTop + boxHeight * 0.48f
             val foldColor = if (selected) Color(0xFF1A1A1A).copy(alpha = 0.3f) else gray.copy(alpha = 0.35f)
             drawLine(
@@ -410,12 +404,12 @@ private fun DownloadNavItem(selected: Boolean, goldColor: Color, goldLight: Colo
             // ── BOLD ARROW pointing down ──
             val arrowColor = if (selected) Color(0xFF1A1A1A) else gray
             val arrowCX = w * 0.5f
-            val arrowBounce = arrowProgress * 6.dp.toPx()
+            val arrowBounce = arrowOffset.value * 5.dp.toPx()
 
             // Thick shaft
-            val shaftW = strokeW * 1.8f
-            val shaftTop = boxTop + boxHeight * 0.14f + arrowBounce
-            val shaftBottom = foldY - boxHeight * 0.06f + arrowBounce
+            val shaftW = strokeW * 2f
+            val shaftTop = boxTop + boxHeight * 0.16f + arrowBounce
+            val shaftBottom = foldY - boxHeight * 0.08f + arrowBounce
             drawLine(
                 color = arrowColor,
                 start = Offset(arrowCX, shaftTop),
@@ -424,9 +418,9 @@ private fun DownloadNavItem(selected: Boolean, goldColor: Color, goldLight: Colo
                 cap = StrokeCap.Round,
             )
 
-            // Bold arrow head (filled triangle)
-            val headW = w * 0.22f
-            val headH = w * 0.16f
+            // Bold arrowhead (filled triangle, slightly smaller)
+            val headW = w * 0.18f
+            val headH = w * 0.13f
             val headTipY = shaftBottom + headH
             val arrowHead = Path().apply {
                 moveTo(arrowCX, headTipY)
@@ -441,7 +435,7 @@ private fun DownloadNavItem(selected: Boolean, goldColor: Color, goldLight: Colo
 
         Text(
             "Download",
-            fontSize = 10.sp,
+            fontSize = 8.sp,
             fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
             color = if (selected) goldColor else Color(0xFF808080),
         )
@@ -489,7 +483,7 @@ private fun WatchlistNavItem(selected: Boolean, goldColor: Color, goldLight: Col
     ) {
         Canvas(
             modifier = Modifier
-                .size(42.dp)
+                .size(28.dp)
                 .graphicsLayer {
                     scaleX = iconScale * pulseScale
                     scaleY = iconScale * pulseScale
@@ -497,8 +491,8 @@ private fun WatchlistNavItem(selected: Boolean, goldColor: Color, goldLight: Col
         ) {
             val w = size.width
             val h = size.height
-            val strokeW = 2.dp.toPx()
-            val cornerR = 5.dp.toPx()
+            val strokeW = 1.5.dp.toPx()
+            val cornerR = 4.dp.toPx()
             val color = if (selected) goldColor else gray
 
             val left = w * 0.22f
@@ -538,7 +532,7 @@ private fun WatchlistNavItem(selected: Boolean, goldColor: Color, goldLight: Col
 
         Text(
             "Watchlist",
-            fontSize = 10.sp,
+            fontSize = 8.sp,
             fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
             color = if (selected) goldColor else Color(0xFF808080),
         )
@@ -546,14 +540,13 @@ private fun WatchlistNavItem(selected: Boolean, goldColor: Color, goldLight: Col
 }
 
 // ═══════════════════════════════════════════════════════════════
-// ME: 😎 Emoji rendered with BlendMode to match app background
+// ME: 😎 Real emoji with scale + rotation + bounce animation
 // ═══════════════════════════════════════════════════════════════
 
 @Composable
 private fun MeNavItem(selected: Boolean, goldColor: Color) {
-    // Previous animation: scale + rotation + bounce (restored)
     val iconScale by animateFloatAsState(
-        targetValue = if (selected) 1.25f else 1f,
+        targetValue = if (selected) 1.2f else 1f,
         animationSpec = spring(dampingRatio = 0.35f, stiffness = 350f),
         label = "meScale"
     )
@@ -563,107 +556,33 @@ private fun MeNavItem(selected: Boolean, goldColor: Color) {
         label = "meRotate"
     )
     val bounceY by animateFloatAsState(
-        targetValue = if (selected) -6f else 0f,
+        targetValue = if (selected) -4f else 0f,
         animationSpec = spring(dampingRatio = 0.3f, stiffness = 400f),
         label = "meBounce"
     )
-
-    val gray = Color(0xFF808080)
 
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier.padding(vertical = 2.dp),
     ) {
-        // Drawn sunglasses face icon that matches the app UI (not raw emoji)
-        Canvas(
+        Box(
             modifier = Modifier
-                .size(42.dp)
+                .size(28.dp)
                 .graphicsLayer {
                     scaleX = iconScale
                     scaleY = iconScale
                     translationY = bounceY
                     rotationZ = rotation
-                }
+                },
+            contentAlignment = Alignment.Center,
         ) {
-            val w = size.width
-            val h = size.height
-            val strokeW = 2.dp.toPx()
-            val color = if (selected) goldColor else gray
-
-            val cx = w / 2f
-            val cy = h / 2f
-            val radius = w * 0.42f
-
-            // ── CIRCLE (face) ──
-            drawCircle(
-                color = color,
-                radius = radius,
-                center = Offset(cx, cy),
-                style = Stroke(width = strokeW),
-            )
-
-            // ── SUNGLASSES — wider lenses like reference ──
-            val glassY = cy - radius * 0.05f
-            val lensW = radius * 0.5f
-            val lensH = radius * 0.35f
-            val lensCorner = 4.dp.toPx()
-
-            // Left lens
-            val leftLensX = cx - radius * 0.58f
-            drawRoundRect(
-                color = color,
-                topLeft = Offset(leftLensX, glassY - lensH / 2f),
-                size = Size(lensW, lensH),
-                cornerRadius = CornerRadius(lensCorner, lensCorner),
-                style = if (selected) Fill else Stroke(width = strokeW * 0.8f),
-            )
-
-            // Right lens
-            val rightLensX = cx + radius * 0.08f
-            drawRoundRect(
-                color = color,
-                topLeft = Offset(rightLensX, glassY - lensH / 2f),
-                size = Size(lensW, lensH),
-                cornerRadius = CornerRadius(lensCorner, lensCorner),
-                style = if (selected) Fill else Stroke(width = strokeW * 0.8f),
-            )
-
-            // Bridge
-            drawLine(
-                color = color,
-                start = Offset(leftLensX + lensW, glassY),
-                end = Offset(rightLensX, glassY),
-                strokeWidth = strokeW * 0.8f,
-                cap = StrokeCap.Round,
-            )
-
-            // Temple arms to circle edge
-            drawLine(
-                color = color,
-                start = Offset(leftLensX, glassY),
-                end = Offset(cx - radius * 0.85f, glassY - radius * 0.12f),
-                strokeWidth = strokeW * 0.7f,
-                cap = StrokeCap.Round,
-            )
-            drawLine(
-                color = color,
-                start = Offset(rightLensX + lensW, glassY),
-                end = Offset(cx + radius * 0.85f, glassY - radius * 0.12f),
-                strokeWidth = strokeW * 0.7f,
-                cap = StrokeCap.Round,
-            )
-
-            // ── SMILE ──
-            val smilePath = Path().apply {
-                val smileY = cy + radius * 0.4f
-                val smileW2 = radius * 0.38f
-                moveTo(cx - smileW2, smileY)
-                quadraticBezierTo(cx, smileY + radius * 0.28f, cx + smileW2, smileY)
-            }
-            drawPath(
-                smilePath,
-                color = color,
-                style = Stroke(width = strokeW * 0.8f, cap = StrokeCap.Round),
+            Text(
+                text = "\uD83D\uDE0E",
+                fontSize = 20.sp,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.graphicsLayer {
+                    alpha = if (selected) 1f else 0.55f
+                },
             )
         }
 
@@ -671,7 +590,7 @@ private fun MeNavItem(selected: Boolean, goldColor: Color) {
 
         Text(
             "Me",
-            fontSize = 10.sp,
+            fontSize = 8.sp,
             fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
             color = if (selected) goldColor else Color(0xFF808080),
         )
