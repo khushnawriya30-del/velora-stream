@@ -13,6 +13,7 @@ import {
   Menu,
   X,
   UserCircle,
+  Smartphone,
 } from 'lucide-react';
 import { useState } from 'react';
 import { useAuthStore } from '../store/auth';
@@ -29,6 +30,7 @@ const navItems = [
   { to: '/me-sections', icon: UserCircle, label: 'Me Sections' },
   { to: '/reviews', icon: MessageSquare, label: 'Reviews' },
   { to: '/notifications', icon: Bell, label: 'Notifications' },
+  { to: '/app-update', icon: Smartphone, label: 'App Update' },
 ];
 
 export default function Layout() {

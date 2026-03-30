@@ -20,6 +20,7 @@ import { AdminModule } from './modules/admin/admin.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { HealthModule } from './modules/health/health.module';
 import { TranscodeModule } from './modules/transcode/transcode.module';
+import { AppVersionModule } from './modules/app-version/app-version.module';
 
 @Module({
   imports: [
@@ -61,6 +62,7 @@ import { TranscodeModule } from './modules/transcode/transcode.module';
     AnalyticsModule,
     HealthModule,
     TranscodeModule,
+    AppVersionModule,
   ],
 })
 export class AppModule {}

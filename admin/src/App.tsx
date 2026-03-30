@@ -14,6 +14,7 @@ import HomeSectionsPage from './pages/HomeSectionsPage';
 import MeSectionsPage from './pages/MeSectionsPage';
 import ReviewsPage from './pages/ReviewsPage';
 import NotificationsPage from './pages/NotificationsPage';
+import AppUpdatePage from './pages/AppUpdatePage';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const token = useAuthStore((s) => s.token);
@@ -46,6 +47,7 @@ export default function App() {
         <Route path="me-sections" element={<MeSectionsPage />} />
         <Route path="reviews" element={<ReviewsPage />} />
         <Route path="notifications" element={<NotificationsPage />} />
+        <Route path="app-update" element={<AppUpdatePage />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

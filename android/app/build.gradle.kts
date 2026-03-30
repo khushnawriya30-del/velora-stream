@@ -31,7 +31,7 @@ android {
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
-            buildConfigField("String", "BASE_URL", "\"https://cinevault-api.onrender.com/api/v1/\"")
+            buildConfigField("String", "BASE_URL", "\"https://cinevault-movie.onrender.com/api/v1/\"")
         }
     }
 
