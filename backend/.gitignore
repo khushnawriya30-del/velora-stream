@@ -4,3 +4,4 @@ dist/
 *.log
 coverage/
 gcp-service-account.json
+.vercel
