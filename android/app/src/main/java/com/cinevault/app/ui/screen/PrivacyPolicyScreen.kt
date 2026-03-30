@@ -83,7 +83,7 @@ You have the right to:
             """.trimIndent())
 
             PolicySection("7. Contact Us", """
-If you have any questions about this Privacy Policy, please contact us at cinevaultapp@gmail.com.
+If you have any questions about this Privacy Policy, please contact us at veloraapp@gmail.com.
             """.trimIndent())
 
             Spacer(Modifier.height(32.dp))

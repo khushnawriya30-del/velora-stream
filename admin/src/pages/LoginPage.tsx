@@ -32,7 +32,7 @@ export default function LoginPage() {
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <h1 className="font-display text-gold text-3xl tracking-[0.3em]">CINEVAULT</h1>
+          <h1 className="font-display text-gold text-3xl tracking-[0.3em]">VELORA</h1>
           <p className="text-text-secondary mt-2 text-sm">Admin Portal</p>
         </div>
 
@@ -47,7 +47,7 @@ export default function LoginPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="w-full bg-surface-light border border-border rounded-xl px-4 py-3 text-text-primary placeholder-text-muted focus:outline-none focus:border-gold transition-colors"
-              placeholder="admin@cinevault.com"
+              placeholder="admin@velora.com"
               required
             />
           </div>

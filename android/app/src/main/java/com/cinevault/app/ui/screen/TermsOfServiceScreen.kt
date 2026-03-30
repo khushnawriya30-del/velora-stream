@@ -42,7 +42,7 @@ fun TermsOfServiceScreen(onBack: () -> Unit) {
             Spacer(Modifier.height(16.dp))
 
             TermsSection("1. Acceptance of Terms", """
-By downloading, installing, or using CineVault, you agree to be bound by these Terms of Service. If you do not agree to these terms, please do not use the application.
+By downloading, installing, or using VELORA, you agree to be bound by these Terms of Service. If you do not agree to these terms, please do not use the application.
             """.trimIndent())
 
             TermsSection("2. User Accounts", """
@@ -63,14 +63,14 @@ You agree not to:
             """.trimIndent())
 
             TermsSection("4. Content", """
-• All content available on CineVault is provided for personal, non-commercial viewing
+• All content available on VELORA is provided for personal, non-commercial viewing
 • We reserve the right to modify, remove, or restrict access to any content at any time
 • Content availability may vary by region
 • Downloading content is permitted only for offline viewing within the app
             """.trimIndent())
 
             TermsSection("5. Intellectual Property", """
-All content, trademarks, and intellectual property displayed on CineVault are owned by or licensed to us. You may not reproduce, distribute, or create derivative works without explicit permission.
+All content, trademarks, and intellectual property displayed on VELORA are owned by or licensed to us. You may not reproduce, distribute, or create derivative works without explicit permission.
             """.trimIndent())
 
             TermsSection("6. Termination", """
@@ -78,7 +78,7 @@ We reserve the right to suspend or terminate your account at any time for violat
             """.trimIndent())
 
             TermsSection("7. Limitation of Liability", """
-CineVault is provided "as is" without warranties of any kind. We shall not be liable for any indirect, incidental, special, or consequential damages arising from your use of the service.
+VELORA is provided "as is" without warranties of any kind. We shall not be liable for any indirect, incidental, special, or consequential damages arising from your use of the service.
             """.trimIndent())
 
             TermsSection("8. Changes to Terms", """
@@ -86,7 +86,7 @@ We may update these Terms of Service from time to time. We will notify you of si
             """.trimIndent())
 
             TermsSection("9. Contact", """
-For questions about these Terms of Service, please contact us at cinevaultapp@gmail.com.
+For questions about these Terms of Service, please contact us at veloraapp@gmail.com.
             """.trimIndent())
 
             Spacer(Modifier.height(32.dp))

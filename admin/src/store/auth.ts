@@ -20,6 +20,6 @@ export const useAuthStore = create<AuthState>()(
       setToken: (token) => set({ token }),
       logout: () => set({ token: null, refreshToken: null, user: null }),
     }),
-    { name: 'cinevault-admin-auth' },
+    { name: 'velora-admin-auth' },
   ),
 );

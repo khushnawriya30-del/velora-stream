@@ -65,7 +65,7 @@ fun LoginScreen(
             Spacer(Modifier.height(80.dp))
 
             Text(
-                "CINEVAULT",
+                "VELORA",
                 style = CineVaultTheme.typography.heroTitle.copy(
                     fontSize = 32.sp,
                     letterSpacing = 6.sp,

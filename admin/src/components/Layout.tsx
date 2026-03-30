@@ -63,7 +63,7 @@ export default function Layout() {
       >
         {/* Logo */}
         <div className="flex items-center justify-between h-16 px-6 border-b border-border">
-          <span className="font-display text-gold text-xl tracking-widest">CINEVAULT</span>
+          <span className="font-display text-gold text-xl tracking-widest">VELORA</span>
           <button className="lg:hidden text-text-secondary" onClick={() => setSidebarOpen(false)}>
             <X size={20} />
           </button>

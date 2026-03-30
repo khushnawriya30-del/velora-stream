@@ -146,24 +146,24 @@ export class AuthService {
       const transporter = nodemailer.createTransport({
         service: 'gmail',
         auth: {
-          user: this.configService.get<string>('SMTP_EMAIL', 'cinevaultapp@gmail.com'),
+          user: this.configService.get<string>('SMTP_EMAIL', 'veloraapp@gmail.com'),
           pass: this.configService.get<string>('SMTP_PASSWORD', ''),
         },
       });
 
       await transporter.sendMail({
-        from: `"CineVault" <${this.configService.get<string>('SMTP_EMAIL', 'cinevaultapp@gmail.com')}>`,
+        from: `"VELORA" <${this.configService.get<string>('SMTP_EMAIL', 'veloraapp@gmail.com')}>`,
         to: user.email,
-        subject: 'CineVault - Password Reset OTP',
+        subject: 'VELORA - Password Reset OTP',
         html: `
-          <div style="font-family:Arial,sans-serif;max-width:500px;margin:0 auto;padding:20px;background:#1a1a2e;color:#fff;border-radius:12px;">
-            <h2 style="color:#d4af37;text-align:center;">CineVault</h2>
+          <div style="font-family:Arial,sans-serif;max-width:500px;margin:0 auto;padding:20px;background:#0B0515;color:#fff;border-radius:12px;border:1px solid #2D1F4E;">
+            <h2 style="color:#D4AF37;text-align:center;">VELORA</h2>
             <p>Hi ${user.name},</p>
             <p>Your password reset OTP is:</p>
             <div style="text-align:center;margin:20px 0;">
-              <span style="font-size:32px;font-weight:bold;letter-spacing:8px;color:#d4af37;background:#2a2a4e;padding:12px 24px;border-radius:8px;">${otp}</span>
+              <span style="font-size:32px;font-weight:bold;letter-spacing:8px;color:#D4AF37;background:#1C1230;padding:12px 24px;border-radius:8px;">${otp}</span>
             </div>
-            <p style="color:#aaa;font-size:13px;">This OTP expires in 10 minutes. If you didn't request this, please ignore this email.</p>
+            <p style="color:#B0A3C4;font-size:13px;">This OTP expires in 10 minutes. If you didn't request this, please ignore this email.</p>
           </div>
         `,
       });

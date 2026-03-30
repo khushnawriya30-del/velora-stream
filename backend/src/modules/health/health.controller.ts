@@ -18,7 +18,7 @@ export class HealthController {
   @ApiOperation({ summary: 'API Welcome message' })
   welcome() {
     return {
-      message: 'CineVault API Running',
+      message: 'VELORA API Running',
       version: '1.0.0',
       status: 'ok',
       endpoints: {

@@ -64,7 +64,7 @@ fun RegisterScreen(
             Spacer(Modifier.height(60.dp))
 
             Text(
-                "CINEVAULT",
+                "VELORA",
                 style = CineVaultTheme.typography.heroTitle.copy(
                     fontSize = 32.sp,
                     letterSpacing = 6.sp,

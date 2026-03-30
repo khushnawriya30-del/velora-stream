@@ -122,7 +122,7 @@ fun SettingsScreen(
             SettingsGroupHeader("About")
             Surface(shape = RoundedCornerShape(14.dp), color = CineVaultTheme.colors.surface, modifier = Modifier.fillMaxWidth()) {
                 Column {
-                    SettingsRowItem(icon = Icons.Filled.Info, title = "About CineVault", onClick = onNavigateToAbout)
+                    SettingsRowItem(icon = Icons.Filled.Info, title = "About VELORA", onClick = onNavigateToAbout)
                     HorizontalDivider(color = CineVaultTheme.colors.border.copy(alpha = 0.3f), modifier = Modifier.padding(start = 52.dp))
                     SettingsRowItem(icon = Icons.Filled.Shield, title = "Privacy Policy", onClick = onNavigateToPrivacyPolicy)
                     HorizontalDivider(color = CineVaultTheme.colors.border.copy(alpha = 0.3f), modifier = Modifier.padding(start = 52.dp))
@@ -145,7 +145,7 @@ fun SettingsScreen(
             Spacer(Modifier.height(32.dp))
 
             Text(
-                "CineVault v1.0.0",
+                "VELORA v1.0.0",
                 style = CineVaultTheme.typography.labelSmall.copy(fontSize = 12.sp),
                 color = CineVaultTheme.colors.textSecondary,
                 modifier = Modifier.align(Alignment.CenterHorizontally),

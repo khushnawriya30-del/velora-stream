@@ -4,31 +4,36 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 
-// Primary Palette
-val BackgroundDark = Color(0xFF0A0A0A)
-val SurfaceDark = Color(0xFF141414)
-val SurfaceElevated = Color(0xFF1E1E1E)
-val BorderSubtle = Color(0xFF2A2A2A)
+// Primary Palette — VELORA Purple & Gold
+val BackgroundDark = Color(0xFF0B0515)
+val SurfaceDark = Color(0xFF130D22)
+val SurfaceElevated = Color(0xFF1C1230)
+val BorderSubtle = Color(0xFF2D1F4E)
 
-// Accent
-val AccentGold = Color(0xFFF5A623)
-val AccentGoldMuted = Color(0xFFC4841A)
-val AccentGoldLight = Color(0xFFFFD076)
+// Accent — Metallic Gold
+val AccentGold = Color(0xFFD4AF37)
+val AccentGoldMuted = Color(0xFFA8892C)
+val AccentGoldLight = Color(0xFFE8D48B)
+
+// Purple Accent
+val AccentPurple = Color(0xFF9B59B6)
+val AccentPurpleLight = Color(0xFFBB86FC)
+val AccentPurpleDark = Color(0xFF6C3483)
 
 // Text
 val TextPrimary = Color(0xFFFFFFFF)
-val TextSecondary = Color(0xFFA0A0A0)
-val TextMuted = Color(0xFF606060)
+val TextSecondary = Color(0xFFB0A3C4)
+val TextMuted = Color(0xFF6B5E80)
 
 // Semantic
-val RatingGold = Color(0xFFFFD700)
+val RatingGold = Color(0xFFD4AF37)
 val SuccessGreen = Color(0xFF22C55E)
 val ErrorRed = Color(0xFFEF4444)
 val WarningAmber = Color(0xFFF59E0B)
 
 // Gradients
 val GradientOverlayStart = Color(0x00000000)
-val GradientOverlayEnd = Color(0xFF0A0A0A)
+val GradientOverlayEnd = Color(0xFF0B0515)
 
 @Immutable
 data class CineVaultColors(

@@ -9,7 +9,7 @@
 }
 
 body {
-  background-color: #0A0A0A;
+  background-color: #0B0515;
   color: #FFFFFF;
   font-family: 'DM Sans', system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
@@ -19,14 +19,14 @@ body {
   width: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: #141414;
+  background: #130D22;
 }
 ::-webkit-scrollbar-thumb {
-  background: #2A2A2A;
+  background: #2D1F4E;
   border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #3A3A3A;
+  background: #9B59B6;
 }
 
 input, textarea, select {

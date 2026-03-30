@@ -52,8 +52,8 @@ async function bootstrap() {
 
   // Swagger
   const swaggerConfig = new DocumentBuilder()
-    .setTitle('CineVault API')
-    .setDescription('CineVault Premium Streaming Platform API')
+    .setTitle('VELORA API')
+    .setDescription('VELORA Premium Streaming Platform API')
     .setVersion('1.0')
     .addBearerAuth()
     .addCookieAuth('refreshToken')
@@ -63,7 +63,7 @@ async function bootstrap() {
 
   const port = configService.get<number>('PORT', 3000);
   await app.listen(port);
-  console.log(`CineVault API running on port ${port}`);
+  console.log(`VELORA API running on port ${port}`);
   console.log(`Swagger docs: http://localhost:${port}/docs`);
 }
 

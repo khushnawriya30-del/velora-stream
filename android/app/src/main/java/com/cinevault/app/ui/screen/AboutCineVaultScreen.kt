@@ -31,7 +31,7 @@ fun AboutCineVaultScreen(
             .background(CineVaultTheme.colors.background),
     ) {
         TopAppBar(
-            title = { Text("About CineVault", style = CineVaultTheme.typography.sectionTitle, color = CineVaultTheme.colors.textPrimary) },
+            title = { Text("About VELORA", style = CineVaultTheme.typography.sectionTitle, color = CineVaultTheme.colors.textPrimary) },
             navigationIcon = {
                 IconButton(onClick = onBack) {
                     Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = CineVaultTheme.colors.textPrimary)
@@ -56,7 +56,7 @@ fun AboutCineVaultScreen(
                         }
                     }
                     Spacer(Modifier.height(12.dp))
-                    Text("CineVault", fontSize = 22.sp, fontWeight = FontWeight.Bold, color = CineVaultTheme.colors.textPrimary)
+                    Text("VELORA", fontSize = 22.sp, fontWeight = FontWeight.Bold, color = CineVaultTheme.colors.textPrimary)
                     Text("Version 1.0.0", fontSize = 13.sp, color = CineVaultTheme.colors.textSecondary)
                 }
             }
@@ -75,16 +75,16 @@ fun AboutCineVaultScreen(
 
             Surface(shape = RoundedCornerShape(14.dp), color = CineVaultTheme.colors.surface, modifier = Modifier.fillMaxWidth()) {
                 Column {
-                    AboutItem(icon = Icons.Default.Email, label = "Contact Us", subtitle = "cinevaultapp@gmail.com")
+                    AboutItem(icon = Icons.Default.Email, label = "Contact Us", subtitle = "veloraapp@gmail.com")
                     HorizontalDivider(color = CineVaultTheme.colors.border.copy(alpha = 0.3f), modifier = Modifier.padding(start = 54.dp))
-                    AboutItem(icon = Icons.Default.Code, label = "Developer", subtitle = "CineVault Team")
+                    AboutItem(icon = Icons.Default.Code, label = "Developer", subtitle = "VELORA Team")
                 }
             }
 
             Spacer(Modifier.height(32.dp))
 
             Text(
-                "\u00a9 2025 CineVault. All rights reserved.",
+                "\u00a9 2025 VELORA. All rights reserved.",
                 fontSize = 12.sp,
                 color = CineVaultTheme.colors.textSecondary,
                 modifier = Modifier.fillMaxWidth(),

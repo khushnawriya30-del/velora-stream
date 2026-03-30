@@ -63,7 +63,7 @@ fun SplashScreen(
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text(
-                text = "CINEVAULT",
+                text = "VELORA",
                 modifier = Modifier.alpha(alphaAnim),
                 style = CineVaultTheme.typography.heroTitle.copy(
                     fontSize = 42.sp,

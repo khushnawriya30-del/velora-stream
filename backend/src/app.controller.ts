@@ -14,7 +14,7 @@ export class AppController {
   @ApiOperation({ summary: 'API Welcome' })
   root() {
     return {
-      message: 'CineVault API',
+      message: 'VELORA API',
       version: '1.0.0',
       status: 'running',
       apiBaseUrl: '/api/v1',
@@ -36,7 +36,7 @@ export class AppController {
       versionName: LATEST_VERSION_NAME,
       forceUpdate: false,
       apkUrl: APK_DOWNLOAD_URL,
-      releaseNotes: 'Latest version of CineVault',
+      releaseNotes: 'Latest version of VELORA',
     };
   }
 }

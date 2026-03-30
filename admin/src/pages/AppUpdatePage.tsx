@@ -87,7 +87,7 @@ export default function AppUpdatePage() {
             value={form.apkUrl}
             onChange={(e) => setForm({ ...form, apkUrl: e.target.value })}
             className="w-full bg-background border border-border rounded-lg px-3 py-2 text-text-primary focus:outline-none focus:ring-2 focus:ring-accent"
-            placeholder="https://your-storage/cinevault-1.2.0.apk"
+            placeholder="https://your-storage/velora-1.2.0.apk"
             required
           />
           <p className="text-xs text-text-secondary mt-1">Direct download link to the APK file (GitHub Releases, Google Drive direct link, etc.)</p>
