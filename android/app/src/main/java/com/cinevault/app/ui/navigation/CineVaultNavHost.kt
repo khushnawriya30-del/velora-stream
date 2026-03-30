@@ -31,6 +31,7 @@ import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Fill
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.asComposeRenderEffect
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -561,6 +562,33 @@ private fun MeNavItem(selected: Boolean, goldColor: Color) {
         label = "meBounce"
     )
 
+    // Desaturation: 0 = full grayscale, 1 = full color
+    val saturation by animateFloatAsState(
+        targetValue = if (selected) 0.7f else 0.0f,
+        animationSpec = tween(350),
+        label = "meSaturation"
+    )
+    val emojiAlpha by animateFloatAsState(
+        targetValue = if (selected) 0.85f else 0.4f,
+        animationSpec = tween(300),
+        label = "meAlpha"
+    )
+
+    // Build a saturation ColorMatrix
+    val colorMatrix = remember(saturation) {
+        val s = saturation
+        val inv = 1f - s
+        val r = 0.213f * inv
+        val g = 0.715f * inv
+        val b = 0.072f * inv
+        android.graphics.ColorMatrix(floatArrayOf(
+            r + s, g,     b,     0f, 0f,
+            r,     g + s, b,     0f, 0f,
+            r,     g,     b + s, 0f, 0f,
+            0f,    0f,    0f,    1f, 0f
+        ))
+    }
+
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier.padding(vertical = 2.dp),
@@ -573,6 +601,12 @@ private fun MeNavItem(selected: Boolean, goldColor: Color) {
                     scaleY = iconScale
                     translationY = bounceY
                     rotationZ = rotation
+                    alpha = emojiAlpha
+                    renderEffect = android.graphics.RenderEffect
+                        .createColorFilterEffect(
+                            android.graphics.ColorMatrixColorFilter(colorMatrix)
+                        )
+                        .asComposeRenderEffect()
                 },
             contentAlignment = Alignment.Center,
         ) {
@@ -580,9 +614,6 @@ private fun MeNavItem(selected: Boolean, goldColor: Color) {
                 text = "\uD83D\uDE0E",
                 fontSize = 20.sp,
                 textAlign = TextAlign.Center,
-                modifier = Modifier.graphicsLayer {
-                    alpha = if (selected) 1f else 0.55f
-                },
             )
         }
 
