@@ -88,7 +88,10 @@ interface CineVaultApi {
     ): Response<MoviesListResponse>
 
     @GET("movies/trending")
-    suspend fun getTrending(@Query("limit") limit: Int = 20): Response<List<MovieDto>>
+    suspend fun getTrending(
+        @Query("limit") limit: Int = 20,
+        @Query("contentType") contentType: String? = null,
+    ): Response<List<MovieDto>>
 
     @GET("movies/new-releases")
     suspend fun getNewReleases(@Query("limit") limit: Int = 20): Response<List<MovieDto>>

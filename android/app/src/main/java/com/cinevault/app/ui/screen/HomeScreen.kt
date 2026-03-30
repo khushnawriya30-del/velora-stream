@@ -152,9 +152,15 @@ fun HomeScreen(
 
                 // ── Most Watching / Trending Now Section ──
                 if (uiState.trendingMovies.isNotEmpty()) {
+                    val trendingTitle = when (uiState.selectedTab) {
+                        1 -> "Trending Shows"
+                        2 -> "Trending Movies"
+                        3 -> "Trending Anime"
+                        else -> "Most Watching \u2022 Trending Now"
+                    }
                     item {
                         PremiumSectionHeader(
-                            title = "Most Watching \u2022 Trending Now",
+                            title = trendingTitle,
                             onArrowClick = null,
                         )
                     }

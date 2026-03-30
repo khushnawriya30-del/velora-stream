@@ -17,7 +17,7 @@ export declare class MoviesService {
     }>;
     update(id: string, dto: UpdateMovieDto): Promise<MovieDocument>;
     delete(id: string): Promise<void>;
-    getTrending(limit?: number): Promise<MovieDocument[]>;
+    getTrending(limit?: number, contentType?: string): Promise<MovieDocument[]>;
     getNewReleases(limit?: number): Promise<MovieDocument[]>;
     getTopRated(limit?: number): Promise<MovieDocument[]>;
     getByGenre(genre: string, limit?: number): Promise<MovieDocument[]>;

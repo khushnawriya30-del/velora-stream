@@ -39,8 +39,8 @@ async function bootstrap() {
         transformOptions: { enableImplicitConversion: true },
     }));
     const swaggerConfig = new swagger_1.DocumentBuilder()
-        .setTitle('CineVault API')
-        .setDescription('CineVault Premium Streaming Platform API')
+        .setTitle('VELORA API')
+        .setDescription('VELORA Premium Streaming Platform API')
         .setVersion('1.0')
         .addBearerAuth()
         .addCookieAuth('refreshToken')
@@ -49,7 +49,7 @@ async function bootstrap() {
     swagger_1.SwaggerModule.setup('docs', app, document);
     const port = configService.get('PORT', 3000);
     await app.listen(port);
-    console.log(`CineVault API running on port ${port}`);
+    console.log(`VELORA API running on port ${port}`);
     console.log(`Swagger docs: http://localhost:${port}/docs`);
 }
 bootstrap();

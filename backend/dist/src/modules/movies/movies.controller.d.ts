@@ -11,7 +11,7 @@ export declare class MoviesController {
         page: number;
         pages: number;
     }>;
-    getTrending(limit?: number): Promise<import("../../schemas/movie.schema").MovieDocument[]>;
+    getTrending(limit?: number, contentType?: string): Promise<import("../../schemas/movie.schema").MovieDocument[]>;
     getNewReleases(limit?: number): Promise<import("../../schemas/movie.schema").MovieDocument[]>;
     getTopRated(limit?: number): Promise<import("../../schemas/movie.schema").MovieDocument[]>;
     getByGenre(genre: string, limit?: number): Promise<import("../../schemas/movie.schema").MovieDocument[]>;

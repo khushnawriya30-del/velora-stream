@@ -113,9 +113,21 @@ let MoviesService = class MoviesService {
         if (!result)
             throw new common_1.NotFoundException('Content not found');
     }
-    async getTrending(limit = 20) {
+    async getTrending(limit = 20, contentType) {
+        const filter = { status: movie_schema_1.ContentStatus.PUBLISHED };
+        if (contentType) {
+            if (contentType === 'shows') {
+                filter.contentType = { $in: ['web_series', 'tv_show'] };
+            }
+            else if (contentType === 'anime') {
+                filter.contentType = 'anime';
+            }
+            else if (contentType === 'movies') {
+                filter.contentType = 'movie';
+            }
+        }
         return this.movieModel
-            .find({ status: movie_schema_1.ContentStatus.PUBLISHED })
+            .find(filter)
             .sort({ popularityScore: -1, viewCount: -1 })
             .limit(limit);
     }

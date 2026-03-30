@@ -108,7 +108,7 @@ class HomeViewModel @Inject constructor(
 
             val bannersDeferred = async { contentRepository.getBanners(section) }
             val feedDeferred = async { contentRepository.getHomeFeed(section) }
-            val trendingDeferred = async { loadTrendingData() }
+            val trendingDeferred = async { loadTrendingData(section) }
 
             val bannersResult = bannersDeferred.await()
             val feedResult = feedDeferred.await()
@@ -138,9 +138,10 @@ class HomeViewModel @Inject constructor(
         }
     }
 
-    private suspend fun loadTrendingData(): List<MovieDto> {
+    private suspend fun loadTrendingData(section: String = "home"): List<MovieDto> {
         return try {
-            val response = api.getTrending(limit = 10)
+            val contentType = if (section == "home") null else section
+            val response = api.getTrending(limit = 10, contentType = contentType)
             if (response.isSuccessful) response.body() ?: emptyList() else emptyList()
         } catch (e: Exception) {
             Log.e("CineVaultHome", "Failed to load trending", e)
@@ -199,7 +200,7 @@ class HomeViewModel @Inject constructor(
             val section = tabSection(_uiState.value.selectedTab)
             val bannersDeferred = async { contentRepository.getBanners(section) }
             val feedDeferred = async { contentRepository.getHomeFeed(section) }
-            val trendingDeferred = async { loadTrendingData() }
+            val trendingDeferred = async { loadTrendingData(section) }
 
             val bannersResult = bannersDeferred.await()
             val feedResult = feedDeferred.await()

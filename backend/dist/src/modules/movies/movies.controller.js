@@ -29,8 +29,8 @@ let MoviesController = class MoviesController {
     async findAll(query) {
         return this.moviesService.findAll(query);
     }
-    async getTrending(limit) {
-        return this.moviesService.getTrending(limit);
+    async getTrending(limit, contentType) {
+        return this.moviesService.getTrending(limit, contentType);
     }
     async getNewReleases(limit) {
         return this.moviesService.getNewReleases(limit);
@@ -72,10 +72,11 @@ __decorate([
 ], MoviesController.prototype, "findAll", null);
 __decorate([
     (0, common_1.Get)('trending'),
-    (0, swagger_1.ApiOperation)({ summary: 'Get trending movies' }),
+    (0, swagger_1.ApiOperation)({ summary: 'Get trending content (optionally filtered by tab: home, movies, shows, anime)' }),
     __param(0, (0, common_1.Query)('limit')),
+    __param(1, (0, common_1.Query)('contentType')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Number]),
+    __metadata("design:paramtypes", [Number, String]),
     __metadata("design:returntype", Promise)
 ], MoviesController.prototype, "getTrending", null);
 __decorate([

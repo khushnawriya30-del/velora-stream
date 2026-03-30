@@ -18,7 +18,7 @@ const APK_DOWNLOAD_URL = 'https://github.com/vishu09921202023-ops/Cinevault-App/
 let AppController = class AppController {
     root() {
         return {
-            message: 'CineVault API',
+            message: 'VELORA API',
             version: '1.0.0',
             status: 'running',
             apiBaseUrl: '/api/v1',
@@ -37,7 +37,7 @@ let AppController = class AppController {
             versionName: LATEST_VERSION_NAME,
             forceUpdate: false,
             apkUrl: APK_DOWNLOAD_URL,
-            releaseNotes: 'Latest version of CineVault',
+            releaseNotes: 'Latest version of VELORA',
         };
     }
 };

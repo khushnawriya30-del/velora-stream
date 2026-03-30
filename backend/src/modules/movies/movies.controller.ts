@@ -23,9 +23,12 @@ export class MoviesController {
   }
 
   @Get('trending')
-  @ApiOperation({ summary: 'Get trending movies' })
-  async getTrending(@Query('limit') limit?: number) {
-    return this.moviesService.getTrending(limit);
+  @ApiOperation({ summary: 'Get trending content (optionally filtered by tab: home, movies, shows, anime)' })
+  async getTrending(
+    @Query('limit') limit?: number,
+    @Query('contentType') contentType?: string,
+  ) {
+    return this.moviesService.getTrending(limit, contentType);
   }
 
   @Get('new-releases')
