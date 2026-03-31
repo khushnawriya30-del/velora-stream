@@ -1,0 +1,33 @@
+import { Controller, Post, Body, UseGuards } from '@nestjs/common';
+import { AuthGuard } from '@nestjs/passport';
+import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
+import { TmdbService } from './tmdb.service';
+import { Roles } from '../auth/decorators/roles.decorator';
+import { RolesGuard } from '../auth/guards/roles.guard';
+
+@ApiTags('TMDB')
+@ApiBearerAuth()
+@UseGuards(AuthGuard('jwt'), RolesGuard)
+@Roles('admin', 'content_manager')
+@Controller('tmdb')
+export class TmdbController {
+  constructor(private readonly tmdbService: TmdbService) {}
+
+  @Post('discover')
+  @ApiOperation({ summary: 'Discover/preview content from TMDB (Admin)' })
+  async discover(
+    @Body() body: { contentType: 'movies' | 'shows' | 'anime'; region: string; count: number },
+  ) {
+    const count = Math.min(body.count || 20, 100);
+    return this.tmdbService.discover(body.contentType, body.region, count);
+  }
+
+  @Post('import')
+  @ApiOperation({ summary: 'Import selected TMDB items into database (Admin)' })
+  async importItems(
+    @Body() body: { tmdbIds: number[]; contentType: 'movies' | 'shows' | 'anime' },
+  ) {
+    if (!body.tmdbIds?.length) return { imported: 0, skipped: 0, items: [] };
+    return this.tmdbService.importItems(body.tmdbIds, body.contentType);
+  }
+}

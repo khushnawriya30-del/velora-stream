@@ -14,6 +14,7 @@ import {
   X,
   UserCircle,
   Smartphone,
+  Download,
 } from 'lucide-react';
 import { useState } from 'react';
 import { useAuthStore } from '../store/auth';
@@ -31,6 +32,7 @@ const navItems = [
   { to: '/reviews', icon: MessageSquare, label: 'Reviews' },
   { to: '/notifications', icon: Bell, label: 'Notifications' },
   { to: '/app-update', icon: Smartphone, label: 'App Update' },
+  { to: '/tmdb-import', icon: Download, label: 'TMDB Import' },
 ];
 
 export default function Layout() {
