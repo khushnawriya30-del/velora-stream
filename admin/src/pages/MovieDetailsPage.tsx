@@ -166,10 +166,7 @@ export default function MovieDetailsPage() {
                   <p className="font-semibold">{(m.viewCount || 0).toLocaleString()}</p>
                 </div>
                 {m.contentRating && (
-                  <div>
-                    <p className="text-text-secondary text-sm mb-1">Rating</p>
-                    <p className="font-semibold">{m.contentRating}</p>
-                  </div>
+                  <></>
                 )}
               </div>
             </div>

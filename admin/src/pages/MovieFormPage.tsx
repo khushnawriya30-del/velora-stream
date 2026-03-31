@@ -224,7 +224,7 @@ export default function MovieFormPage() {
     const submitForm = {
       ...form,
       duration: totalMinutes,
-      contentRating: ['U', 'UA', 'A', 'S'].includes(form.contentRating) ? form.contentRating : 'U',
+      contentRating: form.contentRating || 'U',
       streamingSources: form.streamingSources
         .filter((src) => src.url && src.label && typeof src.label === 'string')
         .map(({ quality, url, label }) => ({ quality, url, label })),
@@ -449,19 +449,6 @@ export default function MovieFormPage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm text-text-secondary mb-1">Content Rating</label>
-              <select
-                value={form.contentRating}
-                onChange={(e) => setForm({ ...form, contentRating: e.target.value })}
-                className="w-full bg-surface-light border border-border rounded-xl px-4 py-2.5 text-text-primary focus:outline-none focus:border-gold"
-              >
-                <option value="U">U</option>
-                <option value="UA">UA</option>
-                <option value="A">A</option>
-                <option value="S">S</option>
-              </select>
-            </div>
             <div>
               <label className="block text-sm text-text-secondary mb-1">Status</label>
               <select

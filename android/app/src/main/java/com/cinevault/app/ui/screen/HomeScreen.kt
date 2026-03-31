@@ -31,6 +31,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -669,7 +670,6 @@ fun SquareHeroBanner(
                 banner.contentType?.let {
                     infoParts.add(it.replace("_", " ").uppercase())
                 }
-                banner.contentRating?.let { infoParts.add(it) }
                 if (infoParts.isNotEmpty()) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(
@@ -975,29 +975,10 @@ fun PremiumMovieCard(
                         langLabel,
                         modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp),
                         style = TextStyle(shadow = Shadow(color = Color.Black, blurRadius = 3f)),
-                        fontSize = 7.sp,
+                        fontSize = 9.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color.White,
                         letterSpacing = 0.3.sp,
-                    )
-                }
-            }
-
-            // Content rating badge — top-left, white faded
-            if (!movie.contentRating.isNullOrEmpty()) {
-                Surface(
-                    modifier = Modifier
-                        .align(Alignment.TopStart)
-                        .padding(6.dp),
-                    shape = RoundedCornerShape(4.dp),
-                    color = Color.White.copy(alpha = 0.2f),
-                ) {
-                    Text(
-                        movie.contentRating!!,
-                        modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp),
-                        fontSize = 8.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White.copy(alpha = 0.9f),
                     )
                 }
             }

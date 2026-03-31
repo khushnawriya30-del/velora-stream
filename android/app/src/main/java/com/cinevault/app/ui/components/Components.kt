@@ -30,6 +30,7 @@ import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -101,29 +102,10 @@ fun MovieCard(
                         style = CineVaultTheme.typography.labelSmall.copy(
                             shadow = Shadow(color = Color.Black, blurRadius = 3f)
                         ),
-                        fontSize = 7.sp,
+                        fontSize = 9.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color.White,
                         letterSpacing = 0.3.sp,
-                    )
-                }
-            }
-
-            // Content rating — top-left, white faded
-            if (!movie.contentRating.isNullOrEmpty()) {
-                Surface(
-                    modifier = Modifier
-                        .align(Alignment.TopStart)
-                        .padding(6.dp),
-                    shape = RoundedCornerShape(4.dp),
-                    color = Color.White.copy(alpha = 0.2f),
-                ) {
-                    Text(
-                        movie.contentRating!!,
-                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
-                        style = CineVaultTheme.typography.labelSmall,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White.copy(alpha = 0.9f),
                     )
                 }
             }
@@ -484,29 +466,10 @@ fun SquareMovieCard(
                         style = CineVaultTheme.typography.labelSmall.copy(
                             shadow = Shadow(color = Color.Black, blurRadius = 3f)
                         ),
-                        fontSize = 7.sp,
+                        fontSize = 9.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color.White,
                         letterSpacing = 0.3.sp,
-                    )
-                }
-            }
-            
-            // Content rating — top-left, white faded
-            if (movie.contentRating?.isNotEmpty() == true) {
-                Surface(
-                    modifier = Modifier
-                        .align(Alignment.TopStart)
-                        .padding(6.dp),
-                    shape = RoundedCornerShape(4.dp),
-                    color = Color.White.copy(alpha = 0.2f),
-                ) {
-                    Text(
-                        movie.contentRating ?: "",
-                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
-                        style = CineVaultTheme.typography.labelSmall,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White.copy(alpha = 0.9f),
                     )
                 }
             }
@@ -617,29 +580,10 @@ fun LargeMovieCard(
                         style = CineVaultTheme.typography.labelSmall.copy(
                             shadow = Shadow(color = Color.Black, blurRadius = 3f)
                         ),
-                        fontSize = 7.sp,
+                        fontSize = 9.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color.White,
                         letterSpacing = 0.3.sp,
-                    )
-                }
-            }
-            
-            // Content rating — top-left, white faded
-            if (movie.contentRating?.isNotEmpty() == true) {
-                Surface(
-                    modifier = Modifier
-                        .align(Alignment.TopStart)
-                        .padding(8.dp),
-                    shape = RoundedCornerShape(6.dp),
-                    color = Color.White.copy(alpha = 0.2f),
-                ) {
-                    Text(
-                        movie.contentRating ?: "",
-                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp),
-                        style = CineVaultTheme.typography.labelSmall,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White.copy(alpha = 0.9f),
                     )
                 }
             }
@@ -720,8 +664,9 @@ fun TrendingMovieCard(
                 modifier = Modifier
                     .align(Alignment.BottomStart)
                     .offset(x = (-4).dp, y = 12.dp)
-                    .graphicsLayer { rotationZ = -10f },
+                    .graphicsLayer { rotationZ = 10f },
                 style = TextStyle(
+                    fontFamily = FontFamily.Serif,
                     fontSize = 100.sp,
                     fontWeight = FontWeight.Black,
                     fontStyle = FontStyle.Italic,
@@ -740,9 +685,10 @@ fun TrendingMovieCard(
                 modifier = Modifier
                     .align(Alignment.BottomStart)
                     .offset(x = (-4).dp, y = 12.dp)
-                    .graphicsLayer { rotationZ = -10f },
+                    .graphicsLayer { rotationZ = 10f },
                 style = TextStyle(
                     fontSize = 100.sp,
+                    fontFamily = FontFamily.Serif,
                     fontWeight = FontWeight.Black,
                     fontStyle = FontStyle.Italic,
                     letterSpacing = (-6).sp,
@@ -785,7 +731,7 @@ fun TrendingMovieCard(
                             langLabel,
                             modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp),
                             style = TextStyle(shadow = Shadow(color = Color.Black, blurRadius = 3f)),
-                            fontSize = 7.sp,
+                            fontSize = 9.sp,
                             fontWeight = FontWeight.Bold,
                             color = Color.White,
                             letterSpacing = 0.3.sp,
