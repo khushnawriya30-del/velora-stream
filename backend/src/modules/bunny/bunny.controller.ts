@@ -189,4 +189,23 @@ export class BunnyController {
   async listCollections() {
     return this.bunnyService.listCollections();
   }
+
+  @Get('stream/collections/:collectionId/videos')
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles('admin')
+  async listVideosInCollection(@Param('collectionId') collectionId: string) {
+    return this.bunnyService.listVideosInCollection(collectionId);
+  }
+
+  // ─── Import from Bunny Collection (No Google Drive) ──────────
+
+  @Post('stream/season/:seasonId/import-bunny')
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles('admin')
+  async importFromBunnyCollection(
+    @Param('seasonId') seasonId: string,
+    @Body() body: { collectionId: string },
+  ) {
+    return this.bunnyService.importFromBunnyCollection(seasonId, body.collectionId);
+  }
 }

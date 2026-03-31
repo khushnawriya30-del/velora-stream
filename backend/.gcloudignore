@@ -1,0 +1,16 @@
+node_modules/
+.env
+*.log
+coverage/
+.vercel
+/src/
+/test/
+tsconfig*.json
+nest-cli.json
+.eslintrc*
+.prettierrc*
+extract*.js
+fly.toml
+render.yaml
+vercel.json
+README.md

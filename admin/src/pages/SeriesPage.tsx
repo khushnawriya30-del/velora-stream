@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Film, Plus, ChevronDown, ChevronRight, Trash2, Pencil, Upload, X, Layers, FolderInput, Loader2, Check, AlertTriangle, Cloud, RefreshCw, Zap } from 'lucide-react';
+import { Film, Plus, ChevronDown, ChevronRight, Trash2, Pencil, Upload, X, Layers, FolderInput, Loader2, Check, AlertTriangle, Cloud, RefreshCw, Zap, Download } from 'lucide-react';
 import { useState, useMemo, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../lib/api';
@@ -731,8 +731,33 @@ function EditEpisodeForm({ episode, seasonId, onClose }: { episode: Episode; sea
 function BunnyStreamPanel({ seasonId, onClose }: { seasonId: string; onClose: () => void }) {
   const queryClient = useQueryClient();
   const [folderUrl, setFolderUrl] = useState('');
-  const [tab, setTab] = useState<'import' | 'migrate' | 'status'>('import');
+  const [collectionId, setCollectionId] = useState('');
+  const [tab, setTab] = useState<'bunny-import' | 'import' | 'migrate' | 'status'>('bunny-import');
   const [activeJobId, setActiveJobId] = useState<string | null>(null);
+
+  // Import from Bunny Collection (no Google Drive needed)
+  const bunnyImportMutation = useMutation({
+    mutationFn: async () => {
+      const { data } = await api.post(`/bunny/stream/season/${seasonId}/import-bunny`, { collectionId: collectionId.trim() });
+      return data as { imported: number; skipped: number; episodes: { episodeNumber: number; title: string; videoId: string; status: string }[] };
+    },
+    onSuccess: (data) => {
+      toast.success(`Imported ${data.imported} episodes from Bunny collection`);
+      queryClient.invalidateQueries({ queryKey: ['episodes', seasonId] });
+      queryClient.invalidateQueries({ queryKey: ['seasons'] });
+    },
+    onError: (err: any) => toast.error(err.response?.data?.message || 'Bunny import failed'),
+  });
+
+  // Fetch Bunny collections for dropdown
+  const { data: bunnyCollections } = useQuery({
+    queryKey: ['bunny-collections'],
+    queryFn: async () => {
+      const { data } = await api.get('/bunny/stream/collections');
+      return data as { totalItems: number; items: { guid: string; name: string; videoCount: number }[] };
+    },
+    enabled: tab === 'bunny-import',
+  });
 
   // Import from Drive folder to Bunny Stream
   const importMutation = useMutation({
@@ -814,7 +839,7 @@ function BunnyStreamPanel({ seasonId, onClose }: { seasonId: string; onClose: ()
 
       {/* Tabs */}
       <div className="flex gap-1 bg-surface rounded-lg p-1">
-        {(['import', 'migrate', 'status'] as const).map((t) => (
+        {(['bunny-import', 'import', 'migrate', 'status'] as const).map((t) => (
           <button
             key={t}
             onClick={() => setTab(t)}
@@ -822,12 +847,77 @@ function BunnyStreamPanel({ seasonId, onClose }: { seasonId: string; onClose: ()
               tab === t ? 'bg-purple-500/20 text-purple-400' : 'text-text-muted hover:text-text-primary'
             }`}
           >
-            {t === 'import' ? 'Import Folder' : t === 'migrate' ? 'Migrate Existing' : 'Transcoding Status'}
+            {t === 'bunny-import' ? 'Bunny Import' : t === 'import' ? 'Drive Import' : t === 'migrate' ? 'Migrate Existing' : 'Transcoding Status'}
           </button>
         ))}
       </div>
 
-      {/* Import Tab */}
+      {/* Bunny Collection Import Tab (No Google Drive) */}
+      {tab === 'bunny-import' && (
+        <div className="space-y-3">
+          <p className="text-xs text-text-muted">
+            Upload videos directly to <strong>bunny.net</strong> dashboard, create a collection, then import here. <strong>No Google Drive needed.</strong>
+          </p>
+
+          <div className="space-y-2">
+            <label className="text-xs text-text-muted font-medium">Select Bunny Collection</label>
+            {bunnyCollections?.items && bunnyCollections.items.length > 0 ? (
+              <select
+                value={collectionId}
+                onChange={(e) => setCollectionId(e.target.value)}
+                className="w-full bg-surface border border-border rounded-lg px-3 py-2 text-sm"
+              >
+                <option value="">-- Select a collection --</option>
+                {bunnyCollections.items.map((c) => (
+                  <option key={c.guid} value={c.guid}>
+                    {c.name} ({c.videoCount} videos)
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <input
+                value={collectionId}
+                onChange={(e) => setCollectionId(e.target.value)}
+                placeholder="Enter Bunny collection GUID..."
+                className="w-full bg-surface border border-border rounded-lg px-3 py-2 text-sm font-mono"
+              />
+            )}
+          </div>
+
+          <button
+            onClick={() => bunnyImportMutation.mutate()}
+            disabled={!collectionId.trim() || bunnyImportMutation.isPending}
+            className="flex items-center gap-1.5 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium disabled:opacity-50 w-full justify-center"
+          >
+            {bunnyImportMutation.isPending ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}
+            Import Episodes from Bunny
+          </button>
+
+          {bunnyImportMutation.isSuccess && bunnyImportMutation.data && (
+            <div className="bg-surface rounded-xl p-3 space-y-2">
+              <span className="text-xs font-medium text-green-400">
+                Imported {bunnyImportMutation.data.imported} episodes
+              </span>
+              <div className="max-h-32 overflow-y-auto space-y-1">
+                {bunnyImportMutation.data.episodes.map((ep) => (
+                  <div key={ep.episodeNumber} className="flex items-center gap-2 text-xs">
+                    <Check size={12} className="text-green-400" />
+                    <span>E{String(ep.episodeNumber).padStart(2, '0')} — {ep.title}</span>
+                    <span className="text-text-muted">({ep.status})</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-green-500/10 border border-green-500/30 text-xs text-green-300">
+            <Zap size={14} />
+            <span>Upload to <strong>bunny.net</strong> → Auto-transcode → Select collection here → Episodes auto-created. No Google Drive needed!</span>
+          </div>
+        </div>
+      )}
+
+      {/* Drive Import Tab */}
       {tab === 'import' && (
         <div className="space-y-3">
           <p className="text-xs text-text-muted">

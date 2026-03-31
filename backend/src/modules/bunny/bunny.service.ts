@@ -417,6 +417,85 @@ export class BunnyService {
     return this.streamApi('/collections');
   }
 
+  async listVideosInCollection(collectionId: string, page = 1, perPage = 100): Promise<{ totalItems: number; items: BunnyVideo[] }> {
+    return this.streamApi(`/videos?page=${page}&itemsPerPage=${perPage}&collection=${collectionId}&orderBy=date`);
+  }
+
+  // ─── Import from Bunny Collection (No Google Drive) ──────────
+  //
+  // User uploads videos directly to Bunny (via bunny.net dashboard),
+  // then pastes the collection GUID here. System auto-creates episodes.
+  //
+  async importFromBunnyCollection(
+    seasonId: string,
+    collectionId: string,
+  ): Promise<{ imported: number; skipped: number; episodes: { episodeNumber: number; title: string; videoId: string; status: string }[] }> {
+    const season = await this.seasonModel.findById(seasonId);
+    if (!season) throw new Error('Season not found');
+
+    // Fetch all videos from the Bunny collection
+    const allVideos: BunnyVideo[] = [];
+    let page = 1;
+    while (true) {
+      const result = await this.listVideosInCollection(collectionId, page, 100);
+      allVideos.push(...result.items);
+      if (allVideos.length >= result.totalItems) break;
+      page++;
+    }
+
+    if (allVideos.length === 0) throw new Error('No videos found in this Bunny collection');
+
+    // Sort by episode number extracted from title
+    allVideos.sort((a, b) => this.extractEpisodeNumber(a.title) - this.extractEpisodeNumber(b.title));
+
+    // Get existing episodes for this season
+    const existingEpisodes = await this.episodeModel.find({ seasonId }).exec();
+    const existingByNumber = new Map(existingEpisodes.map((e) => [e.episodeNumber, e]));
+
+    let imported = 0;
+    let skipped = 0;
+    const results: { episodeNumber: number; title: string; videoId: string; status: string }[] = [];
+
+    for (let i = 0; i < allVideos.length; i++) {
+      const video = allVideos[i];
+      const epNum = this.extractEpisodeNumber(video.title) || (i + 1);
+      const epTitle = this.cleanEpisodeTitle(video.title, epNum);
+      const hlsLink = this.hlsUrl(video.guid);
+      const thumb = this.thumbnailUrl(video.guid);
+
+      // Build streaming sources with available resolutions
+      const sources = this.buildStreamingSources(video.guid, video.availableResolutions || '');
+
+      if (existingByNumber.has(epNum)) {
+        // Update existing episode
+        await this.episodeModel.findOneAndUpdate(
+          { seasonId, episodeNumber: epNum },
+          { title: epTitle, streamingSources: sources, thumbnailUrl: thumb },
+        );
+        results.push({ episodeNumber: epNum, title: epTitle, videoId: video.guid, status: 'updated' });
+        imported++;
+      } else {
+        // Create new episode
+        await this.episodeModel.create({
+          seasonId: new Types.ObjectId(seasonId),
+          episodeNumber: epNum,
+          title: epTitle,
+          streamingSources: sources,
+          thumbnailUrl: thumb,
+        });
+        results.push({ episodeNumber: epNum, title: epTitle, videoId: video.guid, status: 'created' });
+        imported++;
+      }
+    }
+
+    // Update season episode count
+    const epCount = await this.episodeModel.countDocuments({ seasonId });
+    await this.seasonModel.findByIdAndUpdate(seasonId, { episodeCount: epCount });
+
+    this.logger.log(`[Bunny Import] Season ${season.seasonNumber}: ${imported} episodes imported, ${skipped} skipped`);
+    return { imported, skipped, episodes: results };
+  }
+
   // ─── Parallel Execution Helper ───────────────────────────────
 
   private async runParallel<T, R>(

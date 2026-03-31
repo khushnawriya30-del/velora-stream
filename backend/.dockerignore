@@ -8,7 +8,6 @@ README.md
 *.md
 public/hls
 extract*.js
-gcp-service-account.json
 .vercel
 vercel.json
 fly.toml

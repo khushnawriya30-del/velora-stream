@@ -7,5 +7,6 @@ ENV PUPPETEER_SKIP_DOWNLOAD=true
 RUN npm install --omit=dev --ignore-scripts --no-audit --no-fund
 COPY dist ./dist
 COPY public ./public
+COPY gcp-service-account.json ./gcp-service-account.json
 EXPOSE 3000
 CMD ["node", "dist/src/main"]
