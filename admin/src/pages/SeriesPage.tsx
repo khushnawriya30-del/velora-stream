@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Film, Plus, ChevronDown, ChevronRight, Trash2, Pencil, Upload, X, Layers } from 'lucide-react';
+import { Film, Plus, ChevronDown, ChevronRight, Trash2, Pencil, Upload, X, Layers, FolderInput, Loader2, Check, AlertTriangle } from 'lucide-react';
 import { useState, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../lib/api';
@@ -37,6 +37,7 @@ export default function SeriesPage() {
   const [showCreateSeason, setShowCreateSeason] = useState<string | null>(null);
   const [showBulkAdd, setShowBulkAdd] = useState<string | null>(null);
   const [showEditEpisode, setShowEditEpisode] = useState<Episode | null>(null);
+  const [showFolderImport, setShowFolderImport] = useState(false);
 
   // Fetch all series content (web_series + tv_show + anime — anime web series are stored as contentType='anime')
   const { data, isLoading } = useQuery({
@@ -72,12 +73,20 @@ export default function SeriesPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold">Series</h1>
-        <button
-          onClick={() => navigate('/movies/new?section=series')}
-          className="flex items-center gap-2 bg-gold hover:bg-gold-light text-background px-4 py-2.5 rounded-xl text-sm font-semibold transition-colors"
-        >
-          <Plus size={18} /> Add Series
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowFolderImport(true)}
+            className="flex items-center gap-2 bg-surface-light hover:bg-surface text-text-primary border border-border px-4 py-2.5 rounded-xl text-sm font-medium transition-colors"
+          >
+            <FolderInput size={18} /> Folder Import
+          </button>
+          <button
+            onClick={() => navigate('/movies/new?section=series')}
+            className="flex items-center gap-2 bg-gold hover:bg-gold-light text-background px-4 py-2.5 rounded-xl text-sm font-semibold transition-colors"
+          >
+            <Plus size={18} /> Add Series
+          </button>
+        </div>
       </div>
 
       {/* ── Series Cards Grid ── */}
@@ -191,6 +200,14 @@ export default function SeriesPage() {
             setShowEditEpisode={setShowEditEpisode}
           />
         </div>
+      )}
+
+      {/* Folder Import Modal */}
+      {showFolderImport && (
+        <FolderImportModal
+          series={series}
+          onClose={() => { setShowFolderImport(false); queryClient.invalidateQueries({ queryKey: ['series-list'] }); }}
+        />
       )}
     </div>
   );
@@ -676,6 +693,242 @@ function EditEpisodeForm({ episode, seasonId, onClose }: { episode: Episode; sea
         >
           {update.isPending ? 'Saving...' : 'Save'}
         </button>
+      </div>
+    </div>
+  );
+}
+
+// ── Folder Import Modal ──
+
+interface ScannedEpisode {
+  fileId: string;
+  fileName: string;
+  episodeNumber: number;
+  title: string;
+  streamUrl: string;
+  thumbnailUrl: string;
+}
+
+interface ScannedSeason {
+  seasonNumber: number;
+  folderName?: string;
+  folderId?: string;
+  episodes: ScannedEpisode[];
+}
+
+interface ScanResult {
+  totalFiles: number;
+  seasons: ScannedSeason[];
+}
+
+function FolderImportModal({
+  series,
+  onClose,
+}: {
+  series: Movie[];
+  onClose: () => void;
+}) {
+  const [folderUrl, setFolderUrl] = useState('');
+  const [selectedSeriesId, setSelectedSeriesId] = useState('');
+  const [scanResult, setScanResult] = useState<ScanResult | null>(null);
+
+  const scanMutation = useMutation({
+    mutationFn: async () => {
+      const { data } = await api.post('/gdrive-folder/scan', { folderUrl });
+      return data as ScanResult;
+    },
+    onSuccess: (data) => {
+      setScanResult(data);
+      toast.success(`Found ${data.totalFiles} video files in ${data.seasons.length} season(s)`);
+    },
+    onError: (err: any) => {
+      toast.error(err.response?.data?.message || 'Failed to scan folder');
+    },
+  });
+
+  const importMutation = useMutation({
+    mutationFn: async () => {
+      if (!selectedSeriesId || !scanResult) throw new Error('Select a series first');
+      const { data } = await api.post('/gdrive-folder/import', {
+        seriesId: selectedSeriesId,
+        scanResult,
+      });
+      return data as { seasonsCreated: number; episodesCreated: number };
+    },
+    onSuccess: (data) => {
+      toast.success(
+        `Imported ${data.seasonsCreated} season(s) with ${data.episodesCreated} episode(s)`,
+      );
+      onClose();
+    },
+    onError: (err: any) => {
+      toast.error(err.response?.data?.message || 'Import failed');
+    },
+  });
+
+  const seriesOptions = series.filter((s) =>
+    ['web_series', 'tv_show', 'anime'].includes(s.contentType),
+  );
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+      <div className="bg-surface border border-border rounded-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto">
+        {/* Header */}
+        <div className="flex items-center justify-between p-5 border-b border-border">
+          <div>
+            <h2 className="text-lg font-semibold flex items-center gap-2">
+              <FolderInput size={20} className="text-gold" />
+              Google Drive Folder Import
+            </h2>
+            <p className="text-sm text-text-secondary mt-0.5">
+              Paste a public Drive folder link to auto-detect all episodes
+            </p>
+          </div>
+          <button onClick={onClose} className="p-1.5 text-text-muted hover:text-text-primary">
+            <X size={20} />
+          </button>
+        </div>
+
+        <div className="p-5 space-y-5">
+          {/* Step 1: Folder URL */}
+          <div className="space-y-2">
+            <label className="block text-sm font-medium">
+              1. Google Drive Folder Link
+            </label>
+            <div className="flex gap-2">
+              <input
+                value={folderUrl}
+                onChange={(e) => { setFolderUrl(e.target.value); setScanResult(null); }}
+                placeholder="https://drive.google.com/drive/folders/..."
+                className="flex-1 bg-surface-light border border-border rounded-lg px-3 py-2.5 text-sm font-mono focus:outline-none focus:border-gold"
+              />
+              <button
+                onClick={() => scanMutation.mutate()}
+                disabled={!folderUrl.trim() || scanMutation.isPending}
+                className="flex items-center gap-2 bg-gold hover:bg-gold-light text-background px-5 py-2.5 rounded-xl text-sm font-semibold transition-colors disabled:opacity-50 whitespace-nowrap"
+              >
+                {scanMutation.isPending ? (
+                  <Loader2 size={16} className="animate-spin" />
+                ) : (
+                  <FolderInput size={16} />
+                )}
+                {scanMutation.isPending ? 'Scanning...' : 'Scan Folder'}
+              </button>
+            </div>
+            <p className="text-xs text-text-muted">
+              The folder must be shared as &quot;Anyone with the link&quot;. Subfolders are treated as seasons.
+            </p>
+          </div>
+
+          {/* Scan Results */}
+          {scanResult && (
+            <>
+              {/* Summary */}
+              <div className="bg-green-500/10 border border-green-500/30 rounded-xl p-4 flex items-start gap-3">
+                <Check size={20} className="text-green-500 mt-0.5 shrink-0" />
+                <div className="text-sm">
+                  <p className="font-medium text-green-400">
+                    Found {scanResult.totalFiles} episodes in {scanResult.seasons.length} season(s)
+                  </p>
+                  <p className="text-text-secondary mt-0.5">
+                    Drive links will be auto-converted to streaming URLs with thumbnails.
+                  </p>
+                </div>
+              </div>
+
+              {/* Season/Episode Preview */}
+              <div className="space-y-3">
+                <label className="block text-sm font-medium">Detected Structure</label>
+                {scanResult.seasons.map((season) => (
+                  <div key={season.seasonNumber} className="border border-border rounded-xl overflow-hidden">
+                    <div className="bg-surface-light px-4 py-2.5 flex items-center justify-between">
+                      <span className="text-sm font-medium">
+                        Season {season.seasonNumber}
+                        {season.folderName && season.folderName !== `Season ${season.seasonNumber}` && (
+                          <span className="text-text-secondary ml-1">— {season.folderName}</span>
+                        )}
+                      </span>
+                      <span className="text-xs text-text-muted">{season.episodes.length} episodes</span>
+                    </div>
+                    <div className="divide-y divide-border max-h-48 overflow-y-auto">
+                      {season.episodes.map((ep) => (
+                        <div
+                          key={ep.fileId}
+                          className="px-4 py-2 flex items-center gap-3 text-sm"
+                        >
+                          <div className="w-16 h-10 rounded bg-surface-light overflow-hidden flex-shrink-0">
+                            <img
+                              src={ep.thumbnailUrl}
+                              alt=""
+                              className="w-full h-full object-cover"
+                              onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                            />
+                          </div>
+                          <span className="text-text-muted w-8 text-xs">E{String(ep.episodeNumber).padStart(2, '0')}</span>
+                          <span className="flex-1 truncate">{ep.title}</span>
+                          <span className="text-xs text-text-muted truncate max-w-40">{ep.fileName}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Step 2: Select Series */}
+              <div className="space-y-2">
+                <label className="block text-sm font-medium">
+                  2. Import Into Series
+                </label>
+                {seriesOptions.length === 0 ? (
+                  <div className="flex items-center gap-2 text-sm text-amber-400 bg-amber-400/10 border border-amber-400/30 rounded-xl p-3">
+                    <AlertTriangle size={16} />
+                    No series found. Create one first using &quot;Add Series&quot;.
+                  </div>
+                ) : (
+                  <select
+                    value={selectedSeriesId}
+                    onChange={(e) => setSelectedSeriesId(e.target.value)}
+                    className="w-full bg-surface-light border border-border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-gold"
+                  >
+                    <option value="">Select a series...</option>
+                    {seriesOptions.map((s) => (
+                      <option key={s._id} value={s._id}>
+                        {s.title} ({s.contentType.replace('_', ' ')}, {s.releaseYear})
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </div>
+
+              {/* Import Button */}
+              <div className="flex justify-end">
+                <button
+                  onClick={() => importMutation.mutate()}
+                  disabled={!selectedSeriesId || importMutation.isPending}
+                  className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-6 py-2.5 rounded-xl text-sm font-semibold transition-colors disabled:opacity-50"
+                >
+                  {importMutation.isPending ? (
+                    <Loader2 size={18} className="animate-spin" />
+                  ) : (
+                    <Upload size={18} />
+                  )}
+                  {importMutation.isPending
+                    ? 'Importing...'
+                    : `Import ${scanResult.totalFiles} Episodes`}
+                </button>
+              </div>
+            </>
+          )}
+
+          {/* Scanning state */}
+          {scanMutation.isPending && (
+            <div className="py-8 text-center">
+              <Loader2 size={32} className="mx-auto text-gold animate-spin mb-3" />
+              <p className="text-sm text-text-secondary">Scanning folder contents...</p>
+              <p className="text-xs text-text-muted mt-1">This may take a moment for folders with many subfolders</p>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

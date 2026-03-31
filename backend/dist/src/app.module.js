@@ -31,6 +31,7 @@ const health_module_1 = require("./modules/health/health.module");
 const transcode_module_1 = require("./modules/transcode/transcode.module");
 const app_version_module_1 = require("./modules/app-version/app-version.module");
 const tmdb_module_1 = require("./modules/tmdb/tmdb.module");
+const gdrive_folder_module_1 = require("./modules/gdrive-folder/gdrive-folder.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -77,6 +78,7 @@ exports.AppModule = AppModule = __decorate([
             transcode_module_1.TranscodeModule,
             app_version_module_1.AppVersionModule,
             tmdb_module_1.TmdbModule,
+            gdrive_folder_module_1.GdriveFolderModule,
         ],
     })
 ], AppModule);

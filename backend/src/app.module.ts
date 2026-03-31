@@ -22,6 +22,7 @@ import { HealthModule } from './modules/health/health.module';
 import { TranscodeModule } from './modules/transcode/transcode.module';
 import { AppVersionModule } from './modules/app-version/app-version.module';
 import { TmdbModule } from './modules/tmdb/tmdb.module';
+import { GdriveFolderModule } from './modules/gdrive-folder/gdrive-folder.module';
 
 @Module({
   imports: [
@@ -65,6 +66,7 @@ import { TmdbModule } from './modules/tmdb/tmdb.module';
     TranscodeModule,
     AppVersionModule,
     TmdbModule,
+    GdriveFolderModule,
   ],
 })
 export class AppModule {}
