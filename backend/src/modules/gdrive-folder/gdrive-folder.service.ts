@@ -383,8 +383,9 @@ export class GdriveFolderService {
     const seen = new Set<string>();
     let m: RegExpExecArray | null;
 
-    // Files: href="/file/d/FILE_ID/view…">filename</a>
-    const fileRe = /href="[^"]*\/file\/d\/([\w-]+)\/[^"]*"[^>]*>\s*([^<]+)/gi;
+    // Primary: flip-entry blocks — href … flip-entry-title
+    // Files: href contains /file/d/ID/
+    const fileRe = /\/file\/d\/([\w-]+)\/[\s\S]*?class="flip-entry-title">([^<]+)<\/div>/gi;
     while ((m = fileRe.exec(html)) !== null) {
       const id = m[1];
       const name = m[2].trim();
@@ -394,8 +395,8 @@ export class GdriveFolderService {
       }
     }
 
-    // Subfolders: href="…/folders/FOLDER_ID…">foldername</a>
-    const folderRe = /href="[^"]*\/folders\/([\w-]+)[^"]*"[^>]*>\s*([^<]+)/gi;
+    // Folders: href contains /folders/ID
+    const folderRe = /\/folders\/([\w-]+)[\s\S]*?class="flip-entry-title">([^<]+)<\/div>/gi;
     while ((m = folderRe.exec(html)) !== null) {
       const id = m[1];
       const name = m[2].trim();
@@ -405,14 +406,16 @@ export class GdriveFolderService {
       }
     }
 
-    // data-id attribute fallback
-    const dataRe = /data-id="([\w-]{20,})"[^>]*?aria-label="([^"]+)"/gi;
-    while ((m = dataRe.exec(html)) !== null) {
-      const id = m[1];
-      const name = m[2].trim();
-      if (!seen.has(id) && id !== parentFolderId) {
-        seen.add(id);
-        files.push({ id, name, mimeType: this.guessMime(name) });
+    // Fallback: id="entry-ID" … flip-entry-title
+    if (files.length === 0) {
+      const entryRe = /id="entry-([\w-]+)"[\s\S]*?class="flip-entry-title">([^<]+)<\/div>/gi;
+      while ((m = entryRe.exec(html)) !== null) {
+        const id = m[1];
+        const name = m[2].trim();
+        if (!seen.has(id) && id !== parentFolderId) {
+          seen.add(id);
+          files.push({ id, name, mimeType: this.guessMime(name) });
+        }
       }
     }
 

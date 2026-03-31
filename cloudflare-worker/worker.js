@@ -135,32 +135,41 @@ async function tryMobilePage(folderId) {
 function parseEmbeddedHtml(html, parentFolderId) {
   const files = [];
   const seen = new Set();
-
-  // Files: href="/file/d/FILE_ID/…">filename</a>
-  const fileRe = /href="[^"]*\/file\/d\/([\w-]+)\/[^"]*"[^>]*>\s*([^<]+)/gi;
   let m;
+
+  // Primary: flip-entry blocks — id="entry-ID" … href … flip-entry-title
+  // Files: href contains /file/d/ID/
+  const fileRe = /\/file\/d\/([\w-]+)\/[\s\S]*?class="flip-entry-title">([^<]+)<\/div>/gi;
   while ((m = fileRe.exec(html)) !== null) {
-    if (!seen.has(m[1])) {
-      seen.add(m[1]);
-      files.push({ id: m[1], name: m[2].trim(), mimeType: guessMime(m[2].trim()) });
+    const id = m[1];
+    const name = m[2].trim();
+    if (!seen.has(id)) {
+      seen.add(id);
+      files.push({ id, name, mimeType: guessMime(name) });
     }
   }
 
-  // Subfolders: href="…/folders/FOLDER_ID…">name</a>
-  const folderRe = /href="[^"]*\/folders\/([\w-]+)[^"]*"[^>]*>\s*([^<]+)/gi;
+  // Folders: href contains /folders/ID
+  const folderRe = /\/folders\/([\w-]+)[\s\S]*?class="flip-entry-title">([^<]+)<\/div>/gi;
   while ((m = folderRe.exec(html)) !== null) {
-    if (!seen.has(m[1]) && m[1] !== parentFolderId) {
-      seen.add(m[1]);
-      files.push({ id: m[1], name: m[2].trim(), mimeType: 'application/vnd.google-apps.folder' });
+    const id = m[1];
+    const name = m[2].trim();
+    if (!seen.has(id) && id !== parentFolderId) {
+      seen.add(id);
+      files.push({ id, name, mimeType: 'application/vnd.google-apps.folder' });
     }
   }
 
-  // data-id attribute
-  const dataRe = /data-id="([\w-]{20,})"[^>]*?aria-label="([^"]+)"/gi;
-  while ((m = dataRe.exec(html)) !== null) {
-    if (!seen.has(m[1]) && m[1] !== parentFolderId) {
-      seen.add(m[1]);
-      files.push({ id: m[1], name: m[2].trim(), mimeType: guessMime(m[2].trim()) });
+  // Fallback: id="entry-ID" … flip-entry-title
+  if (files.length === 0) {
+    const entryRe = /id="entry-([\w-]+)"[\s\S]*?class="flip-entry-title">([^<]+)<\/div>/gi;
+    while ((m = entryRe.exec(html)) !== null) {
+      const id = m[1];
+      const name = m[2].trim();
+      if (!seen.has(id) && id !== parentFolderId) {
+        seen.add(id);
+        files.push({ id, name, mimeType: guessMime(name) });
+      }
     }
   }
 
