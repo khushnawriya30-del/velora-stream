@@ -74,14 +74,11 @@ fun MovieDetailScreen(
     var isExiting by remember { mutableStateOf(false) }
     val coroutineScope = rememberCoroutineScope()
 
-    // Instant-hide trailer then navigate back (wait one frame so recomposition removes the player)
+    // Instant-hide trailer then navigate back
     val handleBack: () -> Unit = {
         if (!isExiting) {
             isExiting = true
-            coroutineScope.launch {
-                delay(50)
-                onBack()
-            }
+            onBack()
         }
     }
 
@@ -228,11 +225,13 @@ fun MovieDetailScreen(
                         .background(Color.Black)
                         .border(1.dp, Color.White.copy(alpha = 0.1f), RoundedCornerShape(16.dp))
                 ) {
-                    if (!isExiting) {
-                        TrailerPlayer(
-                            trailerUrl = movie.trailerUrl!!,
-                            modifier = Modifier.fillMaxSize()
-                        )
+                    TrailerPlayer(
+                        trailerUrl = movie.trailerUrl!!,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                    // Solid black cover drawn ON TOP of player surface to hide it instantly
+                    if (isExiting) {
+                        Box(modifier = Modifier.fillMaxSize().background(Color.Black))
                     }
                 }
 
@@ -1735,10 +1734,26 @@ private fun ExoTrailerPlayer(
         // Player view
         AndroidView(
             factory = { ctx ->
+                // Use TextureView instead of SurfaceView so Compose overlays work properly
+                val attrs = ctx.obtainStyledAttributes(
+                    intArrayOf(android.R.attr.id)
+                )
+                attrs.recycle()
                 PlayerView(ctx).apply {
                     player = exoPlayer
-                    useController = false // we build our own controls
+                    useController = false
                     setBackgroundColor(android.graphics.Color.BLACK)
+                    setShowBuffering(PlayerView.SHOW_BUFFERING_NEVER)
+                    // Remove the default SurfaceView and add TextureView
+                    videoSurfaceView?.let { removeView(it) }
+                    val textureView = android.view.TextureView(ctx)
+                    addView(textureView, 0,
+                        android.widget.FrameLayout.LayoutParams(
+                            android.widget.FrameLayout.LayoutParams.MATCH_PARENT,
+                            android.widget.FrameLayout.LayoutParams.MATCH_PARENT
+                        )
+                    )
+                    exoPlayer.setVideoTextureView(textureView)
                 }
             },
             modifier = Modifier.fillMaxSize()
