@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Film, Plus, ChevronDown, ChevronRight, Trash2, Pencil, Upload, X, Layers, FolderInput, Loader2, Check, AlertTriangle } from 'lucide-react';
-import { useState, useMemo, useCallback } from 'react';
+import { Film, Plus, ChevronDown, ChevronRight, Trash2, Pencil, Upload, X, Layers, FolderInput, Loader2, Check, AlertTriangle, Cloud, RefreshCw, Zap } from 'lucide-react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../lib/api';
 import type { Movie } from '../types';
@@ -37,6 +37,7 @@ export default function SeriesPage() {
   const [showCreateSeason, setShowCreateSeason] = useState<string | null>(null);
   const [showBulkAdd, setShowBulkAdd] = useState<string | null>(null);
   const [showEditEpisode, setShowEditEpisode] = useState<Episode | null>(null);
+  const [showBunnyStream, setShowBunnyStream] = useState<string | null>(null);
   const [showFolderImport, setShowFolderImport] = useState(false);
 
   // Fetch all series content (web_series + tv_show + anime — anime web series are stored as contentType='anime')
@@ -198,6 +199,8 @@ export default function SeriesPage() {
             setShowBulkAdd={setShowBulkAdd}
             showEditEpisode={showEditEpisode}
             setShowEditEpisode={setShowEditEpisode}
+            showBunnyStream={showBunnyStream}
+            setShowBunnyStream={setShowBunnyStream}
           />
         </div>
       )}
@@ -225,6 +228,8 @@ function SeriesManager({
   setShowBulkAdd,
   showEditEpisode,
   setShowEditEpisode,
+  showBunnyStream,
+  setShowBunnyStream,
 }: {
   series: Movie;
   expandedSeason: string | null;
@@ -235,6 +240,8 @@ function SeriesManager({
   setShowBulkAdd: (id: string | null) => void;
   showEditEpisode: Episode | null;
   setShowEditEpisode: (ep: Episode | null) => void;
+  showBunnyStream: string | null;
+  setShowBunnyStream: (id: string | null) => void;
 }) {
   const [localSeasons, setLocalSeasons] = useState<Season[]>([]);
 
@@ -314,6 +321,8 @@ function SeriesManager({
             setShowBulkAdd={setShowBulkAdd}
             showEditEpisode={showEditEpisode}
             setShowEditEpisode={setShowEditEpisode}
+            showBunnyStream={showBunnyStream}
+            setShowBunnyStream={setShowBunnyStream}
           />
         ))
       )}
@@ -387,7 +396,7 @@ function CreateSeasonForm({ seriesId, nextNumber, onSeasonCreated, onClose }: {
 // ── Season Row ──
 
 function SeasonRow({
-  season, isExpanded, onToggle, onDelete, showBulkAdd, setShowBulkAdd, showEditEpisode, setShowEditEpisode,
+  season, isExpanded, onToggle, onDelete, showBulkAdd, setShowBulkAdd, showEditEpisode, setShowEditEpisode, showBunnyStream, setShowBunnyStream,
 }: {
   season: Season;
   isExpanded: boolean;
@@ -397,6 +406,8 @@ function SeasonRow({
   setShowBulkAdd: (id: string | null) => void;
   showEditEpisode: Episode | null;
   setShowEditEpisode: (ep: Episode | null) => void;
+  showBunnyStream: string | null;
+  setShowBunnyStream: (id: string | null) => void;
 }) {
   const queryClient = useQueryClient();
 
@@ -432,6 +443,12 @@ function SeasonRow({
           <span className="text-xs text-text-muted ml-2">{season.episodeCount} episodes</span>
         </button>
         <button
+          onClick={() => setShowBunnyStream(showBunnyStream === season._id ? null : season._id)}
+          className="flex items-center gap-1 text-xs text-purple-400 hover:text-purple-300 px-2 py-1 rounded bg-purple-400/10"
+        >
+          <Cloud size={14} /> Bunny Stream
+        </button>
+        <button
           onClick={() => setShowBulkAdd(showBulkAdd === season._id ? null : season._id)}
           className="flex items-center gap-1 text-xs text-gold hover:text-gold-light px-2 py-1 rounded bg-gold/10"
         >
@@ -445,6 +462,11 @@ function SeasonRow({
       {/* Bulk Add Form */}
       {showBulkAdd === season._id && (
         <BulkAddForm seasonId={season._id} onClose={() => setShowBulkAdd(null)} />
+      )}
+
+      {/* Bunny Stream Panel */}
+      {showBunnyStream === season._id && (
+        <BunnyStreamPanel seasonId={season._id} onClose={() => setShowBunnyStream(null)} />
       )}
 
       {/* Episodes List */}
@@ -484,7 +506,13 @@ function SeasonRow({
 
                   {/* URL indicator */}
                   {ep.streamingSources?.length > 0 && (
-                    <span className="text-[10px] text-green-400 bg-green-400/10 px-2 py-0.5 rounded">Has Video</span>
+                    ep.streamingSources.some((s) => s.url?.includes('playlist.m3u8')) ? (
+                      <span className="text-[10px] text-purple-400 bg-purple-400/10 px-2 py-0.5 rounded flex items-center gap-1">
+                        <Zap size={10} /> HLS
+                      </span>
+                    ) : (
+                      <span className="text-[10px] text-green-400 bg-green-400/10 px-2 py-0.5 rounded">Has Video</span>
+                    )
                   )}
 
                   {/* Actions */}
@@ -694,6 +722,263 @@ function EditEpisodeForm({ episode, seasonId, onClose }: { episode: Episode; sea
           {update.isPending ? 'Saving...' : 'Save'}
         </button>
       </div>
+    </div>
+  );
+}
+
+// ── Bunny Stream Panel (import/migrate/status for a season) ──
+
+function BunnyStreamPanel({ seasonId, onClose }: { seasonId: string; onClose: () => void }) {
+  const queryClient = useQueryClient();
+  const [folderUrl, setFolderUrl] = useState('');
+  const [tab, setTab] = useState<'import' | 'migrate' | 'status'>('import');
+
+  // Import from Drive folder to Bunny Stream
+  const importMutation = useMutation({
+    mutationFn: async () => {
+      const { data } = await api.post(`/bunny/stream/season/${seasonId}/import-folder`, { folderUrl });
+      return data;
+    },
+    onSuccess: (data) => {
+      toast.success(data.message || 'Import started');
+    },
+    onError: (err: any) => toast.error(err.response?.data?.message || 'Import failed'),
+  });
+
+  // Migrate existing episodes to Bunny Stream
+  const migrateMutation = useMutation({
+    mutationFn: async () => {
+      const { data } = await api.post(`/bunny/stream/season/${seasonId}/migrate`);
+      return data;
+    },
+    onSuccess: (data) => {
+      toast.success(data.message || 'Migration started');
+    },
+    onError: (err: any) => toast.error(err.response?.data?.message || 'Migration failed'),
+  });
+
+  // Poll progress
+  const [polling, setPolling] = useState(false);
+  const { data: progress, refetch: refetchProgress } = useQuery({
+    queryKey: ['bunny-progress'],
+    queryFn: async () => {
+      const { data } = await api.get('/bunny/stream/progress');
+      return data as { total: number; completed: number; failed: number; current: string | null; running: boolean; results: any[] };
+    },
+    refetchInterval: polling ? 3000 : false,
+  });
+
+  // Poll transcoding status
+  const { data: transcodingStatus, refetch: refetchTranscoding } = useQuery({
+    queryKey: ['bunny-transcoding', seasonId],
+    queryFn: async () => {
+      const { data } = await api.get(`/bunny/stream/season/${seasonId}/status`);
+      return data as { total: number; finished: number; processing: number; failed: number; episodes: { episodeNumber: number; status: number; encodeProgress: number; resolutions: string }[] };
+    },
+    enabled: tab === 'status',
+    refetchInterval: tab === 'status' ? 10000 : false,
+  });
+
+  useEffect(() => {
+    if (progress?.running) {
+      setPolling(true);
+    } else if (polling && progress && !progress.running) {
+      setPolling(false);
+      queryClient.invalidateQueries({ queryKey: ['episodes', seasonId] });
+      queryClient.invalidateQueries({ queryKey: ['seasons'] });
+    }
+  }, [progress?.running, polling, queryClient, seasonId]);
+
+  // Start polling when import/migrate begins
+  useEffect(() => {
+    if (importMutation.isSuccess || migrateMutation.isSuccess) {
+      setPolling(true);
+      refetchProgress();
+    }
+  }, [importMutation.isSuccess, migrateMutation.isSuccess, refetchProgress]);
+
+  const statusLabel = (s: number) => {
+    const map: Record<number, string> = { 0: 'Created', 1: 'Uploaded', 2: 'Processing', 3: 'Transcoding', 4: 'Finished', 5: 'Error', 6: 'Upload Failed', [-1]: 'No HLS' };
+    return map[s] || 'Unknown';
+  };
+  const statusColor = (s: number) => {
+    if (s === 4) return 'text-green-400';
+    if (s === 5 || s === 6 || s === -1) return 'text-red-400';
+    return 'text-yellow-400';
+  };
+
+  return (
+    <div className="px-6 py-4 bg-background border-b border-border space-y-4">
+      <div className="flex items-center justify-between">
+        <h5 className="font-medium text-sm flex items-center gap-2">
+          <Cloud size={16} className="text-purple-400" /> Bunny Stream
+        </h5>
+        <button onClick={onClose} className="text-text-muted hover:text-text-primary"><X size={16} /></button>
+      </div>
+
+      {/* Tabs */}
+      <div className="flex gap-1 bg-surface rounded-lg p-1">
+        {(['import', 'migrate', 'status'] as const).map((t) => (
+          <button
+            key={t}
+            onClick={() => setTab(t)}
+            className={`flex-1 text-xs py-1.5 rounded-md transition-colors font-medium ${
+              tab === t ? 'bg-purple-500/20 text-purple-400' : 'text-text-muted hover:text-text-primary'
+            }`}
+          >
+            {t === 'import' ? 'Import Folder' : t === 'migrate' ? 'Migrate Existing' : 'Transcoding Status'}
+          </button>
+        ))}
+      </div>
+
+      {/* Import Tab */}
+      {tab === 'import' && (
+        <div className="space-y-3">
+          <p className="text-xs text-text-muted">
+            Paste a Google Drive folder link. All video files will be uploaded to Bunny Stream with automatic multi-resolution transcoding (1080p, 720p, 480p, 360p, 240p).
+          </p>
+          <div className="flex gap-2">
+            <input
+              value={folderUrl}
+              onChange={(e) => setFolderUrl(e.target.value)}
+              placeholder="https://drive.google.com/drive/folders/..."
+              className="flex-1 bg-surface border border-border rounded-lg px-3 py-2 text-sm font-mono"
+            />
+            <button
+              onClick={() => importMutation.mutate()}
+              disabled={!folderUrl.trim() || importMutation.isPending}
+              className="flex items-center gap-1.5 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm font-medium disabled:opacity-50 whitespace-nowrap"
+            >
+              {importMutation.isPending ? <Loader2 size={14} className="animate-spin" /> : <Cloud size={14} />}
+              Import to Bunny
+            </button>
+          </div>
+          <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-purple-500/10 border border-purple-500/30 text-xs text-purple-300">
+            <Zap size={14} />
+            <span>Episodes are auto-detected, uploaded to Bunny Stream, and transcoded to <strong>HLS adaptive streaming</strong> with 5 quality levels.</span>
+          </div>
+        </div>
+      )}
+
+      {/* Migrate Tab */}
+      {tab === 'migrate' && (
+        <div className="space-y-3">
+          <p className="text-xs text-text-muted">
+            Re-upload all existing episodes in this season to Bunny Stream. Current video URLs will be fetched and transcoded into HLS adaptive streaming.
+          </p>
+          <button
+            onClick={() => migrateMutation.mutate()}
+            disabled={migrateMutation.isPending}
+            className="flex items-center gap-1.5 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm font-medium disabled:opacity-50"
+          >
+            {migrateMutation.isPending ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />}
+            Migrate All Episodes to Bunny Stream
+          </button>
+        </div>
+      )}
+
+      {/* Status Tab */}
+      {tab === 'status' && (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <p className="text-xs text-text-muted">Transcoding progress for all episodes in this season.</p>
+            <button onClick={() => refetchTranscoding()} className="text-xs text-purple-400 hover:text-purple-300 flex items-center gap-1">
+              <RefreshCw size={12} /> Refresh
+            </button>
+          </div>
+          {transcodingStatus ? (
+            <>
+              <div className="grid grid-cols-4 gap-2">
+                <div className="bg-surface rounded-lg p-2 text-center">
+                  <div className="text-lg font-bold">{transcodingStatus.total}</div>
+                  <div className="text-[10px] text-text-muted">Total</div>
+                </div>
+                <div className="bg-surface rounded-lg p-2 text-center">
+                  <div className="text-lg font-bold text-green-400">{transcodingStatus.finished}</div>
+                  <div className="text-[10px] text-text-muted">Finished</div>
+                </div>
+                <div className="bg-surface rounded-lg p-2 text-center">
+                  <div className="text-lg font-bold text-yellow-400">{transcodingStatus.processing}</div>
+                  <div className="text-[10px] text-text-muted">Processing</div>
+                </div>
+                <div className="bg-surface rounded-lg p-2 text-center">
+                  <div className="text-lg font-bold text-red-400">{transcodingStatus.failed}</div>
+                  <div className="text-[10px] text-text-muted">Failed</div>
+                </div>
+              </div>
+              <div className="space-y-1 max-h-48 overflow-y-auto">
+                {transcodingStatus.episodes.map((ep) => (
+                  <div key={ep.episodeNumber} className="flex items-center gap-3 px-3 py-1.5 rounded bg-surface text-sm">
+                    <span className="text-text-muted w-8">E{String(ep.episodeNumber).padStart(2, '0')}</span>
+                    <div className="flex-1">
+                      {ep.status >= 1 && ep.status <= 3 && (
+                        <div className="w-full bg-surface-light rounded-full h-1.5">
+                          <div className="bg-purple-500 h-1.5 rounded-full transition-all" style={{ width: `${ep.encodeProgress}%` }} />
+                        </div>
+                      )}
+                    </div>
+                    <span className={`text-xs font-medium ${statusColor(ep.status)}`}>{statusLabel(ep.status)}</span>
+                    {ep.encodeProgress > 0 && ep.status !== 4 && (
+                      <span className="text-xs text-text-muted">{ep.encodeProgress}%</span>
+                    )}
+                    {ep.resolutions && <span className="text-[10px] text-purple-400">{ep.resolutions}</span>}
+                  </div>
+                ))}
+              </div>
+            </>
+          ) : (
+            <div className="py-4 text-center text-text-muted text-sm">Loading...</div>
+          )}
+        </div>
+      )}
+
+      {/* Progress Bar (shown during import/migration) */}
+      {progress?.running && (
+        <div className="bg-surface rounded-xl p-3 space-y-2">
+          <div className="flex items-center justify-between text-xs">
+            <span className="text-purple-400 font-medium">
+              {progress.current || 'Processing...'}
+            </span>
+            <span className="text-text-muted">
+              {progress.completed}/{progress.total}
+              {progress.failed > 0 && <span className="text-red-400 ml-1">({progress.failed} failed)</span>}
+            </span>
+          </div>
+          <div className="w-full bg-surface-light rounded-full h-2">
+            <div
+              className="bg-purple-500 h-2 rounded-full transition-all"
+              style={{ width: `${progress.total > 0 ? (progress.completed / progress.total) * 100 : 0}%` }}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Completed results */}
+      {progress && !progress.running && progress.results.length > 0 && (
+        <div className="bg-surface rounded-xl p-3 space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-medium text-green-400">
+              Complete: {progress.completed - progress.failed}/{progress.total} succeeded
+            </span>
+            <span className="text-xs text-text-muted">
+              {progress.failed > 0 && <span className="text-red-400">{progress.failed} failed</span>}
+            </span>
+          </div>
+          <div className="max-h-32 overflow-y-auto space-y-1">
+            {progress.results.map((r, i) => (
+              <div key={i} className="flex items-center gap-2 text-xs">
+                {r.status === 'success' ? (
+                  <Check size={12} className="text-green-400" />
+                ) : (
+                  <AlertTriangle size={12} className="text-red-400" />
+                )}
+                <span className="truncate">{r.title}</span>
+                {r.error && <span className="text-red-400 truncate">{r.error}</span>}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

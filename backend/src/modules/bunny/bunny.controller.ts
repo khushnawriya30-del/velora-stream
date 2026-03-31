@@ -1,4 +1,14 @@
-import { Controller, Post, Get, Param, Body, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Get,
+  Param,
+  Body,
+  UseGuards,
+  UseInterceptors,
+  UploadedFile,
+} from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { BunnyService } from './bunny.service';
 import { AuthGuard } from '@nestjs/passport';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -10,65 +20,107 @@ import { Roles } from '../auth/decorators/roles.decorator';
 export class BunnyController {
   constructor(private readonly bunnyService: BunnyService) {}
 
-  /** Get all content with Drive URLs that needs migration */
-  @Get('pending')
-  async getPending() {
-    return this.bunnyService.getPendingContent();
+  // ─── Library Status ──────────────────────────────────────────
+
+  @Get('stream/library')
+  async getLibraryStatus() {
+    return this.bunnyService.getLibraryStatus();
   }
 
-  /** Get migration progress */
-  @Get('status')
-  getStatus() {
-    return this.bunnyService.getStatus();
+  @Get('stream/videos')
+  async listVideos() {
+    return this.bunnyService.listVideos();
   }
 
-  /** Migrate a single movie */
-  @Post('migrate/:movieId')
-  async migrateMovie(@Param('movieId') movieId: string) {
-    return this.bunnyService.migrateMovie(movieId);
+  @Get('stream/video/:videoId')
+  async getVideoStatus(@Param('videoId') videoId: string) {
+    return this.bunnyService.getVideoStatus(videoId);
   }
 
-  /** Migrate a single episode */
-  @Post('migrate-episode/:episodeId')
-  async migrateEpisode(@Param('episodeId') episodeId: string) {
-    return this.bunnyService.migrateEpisode(episodeId, '');
+  // ─── Progress Tracking ───────────────────────────────────────
+
+  @Get('stream/progress')
+  getProgress() {
+    return this.bunnyService.getProgress();
   }
 
-  /** Start migrating ALL Drive content to Bunny (runs in background) */
-  @Post('migrate-all')
-  async migrateAll() {
-    await this.bunnyService.migrateAll();
-    return { message: 'Migration started', status: this.bunnyService.getStatus() };
-  }
+  // ─── Movie Upload ────────────────────────────────────────────
 
-  /** Revert all bad CDN migrations — removes bad CDN URLs and deletes garbage files */
-  @Post('revert-bad')
-  async revertBadMigrations() {
-    return this.bunnyService.revertBadMigrations();
-  }
-
-  /** Bulk-set Drive URLs for movies: [{ movieId, driveFileId, quality? }] */
-  @Post('set-drive-urls')
-  async bulkSetDriveUrls(
-    @Body() body: { mappings: { movieId: string; driveFileId: string; quality?: string }[] },
+  /** Upload a movie to Bunny Stream from URL (fetches & transcodes) */
+  @Post('stream/movie/:movieId/fetch')
+  async fetchMovieFromUrl(
+    @Param('movieId') movieId: string,
+    @Body() body: { url?: string },
   ) {
-    return this.bunnyService.bulkSetDriveUrls(body.mappings);
+    return this.bunnyService.uploadMovieFromUrl(movieId, body.url);
   }
 
-  /** Bulk-set Drive URLs for episodes: [{ episodeId, driveFileId, quality? }] */
-  @Post('set-episode-drive-urls')
-  async bulkSetEpisodeDriveUrls(
-    @Body() body: { mappings: { episodeId: string; driveFileId: string; quality?: string }[] },
+  /** Upload a movie file directly to Bunny Stream */
+  @Post('stream/movie/:movieId/upload')
+  @UseInterceptors(FileInterceptor('file', { limits: { fileSize: 5 * 1024 * 1024 * 1024 } }))
+  async uploadMovieFile(
+    @Param('movieId') movieId: string,
+    @UploadedFile() file: Express.Multer.File,
   ) {
-    return this.bunnyService.bulkSetEpisodeDriveUrls(body.mappings);
+    if (!file) throw new Error('No file provided');
+    return this.bunnyService.uploadMovieFromFile(movieId, file.buffer, file.originalname);
   }
 
-  /** Recover episode URLs from a Google Drive folder scan */
-  @Post('recover-episodes/:seasonId')
-  async recoverEpisodesFromFolder(
+  /** Check movie transcoding status */
+  @Get('stream/movie/:movieId/status')
+  async checkMovieTranscoding(@Param('movieId') movieId: string) {
+    return this.bunnyService.checkMovieTranscoding(movieId);
+  }
+
+  // ─── Episode Upload ──────────────────────────────────────────
+
+  /** Upload an episode to Bunny Stream from URL */
+  @Post('stream/episode/:episodeId/fetch')
+  async fetchEpisodeFromUrl(
+    @Param('episodeId') episodeId: string,
+    @Body() body: { url?: string },
+  ) {
+    return this.bunnyService.uploadEpisodeFromUrl(episodeId, body.url);
+  }
+
+  /** Upload an episode file directly */
+  @Post('stream/episode/:episodeId/upload')
+  @UseInterceptors(FileInterceptor('file', { limits: { fileSize: 5 * 1024 * 1024 * 1024 } }))
+  async uploadEpisodeFile(
+    @Param('episodeId') episodeId: string,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    if (!file) throw new Error('No file provided');
+    return this.bunnyService.uploadEpisodeFromFile(episodeId, file.buffer, file.originalname);
+  }
+
+  // ─── Season / Folder Import ──────────────────────────────────
+
+  /** Import all episodes from a Google Drive folder to Bunny Stream */
+  @Post('stream/season/:seasonId/import-folder')
+  async importSeasonFromFolder(
     @Param('seasonId') seasonId: string,
     @Body() body: { folderUrl: string },
   ) {
-    return this.bunnyService.recoverEpisodesFromFolder(seasonId, body.folderUrl);
+    return this.bunnyService.importSeasonFromFolder(seasonId, body.folderUrl);
+  }
+
+  /** Migrate existing season episodes to Bunny Stream (re-fetch from current URLs) */
+  @Post('stream/season/:seasonId/migrate')
+  async migrateSeasonToBunnyStream(@Param('seasonId') seasonId: string) {
+    return this.bunnyService.migrateSeasonToBunnyStream(seasonId);
+  }
+
+  /** Check transcoding status for all episodes in a season */
+  @Get('stream/season/:seasonId/status')
+  async checkSeasonTranscoding(@Param('seasonId') seasonId: string) {
+    return this.bunnyService.checkSeasonTranscoding(seasonId);
+  }
+
+  // ─── Collections ─────────────────────────────────────────────
+
+  @Get('stream/collections')
+  async listCollections() {
+    return this.bunnyService.listCollections();
   }
 }

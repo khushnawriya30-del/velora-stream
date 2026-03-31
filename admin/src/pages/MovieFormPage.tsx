@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Plus, X } from 'lucide-react';
+import { ArrowLeft, Plus, X, Cloud, Loader2 } from 'lucide-react';
 import api from '../lib/api';
 import type { Movie, CastMember, StreamingSource } from '../types';
 import toast from 'react-hot-toast';
@@ -9,15 +9,22 @@ import toast from 'react-hot-toast';
 function HlsTranscodeSection({ movieId }: { movieId: string }) {
   const [status, setStatus] = useState<string>('none');
   const [hlsUrl, setHlsUrl] = useState<string>('');
+  const [encodeProgress, setEncodeProgress] = useState(0);
+  const [availableResolutions, setAvailableResolutions] = useState('');
   const [loading, setLoading] = useState(false);
+  const [fetchUrl, setFetchUrl] = useState('');
 
   const fetchStatus = useCallback(async () => {
     try {
-      const { data } = await api.get(`/transcode/${movieId}/status`);
-      setStatus(data.status);
-      if (data.hlsUrl) setHlsUrl(data.hlsUrl);
+      const { data } = await api.get(`/bunny/stream/movie/${movieId}/status`);
+      setStatus(data.hlsStatus || 'none');
+      if (data.encodeProgress) setEncodeProgress(data.encodeProgress);
+      if (data.availableResolutions) setAvailableResolutions(data.availableResolutions);
+      // Get movie HLS URL
+      const movieRes = await api.get(`/movies/${movieId}`);
+      if (movieRes.data?.hlsUrl) setHlsUrl(movieRes.data.hlsUrl);
     } catch {
-      // ignore
+      // Movie might not have a Bunny video yet — that's fine
     }
   }, [movieId]);
 
@@ -32,14 +39,40 @@ function HlsTranscodeSection({ movieId }: { movieId: string }) {
     return () => clearInterval(interval);
   }, [status, fetchStatus]);
 
-  const handleTranscode = async () => {
+  // Upload from URL (fetch to Bunny Stream)
+  const handleFetchToBunny = async () => {
     setLoading(true);
     try {
-      await api.post(`/transcode/${movieId}`);
+      const { data } = await api.post(`/bunny/stream/movie/${movieId}/fetch`, {
+        url: fetchUrl || undefined,
+      });
       setStatus('processing');
-      toast.success('HLS transcoding started!');
+      setHlsUrl(data.hlsUrl);
+      toast.success('Video sent to Bunny Stream for transcoding!');
     } catch (err: any) {
-      toast.error(err?.response?.data?.message || 'Failed to start transcoding');
+      toast.error(err?.response?.data?.message || 'Failed to upload to Bunny Stream');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Upload file directly
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setLoading(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const { data } = await api.post(`/bunny/stream/movie/${movieId}/upload`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+        timeout: 0,
+      });
+      setStatus('processing');
+      setHlsUrl(data.hlsUrl);
+      toast.success('Video uploaded to Bunny Stream!');
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || 'Upload failed');
     } finally {
       setLoading(false);
     }
@@ -48,22 +81,30 @@ function HlsTranscodeSection({ movieId }: { movieId: string }) {
   return (
     <div className="space-y-3">
       <div className="flex items-center gap-3">
-        <span className="text-sm font-medium">Status:</span>
+        <span className="text-sm font-medium flex items-center gap-1.5"><Cloud size={16} className="text-purple-400" /> Bunny Stream:</span>
         {status === 'none' && (
-          <span className="px-2 py-1 rounded-md bg-surface-light text-text-secondary text-xs">Not Generated</span>
+          <span className="px-2 py-1 rounded-md bg-surface-light text-text-secondary text-xs">Not Uploaded</span>
         )}
         {status === 'processing' && (
           <span className="px-2 py-1 rounded-md bg-yellow-500/20 text-yellow-400 text-xs animate-pulse">
-            Processing... (this may take several minutes)
+            Transcoding... {encodeProgress > 0 && `(${encodeProgress}%)`}
           </span>
         )}
         {status === 'completed' && (
-          <span className="px-2 py-1 rounded-md bg-green-500/20 text-green-400 text-xs">Completed</span>
+          <span className="px-2 py-1 rounded-md bg-green-500/20 text-green-400 text-xs">
+            Completed {availableResolutions && `(${availableResolutions})`}
+          </span>
         )}
         {status === 'failed' && (
           <span className="px-2 py-1 rounded-md bg-red-500/20 text-red-400 text-xs">Failed</span>
         )}
       </div>
+
+      {status === 'processing' && encodeProgress > 0 && (
+        <div className="w-full bg-surface-light rounded-full h-2">
+          <div className="bg-purple-500 h-2 rounded-full transition-all" style={{ width: `${encodeProgress}%` }} />
+        </div>
+      )}
 
       {hlsUrl && (
         <div className="text-xs text-text-secondary bg-background rounded-lg p-3 break-all">
@@ -72,14 +113,36 @@ function HlsTranscodeSection({ movieId }: { movieId: string }) {
       )}
 
       {(status === 'none' || status === 'failed') && (
-        <button
-          type="button"
-          onClick={handleTranscode}
-          disabled={loading}
-          className="px-4 py-2 rounded-lg bg-gold hover:bg-gold-light text-background font-semibold text-sm transition-colors disabled:opacity-50"
-        >
-          {loading ? 'Starting...' : status === 'failed' ? 'Retry HLS Generation' : 'Generate HLS Variants'}
-        </button>
+        <div className="space-y-3">
+          {/* Fetch from URL */}
+          <div className="flex gap-2">
+            <input
+              value={fetchUrl}
+              onChange={(e) => setFetchUrl(e.target.value)}
+              placeholder="Video URL (or leave empty to use first streaming source)"
+              className="flex-1 bg-surface-light border border-border rounded-lg px-3 py-2 text-sm"
+            />
+            <button
+              type="button"
+              onClick={handleFetchToBunny}
+              disabled={loading}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-purple-600 hover:bg-purple-700 text-white font-medium text-sm disabled:opacity-50 whitespace-nowrap"
+            >
+              {loading ? <Loader2 size={14} className="animate-spin" /> : <Cloud size={14} />}
+              {status === 'failed' ? 'Retry' : 'Upload to Bunny'}
+            </button>
+          </div>
+
+          {/* Direct file upload */}
+          <div className="flex items-center gap-2">
+            <label className="flex items-center gap-1.5 px-4 py-2 rounded-lg border border-purple-500/30 text-purple-400 hover:bg-purple-500/10 text-sm cursor-pointer transition-colors">
+              <Cloud size={14} />
+              Upload File Directly
+              <input type="file" accept="video/*" onChange={handleFileUpload} className="hidden" disabled={loading} />
+            </label>
+            <span className="text-xs text-text-muted">Auto-transcodes to 1080p, 720p, 480p, 360p, 240p</span>
+          </div>
+        </div>
       )}
     </div>
   );
@@ -840,13 +903,13 @@ export default function MovieFormPage() {
           ))}
         </section>
 
-        {/* HLS Adaptive Streaming */}
+        {/* Bunny Stream — Adaptive Streaming */}
         {isEdit && id && (
-          <section className="bg-surface border border-border rounded-xl p-6 space-y-4">
-            <h2 className="text-lg font-medium">HLS Adaptive Streaming</h2>
+          <section className="bg-surface border border-purple-500/20 rounded-xl p-6 space-y-4">
+            <h2 className="text-lg font-medium flex items-center gap-2"><Cloud size={20} className="text-purple-400" /> Bunny Stream — Adaptive Streaming</h2>
             <p className="text-sm text-text-secondary">
-              Generate HLS variants (1080p, 720p, 480p, 360p) from your source video using Google Cloud Transcoder.
-              Fast cloud-based encoding — no CPU load on your machine. Quality auto-adjusts based on internet speed.
+              Upload to Bunny Stream for automatic multi-resolution transcoding (1080p, 720p, 480p, 360p, 240p).
+              HLS adaptive streaming adjusts quality in real-time based on viewer's internet speed.
             </p>
             <HlsTranscodeSection movieId={id} />
           </section>
