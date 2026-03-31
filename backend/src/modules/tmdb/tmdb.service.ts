@@ -34,6 +34,16 @@ const GENRE_MAP: Record<number, string> = {
   10765: 'Sci-Fi & Fantasy', 10766: 'Soap', 10767: 'Talk', 10768: 'War & Politics',
 };
 
+export interface TmdbDiscoverOptions {
+  contentType: 'movies' | 'shows' | 'anime' | 'webseries';
+  region: string;
+  count: number;
+  year?: number;
+  genres?: number[];
+  withLanguage?: string; // dubbed language code e.g. 'hi' for Hindi dubbed
+  page?: number; // starting page for fresh results
+}
+
 export interface TmdbPreviewItem {
   tmdbId: number;
   title: string;
@@ -73,35 +83,57 @@ export class TmdbService {
   }
 
   /** Discover / preview content from TMDB without importing */
-  async discover(
-    contentType: 'movies' | 'shows' | 'anime',
-    region: string,
-    count: number,
-  ): Promise<TmdbPreviewItem[]> {
+  async discover(opts: TmdbDiscoverOptions): Promise<{ items: TmdbPreviewItem[]; nextPage: number }> {
+    const { contentType, region, count, year, genres, withLanguage } = opts;
     const regionCfg = REGION_MAP[region.toLowerCase()] ?? { language: 'en-US' };
     const isAnime = contentType === 'anime';
-    const mediaType = contentType === 'movies' ? 'movie' : 'tv';
+    const mediaType = (contentType === 'movies') ? 'movie' : 'tv';
 
-    // Calculate pages needed (TMDB returns 20 per page)
-    const pages = Math.ceil(count / 20);
+    // Use startPage so each Discover click gets fresh results
+    const startPage = opts.page || 1;
+    const pagesNeeded = Math.ceil(count / 20);
     const allResults: any[] = [];
 
-    for (let page = 1; page <= pages && allResults.length < count; page++) {
+    for (let p = startPage; p < startPage + pagesNeeded && allResults.length < count; p++) {
       const params: Record<string, string> = {
-        language: regionCfg.language,
+        language: withLanguage ? `${withLanguage}-${regionCfg.region ?? 'US'}` : regionCfg.language,
         sort_by: 'popularity.desc',
-        page: String(page),
-        'vote_count.gte': '10',
+        page: String(p),
+        'vote_count.gte': '5',
       };
-      if (regionCfg.with_original_language) {
+
+      // Original language filter (unless dubbed mode)
+      if (!withLanguage && regionCfg.with_original_language) {
         params.with_original_language = regionCfg.with_original_language;
       }
       if (regionCfg.region && mediaType === 'movie') {
         params.region = regionCfg.region;
       }
+
+      // Anime override
       if (isAnime) {
-        params.with_genres = '16'; // Animation genre
-        params.with_original_language = 'ja';
+        params.with_genres = '16';
+        if (!withLanguage) params.with_original_language = 'ja';
+      }
+
+      // Year filter
+      if (year) {
+        if (mediaType === 'movie') {
+          params.primary_release_year = String(year);
+        } else {
+          params.first_air_date_year = String(year);
+        }
+      }
+
+      // Genre filter (multi-select, comma-separated TMDB genre IDs)
+      if (genres && genres.length > 0) {
+        const existing = params.with_genres ? [params.with_genres] : [];
+        params.with_genres = [...existing, ...genres.map(String)].join(',');
+      }
+
+      // Dubbed language: find content available in this language
+      if (withLanguage) {
+        params.with_text_query = ''; // not needed, language param handles translation
       }
 
       const data = await this.tmdbGet(`/discover/${mediaType}`, params);
@@ -109,32 +141,36 @@ export class TmdbService {
     }
 
     const results = allResults.slice(0, count);
+    const nextPage = startPage + pagesNeeded;
 
     // Check which are already imported
     const tmdbIds = results.map((r: any) => String(r.id));
     const existing = await this.movieModel.find({ tmdbId: { $in: tmdbIds } }).select('tmdbId');
     const existingSet = new Set(existing.map((m) => m.tmdbId));
 
-    return results.map((r: any) => ({
-      tmdbId: r.id,
-      title: r.title ?? r.name ?? '',
-      overview: r.overview ?? '',
-      posterUrl: r.poster_path ? `${TMDB_IMG}/w500${r.poster_path}` : null,
-      backdropUrl: r.backdrop_path ? `${TMDB_IMG}/w1280${r.backdrop_path}` : null,
-      releaseDate: r.release_date ?? r.first_air_date ?? '',
-      rating: r.vote_average ?? 0,
-      genreNames: (r.genre_ids ?? []).map((id: number) => GENRE_MAP[id] ?? 'Other').filter(Boolean),
-      originalLanguage: r.original_language ?? '',
-      alreadyImported: existingSet.has(String(r.id)),
-    }));
+    return {
+      items: results.map((r: any) => ({
+        tmdbId: r.id,
+        title: r.title ?? r.name ?? '',
+        overview: r.overview ?? '',
+        posterUrl: r.poster_path ? `${TMDB_IMG}/w500${r.poster_path}` : null,
+        backdropUrl: r.backdrop_path ? `${TMDB_IMG}/w1280${r.backdrop_path}` : null,
+        releaseDate: r.release_date ?? r.first_air_date ?? '',
+        rating: r.vote_average ?? 0,
+        genreNames: (r.genre_ids ?? []).map((id: number) => GENRE_MAP[id] ?? 'Other').filter(Boolean),
+        originalLanguage: r.original_language ?? '',
+        alreadyImported: existingSet.has(String(r.id)),
+      })),
+      nextPage,
+    };
   }
 
   /** Import selected items from TMDB into the database */
   async importItems(
     tmdbIds: number[],
-    contentType: 'movies' | 'shows' | 'anime',
+    contentType: 'movies' | 'shows' | 'anime' | 'webseries',
   ): Promise<{ imported: number; skipped: number; items: any[] }> {
-    const mediaType = contentType === 'movies' ? 'movie' : 'tv';
+    const mediaType = (contentType === 'movies') ? 'movie' : 'tv';
     let imported = 0;
     let skipped = 0;
     const items: any[] = [];
@@ -164,7 +200,7 @@ export class TmdbService {
   private async fetchAndCreateMovie(
     tmdbId: number,
     mediaType: 'movie' | 'tv',
-    contentType: 'movies' | 'shows' | 'anime',
+    contentType: 'movies' | 'shows' | 'anime' | 'webseries',
   ): Promise<MovieDocument> {
     // Fetch full details with credits
     const detail = await this.tmdbGet(`/${mediaType}/${tmdbId}`, {
@@ -176,6 +212,8 @@ export class TmdbService {
     let appContentType: ContentType;
     if (contentType === 'anime') {
       appContentType = ContentType.ANIME;
+    } else if (contentType === 'webseries') {
+      appContentType = ContentType.WEB_SERIES;
     } else if (contentType === 'shows') {
       appContentType = detail.number_of_seasons ? ContentType.WEB_SERIES : ContentType.TV_SHOW;
     } else {

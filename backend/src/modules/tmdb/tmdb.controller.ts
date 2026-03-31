@@ -1,7 +1,7 @@
 import { Controller, Post, Body, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
-import { TmdbService } from './tmdb.service';
+import { TmdbService, TmdbDiscoverOptions } from './tmdb.service';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { RolesGuard } from '../auth/guards/roles.guard';
 
@@ -14,18 +14,16 @@ export class TmdbController {
   constructor(private readonly tmdbService: TmdbService) {}
 
   @Post('discover')
-  @ApiOperation({ summary: 'Discover/preview content from TMDB (Admin)' })
-  async discover(
-    @Body() body: { contentType: 'movies' | 'shows' | 'anime'; region: string; count: number },
-  ) {
+  @ApiOperation({ summary: 'Discover/preview content from TMDB with filters (Admin)' })
+  async discover(@Body() body: TmdbDiscoverOptions) {
     const count = Math.min(body.count || 20, 100);
-    return this.tmdbService.discover(body.contentType, body.region, count);
+    return this.tmdbService.discover({ ...body, count });
   }
 
   @Post('import')
   @ApiOperation({ summary: 'Import selected TMDB items into database (Admin)' })
   async importItems(
-    @Body() body: { tmdbIds: number[]; contentType: 'movies' | 'shows' | 'anime' },
+    @Body() body: { tmdbIds: number[]; contentType: 'movies' | 'shows' | 'anime' | 'webseries' },
   ) {
     if (!body.tmdbIds?.length) return { imported: 0, skipped: 0, items: [] };
     return this.tmdbService.importItems(body.tmdbIds, body.contentType);

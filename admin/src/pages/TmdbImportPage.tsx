@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
-import { Search, Download, Check, CheckSquare, Square, Loader2, AlertCircle } from 'lucide-react';
+import { Search, Download, Check, CheckSquare, Square, Loader2, AlertCircle, X } from 'lucide-react';
 import api from '../lib/api';
 import toast from 'react-hot-toast';
 import clsx from 'clsx';
@@ -27,6 +27,7 @@ interface ImportResult {
 const CONTENT_TYPES = [
   { value: 'movies', label: 'Movies' },
   { value: 'shows', label: 'TV Shows' },
+  { value: 'webseries', label: 'Web Series' },
   { value: 'anime', label: 'Anime' },
 ];
 
@@ -46,26 +47,65 @@ const REGIONS = [
   { value: 'turkish', label: 'Turkish' },
 ];
 
-const COUNTS = [10, 20, 50];
+const GENRES = [
+  { id: 28, name: 'Action' },
+  { id: 12, name: 'Adventure' },
+  { id: 16, name: 'Animation' },
+  { id: 35, name: 'Comedy' },
+  { id: 80, name: 'Crime' },
+  { id: 99, name: 'Documentary' },
+  { id: 18, name: 'Drama' },
+  { id: 10751, name: 'Family' },
+  { id: 14, name: 'Fantasy' },
+  { id: 36, name: 'History' },
+  { id: 27, name: 'Horror' },
+  { id: 10402, name: 'Music' },
+  { id: 9648, name: 'Mystery' },
+  { id: 10749, name: 'Romance' },
+  { id: 878, name: 'Sci-Fi' },
+  { id: 53, name: 'Thriller' },
+  { id: 10752, name: 'War' },
+  { id: 37, name: 'Western' },
+];
+
+const DUBBED_OPTIONS = [
+  { value: '', label: 'Original Language' },
+  { value: 'hi', label: 'Hindi Dubbed' },
+  { value: 'en', label: 'English' },
+  { value: 'ta', label: 'Tamil Dubbed' },
+  { value: 'te', label: 'Telugu Dubbed' },
+];
+
+const currentYear = new Date().getFullYear();
+const YEARS = Array.from({ length: currentYear - 1979 }, (_, i) => currentYear - i);
 
 export default function TmdbImportPage() {
   const [contentType, setContentType] = useState<string>('movies');
   const [region, setRegion] = useState<string>('bollywood');
   const [count, setCount] = useState<number>(20);
+  const [year, setYear] = useState<string>('');
+  const [selectedGenres, setSelectedGenres] = useState<number[]>([]);
+  const [dubbed, setDubbed] = useState<string>('');
   const [results, setResults] = useState<TmdbPreviewItem[]>([]);
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [importResult, setImportResult] = useState<ImportResult | null>(null);
+  const [nextPage, setNextPage] = useState<number>(1);
 
   const discoverMutation = useMutation({
     mutationFn: async () => {
-      const { data } = await api.post('/tmdb/discover', { contentType, region, count });
-      return data as TmdbPreviewItem[];
+      const body: any = { contentType, region, count, page: nextPage };
+      if (year) body.year = Number(year);
+      if (selectedGenres.length > 0) body.genres = selectedGenres;
+      if (dubbed) body.withLanguage = dubbed;
+      const { data } = await api.post('/tmdb/discover', body);
+      return data as { items: TmdbPreviewItem[]; nextPage: number };
     },
     onSuccess: (data) => {
-      setResults(data);
+      setResults(data.items);
+      setNextPage(data.nextPage);
       setSelected(new Set());
       setImportResult(null);
-      toast.success(`Found ${data.length} results`);
+      toast.success(`Found ${data.items.length} results`);
     },
     onError: (err: any) => {
       toast.error(err.response?.data?.message || 'Failed to fetch from TMDB');
@@ -81,7 +121,6 @@ export default function TmdbImportPage() {
     onSuccess: (data) => {
       setImportResult(data);
       toast.success(`Imported ${data.imported} items, skipped ${data.skipped}`);
-      // Mark newly imported items in the results
       setResults((prev) =>
         prev.map((item) => {
           const result = data.items.find((r) => r.tmdbId === item.tmdbId);
@@ -109,12 +148,16 @@ export default function TmdbImportPage() {
   };
 
   const toggleAll = () => {
-    if (allSelected) {
-      setSelected(new Set());
-    } else {
-      setSelected(new Set(selectableItems.map((r) => r.tmdbId)));
-    }
+    if (allSelected) setSelected(new Set());
+    else setSelected(new Set(selectableItems.map((r) => r.tmdbId)));
   };
+
+  const toggleGenre = (id: number) => {
+    setSelectedGenres((prev) => prev.includes(id) ? prev.filter((g) => g !== id) : [...prev, id]);
+  };
+
+  // Reset page when filters change
+  const resetPage = () => setNextPage(1);
 
   return (
     <div className="space-y-6">
@@ -122,12 +165,13 @@ export default function TmdbImportPage() {
 
       {/* Controls */}
       <div className="bg-surface border border-border rounded-xl p-6 space-y-4">
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        {/* Row 1: Content Type, Region, Year, Count */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           <div>
             <label className="block text-sm text-text-secondary mb-1.5">Content Type</label>
             <select
               value={contentType}
-              onChange={(e) => setContentType(e.target.value)}
+              onChange={(e) => { setContentType(e.target.value); resetPage(); }}
               className="w-full bg-surface-light border border-border rounded-lg px-3 py-2.5 text-sm text-text-primary focus:outline-none focus:border-gold"
             >
               {CONTENT_TYPES.map((ct) => (
@@ -139,7 +183,7 @@ export default function TmdbImportPage() {
             <label className="block text-sm text-text-secondary mb-1.5">Region</label>
             <select
               value={region}
-              onChange={(e) => setRegion(e.target.value)}
+              onChange={(e) => { setRegion(e.target.value); resetPage(); }}
               className="w-full bg-surface-light border border-border rounded-lg px-3 py-2.5 text-sm text-text-primary focus:outline-none focus:border-gold"
             >
               {REGIONS.map((r) => (
@@ -148,27 +192,94 @@ export default function TmdbImportPage() {
             </select>
           </div>
           <div>
-            <label className="block text-sm text-text-secondary mb-1.5">Count</label>
+            <label className="block text-sm text-text-secondary mb-1.5">Year</label>
             <select
-              value={count}
-              onChange={(e) => setCount(Number(e.target.value))}
+              value={year}
+              onChange={(e) => { setYear(e.target.value); resetPage(); }}
               className="w-full bg-surface-light border border-border rounded-lg px-3 py-2.5 text-sm text-text-primary focus:outline-none focus:border-gold"
             >
-              {COUNTS.map((c) => (
-                <option key={c} value={c}>{c} items</option>
+              <option value="">All Years</option>
+              {YEARS.map((y) => (
+                <option key={y} value={y}>{y}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm text-text-secondary mb-1.5">Count</label>
+            <input
+              type="number"
+              min={1}
+              max={100}
+              value={count}
+              onChange={(e) => { setCount(Math.max(1, Math.min(100, Number(e.target.value) || 1))); resetPage(); }}
+              className="w-full bg-surface-light border border-border rounded-lg px-3 py-2.5 text-sm text-text-primary focus:outline-none focus:border-gold"
+              placeholder="e.g. 10"
+            />
+          </div>
+        </div>
+
+        {/* Row 2: Language / Dubbed */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <div>
+            <label className="block text-sm text-text-secondary mb-1.5">Language / Dubbed</label>
+            <select
+              value={dubbed}
+              onChange={(e) => { setDubbed(e.target.value); resetPage(); }}
+              className="w-full bg-surface-light border border-border rounded-lg px-3 py-2.5 text-sm text-text-primary focus:outline-none focus:border-gold"
+            >
+              {DUBBED_OPTIONS.map((d) => (
+                <option key={d.value} value={d.value}>{d.label}</option>
               ))}
             </select>
           </div>
         </div>
 
-        <button
-          onClick={() => discoverMutation.mutate()}
-          disabled={discoverMutation.isPending}
-          className="flex items-center gap-2 bg-gold hover:bg-gold-light text-background px-5 py-2.5 rounded-xl text-sm font-semibold transition-colors disabled:opacity-50"
-        >
-          {discoverMutation.isPending ? <Loader2 size={18} className="animate-spin" /> : <Search size={18} />}
-          {discoverMutation.isPending ? 'Fetching...' : 'Discover'}
-        </button>
+        {/* Row 3: Genre Multi-Select */}
+        <div>
+          <label className="block text-sm text-text-secondary mb-2">Genres {selectedGenres.length > 0 && `(${selectedGenres.length} selected)`}</label>
+          <div className="flex flex-wrap gap-2">
+            {GENRES.map((g) => {
+              const active = selectedGenres.includes(g.id);
+              return (
+                <button
+                  key={g.id}
+                  onClick={() => { toggleGenre(g.id); resetPage(); }}
+                  className={clsx(
+                    'px-3 py-1.5 rounded-lg text-xs font-medium transition-all border',
+                    active
+                      ? 'bg-gold text-background border-gold'
+                      : 'bg-surface-light text-text-secondary border-border hover:border-gold/50',
+                  )}
+                >
+                  {g.name}
+                  {active && <X size={12} className="inline ml-1 -mr-0.5" />}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Action Buttons */}
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => { resetPage(); discoverMutation.mutate(); }}
+            disabled={discoverMutation.isPending}
+            className="flex items-center gap-2 bg-gold hover:bg-gold-light text-background px-5 py-2.5 rounded-xl text-sm font-semibold transition-colors disabled:opacity-50"
+          >
+            {discoverMutation.isPending ? <Loader2 size={18} className="animate-spin" /> : <Search size={18} />}
+            {discoverMutation.isPending ? 'Fetching...' : 'Discover'}
+          </button>
+          {results.length > 0 && (
+            <button
+              onClick={() => discoverMutation.mutate()}
+              disabled={discoverMutation.isPending}
+              className="flex items-center gap-2 bg-surface-light hover:bg-surface text-text-primary border border-border px-5 py-2.5 rounded-xl text-sm font-medium transition-colors disabled:opacity-50"
+            >
+              {discoverMutation.isPending ? <Loader2 size={18} className="animate-spin" /> : <Search size={18} />}
+              Load More
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Results */}
@@ -240,7 +351,6 @@ export default function TmdbImportPage() {
                         : 'border-border hover:border-gold/50',
                   )}
                 >
-                  {/* Checkbox */}
                   {!disabled && (
                     <div className="absolute top-2 left-2 z-10">
                       <div
@@ -254,34 +364,22 @@ export default function TmdbImportPage() {
                     </div>
                   )}
 
-                  {/* Already imported badge */}
                   {disabled && (
                     <div className="absolute top-2 right-2 z-10 bg-green-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
                       IMPORTED
                     </div>
                   )}
 
-                  {/* Poster */}
                   <div className="aspect-[2/3] bg-surface-light">
                     {item.posterUrl ? (
-                      <img
-                        src={item.posterUrl}
-                        alt={item.title}
-                        className="w-full h-full object-cover"
-                        loading="lazy"
-                      />
+                      <img src={item.posterUrl} alt={item.title} className="w-full h-full object-cover" loading="lazy" />
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center text-text-secondary text-xs">
-                        No Poster
-                      </div>
+                      <div className="w-full h-full flex items-center justify-center text-text-secondary text-xs">No Poster</div>
                     )}
                   </div>
 
-                  {/* Info */}
                   <div className="p-3 space-y-1">
-                    <h3 className="text-sm font-medium text-text-primary line-clamp-2 leading-tight">
-                      {item.title}
-                    </h3>
+                    <h3 className="text-sm font-medium text-text-primary line-clamp-2 leading-tight">{item.title}</h3>
                     <div className="flex items-center gap-2 text-xs text-text-secondary">
                       {item.releaseDate && <span>{item.releaseDate.split('-')[0]}</span>}
                       {item.rating > 0 && (
@@ -290,16 +388,14 @@ export default function TmdbImportPage() {
                           {item.rating.toFixed(1)}
                         </span>
                       )}
+                      {item.originalLanguage && (
+                        <span className="uppercase">{item.originalLanguage}</span>
+                      )}
                     </div>
                     {item.genreNames.length > 0 && (
                       <div className="flex flex-wrap gap-1 pt-1">
                         {item.genreNames.slice(0, 2).map((g) => (
-                          <span
-                            key={g}
-                            className="text-[10px] bg-surface-light text-text-secondary px-1.5 py-0.5 rounded"
-                          >
-                            {g}
-                          </span>
+                          <span key={g} className="text-[10px] bg-surface-light text-text-secondary px-1.5 py-0.5 rounded">{g}</span>
                         ))}
                       </div>
                     )}
@@ -316,12 +412,11 @@ export default function TmdbImportPage() {
         <div className="bg-surface border border-border rounded-xl p-12 text-center">
           <Search size={48} className="mx-auto text-text-secondary/30 mb-4" />
           <p className="text-text-secondary">
-            Select content type, region and count, then click Discover to browse TMDB
+            Select filters and click Discover to browse TMDB. Click Discover again or Load More for fresh results.
           </p>
         </div>
       )}
 
-      {/* Loading state */}
       {discoverMutation.isPending && (
         <div className="bg-surface border border-border rounded-xl p-12 text-center">
           <Loader2 size={48} className="mx-auto text-gold animate-spin mb-4" />
