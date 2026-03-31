@@ -126,30 +126,6 @@ fun HomeScreen(
                     )
                 }
 
-                // ── Continue Watching Section ──
-                if (uiState.continueWatching.isNotEmpty()) {
-                    item {
-                        PremiumSectionHeader(
-                            title = "Continue Watching",
-                            onArrowClick = null,
-                        )
-                    }
-                    item {
-                        LazyRow(
-                            contentPadding = PaddingValues(horizontal = 20.dp),
-                            horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        ) {
-                            items(uiState.continueWatching) { item ->
-                                ContinueWatchingCard(
-                                    item = item,
-                                    onClick = { onPlayClick(item.contentId) },
-                                    onRemove = { viewModel.removeContinueWatching(item) },
-                                )
-                            }
-                        }
-                    }
-                }
-
                 // ── Content based on selected tab ──
                 if (uiState.isTabLoading) {
                     item {
