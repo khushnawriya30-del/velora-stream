@@ -11,6 +11,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
 };
+var HomeSectionsService_1;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.HomeSectionsService = void 0;
 const common_1 = require("@nestjs/common");
@@ -70,10 +71,17 @@ const TRENDING_DEFAULTS = [
         contentTypes: ['anime'],
     },
 ];
-let HomeSectionsService = class HomeSectionsService {
+let HomeSectionsService = HomeSectionsService_1 = class HomeSectionsService {
     constructor(sectionModel, movieModel) {
         this.sectionModel = sectionModel;
         this.movieModel = movieModel;
+        this.logger = new common_1.Logger(HomeSectionsService_1.name);
+    }
+    async onModuleInit() {
+        const result = await this.seedRecentlyAdded();
+        if (result.created > 0) {
+            this.logger.log(result.message);
+        }
     }
     async getHomeFeed(section) {
         const filter = { isVisible: true };
@@ -247,7 +255,7 @@ let HomeSectionsService = class HomeSectionsService {
     }
 };
 exports.HomeSectionsService = HomeSectionsService;
-exports.HomeSectionsService = HomeSectionsService = __decorate([
+exports.HomeSectionsService = HomeSectionsService = HomeSectionsService_1 = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, mongoose_1.InjectModel)(home_section_schema_1.HomeSection.name)),
     __param(1, (0, mongoose_1.InjectModel)(movie_schema_1.Movie.name)),

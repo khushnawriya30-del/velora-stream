@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, OnModuleInit, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { HomeSection, HomeSectionDocument, TabSection, SectionType, CardSize } from '../../schemas/home-section.schema';
@@ -61,11 +61,20 @@ const TRENDING_DEFAULTS = [
 ];
 
 @Injectable()
-export class HomeSectionsService {
+export class HomeSectionsService implements OnModuleInit {
+  private readonly logger = new Logger(HomeSectionsService.name);
+
   constructor(
     @InjectModel(HomeSection.name) private sectionModel: Model<HomeSectionDocument>,
     @InjectModel(Movie.name) private movieModel: Model<MovieDocument>,
   ) {}
+
+  async onModuleInit() {
+    const result = await this.seedRecentlyAdded();
+    if (result.created > 0) {
+      this.logger.log(result.message);
+    }
+  }
 
   async getHomeFeed(section?: string): Promise<any[]> {
     const filter: any = { isVisible: true };

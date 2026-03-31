@@ -33,6 +33,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -647,10 +648,13 @@ fun TrendingMovieCard(
     onClick: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val posterWidth = if (rank < 10) 100.dp else 95.dp
+
     Column(
         modifier = modifier
             .width(135.dp)
-            .clickable { onClick(movie.id) }
+            .clickable { onClick(movie.id) },
+        horizontalAlignment = Alignment.End,
     ) {
         // Netflix-style: Large number on left, poster overlapping on right
         Box(
@@ -705,7 +709,7 @@ fun TrendingMovieCard(
             Box(
                 modifier = Modifier
                     .align(Alignment.TopEnd)
-                    .width(if (rank < 10) 100.dp else 95.dp)
+                    .width(posterWidth)
                     .fillMaxHeight()
                     .clip(RoundedCornerShape(12.dp))
                     .background(CineVaultTheme.colors.surface)
@@ -743,21 +747,27 @@ fun TrendingMovieCard(
 
         Spacer(Modifier.height(8.dp))
 
-        // Title
+        // Title — aligned under poster card, not under the ranking number
         Text(
             movie.title,
+            modifier = Modifier.width(posterWidth),
             fontSize = 13.sp,
             fontWeight = FontWeight.SemiBold,
             color = CineVaultTheme.colors.textPrimary,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
+            textAlign = TextAlign.Center,
         )
 
         // Watching count
         val watchCount = movie.viewCount ?: 0
         if (watchCount > 0) {
             Spacer(Modifier.height(2.dp))
-            Row(verticalAlignment = Alignment.CenterVertically) {
+            Row(
+                modifier = Modifier.width(posterWidth),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center,
+            ) {
                 Box(
                     modifier = Modifier
                         .size(6.dp)
