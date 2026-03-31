@@ -227,12 +227,9 @@ fun MovieDetailScreen(
                 ) {
                     TrailerPlayer(
                         trailerUrl = movie.trailerUrl!!,
+                        isExiting = isExiting,
                         modifier = Modifier.fillMaxSize()
                     )
-                    // Solid black cover drawn ON TOP of player surface to hide it instantly
-                    if (isExiting) {
-                        Box(modifier = Modifier.fillMaxSize().background(Color.Black))
-                    }
                 }
 
                 // Top gradient
@@ -1489,13 +1486,14 @@ private fun extractYoutubeVideoId(url: String): String? {
 @Composable
 private fun TrailerPlayer(
     trailerUrl: String,
+    isExiting: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
     val youtubeId = remember(trailerUrl) { extractYoutubeVideoId(trailerUrl) }
     if (youtubeId != null) {
-        YouTubeTrailerPlayer(videoId = youtubeId, modifier = modifier)
+        YouTubeTrailerPlayer(videoId = youtubeId, isExiting = isExiting, modifier = modifier)
     } else {
-        ExoTrailerPlayer(trailerUrl = trailerUrl, modifier = modifier)
+        ExoTrailerPlayer(trailerUrl = trailerUrl, isExiting = isExiting, modifier = modifier)
     }
 }
 
@@ -1505,6 +1503,7 @@ private fun TrailerPlayer(
 @Composable
 private fun YouTubeTrailerPlayer(
     videoId: String,
+    isExiting: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
@@ -1568,6 +1567,14 @@ function doSpeed(r){if(player)player.setPlaybackRate(r);}
 
     DisposableEffect(videoId) {
         onDispose { webView.destroy() }
+    }
+
+    // Instantly hide WebView when exiting
+    LaunchedEffect(isExiting) {
+        if (isExiting) {
+            webView.evaluateJavascript("if(player)player.pauseVideo();", null)
+            webView.visibility = android.view.View.INVISIBLE
+        }
     }
 
     Box(modifier = modifier) {
@@ -1654,6 +1661,7 @@ function doSpeed(r){if(player)player.setPlaybackRate(r);}
 @Composable
 private fun ExoTrailerPlayer(
     trailerUrl: String,
+    isExiting: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
@@ -1730,31 +1738,27 @@ private fun ExoTrailerPlayer(
         }
     }
 
+    // Instantly stop and detach video surface when exiting
+    LaunchedEffect(isExiting) {
+        if (isExiting) {
+            exoPlayer.stop()
+            exoPlayer.clearVideoSurface()
+        }
+    }
+
     Box(modifier = modifier) {
         // Player view
         AndroidView(
             factory = { ctx ->
-                // Use TextureView instead of SurfaceView so Compose overlays work properly
-                val attrs = ctx.obtainStyledAttributes(
-                    intArrayOf(android.R.attr.id)
-                )
-                attrs.recycle()
                 PlayerView(ctx).apply {
                     player = exoPlayer
                     useController = false
                     setBackgroundColor(android.graphics.Color.BLACK)
                     setShowBuffering(PlayerView.SHOW_BUFFERING_NEVER)
-                    // Remove the default SurfaceView and add TextureView
-                    videoSurfaceView?.let { removeView(it) }
-                    val textureView = android.view.TextureView(ctx)
-                    addView(textureView, 0,
-                        android.widget.FrameLayout.LayoutParams(
-                            android.widget.FrameLayout.LayoutParams.MATCH_PARENT,
-                            android.widget.FrameLayout.LayoutParams.MATCH_PARENT
-                        )
-                    )
-                    exoPlayer.setVideoTextureView(textureView)
                 }
+            },
+            update = { view ->
+                if (isExiting) view.visibility = android.view.View.INVISIBLE
             },
             modifier = Modifier.fillMaxSize()
         )
