@@ -25,6 +25,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shadow
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.layout.ContentScale
@@ -92,13 +93,14 @@ fun MovieCard(
                         .align(Alignment.TopEnd)
                         .padding(6.dp),
                     shape = RoundedCornerShape(4.dp),
-                    color = Color(0xFF3A3A3A),
-                    border = BorderStroke(0.8.dp, Color.Black),
+                    color = Color.White.copy(alpha = 0.15f),
                 ) {
                     Text(
                         langLabel,
                         modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
-                        style = CineVaultTheme.typography.labelSmall,
+                        style = CineVaultTheme.typography.labelSmall.copy(
+                            shadow = Shadow(color = Color.Black, blurRadius = 3f)
+                        ),
                         fontSize = 7.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color.White,
@@ -474,13 +476,14 @@ fun SquareMovieCard(
                         .align(Alignment.TopEnd)
                         .padding(6.dp),
                     shape = RoundedCornerShape(4.dp),
-                    color = Color(0xFF3A3A3A),
-                    border = BorderStroke(0.8.dp, Color.Black),
+                    color = Color.White.copy(alpha = 0.15f),
                 ) {
                     Text(
                         langLabel,
                         modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
-                        style = CineVaultTheme.typography.labelSmall,
+                        style = CineVaultTheme.typography.labelSmall.copy(
+                            shadow = Shadow(color = Color.Black, blurRadius = 3f)
+                        ),
                         fontSize = 7.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color.White,
@@ -606,13 +609,14 @@ fun LargeMovieCard(
                         .align(Alignment.TopEnd)
                         .padding(8.dp),
                     shape = RoundedCornerShape(4.dp),
-                    color = Color(0xFF3A3A3A),
-                    border = BorderStroke(0.8.dp, Color.Black),
+                    color = Color.White.copy(alpha = 0.15f),
                 ) {
                     Text(
                         langLabel,
                         modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp),
-                        style = CineVaultTheme.typography.labelSmall,
+                        style = CineVaultTheme.typography.labelSmall.copy(
+                            shadow = Shadow(color = Color.Black, blurRadius = 3f)
+                        ),
                         fontSize = 7.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color.White,
@@ -715,7 +719,8 @@ fun TrendingMovieCard(
                 text = rank.toString(),
                 modifier = Modifier
                     .align(Alignment.BottomStart)
-                    .offset(x = (-4).dp, y = 12.dp),
+                    .offset(x = (-4).dp, y = 12.dp)
+                    .graphicsLayer { rotationZ = -10f },
                 style = TextStyle(
                     fontSize = 100.sp,
                     fontWeight = FontWeight.Black,
@@ -734,7 +739,8 @@ fun TrendingMovieCard(
                 text = rank.toString(),
                 modifier = Modifier
                     .align(Alignment.BottomStart)
-                    .offset(x = (-4).dp, y = 12.dp),
+                    .offset(x = (-4).dp, y = 12.dp)
+                    .graphicsLayer { rotationZ = -10f },
                 style = TextStyle(
                     fontSize = 100.sp,
                     fontWeight = FontWeight.Black,
@@ -773,12 +779,12 @@ fun TrendingMovieCard(
                             .align(Alignment.TopEnd)
                             .padding(6.dp),
                         shape = RoundedCornerShape(4.dp),
-                        color = Color(0xFF3A3A3A),
-                        border = BorderStroke(0.8.dp, Color.Black),
+                        color = Color.White.copy(alpha = 0.15f),
                     ) {
                         Text(
                             langLabel,
                             modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp),
+                            style = TextStyle(shadow = Shadow(color = Color.Black, blurRadius = 3f)),
                             fontSize = 7.sp,
                             fontWeight = FontWeight.Bold,
                             color = Color.White,

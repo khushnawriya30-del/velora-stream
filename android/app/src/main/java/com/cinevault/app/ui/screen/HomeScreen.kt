@@ -25,9 +25,12 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -966,12 +969,12 @@ fun PremiumMovieCard(
                         .align(Alignment.TopEnd)
                         .padding(6.dp),
                     shape = RoundedCornerShape(4.dp),
-                    color = Color(0xFF3A3A3A),
-                    border = BorderStroke(0.8.dp, Color.Black),
+                    color = Color.White.copy(alpha = 0.15f),
                 ) {
                     Text(
                         langLabel,
                         modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp),
+                        style = TextStyle(shadow = Shadow(color = Color.Black, blurRadius = 3f)),
                         fontSize = 7.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color.White,
