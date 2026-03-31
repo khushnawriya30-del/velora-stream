@@ -584,7 +584,7 @@ fun MovieDetailScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.height(20.dp))
+            Spacer(modifier = Modifier.height(14.dp))
 
             // ── Premium Action buttons ──
             Row(
@@ -629,7 +629,7 @@ fun MovieDetailScreen(
                 )
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(4.dp))
         }
 
         // ── Episodes Section (for series content) ──
@@ -995,7 +995,7 @@ private fun EpisodesSection(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Column {
+            Column(modifier = Modifier.weight(1f, fill = false)) {
                 Text(
                     "EPISODES",
                     fontSize = 11.sp,
@@ -1005,10 +1005,12 @@ private fun EpisodesSection(
                 )
                 Spacer(modifier = Modifier.height(3.dp))
                 Text(
-                    "${selectedSeason?.title ?: "Season ${selectedSeason?.seasonNumber ?: 1}"} \u2022 $episodeCount Episodes",
+                    "Season ${selectedSeason?.seasonNumber ?: 1} \u2022 $episodeCount Episodes",
                     fontSize = 15.sp,
                     fontWeight = FontWeight.Bold,
-                    color = CineVaultTheme.colors.textPrimary
+                    color = CineVaultTheme.colors.textPrimary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
             }
             if (seasons.size > 1) {
