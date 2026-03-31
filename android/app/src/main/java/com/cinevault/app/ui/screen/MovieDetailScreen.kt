@@ -69,6 +69,13 @@ fun MovieDetailScreen(
     var selectedTab by remember { mutableIntStateOf(0) }
     val isLiked = uiState.isLiked
     var showMoreSeasonsSheet by remember { mutableStateOf(false) }
+    var isExiting by remember { mutableStateOf(false) }
+
+    // Instant-hide trailer then navigate back
+    val handleBack: () -> Unit = {
+        isExiting = true
+        onBack()
+    }
 
     // Refresh watch progress when returning from the player screen
     DisposableEffect(lifecycleOwner) {
@@ -213,10 +220,12 @@ fun MovieDetailScreen(
                         .background(Color.Black)
                         .border(1.dp, Color.White.copy(alpha = 0.1f), RoundedCornerShape(16.dp))
                 ) {
-                    TrailerPlayer(
-                        trailerUrl = movie.trailerUrl!!,
-                        modifier = Modifier.fillMaxSize()
-                    )
+                    if (!isExiting) {
+                        TrailerPlayer(
+                            trailerUrl = movie.trailerUrl!!,
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    }
                 }
 
                 // Top gradient
@@ -253,7 +262,7 @@ fun MovieDetailScreen(
 
                 // Back button
                 IconButton(
-                    onClick = onBack,
+                    onClick = handleBack,
                     modifier = Modifier
                         .statusBarsPadding()
                         .padding(start = 12.dp, top = 8.dp)
@@ -370,7 +379,7 @@ fun MovieDetailScreen(
 
                 // Back button
                 IconButton(
-                    onClick = onBack,
+                    onClick = handleBack,
                     modifier = Modifier
                         .statusBarsPadding()
                         .padding(start = 12.dp, top = 8.dp)
@@ -620,7 +629,7 @@ fun MovieDetailScreen(
                 )
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(12.dp))
         }
 
         // ── Episodes Section (for series content) ──
@@ -982,7 +991,7 @@ private fun EpisodesSection(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 20.dp, vertical = 14.dp),
+                .padding(horizontal = 20.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
@@ -1025,7 +1034,7 @@ private fun EpisodesSection(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 20.dp, vertical = 24.dp),
+                    .padding(horizontal = 20.dp, vertical = 12.dp),
                 contentAlignment = Alignment.Center
             ) {
                 CircularProgressIndicator(
@@ -1049,7 +1058,7 @@ private fun EpisodesSection(
             }
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(8.dp))
     }
 }
 
