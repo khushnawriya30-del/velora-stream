@@ -54,6 +54,8 @@ import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import androidx.media3.ui.PlayerView
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -70,11 +72,17 @@ fun MovieDetailScreen(
     val isLiked = uiState.isLiked
     var showMoreSeasonsSheet by remember { mutableStateOf(false) }
     var isExiting by remember { mutableStateOf(false) }
+    val coroutineScope = rememberCoroutineScope()
 
-    // Instant-hide trailer then navigate back
+    // Instant-hide trailer then navigate back (wait one frame so recomposition removes the player)
     val handleBack: () -> Unit = {
-        isExiting = true
-        onBack()
+        if (!isExiting) {
+            isExiting = true
+            coroutineScope.launch {
+                delay(50)
+                onBack()
+            }
+        }
     }
 
     // Refresh watch progress when returning from the player screen
@@ -1712,7 +1720,7 @@ private fun ExoTrailerPlayer(
     // Auto-hide controls after 3 seconds
     LaunchedEffect(showControls) {
         if (showControls) {
-            kotlinx.coroutines.delay(3000)
+            delay(3000)
             showControls = false
         }
     }
