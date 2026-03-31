@@ -172,7 +172,7 @@ export class BunnyService {
     let migrated = 0;
     const errors: string[] = [];
 
-    // Migrate streaming sources
+    // Migrate streaming sources — set CDN proxy URL (Bunny caches from Worker automatically)
     if (movie.streamingSources?.length) {
       for (let i = 0; i < movie.streamingSources.length; i++) {
         const src = movie.streamingSources[i];
@@ -180,18 +180,10 @@ export class BunnyService {
         const fileId = this.extractDriveFileId(src.url);
         if (!fileId) continue;
 
-        try {
-          const workerStreamUrl = `${this.workerUrl}/stream/${fileId}`;
-          const ext = 'mp4';
-          const destPath = `movies/${movieId}/source_${i}.${ext}`;
-          const cdnUrl = await this.uploadFromUrl(workerStreamUrl, destPath);
-          movie.streamingSources[i].url = cdnUrl;
-          migrated++;
-        } catch (err) {
-          const msg = `Movie ${movie.title} source[${i}]: ${err.message}`;
-          this.logger.error(msg);
-          errors.push(msg);
-        }
+        const cdnProxyUrl = `${this.cdnUrl}/stream/${fileId}`;
+        movie.streamingSources[i].url = cdnProxyUrl;
+        migrated++;
+        this.logger.log(`Movie ${movie.title} source[${i}] → ${cdnProxyUrl}`);
       }
     }
 
@@ -199,17 +191,10 @@ export class BunnyService {
     if (movie.trailerUrl && this.isDriveUrl(movie.trailerUrl)) {
       const fileId = this.extractDriveFileId(movie.trailerUrl);
       if (fileId) {
-        try {
-          const workerStreamUrl = `${this.workerUrl}/stream/${fileId}`;
-          const destPath = `movies/${movieId}/trailer.mp4`;
-          const cdnUrl = await this.uploadFromUrl(workerStreamUrl, destPath);
-          movie.trailerUrl = cdnUrl;
-          migrated++;
-        } catch (err) {
-          const msg = `Movie ${movie.title} trailer: ${err.message}`;
-          this.logger.error(msg);
-          errors.push(msg);
-        }
+        const cdnProxyUrl = `${this.cdnUrl}/stream/${fileId}`;
+        movie.trailerUrl = cdnProxyUrl;
+        migrated++;
+        this.logger.log(`Movie ${movie.title} trailer → ${cdnProxyUrl}`);
       }
     }
 
@@ -231,6 +216,7 @@ export class BunnyService {
     let migrated = 0;
     const errors: string[] = [];
 
+    // Set CDN proxy URLs (Bunny caches from Worker automatically)
     if (episode.streamingSources?.length) {
       for (let i = 0; i < episode.streamingSources.length; i++) {
         const src = episode.streamingSources[i];
@@ -238,18 +224,10 @@ export class BunnyService {
         const fileId = this.extractDriveFileId(src.url);
         if (!fileId) continue;
 
-        try {
-          const workerStreamUrl = `${this.workerUrl}/stream/${fileId}`;
-          const ext = src.url.includes('.mkv') ? 'mkv' : 'mp4';
-          const destPath = `episodes/${episode.seasonId}/${episodeId}/source_${i}.${ext}`;
-          const cdnUrl = await this.uploadFromUrl(workerStreamUrl, destPath);
-          episode.streamingSources[i].url = cdnUrl;
-          migrated++;
-        } catch (err) {
-          const msg = `${seriesTitle} E${episode.episodeNumber} source[${i}]: ${err.message}`;
-          this.logger.error(msg);
-          errors.push(msg);
-        }
+        const cdnProxyUrl = `${this.cdnUrl}/stream/${fileId}`;
+        episode.streamingSources[i].url = cdnProxyUrl;
+        migrated++;
+        this.logger.log(`${seriesTitle} E${episode.episodeNumber} source[${i}] → ${cdnProxyUrl}`);
       }
     }
 
@@ -540,13 +518,13 @@ export class BunnyService {
           errors.push(`Movie not found: ${movieId}`);
           continue;
         }
-        const workerUrl = `${this.workerUrl}/stream/${driveFileId}`;
+        const cdnProxyUrl = `${this.cdnUrl}/stream/${driveFileId}`;
         movie.streamingSources = [
-          { label: quality || 'HD', url: workerUrl, quality: quality || '1080p', priority: 0 },
+          { label: quality || 'HD', url: cdnProxyUrl, quality: quality || '1080p', priority: 0 },
         ] as any;
         await movie.save();
         updated++;
-        this.logger.log(`Set Drive URL for ${movie.title}: ${workerUrl}`);
+        this.logger.log(`Set CDN URL for ${movie.title}: ${cdnProxyUrl}`);
       } catch (err) {
         errors.push(`${movieId}: ${err.message}`);
       }
@@ -571,9 +549,9 @@ export class BunnyService {
           errors.push(`Episode not found: ${episodeId}`);
           continue;
         }
-        const workerUrl = `${this.workerUrl}/stream/${driveFileId}`;
+        const cdnProxyUrl = `${this.cdnUrl}/stream/${driveFileId}`;
         episode.streamingSources = [
-          { label: quality || 'HD', url: workerUrl, quality: quality || '1080p', priority: 0 },
+          { label: quality || 'HD', url: cdnProxyUrl, quality: quality || '1080p', priority: 0 },
         ] as any;
         await episode.save();
         updated++;
@@ -633,14 +611,14 @@ export class BunnyService {
       const episode = episodes[i];
       const file = videoFiles[i];
       try {
-        const workerUrl = `${this.workerUrl}/stream/${file.id}`;
+        const cdnProxyUrl = `${this.cdnUrl}/stream/${file.id}`;
         episode.streamingSources = [
-          { label: 'HD', url: workerUrl, quality: '1080p', priority: 0 },
+          { label: 'HD', url: cdnProxyUrl, quality: '1080p', priority: 0 },
         ] as any;
         await episode.save();
         recovered++;
         this.logger.log(
-          `Recovered Ep${episode.episodeNumber}: ${file.name} → ${workerUrl}`,
+          `Recovered Ep${episode.episodeNumber}: ${file.name} → ${cdnProxyUrl}`,
         );
       } catch (err) {
         errors.push(`Ep${episode.episodeNumber}: ${err.message}`);
