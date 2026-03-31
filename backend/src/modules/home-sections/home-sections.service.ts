@@ -32,6 +32,34 @@ const RECENTLY_ADDED_DEFAULTS = [
   },
 ];
 
+// ── Default "Trending" system sections ────────────────────────────────────────
+const TRENDING_DEFAULTS = [
+  {
+    slug: 'system-trending-home',
+    title: 'Most Watching \u2022 Trending Now',
+    section: TabSection.HOME,
+    contentTypes: [] as string[],
+  },
+  {
+    slug: 'system-trending-movies',
+    title: 'Trending Movies',
+    section: TabSection.MOVIES,
+    contentTypes: ['movie'] as string[],
+  },
+  {
+    slug: 'system-trending-shows',
+    title: 'Trending Shows',
+    section: TabSection.SHOWS,
+    contentTypes: ['web_series', 'tv_show'] as string[],
+  },
+  {
+    slug: 'system-trending-anime',
+    title: 'Trending Anime',
+    section: TabSection.ANIME,
+    contentTypes: ['anime'] as string[],
+  },
+];
+
 @Injectable()
 export class HomeSectionsService {
   constructor(
@@ -195,11 +223,43 @@ export class HomeSectionsService {
       created++;
     }
 
+    // ── Seed Trending sections ──
+    for (const def of TRENDING_DEFAULTS) {
+      const existing = await this.sectionModel.findOne({ slug: def.slug });
+      if (existing) continue;
+
+      // Insert trending at displayOrder = 0 (before everything else) and push others down
+      await this.sectionModel.updateMany(
+        { section: def.section },
+        { $inc: { displayOrder: 1 } },
+      );
+
+      await this.sectionModel.create({
+        slug: def.slug,
+        title: def.title,
+        section: def.section,
+        contentTypes: def.contentTypes,
+        type: SectionType.TRENDING,
+        cardSize: CardSize.SMALL,
+        sortBy: 'popularityScore',
+        maxItems: 10,
+        isSystemManaged: true,
+        isVisible: true,
+        showViewMore: false,
+        viewMoreText: '',
+        showTrendingNumbers: true,
+        displayOrder: 0,
+        contentIds: [],
+      });
+
+      created++;
+    }
+
     return {
       created,
       message:
         created > 0
-          ? `${created} "Recently Added" section(s) created`
+          ? `${created} system section(s) created`
           : 'All default sections already exist',
     };
   }

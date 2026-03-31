@@ -24,10 +24,8 @@ data class HomeUiState(
     val selectedTab: Int = 0, // 0=Home, 1=Shows, 2=Movies, 3=Anime
     val tabSections: List<HomeSectionDto> = emptyList(),
     val isTabLoading: Boolean = false,
-    val trendingMovies: List<MovieDto> = emptyList(),
     val continueWatching: List<WatchProgressDto> = emptyList(),
     val showContinuePopup: Boolean = false,
-    val continuePopupDismissed: Boolean = false,
 )
 
 @HiltViewModel
@@ -108,11 +106,9 @@ class HomeViewModel @Inject constructor(
 
             val bannersDeferred = async { contentRepository.getBanners(section) }
             val feedDeferred = async { contentRepository.getHomeFeed(section) }
-            val trendingDeferred = async { loadTrendingData(section) }
 
             val bannersResult = bannersDeferred.await()
             val feedResult = feedDeferred.await()
-            val trending = trendingDeferred.await()
 
             val banners = when (bannersResult) {
                 is Result.Success -> bannersResult.data
@@ -131,21 +127,9 @@ class HomeViewModel @Inject constructor(
                     isRefreshing = false,
                     tabBanners = banners,
                     tabSections = sections,
-                    trendingMovies = trending,
                     error = if (bothFailed) "Connection failed" else null,
                 )
             }
-        }
-    }
-
-    private suspend fun loadTrendingData(section: String = "home"): List<MovieDto> {
-        return try {
-            val contentType = if (section == "home") null else section
-            val response = api.getTrending(limit = 10, contentType = contentType)
-            if (response.isSuccessful) response.body() ?: emptyList() else emptyList()
-        } catch (e: Exception) {
-            Log.e("CineVaultHome", "Failed to load trending", e)
-            emptyList()
         }
     }
 
@@ -158,7 +142,7 @@ class HomeViewModel @Inject constructor(
                 _uiState.update {
                     it.copy(
                         continueWatching = items,
-                        showContinuePopup = items.isNotEmpty() && !it.continuePopupDismissed,
+                        showContinuePopup = items.isNotEmpty(),
                     )
                 }
             }
@@ -166,7 +150,7 @@ class HomeViewModel @Inject constructor(
     }
 
     fun dismissContinuePopup() {
-        _uiState.update { it.copy(showContinuePopup = false, continuePopupDismissed = true) }
+        _uiState.update { it.copy(showContinuePopup = false) }
     }
 
     fun removeContinueWatching(item: WatchProgressDto) {
@@ -200,11 +184,9 @@ class HomeViewModel @Inject constructor(
             val section = tabSection(_uiState.value.selectedTab)
             val bannersDeferred = async { contentRepository.getBanners(section) }
             val feedDeferred = async { contentRepository.getHomeFeed(section) }
-            val trendingDeferred = async { loadTrendingData(section) }
 
             val bannersResult = bannersDeferred.await()
             val feedResult = feedDeferred.await()
-            val trending = trendingDeferred.await()
 
             val banners = when (bannersResult) {
                 is Result.Success -> bannersResult.data
@@ -226,7 +208,6 @@ class HomeViewModel @Inject constructor(
                     tabBanners = banners,
                     homeSections = sections,
                     tabSections = sections,
-                    trendingMovies = trending,
                     error = errorMsg,
                 )
             }

@@ -150,36 +150,6 @@ fun HomeScreen(
                     }
                 }
 
-                // ── Most Watching / Trending Now Section ──
-                if (uiState.trendingMovies.isNotEmpty()) {
-                    val trendingTitle = when (uiState.selectedTab) {
-                        1 -> "Trending Shows"
-                        2 -> "Trending Movies"
-                        3 -> "Trending Anime"
-                        else -> "Most Watching \u2022 Trending Now"
-                    }
-                    item {
-                        PremiumSectionHeader(
-                            title = trendingTitle,
-                            onArrowClick = null,
-                        )
-                    }
-                    item {
-                        LazyRow(
-                            contentPadding = PaddingValues(horizontal = 20.dp),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        ) {
-                            itemsIndexed(uiState.trendingMovies.take(10)) { index, movie ->
-                                TrendingMovieCard(
-                                    movie = movie,
-                                    rank = index + 1,
-                                    onClick = onMovieClick,
-                                )
-                            }
-                        }
-                    }
-                }
-
                 // ── Content based on selected tab ──
                 if (uiState.isTabLoading) {
                     item {
@@ -218,14 +188,29 @@ fun HomeScreen(
                             Column {
                                 PremiumSectionHeader(
                                     title = section.title,
-                                    onArrowClick = {
-                                        onSectionClick?.invoke(section)
+                                    onArrowClick = if (section.showViewMore) {
+                                        { onSectionClick?.invoke(section) }
+                                    } else null
+                                )
+                                if (section.type == "trending") {
+                                    LazyRow(
+                                        contentPadding = PaddingValues(horizontal = 20.dp),
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    ) {
+                                        itemsIndexed(section.items.take(10)) { index, movie ->
+                                            TrendingMovieCard(
+                                                movie = movie,
+                                                rank = index + 1,
+                                                onClick = onMovieClick,
+                                            )
+                                        }
                                     }
-                                )
-                                HorizontalMovieRow(
-                                    movies = section.items,
-                                    onMovieClick = onMovieClick
-                                )
+                                } else {
+                                    HorizontalMovieRow(
+                                        movies = section.items,
+                                        onMovieClick = onMovieClick
+                                    )
+                                }
                             }
                         }
                     }
@@ -284,9 +269,9 @@ fun HomeScreen(
         if (uiState.showContinuePopup && lastWatched != null) {
             var popupVisible by remember { mutableStateOf(true) }
 
-            // Auto-hide after 5 seconds
+            // Auto-hide after 10 seconds
             LaunchedEffect(Unit) {
-                delay(5000)
+                delay(10000)
                 popupVisible = false
                 viewModel.dismissContinuePopup()
             }
@@ -295,7 +280,7 @@ fun HomeScreen(
                 visible = popupVisible,
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
-                    .padding(bottom = 90.dp),
+                    .padding(bottom = 80.dp),
                 enter = slideInVertically(initialOffsetY = { it }) + fadeIn(),
                 exit = slideOutVertically(targetOffsetY = { it }) + fadeOut(),
             ) {

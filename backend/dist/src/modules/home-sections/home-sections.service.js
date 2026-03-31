@@ -44,6 +44,32 @@ const RECENTLY_ADDED_DEFAULTS = [
         contentTypes: ['anime'],
     },
 ];
+const TRENDING_DEFAULTS = [
+    {
+        slug: 'system-trending-home',
+        title: 'Most Watching \u2022 Trending Now',
+        section: home_section_schema_1.TabSection.HOME,
+        contentTypes: [],
+    },
+    {
+        slug: 'system-trending-movies',
+        title: 'Trending Movies',
+        section: home_section_schema_1.TabSection.MOVIES,
+        contentTypes: ['movie'],
+    },
+    {
+        slug: 'system-trending-shows',
+        title: 'Trending Shows',
+        section: home_section_schema_1.TabSection.SHOWS,
+        contentTypes: ['web_series', 'tv_show'],
+    },
+    {
+        slug: 'system-trending-anime',
+        title: 'Trending Anime',
+        section: home_section_schema_1.TabSection.ANIME,
+        contentTypes: ['anime'],
+    },
+];
 let HomeSectionsService = class HomeSectionsService {
     constructor(sectionModel, movieModel) {
         this.sectionModel = sectionModel;
@@ -188,10 +214,34 @@ let HomeSectionsService = class HomeSectionsService {
             });
             created++;
         }
+        for (const def of TRENDING_DEFAULTS) {
+            const existing = await this.sectionModel.findOne({ slug: def.slug });
+            if (existing)
+                continue;
+            await this.sectionModel.updateMany({ section: def.section }, { $inc: { displayOrder: 1 } });
+            await this.sectionModel.create({
+                slug: def.slug,
+                title: def.title,
+                section: def.section,
+                contentTypes: def.contentTypes,
+                type: home_section_schema_1.SectionType.TRENDING,
+                cardSize: home_section_schema_1.CardSize.SMALL,
+                sortBy: 'popularityScore',
+                maxItems: 10,
+                isSystemManaged: true,
+                isVisible: true,
+                showViewMore: false,
+                viewMoreText: '',
+                showTrendingNumbers: true,
+                displayOrder: 0,
+                contentIds: [],
+            });
+            created++;
+        }
         return {
             created,
             message: created > 0
-                ? `${created} "Recently Added" section(s) created`
+                ? `${created} system section(s) created`
                 : 'All default sections already exist',
         };
     }

@@ -52,11 +52,12 @@ class PlayerViewModel @Inject constructor(
 ) : ViewModel() {
 
     private val contentId: String = savedStateHandle.get<String>("contentId") ?: ""
-    private val episodeId: String? = savedStateHandle.get<String>("episodeId")
+    private val initialEpisodeId: String? = savedStateHandle.get<String>("episodeId")
+    private var currentEpisodeId: String? = initialEpisodeId
 
     /** When playing an episode, progress is keyed by episodeId not contentId (series id). */
-    private val progressId: String get() = episodeId ?: contentId
-    private val isEpisode: Boolean get() = episodeId != null
+    private val progressId: String get() = currentEpisodeId ?: contentId
+    private val isEpisode: Boolean get() = currentEpisodeId != null
 
     private val _uiState = MutableStateFlow(PlayerUiState())
     val uiState: StateFlow<PlayerUiState> = _uiState.asStateFlow()
@@ -70,12 +71,13 @@ class PlayerViewModel @Inject constructor(
         if (contentId.isNotEmpty()) {
             loadContent()
             startProgressTimer()
+            loadEpisodes()
         }
     }
 
     private fun loadContent() {
         viewModelScope.launch {
-            Log.d("CineVaultPlayer", "Loading content: $contentId, episodeId: $episodeId")
+            Log.d("CineVaultPlayer", "Loading content: $contentId, episodeId: $currentEpisodeId")
             _uiState.update { it.copy(isLoading = true, error = null) }
 
             when (val movieResult = contentRepository.getMovie(contentId)) {
@@ -102,9 +104,9 @@ class PlayerViewModel @Inject constructor(
                     }
 
                     // If episodeId is provided, load episode streaming sources instead
-                    if (!episodeId.isNullOrBlank()) {
-                        Log.d("CineVaultPlayer", "Loading episode: $episodeId")
-                        when (val epResult = contentRepository.getEpisode(episodeId)) {
+                    if (!currentEpisodeId.isNullOrBlank()) {
+                        Log.d("CineVaultPlayer", "Loading episode: $currentEpisodeId")
+                        when (val epResult = contentRepository.getEpisode(currentEpisodeId!!)) {
                             is Result.Success -> {
                                 val episode = epResult.data
                                 Log.d("CineVaultPlayer", "Episode loaded: ${episode.title}, sources=${episode.streamingSources?.size ?: 0}")
@@ -306,6 +308,88 @@ class PlayerViewModel @Inject constructor(
 
     fun onPlaybackStateChange(isPlaying: Boolean) {
         _uiState.update { it.copy(isPlaying = isPlaying) }
+    }
+
+    // ── Episode Management ──
+
+    private fun loadEpisodes() {
+        if (initialEpisodeId == null) return
+        viewModelScope.launch {
+            val seriesId = contentId
+            when (val seasonsResult = contentRepository.getSeasons(seriesId)) {
+                is Result.Success -> {
+                    val seasons = seasonsResult.data.sortedBy { it.seasonNumber }
+                    val allEpisodes = mutableListOf<com.cinevault.app.data.model.EpisodeDto>()
+                    for (season in seasons) {
+                        when (val epsResult = contentRepository.getEpisodes(season.id)) {
+                            is Result.Success -> allEpisodes.addAll(
+                                epsResult.data.sortedBy { it.episodeNumber }
+                            )
+                            else -> {}
+                        }
+                    }
+                    val currentIndex = allEpisodes.indexOfFirst {
+                        it.id == currentEpisodeId
+                    }.coerceAtLeast(0)
+                    _uiState.update {
+                        it.copy(
+                            episodes = allEpisodes,
+                            currentEpisodeIndex = currentIndex,
+                        )
+                    }
+                    Log.d("CineVaultPlayer", "Loaded ${allEpisodes.size} episodes, current index: $currentIndex")
+                }
+                else -> Log.w("CineVaultPlayer", "Could not load episodes for series $seriesId")
+            }
+        }
+    }
+
+    fun playEpisode(episode: com.cinevault.app.data.model.EpisodeDto) {
+        saveProgressNow()
+        currentEpisodeId = episode.id
+        viewModelScope.launch {
+            _uiState.update {
+                it.copy(
+                    currentEpisodeIndex = it.episodes.indexOf(episode).coerceAtLeast(0),
+                    currentEpisodeTitle = episode.title,
+                    currentPosition = 0,
+                    totalDuration = 0,
+                    isLoading = true,
+                    error = null,
+                )
+            }
+            // Fetch saved progress for this episode
+            var savedPosition = 0L
+            val profileId = sessionManager.activeProfileId.firstOrNull()
+            if (profileId != null) {
+                when (val progressResult = watchProgressRepository.getProgress(profileId, episode.id)) {
+                    is Result.Success -> {
+                        val progress = progressResult.data
+                        if (progress != null && !progress.isCompleted) {
+                            savedPosition = progress.currentTime.toLong()
+                        }
+                    }
+                    else -> {}
+                }
+            }
+            when (val result = contentRepository.getEpisode(episode.id)) {
+                is Result.Success -> {
+                    loadStreamingUrl(resumePosition = savedPosition, episodeSources = result.data.streamingSources)
+                }
+                is Result.Error -> {
+                    _uiState.update { it.copy(isLoading = false, error = result.message) }
+                }
+                else -> {}
+            }
+        }
+    }
+
+    fun playNextEpisode() {
+        val state = _uiState.value
+        val nextIndex = state.currentEpisodeIndex + 1
+        if (nextIndex < state.episodes.size) {
+            playEpisode(state.episodes[nextIndex])
+        }
     }
 
     fun onPositionChange(position: Long, duration: Long) {
