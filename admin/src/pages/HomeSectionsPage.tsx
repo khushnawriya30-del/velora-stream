@@ -123,7 +123,9 @@ function SortableSectionRow({
         </div>
         {isSystem ? (
           <p className="text-xs text-emerald-400/80 mt-0.5">
-            Auto-populated • newest first • up to {section.maxItems} items
+            Auto-populated •{' '}
+            {section.type === 'trending' ? 'sorted by popularity' : 'newest first'} • up to{' '}
+            {section.maxItems} items
             {section.contentTypes && section.contentTypes.length > 0
               ? ` • ${section.contentTypes.join(', ')}`
               : ' • all content types'}
