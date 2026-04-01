@@ -43,6 +43,7 @@ export interface TmdbDiscoverOptions {
   withLanguage?: string; // dubbed language code e.g. 'hi' for Hindi dubbed
   withCast?: string; // comma-separated TMDB person IDs to filter by actor
   page?: number; // starting page for fresh results
+  releaseStatus?: 'released' | 'upcoming'; // filter by release status
 }
 
 export interface TmdbPreviewItem {
@@ -85,7 +86,7 @@ export class TmdbService {
 
   /** Discover / preview content from TMDB without importing */
   async discover(opts: TmdbDiscoverOptions): Promise<{ items: TmdbPreviewItem[]; nextPage: number }> {
-    const { contentType, region, count, year, genres, withLanguage, withCast } = opts;
+    const { contentType, region, count, year, genres, withLanguage, withCast, releaseStatus } = opts;
     const regionCfg = REGION_MAP[region.toLowerCase()] ?? { language: 'en-US' };
     const isAnime = contentType === 'anime';
     const mediaType = (contentType === 'movies') ? 'movie' : 'tv';
@@ -135,6 +136,25 @@ export class TmdbService {
       // Actor / Cast filter (comma-separated TMDB person IDs)
       if (withCast) {
         params.with_cast = withCast;
+      }
+
+      // Release status filter: upcoming = future releases, released = past releases
+      if (releaseStatus === 'upcoming') {
+        const today = new Date().toISOString().slice(0, 10);
+        if (mediaType === 'movie') {
+          params['primary_release_date.gte'] = today;
+        } else {
+          params['first_air_date.gte'] = today;
+        }
+        params.sort_by = 'primary_release_date.asc';
+        delete params['vote_count.gte']; // upcoming may not have votes yet
+      } else if (releaseStatus === 'released') {
+        const today = new Date().toISOString().slice(0, 10);
+        if (mediaType === 'movie') {
+          params['primary_release_date.lte'] = today;
+        } else {
+          params['first_air_date.lte'] = today;
+        }
       }
 
       // Dubbed language: find content available in this language
@@ -242,6 +262,7 @@ export class TmdbService {
   async importItems(
     tmdbIds: number[],
     contentType: 'movies' | 'shows' | 'anime' | 'webseries',
+    asUpcoming: boolean = false,
   ): Promise<{ imported: number; skipped: number; items: any[] }> {
     const mediaType = (contentType === 'movies') ? 'movie' : 'tv';
     let imported = 0;
@@ -258,7 +279,7 @@ export class TmdbService {
       }
 
       try {
-        const movie = await this.fetchAndCreateMovie(tmdbId, mediaType, contentType);
+        const movie = await this.fetchAndCreateMovie(tmdbId, mediaType, contentType, asUpcoming);
         imported++;
         items.push({ tmdbId, title: movie.title, status: 'imported', id: (movie as any)._id });
       } catch (err) {
@@ -274,6 +295,7 @@ export class TmdbService {
     tmdbId: number,
     mediaType: 'movie' | 'tv',
     contentType: 'movies' | 'shows' | 'anime' | 'webseries',
+    asUpcoming: boolean = false,
   ): Promise<MovieDocument> {
     // Fetch full details with credits
     const detail = await this.tmdbGet(`/${mediaType}/${tmdbId}`, {
@@ -363,8 +385,9 @@ export class TmdbService {
       contentType: appContentType,
       genres,
       languages,
-      status: ContentStatus.PUBLISHED,
+      status: asUpcoming ? ContentStatus.UPCOMING : ContentStatus.PUBLISHED,
       releaseYear,
+      releaseDate: dateStr ? new Date(dateStr) : undefined,
       country: (detail.production_countries ?? []).map((c: any) => c.name).join(', '),
       duration,
       director: directors.join(', '),

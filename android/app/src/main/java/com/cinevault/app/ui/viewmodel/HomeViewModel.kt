@@ -8,6 +8,7 @@ import com.cinevault.app.data.model.*
 import com.cinevault.app.data.remote.CineVaultApi
 import com.cinevault.app.data.repository.ContentRepository
 import com.cinevault.app.data.repository.WatchProgressRepository
+import com.cinevault.app.data.repository.WatchlistRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.*
@@ -34,6 +35,7 @@ class HomeViewModel @Inject constructor(
     private val sessionManager: SessionManager,
     private val api: CineVaultApi,
     private val watchProgressRepository: WatchProgressRepository,
+    private val watchlistRepository: WatchlistRepository,
 ) : ViewModel() {
 
     companion object {
@@ -219,6 +221,17 @@ class HomeViewModel @Inject constructor(
 
             // Load continue watching after main content
             loadContinueWatching()
+        }
+    }
+
+    fun addToWatchlist(contentId: String) {
+        viewModelScope.launch {
+            val profileId = sessionManager.activeProfileId.firstOrNull() ?: return@launch
+            try {
+                watchlistRepository.addToWatchlist(profileId, contentId)
+            } catch (e: Exception) {
+                Log.w("HomeViewModel", "Failed to add to watchlist: ${e.message}")
+            }
         }
     }
 

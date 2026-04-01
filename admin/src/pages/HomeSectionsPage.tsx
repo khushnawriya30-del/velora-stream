@@ -34,7 +34,7 @@ type SectionKey = (typeof SECTIONS)[number]['key'];
 interface HomeSection {
   _id: string;
   title: string;
-  type: 'standard' | 'large_card' | 'mid_banner' | 'trending';
+  type: 'standard' | 'large_card' | 'mid_banner' | 'trending' | 'upcoming';
   displayOrder: number;
   isVisible: boolean;
   isSystemManaged?: boolean;
@@ -118,13 +118,14 @@ function SortableSectionRow({
               {section.type === 'large_card' && 'Large Cards'}
               {section.type === 'trending' && 'Trending'}
               {section.type === 'mid_banner' && 'Featured Banner'}
+              {section.type === 'upcoming' && 'Upcoming'}
             </span>
           )}
         </div>
         {isSystem ? (
           <p className="text-xs text-emerald-400/80 mt-0.5">
             Auto-populated •{' '}
-            {section.type === 'trending' ? 'sorted by popularity' : 'newest first'} • up to{' '}
+            {section.type === 'trending' ? 'sorted by popularity' : section.type === 'upcoming' ? 'sorted by release date' : 'newest first'} • up to{' '}
             {section.maxItems} items
             {section.contentTypes && section.contentTypes.length > 0
               ? ` • ${section.contentTypes.join(', ')}`
@@ -664,6 +665,7 @@ export default function HomeSectionsPage() {
                 <option value="large_card">Large Cards (Bigger Posters)</option>
                 <option value="trending">Trending (Top 10 with Numbers)</option>
                 <option value="mid_banner">Mid Banner (Featured Section)</option>
+                <option value="upcoming">Upcoming (Date-Grouped Releases)</option>
               </select>
             </div>
 

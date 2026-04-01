@@ -124,7 +124,7 @@ fun HomeScreen(
                         banner = if (uiState.tabBanners.isNotEmpty()) uiState.tabBanners[currentBannerIndex.coerceIn(0, (uiState.tabBanners.size - 1).coerceAtLeast(0))] else null,
                         onBannerClick = { contentId -> onMovieClick(contentId) },
                         onPlayClick = { contentId -> onPlayClick(contentId) },
-                        onAddToWatchlist = { contentId -> onAddToWatchlist?.invoke(contentId) },
+                        onAddToWatchlist = { contentId -> onAddToWatchlist?.invoke(contentId) ?: viewModel.addToWatchlist(contentId) },
                         bannerCount = uiState.tabBanners.size,
                         currentIndex = currentBannerIndex.coerceIn(0, (uiState.tabBanners.size - 1).coerceAtLeast(0)),
                     )
@@ -185,6 +185,12 @@ fun HomeScreen(
                                             )
                                         }
                                     }
+                                } else if (section.type == "upcoming") {
+                                    UpcomingSection(
+                                        movies = section.items,
+                                        onMovieClick = onMovieClick,
+                                        onAddToList = { movieId -> onAddToWatchlist?.invoke(movieId) ?: viewModel.addToWatchlist(movieId) },
+                                    )
                                 } else {
                                     HorizontalMovieRow(
                                         movies = section.items,
@@ -1031,5 +1037,158 @@ fun PremiumMovieCard(
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
         )
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// UPCOMING SECTION - date-grouped horizontal rows with + List
+// ═══════════════════════════════════════════════════════════════
+
+@Composable
+fun UpcomingSection(
+    movies: List<MovieDto>,
+    onMovieClick: (String) -> Unit,
+    onAddToList: (String) -> Unit,
+) {
+    // Group movies by release date
+    val grouped = remember(movies) {
+        movies.groupBy { movie ->
+            movie.releaseDate?.let {
+                try {
+                    val parts = it.take(10).split("-")
+                    if (parts.size >= 3) {
+                        val month = when (parts[1].toIntOrNull()) {
+                            1 -> "Jan"; 2 -> "Feb"; 3 -> "Mar"; 4 -> "Apr"
+                            5 -> "May"; 6 -> "Jun"; 7 -> "Jul"; 8 -> "Aug"
+                            9 -> "Sep"; 10 -> "Oct"; 11 -> "Nov"; 12 -> "Dec"
+                            else -> "???"
+                        }
+                        "$month.${parts[2]}"
+                    } else "TBA"
+                } catch (_: Exception) { "TBA" }
+            } ?: "TBA"
+        }.toSortedMap(compareBy { if (it == "TBA") "ZZZ" else it })
+    }
+
+    if (grouped.isEmpty()) return
+
+    Column {
+        grouped.forEach { (dateLabel, dateMovies) ->
+            // Date header
+            Text(
+                text = dateLabel,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Bold,
+                color = CineVaultTheme.colors.accentGold,
+                modifier = Modifier.padding(start = 20.dp, top = 8.dp, bottom = 6.dp),
+                letterSpacing = 0.5.sp,
+            )
+
+            // Horizontal scroll for this date group
+            LazyRow(
+                contentPadding = PaddingValues(horizontal = 20.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                items(dateMovies) { movie ->
+                    UpcomingMovieCard(
+                        movie = movie,
+                        onClick = { onMovieClick(movie.id) },
+                        onAddToList = { onAddToList(movie.id) },
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun UpcomingMovieCard(
+    movie: MovieDto,
+    onClick: () -> Unit,
+    onAddToList: () -> Unit,
+) {
+    Column(
+        modifier = Modifier
+            .width(115.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        // Poster
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .aspectRatio(2f / 3f)
+                .clip(RoundedCornerShape(10.dp))
+                .background(CineVaultTheme.colors.surface)
+                .clickable(onClick = onClick)
+        ) {
+            AsyncImage(
+                model = movie.posterUrl ?: movie.bannerUrl,
+                contentDescription = movie.title,
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop,
+            )
+
+            // Bottom gradient
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(50.dp)
+                    .align(Alignment.BottomCenter)
+                    .background(
+                        Brush.verticalGradient(
+                            colors = listOf(
+                                Color.Transparent,
+                                Color.Black.copy(alpha = 0.7f),
+                            )
+                        )
+                    )
+            )
+        }
+
+        Spacer(Modifier.height(6.dp))
+
+        // Title
+        Text(
+            movie.title,
+            fontSize = 12.sp,
+            fontWeight = FontWeight.SemiBold,
+            color = CineVaultTheme.colors.textPrimary,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.fillMaxWidth(),
+        )
+
+        Spacer(Modifier.height(4.dp))
+
+        // + List button
+        Surface(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(28.dp),
+            shape = RoundedCornerShape(6.dp),
+            color = CineVaultTheme.colors.surface,
+            border = BorderStroke(1.dp, CineVaultTheme.colors.borderSubtle),
+            onClick = onAddToList,
+        ) {
+            Row(
+                modifier = Modifier.fillMaxSize(),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Icon(
+                    Icons.Filled.Add,
+                    contentDescription = "Add to list",
+                    modifier = Modifier.size(14.dp),
+                    tint = CineVaultTheme.colors.textSecondary,
+                )
+                Spacer(Modifier.width(2.dp))
+                Text(
+                    "List",
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = CineVaultTheme.colors.textSecondary,
+                )
+            }
+        }
     }
 }

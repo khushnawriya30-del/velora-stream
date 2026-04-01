@@ -8,6 +8,7 @@ export enum SectionType {
   LARGE_CARD = 'large_card', // Bigger cards
   MID_BANNER = 'mid_banner', // Square banner between sections
   TRENDING = 'trending', // Top 10 with numbers
+  UPCOMING = 'upcoming', // Upcoming releases grouped by date
 }
 
 export enum CardSize {

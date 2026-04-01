@@ -17,6 +17,7 @@ var ContentStatus;
     ContentStatus["PUBLISHED"] = "published";
     ContentStatus["SCHEDULED"] = "scheduled";
     ContentStatus["ARCHIVED"] = "archived";
+    ContentStatus["UPCOMING"] = "upcoming";
 })(ContentStatus || (exports.ContentStatus = ContentStatus = {}));
 var ContentType;
 (function (ContentType) {
@@ -119,6 +120,10 @@ __decorate([
     (0, mongoose_1.Prop)(),
     __metadata("design:type", Number)
 ], Movie.prototype, "releaseYear", void 0);
+__decorate([
+    (0, mongoose_1.Prop)(),
+    __metadata("design:type", Date)
+], Movie.prototype, "releaseDate", void 0);
 __decorate([
     (0, mongoose_1.Prop)(),
     __metadata("design:type", String)

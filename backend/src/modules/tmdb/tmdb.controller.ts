@@ -37,9 +37,9 @@ export class TmdbController {
   @Post('import')
   @ApiOperation({ summary: 'Import selected TMDB items into database (Admin)' })
   async importItems(
-    @Body() body: { tmdbIds: number[]; contentType: 'movies' | 'shows' | 'anime' | 'webseries' },
+    @Body() body: { tmdbIds: number[]; contentType: 'movies' | 'shows' | 'anime' | 'webseries'; asUpcoming?: boolean },
   ) {
     if (!body.tmdbIds?.length) return { imported: 0, skipped: 0, items: [] };
-    return this.tmdbService.importItems(body.tmdbIds, body.contentType);
+    return this.tmdbService.importItems(body.tmdbIds, body.contentType, body.asUpcoming ?? false);
   }
 }

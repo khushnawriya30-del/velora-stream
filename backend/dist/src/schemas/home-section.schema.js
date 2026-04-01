@@ -18,6 +18,7 @@ var SectionType;
     SectionType["LARGE_CARD"] = "large_card";
     SectionType["MID_BANNER"] = "mid_banner";
     SectionType["TRENDING"] = "trending";
+    SectionType["UPCOMING"] = "upcoming";
 })(SectionType || (exports.SectionType = SectionType = {}));
 var CardSize;
 (function (CardSize) {

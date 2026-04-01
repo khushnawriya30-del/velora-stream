@@ -91,6 +91,7 @@ data class MovieDto(
     val rankingLabel: String?,
     val videoQuality: String?,
     val hlsUrl: String?,
+    val releaseDate: String?,
     val createdAt: String?,
     val updatedAt: String?
 ) {

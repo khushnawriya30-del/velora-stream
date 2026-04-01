@@ -371,7 +371,7 @@ export default function MovieFormPage() {
     contentRating: 'UA',
     releaseYear: new Date().getFullYear(),
     duration: 0,
-    status: 'draft' as 'draft' | 'published' | 'archived',
+    status: 'draft' as 'draft' | 'published' | 'upcoming' | 'archived',
     cast: [] as CastMember[],
     streamingSources: [] as StreamingSource[],
     tags: [] as string[],

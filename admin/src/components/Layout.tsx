@@ -16,6 +16,7 @@ import {
   Smartphone,
   Download,
   Cloud,
+  Clock,
 } from 'lucide-react';
 import { useState } from 'react';
 import { useAuthStore } from '../store/auth';
@@ -34,6 +35,7 @@ const navItems = [
   { to: '/notifications', icon: Bell, label: 'Notifications' },
   { to: '/app-update', icon: Smartphone, label: 'App Update' },
   { to: '/tmdb-import', icon: Download, label: 'TMDB Import' },
+  { to: '/upcoming', icon: Clock, label: 'Upcoming' },
   { to: '/storage', icon: Cloud, label: 'Storage CDN' },
 ];
 

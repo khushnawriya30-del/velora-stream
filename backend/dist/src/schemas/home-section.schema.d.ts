@@ -4,7 +4,8 @@ export declare enum SectionType {
     STANDARD = "standard",
     LARGE_CARD = "large_card",
     MID_BANNER = "mid_banner",
-    TRENDING = "trending"
+    TRENDING = "trending",
+    UPCOMING = "upcoming"
 }
 export declare enum CardSize {
     SMALL = "small",

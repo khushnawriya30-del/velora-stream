@@ -17,7 +17,7 @@ export interface Movie {
   studio?: string;
   contentType: 'movie' | 'documentary' | 'anime' | 'web_series' | 'tv_show' | 'short_film';
   contentRating?: string;
-  status: 'draft' | 'published' | 'archived';
+  status: 'draft' | 'published' | 'upcoming' | 'archived';
   averageRating: number;
   rating: number;
   starRating: number;

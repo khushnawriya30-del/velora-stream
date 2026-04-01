@@ -4,7 +4,8 @@ export declare enum ContentStatus {
     DRAFT = "draft",
     PUBLISHED = "published",
     SCHEDULED = "scheduled",
-    ARCHIVED = "archived"
+    ARCHIVED = "archived",
+    UPCOMING = "upcoming"
 }
 export declare enum ContentType {
     MOVIE = "movie",
@@ -60,6 +61,7 @@ export declare class Movie {
     contentRating: ContentRating;
     status: ContentStatus;
     releaseYear: number;
+    releaseDate: Date;
     country: string;
     duration: number;
     director: string;

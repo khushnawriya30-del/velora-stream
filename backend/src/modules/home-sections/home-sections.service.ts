@@ -32,6 +32,34 @@ const RECENTLY_ADDED_DEFAULTS = [
   },
 ];
 
+// ── Default "Upcoming" system sections ─────────────────────────────────────────
+const UPCOMING_DEFAULTS = [
+  {
+    slug: 'system-upcoming-home',
+    title: 'Upcoming',
+    section: TabSection.HOME,
+    contentTypes: [] as string[],
+  },
+  {
+    slug: 'system-upcoming-movies',
+    title: 'Upcoming Movies',
+    section: TabSection.MOVIES,
+    contentTypes: ['movie'] as string[],
+  },
+  {
+    slug: 'system-upcoming-shows',
+    title: 'Upcoming Shows',
+    section: TabSection.SHOWS,
+    contentTypes: ['web_series', 'tv_show'] as string[],
+  },
+  {
+    slug: 'system-upcoming-anime',
+    title: 'Upcoming Anime',
+    section: TabSection.ANIME,
+    contentTypes: ['anime'] as string[],
+  },
+];
+
 // ── Default "Trending" system sections ────────────────────────────────────────
 const TRENDING_DEFAULTS = [
   {
@@ -91,6 +119,33 @@ export class HomeSectionsService implements OnModuleInit {
     const feed = [];
     for (const section of sections) {
       let movies: MovieDocument[];
+
+      if (section.type === SectionType.UPCOMING) {
+        // Upcoming section: fetch upcoming content sorted by releaseDate
+        const upFilter: any = { status: ContentStatus.UPCOMING };
+        if ((section as any).contentTypes?.length > 0) {
+          upFilter.contentType = { $in: (section as any).contentTypes };
+        }
+        movies = await this.movieModel
+          .find(upFilter)
+          .sort({ releaseDate: 1, createdAt: -1 })
+          .limit(section.maxItems)
+          .select('title posterUrl bannerUrl contentType contentRating genres releaseYear duration rating viewCount starRating videoQuality languages releaseDate');
+
+        feed.push({
+          id: section._id,
+          title: section.title,
+          type: section.type,
+          slug: section.slug,
+          cardSize: section.cardSize,
+          showViewMore: section.showViewMore,
+          viewMoreText: section.viewMoreText,
+          showTrendingNumbers: false,
+          bannerImageUrl: null,
+          items: movies,
+        });
+        continue;
+      }
 
       if (section.isSystemManaged) {
         const filter: any = { status: ContentStatus.PUBLISHED };
@@ -258,6 +313,34 @@ export class HomeSectionsService implements OnModuleInit {
         viewMoreText: '',
         showTrendingNumbers: true,
         displayOrder: 0,
+        contentIds: [],
+      });
+
+      created++;
+    }
+
+    // ── Seed Upcoming sections ──
+    for (const def of UPCOMING_DEFAULTS) {
+      const existing = await this.sectionModel.findOne({ slug: def.slug });
+      if (existing) continue;
+
+      const count = await this.sectionModel.countDocuments({ section: def.section });
+
+      await this.sectionModel.create({
+        slug: def.slug,
+        title: def.title,
+        section: def.section,
+        contentTypes: def.contentTypes,
+        type: SectionType.UPCOMING,
+        cardSize: CardSize.SMALL,
+        sortBy: 'releaseDate',
+        maxItems: 20,
+        isSystemManaged: true,
+        isVisible: true,
+        showViewMore: true,
+        viewMoreText: 'View All',
+        showTrendingNumbers: false,
+        displayOrder: count,
         contentIds: [],
       });
 

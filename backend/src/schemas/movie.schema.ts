@@ -8,6 +8,7 @@ export enum ContentStatus {
   PUBLISHED = 'published',
   SCHEDULED = 'scheduled',
   ARCHIVED = 'archived',
+  UPCOMING = 'upcoming',
 }
 
 export enum ContentType {
@@ -88,6 +89,9 @@ export class Movie {
 
   @Prop()
   releaseYear: number;
+
+  @Prop()
+  releaseDate: Date; // full release date for upcoming content
 
   @Prop()
   country: string;

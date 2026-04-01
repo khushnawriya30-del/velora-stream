@@ -118,6 +118,7 @@ export default function MoviesPage() {
           <option value="">All Status</option>
           <option value="draft">Draft</option>
           <option value="published">Published</option>
+          <option value="upcoming">Upcoming</option>
           <option value="archived">Archived</option>
         </select>
       </div>
@@ -167,6 +168,7 @@ export default function MoviesPage() {
                           'px-2 py-0.5 rounded-full text-xs font-medium',
                           movie.status === 'published' && 'bg-success/90 text-background',
                           movie.status === 'draft' && 'bg-warning/90 text-background',
+                          movie.status === 'upcoming' && 'bg-blue-500/90 text-background',
                           movie.status === 'archived' && 'bg-text-muted/90 text-background',
                         )}
                       >
@@ -308,6 +310,7 @@ export default function MoviesPage() {
                               'px-2 py-0.5 rounded-full text-xs font-medium',
                               movie.status === 'published' && 'bg-success/10 text-success',
                               movie.status === 'draft' && 'bg-warning/10 text-warning',
+                              movie.status === 'upcoming' && 'bg-blue-500/10 text-blue-400',
                               movie.status === 'archived' && 'bg-text-muted/10 text-text-muted',
                             )}
                           >
