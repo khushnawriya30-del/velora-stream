@@ -164,7 +164,8 @@ interface BunnyVideoItem {
 function BunnyCollectionImportSection({ movieId, movieTitle, onImported }: { movieId: string; movieTitle: string; onImported?: (sources: any[]) => void }) {
   const queryClient = useQueryClient();
   const [selectedCollection, setSelectedCollection] = useState('');
-  const [selectedVideo, setSelectedVideo] = useState<BunnyVideoItem | null>(null);
+  const [importingVideoId, setImportingVideoId] = useState<string | null>(null);
+  const [linkedVideo, setLinkedVideo] = useState<{ guid: string; title: string; hlsUrl: string } | null>(null);
 
   const { data: collections, isLoading: loadingCollections } = useQuery({
     queryKey: ['bunny-collections'],
@@ -183,27 +184,27 @@ function BunnyCollectionImportSection({ movieId, movieTitle, onImported }: { mov
     enabled: !!selectedCollection,
   });
 
-  const importMutation = useMutation({
-    mutationFn: async () => {
-      if (!selectedVideo) throw new Error('No video selected');
+  const handleImportVideo = async (video: BunnyVideoItem) => {
+    setImportingVideoId(video.guid);
+    try {
       const { data } = await api.post('/bunny/stream/movie/import-bunny', {
-        videoId: selectedVideo.guid,
+        videoId: video.guid,
         collectionId: selectedCollection,
         title: movieTitle || undefined,
         existingMovieId: movieId,
       });
-      return data;
-    },
-    onSuccess: (data) => {
-      toast.success('Bunny video linked! HLS streaming sources updated.');
+      toast.success(`"${video.title}" linked! Streaming sources updated.`);
+      setLinkedVideo({ guid: video.guid, title: video.title, hlsUrl: data.hlsUrl });
       queryClient.invalidateQueries({ queryKey: ['movie', movieId] });
       if (onImported && data.streamingSources) {
         onImported(data.streamingSources);
       }
-      setSelectedVideo(null);
-    },
-    onError: (err: any) => toast.error(err.response?.data?.message || 'Import failed'),
-  });
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || 'Import failed');
+    } finally {
+      setImportingVideoId(null);
+    }
+  };
 
   const formatDuration = (seconds: number) => {
     const m = Math.floor(seconds / 60);
@@ -230,15 +231,34 @@ function BunnyCollectionImportSection({ movieId, movieTitle, onImported }: { mov
 
   return (
     <div className="space-y-4">
+      {/* Success Banner */}
+      {linkedVideo && (
+        <div className="bg-green-500/10 border border-green-500/30 rounded-xl p-4 space-y-2">
+          <div className="flex items-center gap-2 text-green-400 font-semibold text-sm">
+            <Check size={18} />
+            <span>Video Linked Successfully!</span>
+          </div>
+          <p className="text-xs text-text-secondary">
+            &quot;{linkedVideo.title}&quot; has been linked to this movie. Streaming sources are now active.
+          </p>
+          <div className="text-xs text-text-muted bg-background/50 rounded-lg px-3 py-2 break-all">
+            <span className="font-medium text-green-400">HLS: </span>{linkedVideo.hlsUrl}
+          </div>
+          <p className="text-[11px] text-text-muted italic mt-1">
+            No need to click &quot;Update Content&quot; — streaming sources are already saved.
+          </p>
+        </div>
+      )}
+
       {/* Select Collection */}
       <div className="space-y-2">
-        <label className="text-sm font-medium text-text-secondary">Select Collection</label>
+        <label className="text-sm font-medium text-text-secondary">1. Select Collection</label>
         {loadingCollections ? (
           <div className="flex items-center gap-2 text-sm text-text-muted py-2"><Loader2 size={14} className="animate-spin" /> Loading collections...</div>
         ) : (
           <select
             value={selectedCollection}
-            onChange={(e) => { setSelectedCollection(e.target.value); setSelectedVideo(null); }}
+            onChange={(e) => { setSelectedCollection(e.target.value); setLinkedVideo(null); }}
             className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-purple-400"
           >
             <option value="">-- Select a collection --</option>
@@ -249,75 +269,71 @@ function BunnyCollectionImportSection({ movieId, movieTitle, onImported }: { mov
         )}
       </div>
 
-      {/* Video list */}
+      {/* Video list with per-video import buttons */}
       {selectedCollection && (
         <div className="space-y-2">
-          <label className="text-sm font-medium text-text-secondary">Select Video to Link</label>
+          <label className="text-sm font-medium text-text-secondary">2. Click &quot;Import&quot; on a video to link it</label>
           {loadingVideos ? (
             <div className="flex items-center gap-2 text-sm text-text-muted py-2"><Loader2 size={14} className="animate-spin" /> Loading videos...</div>
           ) : videos?.items && videos.items.length > 0 ? (
-            <div className="space-y-1.5 max-h-60 overflow-y-auto pr-1">
-              {videos.items.map((video) => (
-                <div
-                  key={video.guid}
-                  onClick={() => setSelectedVideo(video)}
-                  className={clsx(
-                    'flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-all border',
-                    selectedVideo?.guid === video.guid
-                      ? 'border-purple-400 bg-purple-400/10 shadow-sm'
-                      : 'border-border hover:border-purple-400/40 hover:bg-surface-light/50'
-                  )}
-                >
-                  <div className="w-20 h-12 rounded-lg overflow-hidden bg-surface-light flex-shrink-0">
-                    <img
-                      src={`https://vz-f3b830f6-306.b-cdn.net/${video.guid}/${video.thumbnailFileName || 'thumbnail.jpg'}`}
-                      alt={video.title}
-                      className="w-full h-full object-cover"
-                      onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
-                    />
+            <div className="space-y-1.5 max-h-72 overflow-y-auto pr-1">
+              {videos.items.map((video) => {
+                const isLinked = linkedVideo?.guid === video.guid;
+                const isImporting = importingVideoId === video.guid;
+                return (
+                  <div
+                    key={video.guid}
+                    className={clsx(
+                      'flex items-center gap-3 p-3 rounded-xl transition-all border',
+                      isLinked
+                        ? 'border-green-400/50 bg-green-500/10'
+                        : 'border-border hover:border-purple-400/30 hover:bg-surface-light/50'
+                    )}
+                  >
+                    <div className="w-20 h-12 rounded-lg overflow-hidden bg-surface-light flex-shrink-0">
+                      <img
+                        src={`https://vz-f3b830f6-306.b-cdn.net/${video.guid}/${video.thumbnailFileName || 'thumbnail.jpg'}`}
+                        alt={video.title}
+                        className="w-full h-full object-cover"
+                        onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                      />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">{video.title}</p>
+                      <p className="text-xs text-text-muted">
+                        {video.length > 0 && formatDuration(video.length)} · {formatSize(video.storageSize)}
+                        {video.availableResolutions && ` · ${video.availableResolutions}`}
+                      </p>
+                    </div>
+                    <span className={clsx('text-[10px] px-2 py-0.5 rounded font-medium flex-shrink-0', statusColor(video.status))}>
+                      {statusLabel(video.status)}
+                    </span>
+                    {/* Per-video import/linked button */}
+                    {isLinked ? (
+                      <span className="flex items-center gap-1 text-xs text-green-400 font-semibold flex-shrink-0 px-3 py-1.5 bg-green-500/10 rounded-lg">
+                        <Check size={14} /> Linked
+                      </span>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => handleImportVideo(video)}
+                        disabled={isImporting || !!importingVideoId || video.status !== 4}
+                        className="flex items-center gap-1 text-xs font-semibold flex-shrink-0 px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white rounded-lg disabled:opacity-40 transition-colors"
+                      >
+                        {isImporting ? (
+                          <><Loader2 size={12} className="animate-spin" /> Importing...</>
+                        ) : (
+                          <><Download size={12} /> Import</>
+                        )}
+                      </button>
+                    )}
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">{video.title}</p>
-                    <p className="text-xs text-text-muted">
-                      {video.length > 0 && formatDuration(video.length)} · {formatSize(video.storageSize)}
-                      {video.availableResolutions && ` · ${video.availableResolutions}`}
-                    </p>
-                  </div>
-                  <span className={clsx('text-[10px] px-2 py-0.5 rounded font-medium flex-shrink-0', statusColor(video.status))}>
-                    {statusLabel(video.status)}
-                  </span>
-                  {selectedVideo?.guid === video.guid && (
-                    <Check size={16} className="text-purple-400 flex-shrink-0" />
-                  )}
-                </div>
-              ))}
+                );
+              })}
             </div>
           ) : (
             <p className="text-sm text-text-muted py-4 text-center">No videos in this collection</p>
           )}
-        </div>
-      )}
-
-      {/* Import button */}
-      {selectedVideo && (
-        <button
-          type="button"
-          onClick={() => importMutation.mutate()}
-          disabled={importMutation.isPending}
-          className="w-full flex items-center justify-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2.5 rounded-lg text-sm font-medium disabled:opacity-50 transition-colors"
-        >
-          {importMutation.isPending ? (
-            <><Loader2 size={14} className="animate-spin" /> Linking Video...</>
-          ) : (
-            <><Download size={14} /> Link &quot;{selectedVideo.title}&quot; to This Movie</>
-          )}
-        </button>
-      )}
-
-      {importMutation.isSuccess && (
-        <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-3 flex items-center gap-2 text-sm text-green-400">
-          <Check size={16} />
-          <span>Bunny video linked! HLS streaming sources have been updated.</span>
         </div>
       )}
     </div>

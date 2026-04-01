@@ -8,6 +8,9 @@ import {
   UseGuards,
   UseInterceptors,
   UploadedFile,
+  HttpException,
+  HttpStatus,
+  Logger,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { BunnyService } from './bunny.service';
@@ -217,6 +220,18 @@ export class BunnyController {
   async importMovieFromBunnyCollection(
     @Body() body: { videoId: string; collectionId: string; title?: string; existingMovieId?: string },
   ) {
-    return this.bunnyService.importMovieFromBunnyVideo(body.videoId, body.title, body.existingMovieId);
+    try {
+      if (!body.videoId) {
+        throw new HttpException('videoId is required', HttpStatus.BAD_REQUEST);
+      }
+      return await this.bunnyService.importMovieFromBunnyVideo(body.videoId, body.title, body.existingMovieId);
+    } catch (err) {
+      Logger.error(`[Movie Import] ${err.message}`, err.stack, 'BunnyController');
+      if (err instanceof HttpException) throw err;
+      throw new HttpException(
+        err.message || 'Failed to import movie from Bunny',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
   }
 }

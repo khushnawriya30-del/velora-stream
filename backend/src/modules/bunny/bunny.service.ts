@@ -543,7 +543,7 @@ export class BunnyService {
     // Create new movie
     const movie = await this.movieModel.create({
       title,
-      synopsis: '',
+      synopsis: `Imported from Bunny Stream: ${title}`,
       posterUrl: thumb,
       bannerUrl: thumb,
       genres: [],
