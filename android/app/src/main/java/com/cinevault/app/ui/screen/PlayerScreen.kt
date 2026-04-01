@@ -135,19 +135,22 @@ fun PlayerScreen(
         onBack()
     }
 
-    // Quality track selector
+    // Quality track selector — use exoPlayer.trackSelectionParameters to preserve audio overrides
     LaunchedEffect(uiState.selectedQuality) {
         val quality = uiState.selectedQuality
         if (quality == "auto") {
-            trackSelector.parameters = trackSelector.buildUponParameters()
+            exoPlayer.trackSelectionParameters = exoPlayer.trackSelectionParameters
+                .buildUpon()
                 .setMaxVideoSize(Int.MAX_VALUE, Int.MAX_VALUE)
                 .setForceHighestSupportedBitrate(false)
+                .setForceLowestBitrate(false)
                 .build()
         } else {
             val maxHeight = when (quality) {
                 "1080p" -> 1080; "720p" -> 720; "480p" -> 480; "360p" -> 360; else -> Int.MAX_VALUE
             }
-            trackSelector.parameters = trackSelector.buildUponParameters()
+            exoPlayer.trackSelectionParameters = exoPlayer.trackSelectionParameters
+                .buildUpon()
                 .setMaxVideoSize(Int.MAX_VALUE, maxHeight)
                 .setForceHighestSupportedBitrate(false)
                 .setForceLowestBitrate(quality == "360p")
@@ -195,8 +198,9 @@ fun PlayerScreen(
     }
 
     // Position tracking & audio track discovery
-    var audioTracks by remember { mutableStateOf<List<Pair<String, Int>>>(emptyList()) }
+    var audioTracks by remember { mutableStateOf<List<AudioTrackInfo>>(emptyList()) }
     var selectedAudioIndex by remember { mutableIntStateOf(0) }
+    var bufferedPosition by remember { mutableLongStateOf(0L) }
 
     LaunchedEffect(exoPlayer) {
         while (true) {
@@ -205,8 +209,11 @@ fun PlayerScreen(
             val pos = exoPlayer.currentPosition
             if (dur > 0) viewModel.onPositionChange(pos, dur)
             viewModel.onPlaybackStateChange(exoPlayer.isPlaying)
+            bufferedPosition = exoPlayer.bufferedPosition
 
-            val discovered = mutableListOf<Pair<String, Int>>()
+            // Discover audio tracks with their group indices for proper switching
+            val discovered = mutableListOf<AudioTrackInfo>()
+            var globalGroupIdx = 0
             for (group in exoPlayer.currentTracks.groups) {
                 if (group.type == C.TRACK_TYPE_AUDIO) {
                     for (i in 0 until group.length) {
@@ -217,11 +224,12 @@ fun PlayerScreen(
                             val displayName = locale.getDisplayLanguage(Locale.ENGLISH)
                             if (displayName.isNotBlank() && displayName != lang) displayName else lang.uppercase()
                         } else "Track ${discovered.size + 1}"
-                        discovered.add(Pair(label, i))
+                        discovered.add(AudioTrackInfo(label, lang, globalGroupIdx, i))
                     }
                 }
+                globalGroupIdx++
             }
-            if (discovered.isNotEmpty() && discovered.map { it.first } != audioTracks.map { it.first }) {
+            if (discovered.isNotEmpty() && discovered.map { it.label } != audioTracks.map { it.label }) {
                 audioTracks = discovered
             }
         }
@@ -346,10 +354,22 @@ fun PlayerScreen(
             },
     ) {
         if (uiState.isLoading) {
-            CircularProgressIndicator(
+            Column(
                 modifier = Modifier.align(Alignment.Center),
-                color = GoldAccent,
-            )
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                CircularProgressIndicator(
+                    color = GoldAccent,
+                    strokeWidth = 3.dp,
+                    modifier = Modifier.size(48.dp),
+                )
+                Spacer(Modifier.height(12.dp))
+                Text(
+                    "Loading...",
+                    color = Color.White.copy(alpha = 0.6f),
+                    fontSize = 13.sp,
+                )
+            }
         } else if (uiState.error != null || playerError != null) {
             Column(
                 modifier = Modifier
@@ -589,25 +609,43 @@ fun PlayerScreen(
                                 .padding(horizontal = 16.dp)
                                 .padding(bottom = 6.dp),
                         ) {
-                            // Progress bar
-                            Slider(
-                                value = if (uiState.totalDuration > 0)
-                                    uiState.currentPosition.toFloat() / uiState.totalDuration
-                                else 0f,
-                                onValueChange = { fraction ->
-                                    val seekPos = (fraction * uiState.totalDuration).toLong()
-                                    exoPlayer.seekTo(seekPos)
-                                    viewModel.seekTo(seekPos)
-                                },
+                            // Progress bar with buffer indicator
+                            Box(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .height(24.dp),
-                                colors = SliderDefaults.colors(
-                                    thumbColor = GoldAccent,
-                                    activeTrackColor = GoldAccent,
-                                    inactiveTrackColor = Color.White.copy(alpha = 0.25f),
-                                ),
-                            )
+                            ) {
+                                // Buffer progress track
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth(
+                                            fraction = if (uiState.totalDuration > 0)
+                                                (bufferedPosition.toFloat() / uiState.totalDuration).coerceIn(0f, 1f)
+                                            else 0f
+                                        )
+                                        .height(4.dp)
+                                        .align(Alignment.CenterStart)
+                                        .clip(RoundedCornerShape(2.dp))
+                                        .background(Color.White.copy(alpha = 0.3f)),
+                                )
+                                // Seek slider
+                                Slider(
+                                    value = if (uiState.totalDuration > 0)
+                                        uiState.currentPosition.toFloat() / uiState.totalDuration
+                                    else 0f,
+                                    onValueChange = { fraction ->
+                                        val seekPos = (fraction * uiState.totalDuration).toLong()
+                                        exoPlayer.seekTo(seekPos)
+                                        viewModel.seekTo(seekPos)
+                                    },
+                                    modifier = Modifier.fillMaxSize(),
+                                    colors = SliderDefaults.colors(
+                                        thumbColor = GoldAccent,
+                                        activeTrackColor = GoldAccent,
+                                        inactiveTrackColor = Color.Transparent,
+                                    ),
+                                )
+                            }
 
                             // Time labels
                             Row(
@@ -674,14 +712,24 @@ fun PlayerScreen(
                                     },
                                 )
 
-                                // Audio
+                                // Audio (always show if multi-audio)
                                 if (audioTracks.size > 1) {
                                     PlayerToolbarButton(
                                         icon = Icons.Filled.Audiotrack,
-                                        label = "Audio",
+                                        label = if (selectedAudioIndex < audioTracks.size)
+                                            audioTracks[selectedAudioIndex].label
+                                        else "Audio",
                                         onClick = { showAudioPopup = true },
                                     )
                                 }
+
+                                // Subtitles (future ready)
+                                PlayerToolbarButton(
+                                    icon = Icons.Filled.Subtitles,
+                                    label = "Subtitles",
+                                    onClick = { /* Future: subtitle selector */ },
+                                    enabled = false,
+                                )
 
                                 // Episode buttons (series only)
                                 if (uiState.episodes.isNotEmpty()) {
@@ -791,26 +839,25 @@ fun PlayerScreen(
         // ── Audio Popup ──
         if (showAudioPopup && audioTracks.size > 1) {
             PlayerPopupOverlay(
-                title = "Audio",
+                title = "Audio Language",
                 onDismiss = { showAudioPopup = false },
             ) {
-                audioTracks.forEachIndexed { index, (trackName, trackIndex) ->
-                    val displayLabel = if (index == 0) "$trackName [Original]" else trackName
+                audioTracks.forEachIndexed { index, trackInfo ->
                     PopupOptionCard(
-                        label = displayLabel,
+                        label = trackInfo.label,
+                        subtitle = trackInfo.language?.uppercase(),
                         isSelected = selectedAudioIndex == index,
                         onClick = {
                             selectedAudioIndex = index
-                            for (group in exoPlayer.currentTracks.groups) {
-                                if (group.type == C.TRACK_TYPE_AUDIO) {
-                                    exoPlayer.trackSelectionParameters = exoPlayer.trackSelectionParameters
-                                        .buildUpon()
-                                        .setOverrideForType(
-                                            TrackSelectionOverride(group.mediaTrackGroup, listOf(trackIndex))
-                                        )
-                                        .build()
-                                    break
-                                }
+                            val groups = exoPlayer.currentTracks.groups
+                            if (trackInfo.groupIndex < groups.size) {
+                                val grp = groups[trackInfo.groupIndex]
+                                exoPlayer.trackSelectionParameters = exoPlayer.trackSelectionParameters
+                                    .buildUpon()
+                                    .setOverrideForType(
+                                        TrackSelectionOverride(grp.mediaTrackGroup, listOf(trackInfo.trackIndex))
+                                    )
+                                    .build()
                             }
                             showAudioPopup = false
                         },
@@ -958,17 +1005,18 @@ private fun PlayerPopupOverlay(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.Black.copy(alpha = 0.75f))
+            .background(Color.Black.copy(alpha = 0.6f))
             .clickable(onClick = onDismiss),
-        contentAlignment = Alignment.Center,
     ) {
         Surface(
             modifier = Modifier
-                .widthIn(max = 360.dp)
+                .align(Alignment.CenterEnd)
+                .fillMaxHeight()
+                .widthIn(min = 260.dp, max = 300.dp)
                 .clickable(enabled = false, onClick = {}),
-            shape = RoundedCornerShape(20.dp),
-            color = Color(0xFF1A1226),
-            border = BorderStroke(1.dp, GoldAccent.copy(alpha = 0.3f)),
+            shape = RoundedCornerShape(topStart = 20.dp, bottomStart = 20.dp),
+            color = Color(0xFF141020),
+            border = BorderStroke(1.dp, GoldAccent.copy(alpha = 0.15f)),
             shadowElevation = 24.dp,
         ) {
             Column(modifier = Modifier.padding(20.dp)) {
@@ -1053,3 +1101,11 @@ private fun formatDuration(ms: Long): String {
     return if (hours > 0) String.format("%d:%02d:%02d", hours, minutes, seconds)
     else String.format("%d:%02d", minutes, seconds)
 }
+
+/** Stores audio track info with its group index for proper switching across multi-group HLS. */
+private data class AudioTrackInfo(
+    val label: String,
+    val language: String?,
+    val groupIndex: Int,
+    val trackIndex: Int,
+)

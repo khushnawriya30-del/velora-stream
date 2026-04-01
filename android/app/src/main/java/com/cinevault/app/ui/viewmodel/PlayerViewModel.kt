@@ -228,13 +228,16 @@ class PlayerViewModel @Inject constructor(
                 val (streamUrl, fallbacks) = buildStreamWithFallbacks(rawUrl)
                 Log.d("CineVaultPlayer", "Using episode source URL: ${streamUrl.take(150)}, fallbacks: ${fallbacks.size}")
                 if (streamUrl.startsWith("http://") || streamUrl.startsWith("https://")) {
+                    val isHls = streamUrl.contains(".m3u8", ignoreCase = true)
+                    val qualities = if (isHls) listOf("auto", "1080p", "720p", "480p", "360p")
+                        else listOf(source?.quality ?: "Original")
                     _uiState.update { it.copy(
                         isLoading = false,
                         streamingUrl = streamUrl,
                         fallbackUrls = fallbacks,
-                        availableQualities = listOf(source?.quality ?: "Original"),
-                        isAdaptive = false,
-                        selectedQuality = source?.quality ?: "Original",
+                        availableQualities = qualities,
+                        isAdaptive = isHls,
+                        selectedQuality = if (isHls) "auto" else (source?.quality ?: "Original"),
                         currentPosition = if (resumePosition >= 0) resumePosition else it.currentPosition,
                     ) }
                     return@launch
