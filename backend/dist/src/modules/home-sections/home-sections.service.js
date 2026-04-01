@@ -54,21 +54,21 @@ const UPCOMING_DEFAULTS = [
     },
     {
         slug: 'system-upcoming-movies',
-        title: 'Upcoming Movies',
+        title: 'Upcoming',
         section: home_section_schema_1.TabSection.MOVIES,
-        contentTypes: ['movie'],
+        contentTypes: [],
     },
     {
         slug: 'system-upcoming-shows',
-        title: 'Upcoming Shows',
+        title: 'Upcoming',
         section: home_section_schema_1.TabSection.SHOWS,
-        contentTypes: ['web_series', 'tv_show'],
+        contentTypes: [],
     },
     {
         slug: 'system-upcoming-anime',
-        title: 'Upcoming Anime',
+        title: 'Upcoming',
         section: home_section_schema_1.TabSection.ANIME,
-        contentTypes: ['anime'],
+        contentTypes: [],
     },
 ];
 const TRENDING_DEFAULTS = [
@@ -108,6 +108,7 @@ let HomeSectionsService = HomeSectionsService_1 = class HomeSectionsService {
         if (result.created > 0) {
             this.logger.log(result.message);
         }
+        await this.sectionModel.updateMany({ type: home_section_schema_1.SectionType.UPCOMING }, { $set: { contentTypes: [], title: 'Upcoming' } });
         await this.autoReleaseUpcoming();
         setInterval(() => this.autoReleaseUpcoming(), 60 * 60 * 1000);
     }
@@ -140,9 +141,6 @@ let HomeSectionsService = HomeSectionsService_1 = class HomeSectionsService {
             let movies;
             if (section.type === home_section_schema_1.SectionType.UPCOMING) {
                 const upFilter = { status: movie_schema_1.ContentStatus.UPCOMING };
-                if (section.contentTypes?.length > 0) {
-                    upFilter.contentType = { $in: section.contentTypes };
-                }
                 movies = await this.movieModel
                     .find(upFilter)
                     .sort({ releaseDate: 1, createdAt: -1 })

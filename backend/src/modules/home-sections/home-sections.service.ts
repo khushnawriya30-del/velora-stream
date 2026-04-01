@@ -42,21 +42,21 @@ const UPCOMING_DEFAULTS = [
   },
   {
     slug: 'system-upcoming-movies',
-    title: 'Upcoming Movies',
+    title: 'Upcoming',
     section: TabSection.MOVIES,
-    contentTypes: ['movie'] as string[],
+    contentTypes: [] as string[],
   },
   {
     slug: 'system-upcoming-shows',
-    title: 'Upcoming Shows',
+    title: 'Upcoming',
     section: TabSection.SHOWS,
-    contentTypes: ['web_series', 'tv_show'] as string[],
+    contentTypes: [] as string[],
   },
   {
     slug: 'system-upcoming-anime',
-    title: 'Upcoming Anime',
+    title: 'Upcoming',
     section: TabSection.ANIME,
-    contentTypes: ['anime'] as string[],
+    contentTypes: [] as string[],
   },
 ];
 
@@ -103,6 +103,12 @@ export class HomeSectionsService implements OnModuleInit {
       this.logger.log(result.message);
     }
 
+    // Make all upcoming sections universal (no category filtering)
+    await this.sectionModel.updateMany(
+      { type: SectionType.UPCOMING },
+      { $set: { contentTypes: [], title: 'Upcoming' } },
+    );
+
     // Run auto-release on startup, then every hour
     await this.autoReleaseUpcoming();
     setInterval(() => this.autoReleaseUpcoming(), 60 * 60 * 1000);
@@ -148,11 +154,8 @@ export class HomeSectionsService implements OnModuleInit {
       let movies: MovieDocument[];
 
       if (section.type === SectionType.UPCOMING) {
-        // Upcoming section: fetch upcoming content sorted by releaseDate
+        // Upcoming section: fetch ALL upcoming content (universal across tabs)
         const upFilter: any = { status: ContentStatus.UPCOMING };
-        if ((section as any).contentTypes?.length > 0) {
-          upFilter.contentType = { $in: (section as any).contentTypes };
-        }
         movies = await this.movieModel
           .find(upFilter)
           .sort({ releaseDate: 1, createdAt: -1 })

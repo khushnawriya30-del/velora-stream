@@ -1041,7 +1041,7 @@ fun PremiumMovieCard(
 }
 
 // ═══════════════════════════════════════════════════════════════
-// UPCOMING SECTION - date-grouped single horizontal row with date headers + List
+// UPCOMING SECTION - each card has its own date header + animated Add to List
 // ═══════════════════════════════════════════════════════════════
 
 @Composable
@@ -1050,109 +1050,25 @@ fun UpcomingSection(
     onMovieClick: (String) -> Unit,
     onAddToList: (String) -> Unit,
 ) {
-    // Group movies by release date, sorted chronologically
-    val grouped = remember(movies) {
-        val groups = movies.groupBy { movie ->
-            movie.releaseDate?.let {
-                try {
-                    val parts = it.take(10).split("-")
-                    if (parts.size >= 3) {
-                        val monthNum = parts[1].toIntOrNull() ?: 0
-                        val day = parts[2].toIntOrNull() ?: 0
-                        val month = when (monthNum) {
-                            1 -> "JAN"; 2 -> "FEB"; 3 -> "MAR"; 4 -> "APR"
-                            5 -> "MAY"; 6 -> "JUN"; 7 -> "JUL"; 8 -> "AUG"
-                            9 -> "SEP"; 10 -> "OCT"; 11 -> "NOV"; 12 -> "DEC"
-                            else -> "???"
-                        }
-                        val dayStr = String.format("%02d", day)
-                        "$month . $dayStr"
-                    } else "TBA"
-                } catch (_: Exception) { "TBA" }
-            } ?: "TBA"
-        }
-        groups.toSortedMap(compareBy {
-            if (it == "TBA") "ZZZ" else it
-        })
-    }
+    if (movies.isEmpty()) return
 
-    if (grouped.isEmpty()) return
-
-    // Build a flat list of items: DateHeader or MovieItem
-    val flatItems = remember(grouped) {
-        val list = mutableListOf<UpcomingFlatItem>()
-        grouped.forEach { (dateLabel, dateMovies) ->
-            list.add(UpcomingFlatItem.Header(dateLabel))
-            dateMovies.forEach { movie ->
-                list.add(UpcomingFlatItem.Movie(movie))
-            }
-        }
-        list
+    // Sort movies by releaseDate
+    val sorted = remember(movies) {
+        movies.sortedBy { it.releaseDate ?: "9999" }
     }
 
     LazyRow(
-        contentPadding = PaddingValues(start = 16.dp, end = 20.dp),
-        horizontalArrangement = Arrangement.spacedBy(0.dp),
+        contentPadding = PaddingValues(horizontal = 20.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        items(flatItems.size) { index ->
-            when (val item = flatItems[index]) {
-                is UpcomingFlatItem.Header -> {
-                    // Date header with dashed line
-                    Column(
-                        modifier = Modifier
-                            .width(IntrinsicSize.Min)
-                            .padding(end = 0.dp),
-                    ) {
-                        Row(
-                            modifier = Modifier
-                                .padding(bottom = 10.dp, top = 4.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            Text(
-                                text = item.date,
-                                fontSize = 13.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = CineVaultTheme.colors.textSecondary.copy(alpha = 0.7f),
-                                letterSpacing = 1.sp,
-                                maxLines = 1,
-                            )
-                            Spacer(Modifier.width(8.dp))
-                            // Dashed divider line
-                            Canvas(
-                                modifier = Modifier
-                                    .width(60.dp)
-                                    .height(1.dp)
-                            ) {
-                                drawLine(
-                                    color = Color.Gray.copy(alpha = 0.4f),
-                                    start = Offset(0f, 0f),
-                                    end = Offset(size.width, 0f),
-                                    strokeWidth = 2f,
-                                    pathEffect = androidx.compose.ui.graphics.PathEffect.dashPathEffect(
-                                        floatArrayOf(8f, 6f), 0f
-                                    )
-                                )
-                            }
-                        }
-                        // Invisible spacer so header column height matches card column
-                        Spacer(Modifier.height(0.dp))
-                    }
-                }
-                is UpcomingFlatItem.Movie -> {
-                    UpcomingMovieCard(
-                        movie = item.movie,
-                        onClick = { onMovieClick(item.movie.id) },
-                        onAddToList = { onAddToList(item.movie.id) },
-                    )
-                }
-            }
+        items(sorted) { movie ->
+            UpcomingMovieCard(
+                movie = movie,
+                onClick = { onMovieClick(movie.id) },
+                onAddToList = { onAddToList(movie.id) },
+            )
         }
     }
-}
-
-sealed class UpcomingFlatItem {
-    data class Header(val date: String) : UpcomingFlatItem()
-    data class Movie(val movie: MovieDto) : UpcomingFlatItem()
 }
 
 @Composable
@@ -1161,21 +1077,72 @@ fun UpcomingMovieCard(
     onClick: () -> Unit,
     onAddToList: () -> Unit,
 ) {
+    // Track added state for animation
+    var isAdded by remember { mutableStateOf(false) }
+
+    // Format date label
+    val dateLabel = remember(movie.releaseDate) {
+        movie.releaseDate?.let {
+            try {
+                val parts = it.take(10).split("-")
+                if (parts.size >= 3) {
+                    val monthNum = parts[1].toIntOrNull() ?: 0
+                    val day = parts[2].toIntOrNull() ?: 0
+                    val month = when (monthNum) {
+                        1 -> "JAN"; 2 -> "FEB"; 3 -> "MAR"; 4 -> "APR"
+                        5 -> "MAY"; 6 -> "JUN"; 7 -> "JUL"; 8 -> "AUG"
+                        9 -> "SEP"; 10 -> "OCT"; 11 -> "NOV"; 12 -> "DEC"
+                        else -> "???"
+                    }
+                    "$month . ${String.format("%02d", day)}"
+                } else "TBA"
+            } catch (_: Exception) { "TBA" }
+        } ?: "TBA"
+    }
+
     Column(
-        modifier = Modifier
-            .width(160.dp)
-            .padding(end = 12.dp),
+        modifier = Modifier.width(115.dp),
         horizontalAlignment = Alignment.Start,
     ) {
-        // Spacer for date header row alignment
-        Spacer(Modifier.height(28.dp))
+        // Date header with dashed line
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = dateLabel,
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Bold,
+                color = CineVaultTheme.colors.textSecondary.copy(alpha = 0.6f),
+                letterSpacing = 0.8.sp,
+                maxLines = 1,
+            )
+            Spacer(Modifier.width(4.dp))
+            Canvas(
+                modifier = Modifier
+                    .weight(1f)
+                    .height(1.dp)
+            ) {
+                drawLine(
+                    color = Color.Gray.copy(alpha = 0.35f),
+                    start = Offset(0f, 0f),
+                    end = Offset(size.width, 0f),
+                    strokeWidth = 1.5f,
+                    pathEffect = androidx.compose.ui.graphics.PathEffect.dashPathEffect(
+                        floatArrayOf(6f, 4f), 0f
+                    )
+                )
+            }
+        }
 
         // Poster
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .aspectRatio(2f / 3f)
-                .clip(RoundedCornerShape(12.dp))
+                .clip(RoundedCornerShape(10.dp))
                 .background(CineVaultTheme.colors.surface)
                 .clickable(onClick = onClick)
         ) {
@@ -1187,12 +1154,12 @@ fun UpcomingMovieCard(
             )
         }
 
-        Spacer(Modifier.height(8.dp))
+        Spacer(Modifier.height(6.dp))
 
         // Title
         Text(
             movie.title,
-            fontSize = 14.sp,
+            fontSize = 12.sp,
             fontWeight = FontWeight.SemiBold,
             color = CineVaultTheme.colors.textPrimary,
             maxLines = 1,
@@ -1200,36 +1167,87 @@ fun UpcomingMovieCard(
             modifier = Modifier.fillMaxWidth(),
         )
 
-        Spacer(Modifier.height(6.dp))
+        Spacer(Modifier.height(4.dp))
 
-        // + List button
+        // + List / ✓ Added button with animation
+        val buttonColor by animateColorAsState(
+            targetValue = if (isAdded) CineVaultTheme.colors.accentGold.copy(alpha = 0.15f) else Color.Transparent,
+            animationSpec = tween(250),
+            label = "addedBg"
+        )
+        val borderColor by animateColorAsState(
+            targetValue = if (isAdded) CineVaultTheme.colors.accentGold else CineVaultTheme.colors.accentGold.copy(alpha = 0.6f),
+            animationSpec = tween(250),
+            label = "addedBorder"
+        )
+
         Surface(
             modifier = Modifier
-                .wrapContentWidth()
-                .height(32.dp),
-            shape = RoundedCornerShape(20.dp),
-            color = Color.Transparent,
-            border = BorderStroke(1.dp, CineVaultTheme.colors.accentGold.copy(alpha = 0.7f)),
-            onClick = onAddToList,
+                .fillMaxWidth()
+                .height(28.dp),
+            shape = RoundedCornerShape(16.dp),
+            color = buttonColor,
+            border = BorderStroke(1.dp, borderColor),
+            onClick = {
+                if (!isAdded) {
+                    isAdded = true
+                    onAddToList()
+                }
+            },
         ) {
             Row(
-                modifier = Modifier.padding(horizontal = 16.dp),
+                modifier = Modifier.fillMaxSize(),
                 horizontalArrangement = Arrangement.Center,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text(
-                    "+",
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = CineVaultTheme.colors.accentGold,
-                )
-                Spacer(Modifier.width(4.dp))
-                Text(
-                    "List",
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = CineVaultTheme.colors.accentGold,
-                )
+                AnimatedContent(
+                    targetState = isAdded,
+                    transitionSpec = {
+                        (fadeIn(tween(200)) + scaleIn(tween(200), initialScale = 0.7f))
+                            .togetherWith(fadeOut(tween(150)) + scaleOut(tween(150), targetScale = 0.7f))
+                    },
+                    label = "addIcon"
+                ) { added ->
+                    if (added) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Center,
+                        ) {
+                            Text(
+                                "✓",
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = CineVaultTheme.colors.accentGold,
+                            )
+                            Spacer(Modifier.width(3.dp))
+                            Text(
+                                "Added",
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = CineVaultTheme.colors.accentGold,
+                            )
+                        }
+                    } else {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Center,
+                        ) {
+                            Text(
+                                "+",
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = CineVaultTheme.colors.accentGold,
+                            )
+                            Spacer(Modifier.width(3.dp))
+                            Text(
+                                "List",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = CineVaultTheme.colors.accentGold,
+                            )
+                        }
+                    }
+                }
             }
         }
     }
