@@ -662,8 +662,8 @@ function SeasonRow({
       )}
 
       {/* Edit Episode Modal */}
-      {showEditEpisode && episodes?.some((e) => e._id === showEditEpisode._id) && (
-        <EditEpisodeForm episode={showEditEpisode} seasonId={season._id} onClose={() => setShowEditEpisode(null)} />
+      {showEditEpisode && (
+        <EditEpisodeModal episode={showEditEpisode} seasonId={season._id} onClose={() => setShowEditEpisode(null)} />
       )}
     </div>
   );
@@ -832,9 +832,9 @@ function BulkAddForm({ seasonId, onClose }: { seasonId: string; onClose: () => v
   );
 }
 
-// ── Edit Episode Form ──
+// ── Edit Episode Modal ──
 
-function EditEpisodeForm({ episode, seasonId, onClose }: { episode: Episode; seasonId: string; onClose: () => void }) {
+function EditEpisodeModal({ episode, seasonId, onClose }: { episode: Episode; seasonId: string; onClose: () => void }) {
   const queryClient = useQueryClient();
   const [form, setForm] = useState({
     title: episode.title,
@@ -845,16 +845,26 @@ function EditEpisodeForm({ episode, seasonId, onClose }: { episode: Episode; sea
   });
 
   const update = useMutation({
-    mutationFn: () =>
-      api.patch(`/series/episodes/${episode._id}`, {
+    mutationFn: () => {
+      // Build the update payload — only include streamingSources if user actually changed the URL
+      const payload: any = {
         title: form.title,
         synopsis: form.synopsis || undefined,
         duration: form.duration ? Number(form.duration) : undefined,
         thumbnailUrl: form.thumbnailUrl || undefined,
-        streamingSources: form.streamingUrl
-          ? [{ quality: 'original', url: form.streamingUrl, label: 'Original' }]
-          : episode.streamingSources,
-      }),
+      };
+
+      const originalUrl = episode.streamingSources?.[0]?.url || '';
+      if (form.streamingUrl !== originalUrl) {
+        // User changed the URL — update sources
+        if (form.streamingUrl) {
+          payload.streamingSources = [{ quality: 'original', url: form.streamingUrl, label: 'Original' }];
+        }
+      }
+      // If URL unchanged, don't send streamingSources at all — preserves existing HLS sources
+
+      return api.patch(`/series/episodes/${episode._id}`, payload);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['episodes', seasonId] });
       toast.success('Episode updated');
@@ -864,56 +874,96 @@ function EditEpisodeForm({ episode, seasonId, onClose }: { episode: Episode; sea
   });
 
   return (
-    <div className="px-6 py-4 bg-background border-b border-border space-y-3">
-      <div className="flex items-center justify-between">
-        <h5 className="font-medium text-sm">Edit Episode {episode.episodeNumber}</h5>
-        <button onClick={onClose} className="text-text-muted hover:text-text-primary"><X size={16} /></button>
-      </div>
-      <div className="grid grid-cols-2 gap-3">
-        <input
-          value={form.title}
-          onChange={(e) => setForm({ ...form, title: e.target.value })}
-          placeholder="Title"
-          className="bg-surface border border-border rounded-lg px-3 py-2 text-sm"
-        />
-        <input
-          value={form.duration}
-          onChange={(e) => setForm({ ...form, duration: e.target.value })}
-          placeholder="Duration (min)"
-          type="number"
-          className="bg-surface border border-border rounded-lg px-3 py-2 text-sm"
-        />
-      </div>
-      <input
-        value={form.streamingUrl}
-        onChange={(e) => setForm({ ...form, streamingUrl: e.target.value })}
-        placeholder="Video URL (Google Drive / Direct)"
-        className="w-full bg-surface border border-border rounded-lg px-3 py-2 text-sm font-mono"
-      />
-      {form.streamingUrl.includes('drive.google.com') && (
-        <p className="text-xs text-green-400">✓ Google Drive link detected — will be auto-converted to streaming URL on save</p>
-      )}
-      <input
-        value={form.thumbnailUrl}
-        onChange={(e) => setForm({ ...form, thumbnailUrl: e.target.value })}
-        placeholder="Thumbnail URL (optional)"
-        className="w-full bg-surface border border-border rounded-lg px-3 py-2 text-sm"
-      />
-      <input
-        value={form.synopsis}
-        onChange={(e) => setForm({ ...form, synopsis: e.target.value })}
-        placeholder="Synopsis (optional)"
-        className="w-full bg-surface border border-border rounded-lg px-3 py-2 text-sm"
-      />
-      <div className="flex justify-end gap-2">
-        <button onClick={onClose} className="px-3 py-1.5 text-sm text-text-secondary hover:text-text-primary">Cancel</button>
-        <button
-          onClick={() => update.mutate()}
-          disabled={update.isPending}
-          className="bg-gold text-black px-4 py-1.5 rounded-lg text-sm font-medium hover:bg-gold-light disabled:opacity-50"
-        >
-          {update.isPending ? 'Saving...' : 'Save'}
-        </button>
+    <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="bg-surface border border-border rounded-2xl w-full max-w-lg p-6 space-y-4" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between">
+          <h3 className="font-semibold text-lg">Edit Episode {episode.episodeNumber}</h3>
+          <button onClick={onClose} className="text-text-muted hover:text-text-primary"><X size={18} /></button>
+        </div>
+        <div className="space-y-3">
+          <div>
+            <label className="text-xs text-text-muted font-medium mb-1 block">Episode Title</label>
+            <input
+              value={form.title}
+              onChange={(e) => setForm({ ...form, title: e.target.value })}
+              placeholder="Title"
+              className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-gold"
+              autoFocus
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-xs text-text-muted font-medium mb-1 block">Duration (min)</label>
+              <input
+                value={form.duration}
+                onChange={(e) => setForm({ ...form, duration: e.target.value })}
+                placeholder="Duration (min)"
+                type="number"
+                className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-gold"
+              />
+            </div>
+            <div>
+              <label className="text-xs text-text-muted font-medium mb-1 block">
+                Sources
+                {episode.streamingSources?.length > 0 && (
+                  <span className="ml-1 text-green-400">({episode.streamingSources.length} active)</span>
+                )}
+              </label>
+              <div className="px-3 py-2 text-xs text-text-muted bg-background border border-border rounded-lg">
+                {episode.streamingSources?.some((s) => s.url?.includes('playlist.m3u8'))
+                  ? '✓ HLS (Bunny Stream)'
+                  : episode.streamingSources?.length > 0
+                    ? '✓ Direct URL'
+                    : 'No sources'}
+              </div>
+            </div>
+          </div>
+          <div>
+            <label className="text-xs text-text-muted font-medium mb-1 block">
+              Video URL
+              {form.streamingUrl !== (episode.streamingSources?.[0]?.url || '') && (
+                <span className="ml-1 text-yellow-400">(modified — will replace existing sources)</span>
+              )}
+            </label>
+            <input
+              value={form.streamingUrl}
+              onChange={(e) => setForm({ ...form, streamingUrl: e.target.value })}
+              placeholder="Video URL (Google Drive / Direct)"
+              className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:border-gold"
+            />
+            {form.streamingUrl.includes('drive.google.com') && (
+              <p className="text-xs text-green-400 mt-1">✓ Google Drive link detected — will be auto-converted</p>
+            )}
+          </div>
+          <div>
+            <label className="text-xs text-text-muted font-medium mb-1 block">Thumbnail URL</label>
+            <input
+              value={form.thumbnailUrl}
+              onChange={(e) => setForm({ ...form, thumbnailUrl: e.target.value })}
+              placeholder="Thumbnail URL (optional)"
+              className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-gold"
+            />
+          </div>
+          <div>
+            <label className="text-xs text-text-muted font-medium mb-1 block">Synopsis</label>
+            <input
+              value={form.synopsis}
+              onChange={(e) => setForm({ ...form, synopsis: e.target.value })}
+              placeholder="Synopsis (optional)"
+              className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-gold"
+            />
+          </div>
+        </div>
+        <div className="flex gap-2 justify-end pt-2 border-t border-border">
+          <button onClick={onClose} className="px-4 py-2 text-sm text-text-secondary hover:text-text-primary border border-border rounded-lg">Cancel</button>
+          <button
+            onClick={() => update.mutate()}
+            disabled={update.isPending || !form.title.trim()}
+            className="px-4 py-2 text-sm bg-gold text-background font-medium rounded-lg hover:bg-gold-light disabled:opacity-50"
+          >
+            {update.isPending ? 'Saving...' : 'Save Changes'}
+          </button>
+        </div>
       </div>
     </div>
   );
