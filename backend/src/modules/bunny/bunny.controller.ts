@@ -215,8 +215,8 @@ export class BunnyController {
   @UseGuards(AuthGuard('jwt'), RolesGuard)
   @Roles('admin')
   async importMovieFromBunnyCollection(
-    @Body() body: { videoId: string; collectionId: string; title?: string },
+    @Body() body: { videoId: string; collectionId: string; title?: string; existingMovieId?: string },
   ) {
-    return this.bunnyService.importMovieFromBunnyVideo(body.videoId, body.title);
+    return this.bunnyService.importMovieFromBunnyVideo(body.videoId, body.title, body.existingMovieId);
   }
 }

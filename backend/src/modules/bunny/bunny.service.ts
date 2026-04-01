@@ -504,6 +504,7 @@ export class BunnyService {
   async importMovieFromBunnyVideo(
     videoId: string,
     titleOverride?: string,
+    existingMovieId?: string,
   ): Promise<{ movieId: string; title: string; hlsUrl: string; status: string }> {
     // Fetch video details from Bunny
     const video = await this.getVideoStatus(videoId);
@@ -513,6 +514,20 @@ export class BunnyService {
     const hlsLink = this.hlsUrl(video.guid);
     const thumb = this.thumbnailUrl(video.guid);
     const sources = this.buildStreamingSources(video.guid, video.availableResolutions || '');
+
+    // If an existing movie ID is provided (from the edit page), update that movie directly
+    if (existingMovieId) {
+      const movie = await this.movieModel.findById(existingMovieId);
+      if (!movie) throw new Error('Movie not found');
+      movie.streamingSources = sources;
+      movie.hlsUrl = hlsLink;
+      movie.hlsStatus = video.status === 4 ? 'completed' : 'processing';
+      if (!movie.posterUrl || movie.posterUrl === '') movie.posterUrl = thumb;
+      if (!movie.bannerUrl || movie.bannerUrl === '') movie.bannerUrl = thumb;
+      await movie.save();
+      this.logger.log(`[Bunny Movie Import] Linked video to existing movie "${movie.title}" (${movie._id})`);
+      return { movieId: movie._id.toString(), title: movie.title, hlsUrl: hlsLink, status: 'linked' };
+    }
 
     // Check if a movie with this HLS URL already exists
     const existing = await this.movieModel.findOne({ hlsUrl: hlsLink });

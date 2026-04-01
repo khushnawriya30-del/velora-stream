@@ -87,6 +87,27 @@ export default function MoviesPage() {
         </div>
       </div>
 
+      {/* Bunny Import Banner */}
+      <div
+        onClick={() => setShowBunnyImport(true)}
+        className="bg-gradient-to-r from-purple-600/20 via-purple-500/10 to-transparent border border-purple-500/30 rounded-2xl p-5 flex items-center gap-4 cursor-pointer hover:border-purple-400/50 hover:shadow-lg hover:shadow-purple-500/10 transition-all group"
+      >
+        <div className="w-12 h-12 rounded-xl bg-purple-500/20 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
+          <Cloud size={24} className="text-purple-400" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <h3 className="text-sm font-semibold text-purple-300 group-hover:text-purple-200 transition-colors">
+            Import from Bunny Stream
+          </h3>
+          <p className="text-xs text-text-muted mt-0.5">
+            Import already-uploaded movies from your Bunny.net collections with adaptive HLS streaming
+          </p>
+        </div>
+        <div className="flex-shrink-0 px-4 py-2 rounded-lg bg-purple-600/30 text-purple-300 text-xs font-medium group-hover:bg-purple-600/50 transition-colors">
+          Browse Collections &rarr;
+        </div>
+      </div>
+
       {/* Filters */}
       <div className="flex gap-3 flex-wrap">
         <select
@@ -450,6 +471,7 @@ function BunnyMovieImportModal({ onClose }: { onClose: () => void }) {
   const [selectedCollection, setSelectedCollection] = useState('');
   const [selectedVideo, setSelectedVideo] = useState<BunnyVideo | null>(null);
   const [customTitle, setCustomTitle] = useState('');
+  const [videoSearch, setVideoSearch] = useState('');
 
   // Fetch collections
   const { data: collections, isLoading: loadingCollections } = useQuery({
@@ -550,8 +572,19 @@ function BunnyMovieImportModal({ onClose }: { onClose: () => void }) {
               {loadingVideos ? (
                 <div className="flex items-center gap-2 text-sm text-text-muted py-2"><Loader2 size={14} className="animate-spin" /> Loading videos...</div>
               ) : videos?.items && videos.items.length > 0 ? (
-                <div className="space-y-1.5 max-h-60 overflow-y-auto pr-1">
-                  {videos.items.map((video) => (
+                <>
+                  {videos.items.length > 3 && (
+                    <input
+                      value={videoSearch}
+                      onChange={(e) => setVideoSearch(e.target.value)}
+                      placeholder="Search videos..."
+                      className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-purple-400"
+                    />
+                  )}
+                  <div className="space-y-1.5 max-h-60 overflow-y-auto pr-1">
+                    {videos.items
+                      .filter((v) => !videoSearch || v.title.toLowerCase().includes(videoSearch.toLowerCase()))
+                      .map((video) => (
                     <div
                       key={video.guid}
                       onClick={() => { setSelectedVideo(video); setCustomTitle(video.title); }}
@@ -589,7 +622,8 @@ function BunnyMovieImportModal({ onClose }: { onClose: () => void }) {
                       )}
                     </div>
                   ))}
-                </div>
+                  </div>
+                </>
               ) : (
                 <p className="text-sm text-text-muted py-4 text-center">No videos in this collection</p>
               )}
