@@ -15,6 +15,12 @@ export declare class SeriesService {
     createEpisode(data: Partial<Episode>): Promise<EpisodeDocument>;
     createBulkEpisodes(seasonId: string, episodes: Partial<Episode>[]): Promise<EpisodeDocument[]>;
     updateEpisode(id: string, data: Partial<Episode>): Promise<EpisodeDocument>;
+    reorderEpisodes(seasonId: string, order: {
+        episodeId: string;
+        episodeNumber: number;
+    }[]): Promise<{
+        updated: number;
+    }>;
     deleteEpisode(id: string): Promise<void>;
     generateThumbnailsForSeason(seasonId: string): Promise<{
         updated: number;

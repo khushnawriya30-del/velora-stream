@@ -18,6 +18,14 @@ export declare class SeriesController {
         episodes: any[];
     }): Promise<import("../../schemas/series.schema").EpisodeDocument[]>;
     updateEpisode(id: string, body: any): Promise<import("../../schemas/series.schema").EpisodeDocument>;
+    reorderEpisodes(seasonId: string, body: {
+        order: {
+            episodeId: string;
+            episodeNumber: number;
+        }[];
+    }): Promise<{
+        updated: number;
+    }>;
     deleteEpisode(id: string): Promise<{
         message: string;
     }>;

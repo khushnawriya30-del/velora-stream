@@ -1,10 +1,13 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Film, Plus, ChevronDown, ChevronRight, Trash2, Pencil, Upload, X, Layers, FolderInput, Loader2, Check, AlertTriangle, Cloud, RefreshCw, Zap, Download } from 'lucide-react';
+import { Film, Plus, ChevronDown, ChevronRight, Trash2, Pencil, Upload, X, Layers, FolderInput, Loader2, Check, AlertTriangle, Cloud, RefreshCw, Zap, Download, GripVertical } from 'lucide-react';
 import { useState, useMemo, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../lib/api';
 import type { Movie } from '../types';
 import toast from 'react-hot-toast';
+import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core';
+import { SortableContext, verticalListSortingStrategy, useSortable, arrayMove } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 interface Season {
   _id: string;
@@ -425,10 +428,52 @@ function SeasonRow({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['episodes', season._id] });
       queryClient.invalidateQueries({ queryKey: ['seasons'] });
+      setHasReordered(false);
       toast.success('Episode deleted');
     },
     onError: () => toast.error('Failed to delete episode'),
   });
+
+  // ── Drag-and-drop reorder state ──
+  const [localEpisodes, setLocalEpisodes] = useState<Episode[]>([]);
+  const [hasReordered, setHasReordered] = useState(false);
+  const displayEpisodes = hasReordered ? localEpisodes : (episodes ?? []);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
+  );
+
+  const reorderMutation = useMutation({
+    mutationFn: (order: { episodeId: string; episodeNumber: number }[]) =>
+      api.patch(`/series/seasons/${season._id}/episodes/reorder`, { order }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['episodes', season._id] });
+      setHasReordered(false);
+      toast.success('Episode order saved');
+    },
+    onError: () => toast.error('Failed to save episode order'),
+  });
+
+  function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    const items = hasReordered ? localEpisodes : (episodes ?? []);
+    const oldIndex = items.findIndex((e) => e._id === active.id);
+    const newIndex = items.findIndex((e) => e._id === over.id);
+    if (oldIndex === -1 || newIndex === -1) return;
+
+    setLocalEpisodes(arrayMove(items, oldIndex, newIndex));
+    setHasReordered(true);
+  }
+
+  function handleSaveOrder() {
+    const order = displayEpisodes.map((ep, i) => ({
+      episodeId: ep._id,
+      episodeNumber: i + 1,
+    }));
+    reorderMutation.mutate(order);
+  }
 
   return (
     <div className="border-b border-border last:border-b-0">
@@ -470,73 +515,47 @@ function SeasonRow({
       )}
 
       {/* Episodes List */}
-      {isExpanded && episodes && (
+      {isExpanded && (episodes || hasReordered) && (
         <div className="px-6 pb-3">
-          {episodes.length === 0 ? (
+          {displayEpisodes.length === 0 ? (
             <p className="text-sm text-text-muted py-4 text-center">No episodes yet. Use &quot;Bulk Add&quot; to add episodes.</p>
           ) : (
-            <div className="space-y-1">
-              {episodes.map((ep) => (
-                <div
-                  key={ep._id}
-                  className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-surface-light/40 group transition-colors"
-                >
-                  {/* Thumbnail */}
-                  <div className="w-24 h-14 rounded-md overflow-hidden bg-surface-light flex-shrink-0 relative">
-                    {ep.thumbnailUrl ? (
-                      <img src={ep.thumbnailUrl} alt={ep.title} className="w-full h-full object-cover" />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-text-muted">
-                        <Film size={20} />
-                      </div>
-                    )}
-                    <div className="absolute bottom-1 left-1 bg-black/70 text-[10px] px-1 rounded">
-                      E{String(ep.episodeNumber).padStart(2, '0')}
-                    </div>
-                  </div>
-
-                  {/* Info */}
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">{ep.title}</p>
-                    <p className="text-xs text-text-muted truncate">
-                      {ep.duration ? `${ep.duration} min` : 'No duration'}
-                      {ep.streamingSources?.length > 0 && ` · ${ep.streamingSources.length} source${ep.streamingSources.length > 1 ? 's' : ''}`}
-                    </p>
-                  </div>
-
-                  {/* URL indicator */}
-                  {ep.streamingSources?.length > 0 && (
-                    ep.streamingSources.some((s) => s.url?.includes('playlist.m3u8')) ? (
-                      <span className="text-[10px] text-purple-400 bg-purple-400/10 px-2 py-0.5 rounded flex items-center gap-1">
-                        <Zap size={10} /> HLS
-                      </span>
-                    ) : (
-                      <span className="text-[10px] text-green-400 bg-green-400/10 px-2 py-0.5 rounded">Has Video</span>
-                    )
-                  )}
-
-                  {/* Actions */}
-                  <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
-                    <button
-                      onClick={() => setShowEditEpisode(ep)}
-                      className="p-1 text-text-secondary hover:text-text-primary"
-                    >
-                      <Pencil size={14} />
-                    </button>
-                    <button
-                      onClick={() => {
-                        if (confirm(`Delete Episode ${ep.episodeNumber}?`)) {
-                          deleteEpisode.mutate(ep._id);
-                        }
-                      }}
-                      className="p-1 text-red-400 hover:text-red-300"
-                    >
-                      <Trash2 size={14} />
-                    </button>
-                  </div>
+            <>
+              {hasReordered && (
+                <div className="flex items-center gap-2 mb-2 py-2">
+                  <button
+                    onClick={handleSaveOrder}
+                    disabled={reorderMutation.isPending}
+                    className="flex items-center gap-1.5 bg-gold text-background px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-gold-light disabled:opacity-50 transition-colors"
+                  >
+                    {reorderMutation.isPending ? <><Loader2 size={14} className="animate-spin" /> Saving...</> : <><Check size={14} /> Save Order</>}
+                  </button>
+                  <button
+                    onClick={() => setHasReordered(false)}
+                    className="px-3 py-1.5 rounded-lg text-sm text-text-secondary hover:text-text-primary border border-border hover:border-text-muted transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <span className="text-xs text-text-muted ml-2">Drag episodes to reorder, then save</span>
                 </div>
-              ))}
-            </div>
+              )}
+              <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                <SortableContext items={displayEpisodes.map((e) => e._id)} strategy={verticalListSortingStrategy}>
+                  <div className="space-y-1">
+                    {displayEpisodes.map((ep) => (
+                      <SortableEpisodeItem
+                        key={ep._id}
+                        episode={ep}
+                        onEdit={() => setShowEditEpisode(ep)}
+                        onDelete={() => {
+                          if (confirm(`Delete Episode ${ep.episodeNumber}?`)) deleteEpisode.mutate(ep._id);
+                        }}
+                      />
+                    ))}
+                  </div>
+                </SortableContext>
+              </DndContext>
+            </>
           )}
         </div>
       )}
@@ -545,6 +564,79 @@ function SeasonRow({
       {showEditEpisode && episodes?.some((e) => e._id === showEditEpisode._id) && (
         <EditEpisodeForm episode={showEditEpisode} seasonId={season._id} onClose={() => setShowEditEpisode(null)} />
       )}
+    </div>
+  );
+}
+
+// ── Sortable Episode Item (drag handle) ──
+
+function SortableEpisodeItem({ episode: ep, onEdit, onDelete }: { episode: Episode; onEdit: () => void; onDelete: () => void }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: ep._id });
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+    zIndex: isDragging ? 10 : undefined,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={`flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-surface-light/40 group transition-colors ${isDragging ? 'bg-surface-light/60 shadow-lg' : ''}`}
+    >
+      {/* Drag Handle */}
+      <button
+        {...attributes}
+        {...listeners}
+        className="cursor-grab active:cursor-grabbing text-text-muted hover:text-text-primary p-1 touch-none"
+      >
+        <GripVertical size={16} />
+      </button>
+
+      {/* Thumbnail */}
+      <div className="w-24 h-14 rounded-md overflow-hidden bg-surface-light flex-shrink-0 relative">
+        {ep.thumbnailUrl ? (
+          <img src={ep.thumbnailUrl} alt={ep.title} className="w-full h-full object-cover" />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center text-text-muted">
+            <Film size={20} />
+          </div>
+        )}
+        <div className="absolute bottom-1 left-1 bg-black/70 text-[10px] px-1 rounded">
+          E{String(ep.episodeNumber).padStart(2, '0')}
+        </div>
+      </div>
+
+      {/* Info */}
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-medium truncate">{ep.title}</p>
+        <p className="text-xs text-text-muted truncate">
+          {ep.duration ? `${ep.duration} min` : 'No duration'}
+          {ep.streamingSources?.length > 0 && ` · ${ep.streamingSources.length} source${ep.streamingSources.length > 1 ? 's' : ''}`}
+        </p>
+      </div>
+
+      {/* URL indicator */}
+      {ep.streamingSources?.length > 0 && (
+        ep.streamingSources.some((s) => s.url?.includes('playlist.m3u8')) ? (
+          <span className="text-[10px] text-purple-400 bg-purple-400/10 px-2 py-0.5 rounded flex items-center gap-1">
+            <Zap size={10} /> HLS
+          </span>
+        ) : (
+          <span className="text-[10px] text-green-400 bg-green-400/10 px-2 py-0.5 rounded">Has Video</span>
+        )
+      )}
+
+      {/* Actions */}
+      <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
+        <button onClick={onEdit} className="p-1 text-text-secondary hover:text-text-primary">
+          <Pencil size={14} />
+        </button>
+        <button onClick={onDelete} className="p-1 text-red-400 hover:text-red-300">
+          <Trash2 size={14} />
+        </button>
+      </div>
     </div>
   );
 }

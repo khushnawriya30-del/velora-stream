@@ -58,6 +58,9 @@ let SeriesController = class SeriesController {
     async updateEpisode(id, body) {
         return this.seriesService.updateEpisode(id, body);
     }
+    async reorderEpisodes(seasonId, body) {
+        return this.seriesService.reorderEpisodes(seasonId, body.order);
+    }
     async deleteEpisode(id) {
         await this.seriesService.deleteEpisode(id);
         return { message: 'Episode deleted' };
@@ -173,6 +176,18 @@ __decorate([
     __metadata("design:paramtypes", [String, Object]),
     __metadata("design:returntype", Promise)
 ], SeriesController.prototype, "updateEpisode", null);
+__decorate([
+    (0, common_1.Patch)('seasons/:seasonId/episodes/reorder'),
+    (0, swagger_1.ApiBearerAuth)(),
+    (0, common_1.UseGuards)((0, passport_1.AuthGuard)('jwt'), roles_guard_1.RolesGuard),
+    (0, roles_decorator_1.Roles)('admin', 'content_manager'),
+    (0, swagger_1.ApiOperation)({ summary: 'Reorder episodes in a season (Admin)' }),
+    __param(0, (0, common_1.Param)('seasonId')),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:returntype", Promise)
+], SeriesController.prototype, "reorderEpisodes", null);
 __decorate([
     (0, common_1.Delete)('episodes/:id'),
     (0, swagger_1.ApiBearerAuth)(),

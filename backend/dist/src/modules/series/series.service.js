@@ -146,6 +146,16 @@ let SeriesService = class SeriesService {
             throw new common_1.NotFoundException('Episode not found');
         return episode;
     }
+    async reorderEpisodes(seasonId, order) {
+        const ops = order.map((item) => ({
+            updateOne: {
+                filter: { _id: new mongoose_2.Types.ObjectId(item.episodeId) },
+                update: { $set: { episodeNumber: item.episodeNumber } },
+            },
+        }));
+        const result = await this.episodeModel.bulkWrite(ops);
+        return { updated: result.modifiedCount };
+    }
     async deleteEpisode(id) {
         const episode = await this.episodeModel.findByIdAndDelete(id);
         if (episode) {

@@ -165,6 +165,17 @@ export class SeriesService {
     return episode;
   }
 
+  async reorderEpisodes(seasonId: string, order: { episodeId: string; episodeNumber: number }[]): Promise<{ updated: number }> {
+    const ops = order.map((item) => ({
+      updateOne: {
+        filter: { _id: new Types.ObjectId(item.episodeId) },
+        update: { $set: { episodeNumber: item.episodeNumber } },
+      },
+    }));
+    const result = await this.episodeModel.bulkWrite(ops);
+    return { updated: result.modifiedCount };
+  }
+
   async deleteEpisode(id: string): Promise<void> {
     const episode = await this.episodeModel.findByIdAndDelete(id);
     if (episode) {

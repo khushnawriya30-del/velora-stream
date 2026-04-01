@@ -97,6 +97,18 @@ export class SeriesController {
     return this.seriesService.updateEpisode(id, body);
   }
 
+  @Patch('seasons/:seasonId/episodes/reorder')
+  @ApiBearerAuth()
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles('admin', 'content_manager')
+  @ApiOperation({ summary: 'Reorder episodes in a season (Admin)' })
+  async reorderEpisodes(
+    @Param('seasonId') seasonId: string,
+    @Body() body: { order: { episodeId: string; episodeNumber: number }[] },
+  ) {
+    return this.seriesService.reorderEpisodes(seasonId, body.order);
+  }
+
   @Delete('episodes/:id')
   @ApiBearerAuth()
   @UseGuards(AuthGuard('jwt'), RolesGuard)
