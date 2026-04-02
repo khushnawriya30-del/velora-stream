@@ -150,6 +150,18 @@ export class AuthController {
     return { accessToken: result.accessToken, refreshToken: result.refreshToken, user: result.user };
   }
 
+  @Post('phone/firebase-verify')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Verify Firebase phone auth token and login/register' })
+  async firebasePhoneVerify(
+    @Body() body: { idToken: string },
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const result = await this.authService.verifyFirebasePhoneToken(body.idToken);
+    this.setRefreshTokenCookie(res, result.refreshToken);
+    return { accessToken: result.accessToken, refreshToken: result.refreshToken, user: result.user };
+  }
+
   @Post('logout')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Logout and clear refresh token' })

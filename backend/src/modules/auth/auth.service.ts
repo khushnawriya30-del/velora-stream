@@ -366,6 +366,55 @@ export class AuthService {
   // ── Phone OTP Authentication ──────────────────────────────────────────────
 
   /**
+   * Verify a Firebase Phone Auth ID token and return JWT tokens.
+   * Firebase handles OTP sending — no SMS provider needed.
+   */
+  async verifyFirebasePhoneToken(
+    idToken: string,
+  ): Promise<{ accessToken: string; refreshToken: string; user: any }> {
+    if (!admin.apps.length) {
+      throw new BadRequestException('Firebase Admin not initialized on server');
+    }
+
+    let decodedToken: admin.auth.DecodedIdToken;
+    try {
+      decodedToken = await admin.auth().verifyIdToken(idToken);
+    } catch {
+      throw new UnauthorizedException('Invalid or expired Firebase token');
+    }
+
+    const phone = decodedToken.phone_number;
+    if (!phone) {
+      throw new BadRequestException('Firebase token does not contain a phone number');
+    }
+
+    // Find or create user
+    let user = await this.userModel.findOne({ phone });
+    if (!user) {
+      const lastFour = phone.slice(-4);
+      const numericPhone = phone.replace('+', '');
+      const generatedEmail = `ph${numericPhone}@cinevault.app`;
+      user = await this.userModel.create({
+        name: `User ${lastFour}`,
+        email: generatedEmail,
+        phone,
+        authProvider: AuthProvider.PHONE,
+        isEmailVerified: false,
+      });
+    }
+
+    if (user.isSuspended) {
+      throw new UnauthorizedException('Your account has been suspended');
+    }
+
+    user.lastActiveAt = new Date();
+    await user.save();
+
+    const tokens = await this.generateTokens(user);
+    return { ...tokens, user: this.sanitizeUser(user) };
+  }
+
+  /**
    * Send an OTP to an Indian mobile number (+91).
    * Uses Fast2SMS API if FAST2SMS_API_KEY is set; otherwise logs to console.
    */
