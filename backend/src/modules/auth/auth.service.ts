@@ -369,7 +369,7 @@ export class AuthService {
    * Send an OTP to an Indian mobile number (+91).
    * Uses Fast2SMS API if FAST2SMS_API_KEY is set; otherwise logs to console.
    */
-  async sendPhoneOtp(phone: string): Promise<{ message: string }> {
+  async sendPhoneOtp(phone: string): Promise<{ message: string; devOtp?: string }> {
     const cleaned = phone.replace(/\s/g, '');
     if (!/^\+91[6-9]\d{9}$/.test(cleaned)) {
       throw new BadRequestException('Please enter a valid Indian mobile number (+91 followed by 10 digits starting with 6-9)');
@@ -387,7 +387,12 @@ export class AuthService {
       expiresAt: new Date(Date.now() + 5 * 60 * 1000), // 5-minute expiry
     });
 
-    await this.sendSmsOtp(cleaned, otp);
+    const smsSent = await this.sendSmsOtp(cleaned, otp);
+
+    // If SMS could not be sent (no API key), return OTP in response for dev/testing
+    if (!smsSent) {
+      return { message: 'OTP generated (SMS not configured — use devOtp to verify)', devOtp: otp };
+    }
     return { message: 'OTP sent successfully to your mobile number' };
   }
 
@@ -447,14 +452,14 @@ export class AuthService {
     return { ...tokens, user: this.sanitizeUser(user) };
   }
 
-  /** Send OTP via Fast2SMS (India). Falls back to console log if API key is missing. */
-  private async sendSmsOtp(phone: string, otp: string): Promise<void> {
+  /** Send OTP via Fast2SMS (India). Returns true if sent, false if API key missing. */
+  private async sendSmsOtp(phone: string, otp: string): Promise<boolean> {
     const apiKey = this.configService.get<string>('FAST2SMS_API_KEY', '');
     const phoneNumber = phone.replace('+91', ''); // Fast2SMS expects 10-digit number without country code
 
     if (!apiKey) {
       console.warn(`[AuthService] FAST2SMS_API_KEY not set. OTP for ${phone}: ${otp}`);
-      return;
+      return false;
     }
 
     try {
@@ -463,9 +468,12 @@ export class AuthService {
       const data = await response.json() as any;
       if (!data.return) {
         console.error('[AuthService] Fast2SMS error:', JSON.stringify(data));
+        return false;
       }
+      return true;
     } catch (err) {
       console.error('[AuthService] Failed to send SMS OTP:', err);
+      return false;
     }
   }
 
