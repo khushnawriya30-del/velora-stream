@@ -1,5 +1,8 @@
 package com.cinevault.app.ui.screen
 
+import android.app.Activity
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -16,7 +19,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -25,9 +31,13 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.cinevault.app.R
 import com.cinevault.app.ui.components.GoldButton
 import com.cinevault.app.ui.theme.CineVaultTheme
 import com.cinevault.app.ui.viewmodel.AuthViewModel
+import com.google.android.gms.auth.api.signin.GoogleSignIn
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions
+import com.google.android.gms.common.api.ApiException
 
 @Composable
 fun LoginScreen(
@@ -38,10 +48,36 @@ fun LoginScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val focusManager = LocalFocusManager.current
+    val context = LocalContext.current
 
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
+
+    // Google Sign-In setup
+    val webClientId = stringResource(R.string.google_web_client_id)
+    val googleSignInClient = remember(webClientId) {
+        val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+            .requestIdToken(webClientId)
+            .requestEmail()
+            .build()
+        GoogleSignIn.getClient(context, gso)
+    }
+    val googleLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult(),
+    ) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            try {
+                val account = GoogleSignIn.getSignedInAccountFromIntent(result.data)
+                    .getResult(ApiException::class.java)
+                account.idToken?.let { idToken ->
+                    viewModel.googleLogin(idToken)
+                }
+            } catch (e: ApiException) {
+                viewModel.onGoogleSignInError("Google Sign-In failed: ${e.statusCode}")
+            }
+        }
+    }
 
     LaunchedEffect(uiState.loginSuccess) {
         if (uiState.loginSuccess) {
@@ -177,6 +213,59 @@ fun LoginScreen(
                         "Sign Up",
                         style = CineVaultTheme.typography.body,
                         color = CineVaultTheme.colors.accentGold,
+                    )
+                }
+            }
+
+            Spacer(Modifier.height(24.dp))
+
+            // Divider
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                HorizontalDivider(modifier = Modifier.weight(1f), color = CineVaultTheme.colors.textSecondary.copy(alpha = 0.3f))
+                Text(
+                    "  OR  ",
+                    style = CineVaultTheme.typography.label,
+                    color = CineVaultTheme.colors.textSecondary,
+                )
+                HorizontalDivider(modifier = Modifier.weight(1f), color = CineVaultTheme.colors.textSecondary.copy(alpha = 0.3f))
+            }
+
+            Spacer(Modifier.height(16.dp))
+
+            // Google Sign-In button
+            Button(
+                onClick = { googleLauncher.launch(googleSignInClient.signInIntent) },
+                enabled = !uiState.isLoading,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(52.dp),
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color.White,
+                    contentColor = Color(0xFF1F1F1F),
+                ),
+                elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp),
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center,
+                ) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.ic_google),
+                        contentDescription = "Google",
+                        tint = Color.Unspecified,
+                        modifier = Modifier.size(20.dp),
+                    )
+                    Spacer(Modifier.width(12.dp))
+                    Text(
+                        "Continue with Google",
+                        style = CineVaultTheme.typography.body.copy(
+                            fontSize = 15.sp,
+                        ),
+                        color = Color(0xFF1F1F1F),
                     )
                 }
             }

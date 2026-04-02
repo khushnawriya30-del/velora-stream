@@ -17,6 +17,7 @@ data class RefreshResponse(
 data class ForgotPasswordRequest(val email: String)
 data class ResetPasswordRequest(val token: String, val password: String)
 data class MessageResponse(val message: String)
+data class GoogleTokenRequest(val idToken: String)
 
 // App Version (for auto-update)
 data class AppVersionResponse(

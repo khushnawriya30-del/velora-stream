@@ -37,6 +37,7 @@ import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -191,6 +192,20 @@ fun HomeScreen(
                                         onMovieClick = onMovieClick,
                                         onAddToList = { movieId -> onAddToWatchlist?.invoke(movieId) ?: viewModel.addToWatchlist(movieId) },
                                         onRemoveFromList = { movieId -> viewModel.removeFromWatchlist(movieId) },
+                                    )
+                                } else if (section.type == "large_card" || section.cardSize == "large") {
+                                    HorizontalMovieRow(
+                                        movies = section.items,
+                                        onMovieClick = onMovieClick,
+                                        cardWidth = 170.dp,
+                                        cardSpacing = 14.dp,
+                                    )
+                                } else if (section.cardSize == "medium") {
+                                    HorizontalMovieRow(
+                                        movies = section.items,
+                                        onMovieClick = onMovieClick,
+                                        cardWidth = 140.dp,
+                                        cardSpacing = 13.dp,
                                     )
                                 } else {
                                     HorizontalMovieRow(
@@ -910,15 +925,18 @@ fun PremiumSectionHeader(
 fun HorizontalMovieRow(
     movies: List<MovieDto>,
     onMovieClick: (String) -> Unit,
+    cardWidth: Dp = 115.dp,
+    cardSpacing: Dp = 12.dp,
 ) {
     LazyRow(
         contentPadding = PaddingValues(horizontal = 20.dp),
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
+        horizontalArrangement = Arrangement.spacedBy(cardSpacing)
     ) {
         items(movies) { movie ->
             PremiumMovieCard(
                 movie = movie,
-                onClick = { onMovieClick(movie.id) }
+                onClick = { onMovieClick(movie.id) },
+                cardWidth = cardWidth,
             )
         }
     }
@@ -932,10 +950,11 @@ fun HorizontalMovieRow(
 fun PremiumMovieCard(
     movie: MovieDto,
     onClick: () -> Unit,
+    cardWidth: Dp = 115.dp,
 ) {
     Column(
         modifier = Modifier
-            .width(115.dp)
+            .width(cardWidth)
             .clickable(onClick = onClick)
     ) {
         Box(

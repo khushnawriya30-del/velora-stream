@@ -62,6 +62,18 @@ export class AuthController {
     return { accessToken: result.accessToken, refreshToken: result.refreshToken, user: result.user };
   }
 
+  @Post('google/mobile')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Verify Google ID token from Android / iOS and return JWT' })
+  async googleMobile(
+    @Body() body: { idToken: string },
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const result = await this.authService.googleVerifyIdToken(body.idToken);
+    this.setRefreshTokenCookie(res, result.refreshToken);
+    return { accessToken: result.accessToken, refreshToken: result.refreshToken, user: result.user };
+  }
+
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Refresh access token using refresh token (cookie or body)' })

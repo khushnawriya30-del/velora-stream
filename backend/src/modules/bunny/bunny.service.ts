@@ -1342,7 +1342,7 @@ export class BunnyService {
     ];
     if (availableResolutions) {
       const resolutions = availableResolutions.split(',').map((r) => r.trim()).filter(Boolean);
-      const resPriority: Record<string, number> = { '1080p': 1, '720p': 2, '480p': 3, '360p': 4, '240p': 5 };
+      const resPriority: Record<string, number> = { '2160p': 0, '1440p': 1, '1080p': 2, '720p': 3, '480p': 4, '360p': 5, '240p': 6 };
       resolutions.sort((a, b) => (resPriority[a] || 99) - (resPriority[b] || 99));
       for (const res of resolutions) {
         sources.push({

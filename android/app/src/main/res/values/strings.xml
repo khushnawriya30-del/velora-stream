@@ -1,4 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">VELORA</string>
+    <!-- Replace with your actual Web Client ID from Firebase Console → Authentication → Sign-in methods → Google → Web SDK configuration -->
+    <string name="google_web_client_id">YOUR_WEB_CLIENT_ID.apps.googleusercontent.com</string>
 </resources>

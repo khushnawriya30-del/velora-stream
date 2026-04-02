@@ -229,7 +229,7 @@ class PlayerViewModel @Inject constructor(
                 Log.d("CineVaultPlayer", "Using episode source URL: ${streamUrl.take(150)}, fallbacks: ${fallbacks.size}")
                 if (streamUrl.startsWith("http://") || streamUrl.startsWith("https://")) {
                     val isHls = streamUrl.contains(".m3u8", ignoreCase = true)
-                    val qualities = if (isHls) listOf("auto", "1080p", "720p", "480p", "360p")
+                    val qualities = if (isHls) listOf("auto")
                         else listOf(source?.quality ?: "Original")
                     _uiState.update { it.copy(
                         isLoading = false,
@@ -247,7 +247,7 @@ class PlayerViewModel @Inject constructor(
             // Prefer HLS URL for adaptive streaming (auto quality based on internet speed)
             val hlsUrl = movie?.hlsUrl
             if (!hlsUrl.isNullOrBlank()) {
-                val qualities = listOf("auto", "1080p", "720p", "480p", "360p")
+                val qualities = listOf("auto")
                 _uiState.update { it.copy(
                     isLoading = false,
                     streamingUrl = hlsUrl,
@@ -504,6 +504,16 @@ class PlayerViewModel @Inject constructor(
 
     fun toggleControls() {
         _uiState.update { it.copy(showControls = !it.showControls) }
+    }
+
+    fun updateAvailableQualities(detectedQualities: List<String>) {
+        val current = _uiState.value.availableQualities
+        if (current.size <= 1 && detectedQualities.isNotEmpty()) {
+            val sorted = detectedQualities.sortedByDescending { q ->
+                q.replace("p", "").toIntOrNull() ?: 0
+            }
+            _uiState.update { it.copy(availableQualities = listOf("auto") + sorted) }
+        }
     }
 
     fun setQuality(quality: String) {

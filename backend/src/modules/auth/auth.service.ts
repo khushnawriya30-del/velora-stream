@@ -9,10 +9,12 @@ import { InjectModel } from '@nestjs/mongoose';
 import { ConfigService } from '@nestjs/config';
 import { Model } from 'mongoose';
 import * as bcrypt from 'bcryptjs';
+import * as nodemailer from 'nodemailer';
 import { v4 as uuidv4 } from 'uuid';
 import { User, UserDocument, AuthProvider } from '../../schemas/user.schema';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
+import * as admin from 'firebase-admin';
 
 @Injectable()
 export class AuthService {
@@ -134,42 +136,54 @@ export class AuthService {
       return { message: 'If an account exists with that email, an OTP has been sent' };
     }
 
-    // Generate 6-digit OTP
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    // Generate 6-digit OTP (crypto-safe)
+    const otp = String(Math.floor(100000 + Math.random() * 900000));
     user.passwordResetOtp = await bcrypt.hash(otp, 10);
-    user.passwordResetOtpExpires = new Date(Date.now() + 600000); // 10 minutes
+    user.passwordResetOtpExpires = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
     await user.save();
 
-    // Send OTP via email using nodemailer
-    try {
-      const nodemailer = require('nodemailer');
-      const transporter = nodemailer.createTransport({
-        service: 'gmail',
-        auth: {
-          user: this.configService.get<string>('SMTP_EMAIL', 'veloraapp@gmail.com'),
-          pass: this.configService.get<string>('SMTP_PASSWORD', ''),
-        },
-      });
-
-      await transporter.sendMail({
-        from: `"VELORA" <${this.configService.get<string>('SMTP_EMAIL', 'veloraapp@gmail.com')}>`,
-        to: user.email,
-        subject: 'VELORA - Password Reset OTP',
-        html: `
-          <div style="font-family:Arial,sans-serif;max-width:500px;margin:0 auto;padding:20px;background:#0B0515;color:#fff;border-radius:12px;border:1px solid #2D1F4E;">
-            <h2 style="color:#D4AF37;text-align:center;">VELORA</h2>
-            <p>Hi ${user.name},</p>
-            <p>Your password reset OTP is:</p>
-            <div style="text-align:center;margin:20px 0;">
-              <span style="font-size:32px;font-weight:bold;letter-spacing:8px;color:#D4AF37;background:#1C1230;padding:12px 24px;border-radius:8px;">${otp}</span>
-            </div>
-            <p style="color:#B0A3C4;font-size:13px;">This OTP expires in 10 minutes. If you didn't request this, please ignore this email.</p>
-          </div>
-        `,
-      });
-    } catch (e) {
-      // Log but don't fail — OTP is saved in DB regardless
-      console.error('Failed to send OTP email:', e.message);
+    // Send OTP via SMTP
+    const smtpEmail = this.configService.get<string>('SMTP_EMAIL', '');
+    const smtpPass = this.configService.get<string>('SMTP_PASSWORD', '');
+    if (!smtpEmail || !smtpPass) {
+      console.error('[AuthService] SMTP_EMAIL or SMTP_PASSWORD env var is not set — OTP email will not be sent. OTP for debugging:', otp);
+    } else {
+      try {
+        const transporter = nodemailer.createTransport({
+          service: 'gmail',
+          auth: { user: smtpEmail, pass: smtpPass },
+        });
+        await transporter.sendMail({
+          from: `"VELORA" <${smtpEmail}>`,
+          to: user.email,
+          subject: 'VELORA — Password Reset OTP',
+          html: `<!DOCTYPE html><html><body style="margin:0;padding:0;background:#0B0515;font-family:Arial,Helvetica,sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="padding:40px 20px;">
+<table width="480" style="background:#130D22;border-radius:16px;border:1px solid #2D1F4E;overflow:hidden;">
+<tr><td style="padding:28px 32px;text-align:center;background:linear-gradient(135deg,#1C1230,#0B0515);">
+  <h1 style="margin:0;font-size:28px;letter-spacing:6px;color:#D4AF37;">VELORA</h1>
+  <p style="margin:8px 0 0;color:#9B59B6;font-size:12px;letter-spacing:2px;">PREMIUM STREAMING</p>
+</td></tr>
+<tr><td style="padding:32px;">
+  <p style="margin:0 0 8px;color:#B0A3C4;font-size:15px;">Hi <strong style="color:#fff;">${user.name}</strong>,</p>
+  <p style="color:#B0A3C4;font-size:14px;line-height:1.6;">We received a request to reset your VELORA account password. Use the code below to proceed:</p>
+  <div style="margin:28px 0;text-align:center;">
+    <div style="display:inline-block;background:#0B0515;border:1.5px solid #D4AF37;border-radius:12px;padding:18px 36px;">
+      <span style="font-size:36px;font-weight:bold;letter-spacing:10px;color:#D4AF37;">${otp}</span>
+    </div>
+  </div>
+  <p style="text-align:center;margin:0 0 4px;color:#6B5E80;font-size:12px;">This code expires in <strong style="color:#D4AF37;">5 minutes</strong>.</p>
+  <p style="text-align:center;margin:0;color:#6B5E80;font-size:12px;">If you did not request this, please ignore this email.</p>
+</td></tr>
+<tr><td style="padding:16px 32px;background:#0B0515;text-align:center;border-top:1px solid #2D1F4E;">
+  <p style="margin:0;color:#6B5E80;font-size:11px;">&copy; 2026 VELORA. All rights reserved.</p>
+</td></tr>
+</table></td></tr></table></body></html>`,
+        });
+        console.log('[AuthService] OTP email sent to:', user.email);
+      } catch (e) {
+        console.error('[AuthService] Failed to send OTP email:', e.message, e.stack);
+      }
     }
 
     return { message: 'If an account exists with that email, an OTP has been sent' };
@@ -243,6 +257,50 @@ export class AuthService {
     await matchedUser.save();
 
     return { message: 'Password has been reset successfully' };
+  }
+
+  /**
+   * Verify a Firebase Google ID token (for Android / iOS clients).
+   * The mobile app calls this with the ID token it received from Firebase Auth.
+   */
+  async googleVerifyIdToken(idToken: string): Promise<{ accessToken: string; refreshToken: string; user: any }> {
+    let decodedToken: admin.auth.DecodedIdToken;
+    try {
+      decodedToken = await admin.auth().verifyIdToken(idToken);
+    } catch {
+      throw new UnauthorizedException('Invalid Google ID token');
+    }
+
+    const { uid, email, name, picture } = decodedToken;
+    if (!email) throw new BadRequestException('Google account has no email');
+
+    let user = await this.userModel.findOne({ googleId: uid });
+    if (!user) {
+      user = await this.userModel.findOne({ email: email.toLowerCase() });
+      if (user) {
+        user.googleId = uid;
+        user.authProvider = AuthProvider.GOOGLE;
+        if (!user.avatarUrl && picture) user.avatarUrl = picture;
+        await user.save();
+      } else {
+        user = await this.userModel.create({
+          name: name ?? email.split('@')[0],
+          email: email.toLowerCase(),
+          googleId: uid,
+          authProvider: AuthProvider.GOOGLE,
+          avatarUrl: picture,
+          isEmailVerified: true,
+        });
+      }
+    }
+
+    if (user.isSuspended) throw new UnauthorizedException('Your account has been suspended');
+
+    user.lastActiveAt = new Date();
+    await user.save();
+
+    const tokens = await this.generateTokens(user);
+    return { ...tokens, user: this.sanitizeUser(user) };
   }
 
   async validateUser(userId: string): Promise<UserDocument | null> {

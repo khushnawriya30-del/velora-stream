@@ -106,6 +106,30 @@ class AuthRepository @Inject constructor(
         }
     }
 
+    suspend fun googleLogin(idToken: String): Result<UserDto> {
+        return try {
+            val response = api.googleMobileLogin(GoogleTokenRequest(idToken))
+            if (response.isSuccessful && response.body() != null) {
+                val body = response.body()!!
+                sessionManager.saveSession(
+                    token = body.accessToken,
+                    userId = body.user.id,
+                    name = body.user.name,
+                    email = body.user.email,
+                    avatar = body.user.avatarUrl,
+                    role = body.user.role,
+                )
+                body.refreshToken?.let { sessionManager.saveRefreshToken(it) }
+                ensureActiveProfile()
+                Result.Success(body.user)
+            } else {
+                Result.Error(response.message(), response.code())
+            }
+        } catch (e: Exception) {
+            Result.Error(e.localizedMessage ?: "An error occurred")
+        }
+    }
+
     suspend fun logout(): Result<Unit> {
         return try {
             api.logout()

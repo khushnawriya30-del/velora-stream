@@ -28,6 +28,9 @@ interface CineVaultApi {
     @POST("auth/verify-otp")
     suspend fun verifyOtp(@Body request: VerifyOtpRequest): Response<VerifyOtpResponse>
 
+    @POST("auth/google/mobile")
+    suspend fun googleMobileLogin(@Body request: GoogleTokenRequest): Response<AuthResponse>
+
     @POST("auth/change-password")
     suspend fun changePassword(@Body request: ChangePasswordRequest): Response<MessageResponse>
 
