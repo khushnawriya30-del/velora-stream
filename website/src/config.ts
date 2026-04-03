@@ -11,7 +11,7 @@ export const APP_CONFIG = {
 
   fallback: {
     version: '1.0.0',
-    downloadUrl: '#download',
+    downloadUrl: '/api/download',
   },
 
   screenshots: [

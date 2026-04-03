@@ -55,10 +55,10 @@ export function useGitHubRelease(): ReleaseState {
           version: r.tag_name.replace(/^v/, ''),
           body: r.body || '',
           publishedAt: r.published_at,
-          downloadUrl: apkAsset?.browser_download_url || '',
+          downloadUrl: '/api/download',
           assets: (r.assets || []).map((a: any) => ({
             name: a.name,
-            downloadUrl: a.browser_download_url,
+            downloadUrl: '/api/download',
             size: a.size,
           })),
         };
