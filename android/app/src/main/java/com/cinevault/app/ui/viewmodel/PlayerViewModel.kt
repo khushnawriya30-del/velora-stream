@@ -126,6 +126,8 @@ class PlayerViewModel @Inject constructor(
                             else -> {}
                         }
                     } else {
+                        // Track unique movie view only when player loads (Watch Now was clicked)
+                        launch { contentRepository.trackMovieView(contentId) }
                         loadStreamingUrl(resumePosition = savedPosition)
                     }
                 }

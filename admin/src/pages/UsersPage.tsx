@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
-import { Shield, ShieldOff, Search, History, X, Clock } from 'lucide-react';
+import { Shield, ShieldOff, Search, History, X, Clock, Trash2 } from 'lucide-react';
 import api from '../lib/api';
 import type { User } from '../types';
 import toast from 'react-hot-toast';
@@ -148,6 +148,15 @@ export default function UsersPage() {
     onError: () => toast.error('Operation failed'),
   });
 
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => api.delete(`/admin/users/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+      toast.success('User deleted');
+    },
+    onError: () => toast.error('Failed to delete user'),
+  });
+
   // Backend returns { users: [...], total, page, pages }
   const users: User[] = data?.users ?? data?.data ?? [];
 
@@ -253,6 +262,18 @@ export default function UsersPage() {
                             className="flex items-center gap-1 text-error hover:text-error/80 text-xs"
                           >
                             <ShieldOff size={14} /> Suspend
+                          </button>
+                        )}
+                        {user.role !== 'admin' && (
+                          <button
+                            onClick={() => {
+                              if (confirm(`DELETE ${user.name}? This will permanently remove the user and all their data. This cannot be undone!`)) {
+                                deleteMutation.mutate(user._id);
+                              }
+                            }}
+                            className="flex items-center gap-1 text-red-500 hover:text-red-400 text-xs"
+                          >
+                            <Trash2 size={14} /> Delete
                           </button>
                         )}
                       </div>

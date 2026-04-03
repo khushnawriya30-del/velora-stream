@@ -16,8 +16,13 @@ data class RefreshResponse(
 )
 data class ForgotPasswordRequest(val email: String)
 data class ResetPasswordRequest(val token: String, val password: String)
-data class MessageResponse(val message: String)
+data class MessageResponse(val message: String, val devOtp: String? = null)
 data class GoogleTokenRequest(val idToken: String)
+
+// Phone OTP Auth
+data class SendPhoneOtpRequest(val phone: String)
+data class VerifyPhoneOtpRequest(val phone: String, val otp: String)
+data class FirebasePhoneRequest(val idToken: String)
 
 // App Version (for auto-update)
 data class AppVersionResponse(

@@ -993,7 +993,7 @@ fun HomeTopBar(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
-            "CineVault",
+            "VELORA",
             style = CineVaultTheme.typography.displayLarge,
             color = CineVaultTheme.colors.accentGold,
         )

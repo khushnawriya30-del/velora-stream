@@ -123,10 +123,111 @@ class AuthRepository @Inject constructor(
                 ensureActiveProfile()
                 Result.Success(body.user)
             } else {
-                Result.Error(response.message(), response.code())
+                Result.Error(parseErrorMessage(response), response.code())
             }
         } catch (e: Exception) {
             Result.Error(e.localizedMessage ?: "An error occurred")
+        }
+    }
+
+    suspend fun googleSignup(idToken: String): Result<UserDto> {
+        return try {
+            val response = api.googleMobileSignup(GoogleTokenRequest(idToken))
+            if (response.isSuccessful && response.body() != null) {
+                val body = response.body()!!
+                sessionManager.saveSession(
+                    token = body.accessToken,
+                    userId = body.user.id,
+                    name = body.user.name,
+                    email = body.user.email,
+                    avatar = body.user.avatarUrl,
+                    role = body.user.role,
+                )
+                body.refreshToken?.let { sessionManager.saveRefreshToken(it) }
+                ensureActiveProfile()
+                Result.Success(body.user)
+            } else {
+                Result.Error(parseErrorMessage(response), response.code())
+            }
+        } catch (e: Exception) {
+            Result.Error(e.localizedMessage ?: "An error occurred")
+        }
+    }
+
+    suspend fun sendPhoneOtp(phone: String): Result<MessageResponse> {
+        return try {
+            val response = api.sendPhoneOtp(SendPhoneOtpRequest(phone))
+            if (response.isSuccessful) {
+                Result.Success(response.body() ?: MessageResponse("OTP sent successfully"))
+            } else {
+                Result.Error(parseErrorMessage(response))
+            }
+        } catch (e: Exception) {
+            Result.Error(e.localizedMessage ?: "Failed to send OTP")
+        }
+    }
+
+    suspend fun verifyPhoneOtp(phone: String, otp: String): Result<UserDto> {
+        return try {
+            val response = api.verifyPhoneOtp(VerifyPhoneOtpRequest(phone, otp))
+            if (response.isSuccessful && response.body() != null) {
+                val body = response.body()!!
+                sessionManager.saveSession(
+                    token = body.accessToken,
+                    userId = body.user.id,
+                    name = body.user.name,
+                    email = body.user.email,
+                    avatar = body.user.avatarUrl,
+                    role = body.user.role,
+                )
+                body.refreshToken?.let { sessionManager.saveRefreshToken(it) }
+                ensureActiveProfile()
+                Result.Success(body.user)
+            } else {
+                Result.Error(parseErrorMessage(response))
+            }
+        } catch (e: Exception) {
+            Result.Error(e.localizedMessage ?: "Failed to verify OTP")
+        }
+    }
+
+    suspend fun firebasePhoneVerify(idToken: String): Result<UserDto> {
+        return try {
+            val response = api.firebasePhoneVerify(FirebasePhoneRequest(idToken))
+            if (response.isSuccessful && response.body() != null) {
+                val body = response.body()!!
+                sessionManager.saveSession(
+                    token = body.accessToken,
+                    userId = body.user.id,
+                    name = body.user.name,
+                    email = body.user.email,
+                    avatar = body.user.avatarUrl,
+                    role = body.user.role,
+                )
+                body.refreshToken?.let { sessionManager.saveRefreshToken(it) }
+                ensureActiveProfile()
+                Result.Success(body.user)
+            } else {
+                Result.Error(parseErrorMessage(response))
+            }
+        } catch (e: Exception) {
+            Result.Error(e.localizedMessage ?: "Phone verification failed")
+        }
+    }
+
+    private fun <T> parseErrorMessage(response: retrofit2.Response<T>): String {
+        return try {
+            val body = response.errorBody()?.string() ?: return response.message()
+            val json = org.json.JSONObject(body)
+            // NestJS returns { "message": "...", "error": "...", "statusCode": ... }
+            val msg = json.opt("message")
+            when {
+                msg is String -> msg
+                msg is org.json.JSONArray && msg.length() > 0 -> msg.getString(0)
+                else -> response.message()
+            }
+        } catch (e: Exception) {
+            response.message()
         }
     }
 

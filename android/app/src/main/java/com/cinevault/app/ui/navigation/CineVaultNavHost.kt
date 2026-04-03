@@ -695,6 +695,7 @@ fun CineVaultNavHost(navController: NavHostController = rememberNavController())
                     },
                     onNavigateToRegister = { navController.navigate(Screen.Register.route) },
                     onNavigateToForgotPassword = { navController.navigate(Screen.ForgotPassword.route) },
+                    onNavigateToPhoneAuth = { navController.navigate(Screen.PhoneAuth.route) },
                 )
             }
 
@@ -706,12 +707,24 @@ fun CineVaultNavHost(navController: NavHostController = rememberNavController())
                         }
                     },
                     onNavigateToLogin = { navController.popBackStack() },
+                    onNavigateToPhoneAuth = { navController.navigate(Screen.PhoneAuth.route) },
                 )
             }
 
             composable(Screen.ForgotPassword.route) {
                 ForgotPasswordScreen(
                     onBack = { navController.popBackStack() },
+                )
+            }
+
+            composable(Screen.PhoneAuth.route) {
+                PhoneAuthScreen(
+                    onSuccess = {
+                        navController.navigate(Screen.Home.route) {
+                            popUpTo(0) { inclusive = true }
+                        }
+                    },
+                    onNavigateBack = { navController.popBackStack() },
                 )
             }
 

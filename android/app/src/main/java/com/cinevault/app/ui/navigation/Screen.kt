@@ -6,6 +6,7 @@ sealed class Screen(val route: String) {
     data object Login : Screen("login")
     data object Register : Screen("register")
     data object ForgotPassword : Screen("forgot_password")
+    data object PhoneAuth : Screen("phone_auth")
     data object ProfileSelector : Screen("profile_selector")
     data object Home : Screen("home")
     data object Search : Screen("search")

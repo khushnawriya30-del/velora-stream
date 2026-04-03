@@ -17,6 +17,11 @@ data class AuthUiState(
     val loginSuccess: Boolean = false,
     val registerSuccess: Boolean = false,
     val forgotPasswordSuccess: Boolean = false,
+    val googleSignupSuccess: Boolean = false,
+    // Phone OTP
+    val phoneOtpSent: Boolean = false,
+    val phoneLoginSuccess: Boolean = false,
+    val devOtp: String? = null,  // non-null when SMS not configured (dev/testing mode)
 )
 
 @HiltViewModel
@@ -100,6 +105,58 @@ class AuthViewModel @Inject constructor(
                 is Result.Loading -> {}
             }
         }
+    }
+
+    fun googleSignup(idToken: String) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true, error = null) }
+            when (val result = authRepository.googleSignup(idToken)) {
+                is Result.Success -> _uiState.update { it.copy(isLoading = false, googleSignupSuccess = true) }
+                is Result.Error -> _uiState.update { it.copy(isLoading = false, error = result.message) }
+                is Result.Loading -> {}
+            }
+        }
+    }
+
+    fun sendPhoneOtp(phone: String) {
+        val fullPhone = if (phone.startsWith("+91")) phone else "+91$phone"
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true, error = null) }
+            when (val result = authRepository.sendPhoneOtp(fullPhone)) {
+                is Result.Success -> _uiState.update {
+                    it.copy(isLoading = false, phoneOtpSent = true, devOtp = result.data?.devOtp)
+                }
+                is Result.Error -> _uiState.update { it.copy(isLoading = false, error = result.message) }
+                is Result.Loading -> {}
+            }
+        }
+    }
+
+    fun verifyPhoneOtp(phone: String, otp: String) {
+        val fullPhone = if (phone.startsWith("+91")) phone else "+91$phone"
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true, error = null) }
+            when (val result = authRepository.verifyPhoneOtp(fullPhone, otp)) {
+                is Result.Success -> _uiState.update { it.copy(isLoading = false, phoneLoginSuccess = true) }
+                is Result.Error -> _uiState.update { it.copy(isLoading = false, error = result.message) }
+                is Result.Loading -> {}
+            }
+        }
+    }
+
+    fun firebasePhoneVerify(idToken: String) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true, error = null) }
+            when (val result = authRepository.firebasePhoneVerify(idToken)) {
+                is Result.Success -> _uiState.update { it.copy(isLoading = false, phoneLoginSuccess = true) }
+                is Result.Error -> _uiState.update { it.copy(isLoading = false, error = result.message) }
+                is Result.Loading -> {}
+            }
+        }
+    }
+
+    fun resetPhoneOtpSent() {
+        _uiState.update { it.copy(phoneOtpSent = false) }
     }
 
     fun onGoogleSignInError(message: String) {

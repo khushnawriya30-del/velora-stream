@@ -1,5 +1,8 @@
 package com.cinevault.app.ui.screen
 
+import android.app.Activity
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -8,6 +11,7 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.*
@@ -15,7 +19,11 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusDirection
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -23,18 +31,24 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.cinevault.app.R
 import com.cinevault.app.ui.components.GoldButton
 import com.cinevault.app.ui.theme.CineVaultTheme
 import com.cinevault.app.ui.viewmodel.AuthViewModel
+import com.google.android.gms.auth.api.signin.GoogleSignIn
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions
+import com.google.android.gms.common.api.ApiException
 
 @Composable
 fun RegisterScreen(
     onRegisterSuccess: () -> Unit,
     onNavigateToLogin: () -> Unit,
+    onNavigateToPhoneAuth: () -> Unit = {},
     viewModel: AuthViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val focusManager = LocalFocusManager.current
+    val context = LocalContext.current
 
     var name by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
@@ -42,8 +56,45 @@ fun RegisterScreen(
     var confirmPassword by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
 
+    // Google Sign-In for signup
+    val webClientId = stringResource(R.string.google_web_client_id)
+    val googleSignInClient = remember(webClientId) {
+        val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+            .requestIdToken(webClientId)
+            .requestEmail()
+            .build()
+        GoogleSignIn.getClient(context, gso)
+    }
+    val googleLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult(),
+    ) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            try {
+                val account = GoogleSignIn.getSignedInAccountFromIntent(result.data)
+                    .getResult(ApiException::class.java)
+                val idToken = account.idToken
+                if (idToken != null) {
+                    viewModel.googleSignup(idToken)
+                } else {
+                    viewModel.onGoogleSignInError(
+                        "Could not get Google token. Check your Web Client ID configuration."
+                    )
+                }
+            } catch (e: ApiException) {
+                viewModel.onGoogleSignInError("Google Sign-In failed (code ${e.statusCode}).")
+            }
+        }
+    }
+
     LaunchedEffect(uiState.registerSuccess) {
         if (uiState.registerSuccess) {
+            onRegisterSuccess()
+            viewModel.resetState()
+        }
+    }
+
+    LaunchedEffect(uiState.googleSignupSuccess) {
+        if (uiState.googleSignupSuccess) {
             onRegisterSuccess()
             viewModel.resetState()
         }
@@ -188,6 +239,95 @@ fun RegisterScreen(
                         "Sign In",
                         style = CineVaultTheme.typography.body,
                         color = CineVaultTheme.colors.accentGold,
+                    )
+                }
+            }
+
+            Spacer(Modifier.height(16.dp))
+
+            // OR divider
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                HorizontalDivider(modifier = Modifier.weight(1f), color = CineVaultTheme.colors.textSecondary.copy(alpha = 0.3f))
+                Text(
+                    "  OR  ",
+                    style = CineVaultTheme.typography.label,
+                    color = CineVaultTheme.colors.textSecondary,
+                )
+                HorizontalDivider(modifier = Modifier.weight(1f), color = CineVaultTheme.colors.textSecondary.copy(alpha = 0.3f))
+            }
+
+            Spacer(Modifier.height(16.dp))
+
+            // Sign Up with Google
+            Button(
+                onClick = {
+                    googleSignInClient.signOut().addOnCompleteListener {
+                        googleLauncher.launch(googleSignInClient.signInIntent)
+                    }
+                },
+                enabled = !uiState.isLoading,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(52.dp),
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color.White,
+                    contentColor = Color(0xFF1F1F1F),
+                ),
+                elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp),
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center,
+                ) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.ic_google),
+                        contentDescription = "Google",
+                        tint = Color.Unspecified,
+                        modifier = Modifier.size(20.dp),
+                    )
+                    Spacer(Modifier.width(12.dp))
+                    Text(
+                        "Sign up with Google",
+                        style = CineVaultTheme.typography.body.copy(fontSize = 15.sp),
+                        color = Color(0xFF1F1F1F),
+                    )
+                }
+            }
+
+            Spacer(Modifier.height(12.dp))
+
+            // Continue with Phone
+            OutlinedButton(
+                onClick = onNavigateToPhoneAuth,
+                enabled = !uiState.isLoading,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(52.dp),
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    contentColor = Color.White,
+                ),
+                border = androidx.compose.foundation.BorderStroke(1.dp, CineVaultTheme.colors.border),
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center,
+                ) {
+                    Icon(
+                        Icons.Filled.Phone,
+                        contentDescription = "Phone",
+                        tint = CineVaultTheme.colors.accentGold,
+                        modifier = Modifier.size(20.dp),
+                    )
+                    Spacer(Modifier.width(12.dp))
+                    Text(
+                        "Continue with Phone",
+                        style = CineVaultTheme.typography.body.copy(fontSize = 15.sp),
+                        color = Color.White,
                     )
                 }
             }

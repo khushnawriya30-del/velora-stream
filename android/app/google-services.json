@@ -1,13 +1,13 @@
 {
   "project_info": {
-    "project_number": "000000000000",
-    "project_id": "cinevault-placeholder",
-    "storage_bucket": "cinevault-placeholder.appspot.com"
+    "project_number": "815681864630",
+    "project_id": "velora-a97e2",
+    "storage_bucket": "velora-a97e2.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:000000000000:android:0000000000000000000000",
+        "mobilesdk_app_id": "1:815681864630:android:59e034ac30dbf90383f717",
         "android_client_info": {
           "package_name": "com.cinevault.app"
         }
@@ -15,10 +15,14 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "placeholder-api-key"
+          "current_key": "AIzaSyCYm3w06LQbfFGqCiGYSBYfbExNokEIJaw"
         }
       ],
-      "services": {}
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
     }
   ],
   "configuration_version": "1"

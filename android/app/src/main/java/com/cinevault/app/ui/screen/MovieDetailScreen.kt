@@ -616,7 +616,7 @@ fun MovieDetailScreen(
                     icon = Icons.Outlined.Share,
                     isActive = false,
                     onClick = {
-                        val shareText = "Check out \"${movie.title}\" on CineVault!\nhttps://cinevault.app/movie/${movie.id}"
+                        val shareText = "Check out \"${movie.title}\" on VELORA!\nhttps://cinevault.app/movie/${movie.id}"
                         val shareIntent = Intent(Intent.ACTION_SEND).apply {
                             type = "text/plain"
                             putExtra(Intent.EXTRA_TEXT, shareText)

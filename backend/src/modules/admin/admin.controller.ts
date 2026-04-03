@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Patch, Param, Body, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Param, Body, Query, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
@@ -82,6 +82,27 @@ export class AdminController {
       resourceId: id,
     });
     return user;
+  }
+
+  @Delete('users/:id')
+  @ApiOperation({ summary: 'Delete a user permanently (Admin)' })
+  async deleteUser(@Param('id') id: string, @CurrentUser() admin: any) {
+    const user = await this.userModel.findById(id);
+    if (!user) return { message: 'User not found' };
+    const userName = user.name || user.email;
+    await Promise.all([
+      this.watchProgressModel.deleteMany({ userId: new Types.ObjectId(id) }),
+      this.userModel.findByIdAndDelete(id),
+    ]);
+    await this.adminLogModel.create({
+      adminId: admin.userId,
+      adminEmail: admin.email,
+      action: 'delete_user',
+      resource: 'user',
+      resourceId: id,
+      details: { userName },
+    });
+    return { message: `User ${userName} deleted successfully` };
   }
 
   @Get('logs')

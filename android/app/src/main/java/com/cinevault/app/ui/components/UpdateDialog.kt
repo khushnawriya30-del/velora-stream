@@ -144,7 +144,7 @@ fun UpdateDialog(info: AppVersionResponse, onDismiss: () -> Unit) {
                     else -> {
                         Button(
                             onClick = {
-                                val fileName = "cinevault-${info.versionName}.apk"
+                                val fileName = "velora-${info.versionName}.apk"
                                 val file = File(
                                     context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS),
                                     fileName
@@ -152,7 +152,7 @@ fun UpdateDialog(info: AppVersionResponse, onDismiss: () -> Unit) {
                                 if (file.exists()) file.delete()
                                 downloadedFile = file
                                 val request = DownloadManager.Request(Uri.parse(info.apkUrl))
-                                    .setTitle("CineVault Update")
+                                    .setTitle("VELORA Update")
                                     .setDescription("Downloading v${info.versionName}")
                                     .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
                                     .setDestinationUri(Uri.fromFile(file))
