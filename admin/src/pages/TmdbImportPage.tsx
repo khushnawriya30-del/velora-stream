@@ -378,41 +378,43 @@ export default function TmdbImportPage() {
             </p>
           )}
 
-          {/* OTT + Language filters row */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm text-text-secondary mb-1.5">OTT Platform</label>
-              <select
-                value={searchOttPlatform}
-                onChange={(e) => setSearchOttPlatform(e.target.value)}
-                className="w-full bg-surface-light border border-border rounded-lg px-3 py-2.5 text-sm text-text-primary focus:outline-none focus:border-gold"
-              >
-                {OTT_PLATFORMS.map((p) => (
-                  <option key={p.providerId} value={p.providerId}>{p.label}</option>
-                ))}
-              </select>
-              {searchOttPlatform && (
-                <p className="text-xs text-text-muted mt-1">
-                  Results filtered to {OTT_PLATFORMS.find((p) => p.providerId === searchOttPlatform)?.label} availability
-                </p>
-              )}
+          {/* OTT Platform Selection */}
+          <div className="border border-gold/20 bg-gold/5 rounded-xl p-4">
+            <p className="text-sm font-semibold text-gold mb-3">🎬 Filter by OTT Platform <span className="font-normal text-text-muted">(optional — filter results by platform availability)</span></p>
+            <div className="flex flex-wrap gap-2">
+              {OTT_PLATFORMS.map((platform) => (
+                <button
+                  key={platform.providerId}
+                  onClick={() => setSearchOttPlatform(platform.providerId)}
+                  className={clsx(
+                    'px-3 py-1.5 rounded-lg text-sm font-medium border transition-all',
+                    searchOttPlatform === platform.providerId
+                      ? 'bg-gold text-background border-gold shadow-sm'
+                      : 'bg-surface-light text-text-secondary border-border hover:border-gold/50 hover:text-text-primary',
+                  )}
+                >
+                  {platform.label}
+                </button>
+              ))}
             </div>
-            <div>
-              <label className="block text-sm text-text-secondary mb-1.5">Hindi Dub / Language</label>
-              <select
-                value={searchDubbed}
-                onChange={(e) => setSearchDubbed(e.target.value)}
-                className="w-full bg-surface-light border border-border rounded-lg px-3 py-2.5 text-sm text-text-primary focus:outline-none focus:border-gold"
-              >
-                <option value="">All Languages</option>
-                <option value="hi">Hindi (Bollywood)</option>
-                <option value="en">English (Hollywood)</option>
-                <option value="ta">Tamil</option>
-                <option value="te">Telugu</option>
-                <option value="ko">Korean</option>
-                <option value="ja">Japanese (Anime)</option>
-              </select>
-            </div>
+          </div>
+
+          {/* Language filter */}
+          <div>
+            <label className="block text-sm text-text-secondary mb-1.5">Hindi Dub / Language</label>
+            <select
+              value={searchDubbed}
+              onChange={(e) => setSearchDubbed(e.target.value)}
+              className="w-full bg-surface-light border border-border rounded-lg px-3 py-2.5 text-sm text-text-primary focus:outline-none focus:border-gold"
+            >
+              <option value="">All Languages</option>
+              <option value="hi">Hindi (Bollywood)</option>
+              <option value="en">English (Hollywood)</option>
+              <option value="ta">Tamil</option>
+              <option value="te">Telugu</option>
+              <option value="ko">Korean</option>
+              <option value="ja">Japanese (Anime)</option>
+            </select>
           </div>
         </div>
       )}
@@ -420,6 +422,27 @@ export default function TmdbImportPage() {
       {/* ══════════ DISCOVER MODE ══════════ */}
       {mode === 'discover' && (
         <div className="bg-surface border border-border rounded-xl p-6 space-y-4">
+          {/* OTT Platform Selection */}
+          <div className="border border-gold/20 bg-gold/5 rounded-xl p-4">
+            <p className="text-sm font-semibold text-gold mb-3">🎬 Filter by OTT Platform <span className="font-normal text-text-muted">(optional)</span></p>
+            <div className="flex flex-wrap gap-2">
+              {OTT_PLATFORMS.map((platform) => (
+                <button
+                  key={platform.providerId}
+                  onClick={() => { setOttPlatform(platform.providerId); resetPage(); }}
+                  className={clsx(
+                    'px-3 py-1.5 rounded-lg text-sm font-medium border transition-all',
+                    ottPlatform === platform.providerId
+                      ? 'bg-gold text-background border-gold shadow-sm'
+                      : 'bg-surface-light text-text-secondary border-border hover:border-gold/50 hover:text-text-primary',
+                  )}
+                >
+                  {platform.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
           {/* Row 1: Content Type, Region, Year, Count */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             <div>
@@ -473,20 +496,8 @@ export default function TmdbImportPage() {
             </div>
           </div>
 
-          {/* Row 2: OTT Platform + Language / Dubbed + Actor Search */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div>
-              <label className="block text-sm text-text-secondary mb-1.5">OTT Platform</label>
-              <select
-                value={ottPlatform}
-                onChange={(e) => { setOttPlatform(e.target.value); resetPage(); }}
-                className="w-full bg-surface-light border border-border rounded-lg px-3 py-2.5 text-sm text-text-primary focus:outline-none focus:border-gold"
-              >
-                {OTT_PLATFORMS.map((p) => (
-                  <option key={p.providerId} value={p.providerId}>{p.label}</option>
-                ))}
-              </select>
-            </div>
+          {/* Row 2: Language / Dubbed + Actor Search */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm text-text-secondary mb-1.5">Hindi Dub / Language</label>
               <select
