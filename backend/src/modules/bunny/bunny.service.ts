@@ -496,6 +496,222 @@ export class BunnyService {
     return { imported, skipped, episodes: results };
   }
 
+
+  // ─── Import Full Series from Bunny Collection (Folder-based) ──
+  //
+  // One collection = one series. Videos named like season-1/episode-1.mp4
+  // Auto-detects season folders, creates seasons + episodes automatically.
+  //
+  async importSeriesFromBunnyCollection(
+    seriesId: string,
+    collectionId: string,
+  ): Promise<{
+    seasons: { seasonNumber: number; imported: number; episodes: { episodeNumber: number; title: string; videoId: string; status: string }[] }[];
+    totalImported: number;
+  }> {
+    const series = await this.movieModel.findById(seriesId);
+    if (!series) throw new Error('Series not found');
+
+    // Fetch ALL videos from the Bunny collection (paginated)
+    const allVideos: BunnyVideo[] = [];
+    let page = 1;
+    while (true) {
+      const result = await this.listVideosInCollection(collectionId, page, 100);
+      allVideos.push(...result.items);
+      if (allVideos.length >= result.totalItems) break;
+      page++;
+    }
+
+    if (allVideos.length === 0) throw new Error('No videos found in this Bunny collection');
+
+    // ── Group videos by season folder ──
+    // Detects patterns like: "season-1/episode-1", "s01/ep01", "Season 1/Episode 1"
+    // Videos with no folder prefix → Season 1
+    const seasonMap = new Map<number, BunnyVideo[]>();
+
+    for (const video of allVideos) {
+      const { seasonNum, episodeTitle } = this.parseVideoPath(video.title);
+      if (!seasonMap.has(seasonNum)) seasonMap.set(seasonNum, []);
+      seasonMap.get(seasonNum)!.push(video);
+    }
+
+    // Sort seasons by number
+    const sortedSeasons = [...seasonMap.entries()].sort((a, b) => a[0] - b[0]);
+
+    const results: { seasonNumber: number; imported: number; episodes: { episodeNumber: number; title: string; videoId: string; status: string }[] }[] = [];
+    let totalImported = 0;
+
+    for (const [seasonNum, videos] of sortedSeasons) {
+      // Sort videos by episode number
+      videos.sort((a, b) => {
+        const aNum = this.extractEpisodeFromPath(a.title);
+        const bNum = this.extractEpisodeFromPath(b.title);
+        return aNum - bNum;
+      });
+
+      // Find or create season
+      let season = await this.seasonModel.findOne({
+        seriesId: new Types.ObjectId(seriesId),
+        seasonNumber: seasonNum,
+      });
+
+      if (!season) {
+        season = await this.seasonModel.create({
+          seriesId: new Types.ObjectId(seriesId),
+          seasonNumber: seasonNum,
+          title: `Season ${seasonNum}`,
+          episodeCount: 0,
+        });
+      }
+
+      // Get existing episodes for this season
+      const existingEpisodes = await this.episodeModel.find({ seasonId: season._id }).exec();
+      const existingByNumber = new Map(existingEpisodes.map((e) => [e.episodeNumber, e]));
+
+      let imported = 0;
+      const episodeResults: { episodeNumber: number; title: string; videoId: string; status: string }[] = [];
+
+      for (let i = 0; i < videos.length; i++) {
+        const video = videos[i];
+        const epNum = this.extractEpisodeFromPath(video.title) || (i + 1);
+        const epTitle = this.cleanEpisodeTitleFromPath(video.title, epNum);
+        const thumb = this.thumbnailUrl(video.guid);
+        const sources = this.buildStreamingSources(video.guid, video.availableResolutions || '');
+
+        if (existingByNumber.has(epNum)) {
+          await this.episodeModel.findOneAndUpdate(
+            { seasonId: season._id, episodeNumber: epNum },
+            { title: epTitle, streamingSources: sources, thumbnailUrl: thumb },
+          );
+          episodeResults.push({ episodeNumber: epNum, title: epTitle, videoId: video.guid, status: 'updated' });
+        } else {
+          await this.episodeModel.create({
+            seasonId: season._id,
+            episodeNumber: epNum,
+            title: epTitle,
+            streamingSources: sources,
+            thumbnailUrl: thumb,
+          });
+          episodeResults.push({ episodeNumber: epNum, title: epTitle, videoId: video.guid, status: 'created' });
+        }
+        imported++;
+      }
+
+      // Update season episode count
+      const epCount = await this.episodeModel.countDocuments({ seasonId: season._id });
+      await this.seasonModel.findByIdAndUpdate(season._id, { episodeCount: epCount });
+
+      results.push({ seasonNumber: seasonNum, imported, episodes: episodeResults });
+      totalImported += imported;
+    }
+
+    this.logger.log(`[Bunny Collection Import] ${series.title}: ${sortedSeasons.length} seasons, ${totalImported} total episodes`);
+    return { seasons: results, totalImported };
+  }
+
+  // ── Parse video title/path to extract season number ──
+  // Handles: "season-1/episode-1.mp4", "s01/ep01.mp4", "Season 1/Ep 1.mp4", "s1e1.mp4"
+  // No folder prefix → Season 1
+  private parseVideoPath(title: string): { seasonNum: number; episodeTitle: string } {
+    // Pattern 1: folder/file (e.g., "season-1/episode-1.mp4")
+    const folderMatch = title.match(/^(?:season|s)[\s._-]*(\d+)\s*[\/\\]\s*(.+)$/i);
+    if (folderMatch) {
+      return { seasonNum: parseInt(folderMatch[1], 10), episodeTitle: folderMatch[2] };
+    }
+
+    // Pattern 2: inline "S01E01" or "s1e1" style (no folder)
+    const inlineMatch = title.match(/(?:s|season)[\s._-]*(\d+)[\s._-]*(?:e|ep|episode)[\s._-]*(\d+)/i);
+    if (inlineMatch) {
+      return { seasonNum: parseInt(inlineMatch[1], 10), episodeTitle: title };
+    }
+
+    // Default: Season 1
+    return { seasonNum: 1, episodeTitle: title };
+  }
+
+  // Extract episode number from path-style title
+  private extractEpisodeFromPath(title: string): number {
+    // Remove folder prefix if present
+    const parts = title.split(/[\/\\]/);
+    const filename = parts[parts.length - 1];
+
+    // Try S01E01 pattern first
+    const seMatch = filename.match(/(?:s|season)[\s._-]*\d+[\s._-]*(?:e|ep|episode)[\s._-]*(\d+)/i);
+    if (seMatch) return parseInt(seMatch[1], 10);
+
+    // Try episode/ep/e prefix
+    const epMatch = filename.match(/(?:ep|episode|e)[\s._-]*(\d+)/i);
+    if (epMatch) return parseInt(epMatch[1], 10);
+
+    // Try bare number
+    const numMatch = filename.match(/(\d+)/);
+    if (numMatch) return parseInt(numMatch[1], 10);
+
+    return 0;
+  }
+
+  // Clean episode title from path-style title
+  private cleanEpisodeTitleFromPath(title: string, epNum: number): string {
+    // Remove folder prefix
+    const parts = title.split(/[\/\\]/);
+    const filename = parts[parts.length - 1];
+
+    // Remove extension
+    let name = filename.replace(/\.[^.]+$/, '');
+    // Remove common prefixes
+    name = name.replace(/^(?:s|season)[\s._-]*\d+[\s._-]*/i, '');
+    name = name.replace(/^(?:ep|episode|e)[\s._-]*\d+[\s._-]*/i, '');
+    name = name.replace(/[._-]/g, ' ').trim();
+
+    return name || `Episode ${epNum}`;
+  }
+
+  // ─── Preview Collection Structure (for admin UI) ──────────────
+  async previewBunnyCollectionStructure(
+    collectionId: string,
+  ): Promise<{
+    collectionName: string;
+    seasons: { seasonNumber: number; episodes: { episodeNumber: number; title: string; videoId: string; size: number; duration: number }[] }[];
+  }> {
+    // Fetch all videos
+    const allVideos: BunnyVideo[] = [];
+    let page = 1;
+    while (true) {
+      const result = await this.listVideosInCollection(collectionId, page, 100);
+      allVideos.push(...result.items);
+      if (allVideos.length >= result.totalItems) break;
+      page++;
+    }
+
+    // Group by season
+    const seasonMap = new Map<number, { episodeNumber: number; title: string; videoId: string; size: number; duration: number }[]>();
+
+    for (const video of allVideos) {
+      const { seasonNum } = this.parseVideoPath(video.title);
+      const epNum = this.extractEpisodeFromPath(video.title);
+      const epTitle = this.cleanEpisodeTitleFromPath(video.title, epNum || 1);
+
+      if (!seasonMap.has(seasonNum)) seasonMap.set(seasonNum, []);
+      seasonMap.get(seasonNum)!.push({
+        episodeNumber: epNum || (seasonMap.get(seasonNum)!.length + 1),
+        title: epTitle,
+        videoId: video.guid,
+        size: video.storageSize || 0,
+        duration: video.length || 0,
+      });
+    }
+
+    // Sort seasons and episodes
+    const seasons = [...seasonMap.entries()]
+      .sort((a, b) => a[0] - b[0])
+      .map(([seasonNumber, episodes]) => ({
+        seasonNumber,
+        episodes: episodes.sort((a, b) => a.episodeNumber - b.episodeNumber),
+      }));
+
+    return { collectionName: '', seasons };
+  }
+
   // ─── Import Single Movie from Bunny Video ────────────────────
   //
   // User picks a single video from a Bunny collection and imports it

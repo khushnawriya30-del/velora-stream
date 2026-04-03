@@ -212,6 +212,27 @@ export class BunnyController {
     return this.bunnyService.importFromBunnyCollection(seasonId, body.collectionId);
   }
 
+  // ─── Import Full Series from Bunny Collection (Folder-based) ──
+
+  @Post('stream/series/:seriesId/import-bunny-collection')
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles('admin')
+  async importSeriesFromBunnyCollection(
+    @Param('seriesId') seriesId: string,
+    @Body() body: { collectionId: string },
+  ) {
+    return this.bunnyService.importSeriesFromBunnyCollection(seriesId, body.collectionId);
+  }
+
+  // ─── Preview Collection Structure (Folder Detection) ──────────
+
+  @Get('stream/collections/:collectionId/preview')
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles('admin')
+  async previewCollectionStructure(@Param('collectionId') collectionId: string) {
+    return this.bunnyService.previewBunnyCollectionStructure(collectionId);
+  }
+
   // ─── Import Single Movie from Bunny Collection ──────────────
 
   @Post('stream/movie/import-bunny')

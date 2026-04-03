@@ -42,6 +42,7 @@ export default function SeriesPage() {
   const [showEditEpisode, setShowEditEpisode] = useState<Episode | null>(null);
   const [showBunnyStream, setShowBunnyStream] = useState<string | null>(null);
   const [showFolderImport, setShowFolderImport] = useState(false);
+  const [showCollectionImport, setShowCollectionImport] = useState(false);
   const [renamingSeriesId, setRenamingSeriesId] = useState<string | null>(null);
   const [renameTitle, setRenameTitle] = useState('');
 
@@ -90,6 +91,12 @@ export default function SeriesPage() {
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold">Series</h1>
         <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowCollectionImport(true)}
+            className="flex items-center gap-2 bg-purple-600/20 hover:bg-purple-600/30 text-purple-400 border border-purple-500/30 px-4 py-2.5 rounded-xl text-sm font-medium transition-colors"
+          >
+            <Cloud size={18} /> Bunny Collection Import
+          </button>
           <button
             onClick={() => setShowFolderImport(true)}
             className="flex items-center gap-2 bg-surface-light hover:bg-surface text-text-primary border border-border px-4 py-2.5 rounded-xl text-sm font-medium transition-colors"
@@ -236,6 +243,14 @@ export default function SeriesPage() {
         <FolderImportModal
           series={series}
           onClose={() => { setShowFolderImport(false); queryClient.invalidateQueries({ queryKey: ['series-list'] }); }}
+        />
+      )}
+
+      {/* Bunny Collection Import Modal */}
+      {showCollectionImport && (
+        <BunnyCollectionImportModal
+          series={series}
+          onClose={() => { setShowCollectionImport(false); queryClient.invalidateQueries({ queryKey: ['series-list'] }); }}
         />
       )}
 
@@ -1334,6 +1349,207 @@ interface ScannedSeason {
 interface ScanResult {
   totalFiles: number;
   seasons: ScannedSeason[];
+}
+
+// ── Bunny Collection Import Modal (Folder-based, ONE collection = one series) ──
+function BunnyCollectionImportModal({
+  series,
+  onClose,
+}: {
+  series: Movie[];
+  onClose: () => void;
+}) {
+  const queryClient = useQueryClient();
+  const [selectedSeriesId, setSelectedSeriesId] = useState('');
+  const [selectedCollectionId, setSelectedCollectionId] = useState('');
+  const [previewData, setPreviewData] = useState<{
+    collectionName: string;
+    seasons: { seasonNumber: number; episodes: { episodeNumber: number; title: string; videoId: string; size: number; duration: number }[] }[];
+  } | null>(null);
+
+  // Fetch collections list
+  const { data: collections, isLoading: collectionsLoading } = useQuery({
+    queryKey: ['bunny-collections'],
+    queryFn: async () => {
+      const { data } = await api.get('/bunny/stream/collections');
+      return data as { totalItems: number; items: { guid: string; name: string; videoCount: number }[] };
+    },
+  });
+
+  // Preview mutation
+  const previewMutation = useMutation({
+    mutationFn: async () => {
+      const { data } = await api.get(`/bunny/stream/collections/${selectedCollectionId}/preview`);
+      return data;
+    },
+    onSuccess: (data) => {
+      setPreviewData(data);
+      const totalEps = data.seasons.reduce((sum: number, s: any) => sum + s.episodes.length, 0);
+      toast.success(`Detected ${data.seasons.length} season(s) with ${totalEps} episode(s)`);
+    },
+    onError: (err: any) => toast.error(err.response?.data?.message || 'Failed to preview collection'),
+  });
+
+  // Import mutation
+  const importMutation = useMutation({
+    mutationFn: async () => {
+      const { data } = await api.post(`/bunny/stream/series/${selectedSeriesId}/import-bunny-collection`, {
+        collectionId: selectedCollectionId,
+      });
+      return data as { seasons: any[]; totalImported: number };
+    },
+    onSuccess: (data) => {
+      toast.success(`Imported ${data.totalImported} episodes across ${data.seasons.length} season(s)`);
+      queryClient.invalidateQueries({ queryKey: ['seasons'] });
+      queryClient.invalidateQueries({ queryKey: ['series-list'] });
+    },
+    onError: (err: any) => toast.error(err.response?.data?.message || 'Import failed'),
+  });
+
+  const formatDuration = (seconds: number) => {
+    if (!seconds) return '—';
+    const m = Math.floor(seconds / 60);
+    const s = Math.round(seconds % 60);
+    return `${m}:${String(s).padStart(2, '0')}`;
+  };
+
+  const formatSize = (bytes: number) => {
+    if (!bytes) return '—';
+    if (bytes >= 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024 * 1024)).toFixed(1)} GB`;
+    return `${(bytes / (1024 * 1024)).toFixed(0)} MB`;
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="bg-surface border border-border rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto p-6 space-y-5" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Cloud size={22} className="text-purple-400" />
+            <h3 className="font-semibold text-lg">Bunny Collection Import</h3>
+          </div>
+          <button onClick={onClose} className="text-text-muted hover:text-text-primary"><X size={18} /></button>
+        </div>
+
+        <div className="p-3 rounded-lg bg-purple-500/10 border border-purple-500/20 text-xs text-purple-300 space-y-1">
+          <p className="font-semibold">📁 Folder-based Import (One Collection = One Series)</p>
+          <p>Upload videos to Bunny.net with folder structure like: <code className="bg-surface px-1 rounded">season-1/episode-1.mp4</code>, <code className="bg-surface px-1 rounded">season-2/episode-1.mp4</code></p>
+          <p>System automatically detects seasons and episodes from video titles.</p>
+        </div>
+
+        {/* Step 1: Select Series */}
+        <div className="space-y-2">
+          <label className="text-sm font-medium text-text-secondary">1. Select Series</label>
+          <select
+            value={selectedSeriesId}
+            onChange={(e) => setSelectedSeriesId(e.target.value)}
+            className="w-full bg-surface-light border border-border rounded-lg px-3 py-2.5 text-sm"
+          >
+            <option value="">-- Select a series --</option>
+            {series.map((s) => (
+              <option key={s._id} value={s._id}>{s.title}</option>
+            ))}
+          </select>
+        </div>
+
+        {/* Step 2: Select Collection */}
+        <div className="space-y-2">
+          <label className="text-sm font-medium text-text-secondary">2. Select Bunny Collection</label>
+          {collectionsLoading ? (
+            <div className="flex items-center gap-2 text-sm text-text-muted py-2"><Loader2 size={14} className="animate-spin" /> Loading collections...</div>
+          ) : collections?.items && collections.items.length > 0 ? (
+            <select
+              value={selectedCollectionId}
+              onChange={(e) => { setSelectedCollectionId(e.target.value); setPreviewData(null); }}
+              className="w-full bg-surface-light border border-border rounded-lg px-3 py-2.5 text-sm"
+            >
+              <option value="">-- Select a collection --</option>
+              {collections.items.map((c) => (
+                <option key={c.guid} value={c.guid}>{c.name} ({c.videoCount} videos)</option>
+              ))}
+            </select>
+          ) : (
+            <p className="text-xs text-text-muted">No collections found on Bunny.net</p>
+          )}
+        </div>
+
+        {/* Step 3: Preview */}
+        {selectedCollectionId && (
+          <button
+            onClick={() => previewMutation.mutate()}
+            disabled={previewMutation.isPending}
+            className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm font-medium disabled:opacity-50 w-full justify-center"
+          >
+            {previewMutation.isPending ? <Loader2 size={14} className="animate-spin" /> : <Layers size={14} />}
+            Preview Folder Structure
+          </button>
+        )}
+
+        {/* Preview Result */}
+        {previewData && previewData.seasons.length > 0 && (
+          <div className="space-y-3">
+            <div className="flex items-center gap-2 text-sm font-medium text-green-400">
+              <Check size={16} />
+              Detected {previewData.seasons.length} Season(s), {previewData.seasons.reduce((sum, s) => sum + s.episodes.length, 0)} Episode(s)
+            </div>
+
+            <div className="space-y-2 max-h-60 overflow-y-auto">
+              {previewData.seasons.map((season) => (
+                <div key={season.seasonNumber} className="bg-surface-light border border-border rounded-lg p-3">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Layers size={14} className="text-gold" />
+                    <span className="text-sm font-semibold">Season {season.seasonNumber}</span>
+                    <span className="text-xs text-text-muted">({season.episodes.length} episodes)</span>
+                  </div>
+                  <div className="space-y-1 pl-5">
+                    {season.episodes.map((ep) => (
+                      <div key={ep.videoId} className="flex items-center gap-3 text-xs text-text-secondary">
+                        <span className="font-mono text-gold w-8">E{String(ep.episodeNumber).padStart(2, '0')}</span>
+                        <span className="flex-1 truncate">{ep.title}</span>
+                        <span className="text-text-muted">{formatDuration(ep.duration)}</span>
+                        <span className="text-text-muted">{formatSize(ep.size)}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Step 4: Import */}
+        {previewData && selectedSeriesId && (
+          <button
+            onClick={() => importMutation.mutate()}
+            disabled={importMutation.isPending}
+            className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2.5 rounded-xl text-sm font-semibold disabled:opacity-50 w-full justify-center"
+          >
+            {importMutation.isPending ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
+            {importMutation.isPending
+              ? 'Importing...'
+              : `Import ${previewData.seasons.reduce((sum, s) => sum + s.episodes.length, 0)} Episodes into ${previewData.seasons.length} Season(s)`}
+          </button>
+        )}
+
+        {/* Import Results */}
+        {importMutation.isSuccess && importMutation.data && (
+          <div className="bg-surface-light border border-green-500/30 rounded-xl p-4 space-y-2">
+            <div className="flex items-center gap-2 text-green-400 font-medium">
+              <Check size={16} />
+              Successfully imported {importMutation.data.totalImported} episodes across {importMutation.data.seasons.length} season(s)
+            </div>
+            <div className="max-h-40 overflow-y-auto space-y-1">
+              {importMutation.data.seasons.map((s: any) => (
+                <div key={s.seasonNumber} className="text-xs">
+                  <span className="font-semibold text-gold">Season {s.seasonNumber}:</span>
+                  <span className="text-text-muted ml-1">{s.imported} episode(s) — {s.episodes.map((e: any) => `E${String(e.episodeNumber).padStart(2, '0')} (${e.status})`).join(', ')}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
 }
 
 function FolderImportModal({
