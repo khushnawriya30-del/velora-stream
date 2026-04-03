@@ -20,6 +20,15 @@ import com.cinevault.app.ui.viewmodel.SettingsViewModel
 
 private val QUALITY_OPTIONS = listOf("Auto", "1080p", "720p", "480p", "360p")
 
+private fun qualitySubtitle(quality: String): String = when (quality) {
+    "Auto" -> "Recommended — adapts to your connection"
+    "1080p" -> "Full HD · Premium"
+    "720p" -> "HD · Free"
+    "480p" -> "SD · Free"
+    "360p" -> "Low · Free"
+    else -> ""
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PlaybackQualityScreen(
@@ -73,9 +82,12 @@ fun PlaybackQualityScreen(
                                     fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
                                     color = if (isSelected) CineVaultTheme.colors.accentGold else CineVaultTheme.colors.textPrimary,
                                 )
-                                if (quality == "Auto") {
-                                    Text("Recommended", fontSize = 12.sp, color = CineVaultTheme.colors.textSecondary)
-                                }
+                                Text(
+                                    qualitySubtitle(quality),
+                                    fontSize = 12.sp,
+                                    color = if (quality == "1080p") CineVaultTheme.colors.accentGold.copy(alpha = 0.7f)
+                                            else CineVaultTheme.colors.textSecondary,
+                                )
                             }
                             if (isSelected) {
                                 Icon(Icons.Default.Check, contentDescription = null, tint = CineVaultTheme.colors.accentGold, modifier = Modifier.size(22.dp))

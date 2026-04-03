@@ -231,8 +231,10 @@ class PlayerViewModel @Inject constructor(
                 Log.d("CineVaultPlayer", "Using episode source URL: ${streamUrl.take(150)}, fallbacks: ${fallbacks.size}")
                 if (streamUrl.startsWith("http://") || streamUrl.startsWith("https://")) {
                     val isHls = streamUrl.contains(".m3u8", ignoreCase = true)
-                    val qualities = if (isHls) listOf("auto")
-                        else listOf(source?.quality ?: "Original")
+                    val qualities = if (isHls)
+                        listOf("auto", "1080p", "720p", "480p", "360p")
+                    else
+                        listOf(source?.quality ?: "Original")
                     _uiState.update { it.copy(
                         isLoading = false,
                         streamingUrl = streamUrl,
@@ -249,7 +251,8 @@ class PlayerViewModel @Inject constructor(
             // Prefer HLS URL for adaptive streaming (auto quality based on internet speed)
             val hlsUrl = movie?.hlsUrl
             if (!hlsUrl.isNullOrBlank()) {
-                val qualities = listOf("auto")
+                // Always show full quality range — 720p & 1080p cap ExoPlayer's track selection
+                val qualities = listOf("auto", "1080p", "720p", "480p", "360p")
                 _uiState.update { it.copy(
                     isLoading = false,
                     streamingUrl = hlsUrl,

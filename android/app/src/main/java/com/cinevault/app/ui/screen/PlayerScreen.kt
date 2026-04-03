@@ -934,9 +934,10 @@ fun PlayerScreen(
                         "240p" -> "0.5 Mbps"
                         else -> ""
                     }
+                    val isPremiumQuality = quality == "1080p"
                     ObsidianMenuItem(
                         label = displayLabel,
-                        subtitle = subtitle,
+                        subtitle = if (isPremiumQuality) "Premium • $subtitle" else subtitle,
                         isSelected = uiState.selectedQuality == quality,
                         onClick = { viewModel.setQuality(quality); showQualityPopup = false; toastMessage = "Quality: $displayLabel" },
                     )
