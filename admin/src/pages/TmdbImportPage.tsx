@@ -76,6 +76,19 @@ const DUBBED_OPTIONS = [
   { value: 'te', label: 'Telugu Dubbed' },
 ];
 
+const OTT_PLATFORMS = [
+  { label: 'All Platforms', providerId: '', watchRegion: 'IN' },
+  { label: '🎬 Netflix', providerId: '8', watchRegion: 'IN' },
+  { label: '🌟 Jio Hotstar / Disney+', providerId: '122', watchRegion: 'IN' },
+  { label: '📦 Amazon Prime Video', providerId: '119', watchRegion: 'IN' },
+  { label: '🎭 Max (HBO)', providerId: '1899', watchRegion: 'US' },
+  { label: '🌸 Crunchyroll', providerId: '283', watchRegion: 'US' },
+  { label: '📺 SonyLIV', providerId: '237', watchRegion: 'IN' },
+  { label: '📡 ZEE5', providerId: '232', watchRegion: 'IN' },
+  { label: '🍎 Apple TV+', providerId: '350', watchRegion: 'US' },
+  { label: '✨ Disney+', providerId: '337', watchRegion: 'US' },
+];
+
 const currentYear = new Date().getFullYear();
 const YEARS = Array.from({ length: currentYear - 1979 }, (_, i) => currentYear - i);
 
@@ -94,6 +107,8 @@ export default function TmdbImportPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchPage, setSearchPage] = useState(1);
   const [totalResults, setTotalResults] = useState(0);
+  const [searchOttPlatform, setSearchOttPlatform] = useState('');
+  const [searchDubbed, setSearchDubbed] = useState('');
 
   // Discover state
   const [region, setRegion] = useState<string>('bollywood');
@@ -101,6 +116,7 @@ export default function TmdbImportPage() {
   const [year, setYear] = useState<string>('');
   const [selectedGenres, setSelectedGenres] = useState<number[]>([]);
   const [dubbed, setDubbed] = useState<string>('');
+  const [ottPlatform, setOttPlatform] = useState<string>('');
   const [nextPage, setNextPage] = useState<number>(1);
 
   // Actor search state
@@ -120,7 +136,16 @@ export default function TmdbImportPage() {
   // Search mutation
   const searchMutation = useMutation({
     mutationFn: async (page: number) => {
-      const { data } = await api.post('/tmdb/search', { query: searchQuery, contentType, page });
+      const selectedPlatform = OTT_PLATFORMS.find((p) => p.providerId === searchOttPlatform);
+      const body: any = { query: searchQuery, contentType, page };
+      if (searchOttPlatform && selectedPlatform) {
+        body.watchProviders = selectedPlatform.providerId;
+        body.watchRegion = selectedPlatform.watchRegion;
+      }
+      if (searchDubbed) {
+        body.withOriginalLanguage = searchDubbed;
+      }
+      const { data } = await api.post('/tmdb/search', body);
       return data as { items: TmdbPreviewItem[]; nextPage: number; totalResults: number };
     },
     onSuccess: (data, page) => {
@@ -190,6 +215,13 @@ export default function TmdbImportPage() {
       if (selectedGenres.length > 0) body.genres = selectedGenres;
       if (dubbed) body.withLanguage = dubbed;
       if (selectedActors.length > 0) body.withCast = selectedActors.map((a) => a.id).join(',');
+      if (ottPlatform) {
+        const selectedPlatform = OTT_PLATFORMS.find((p) => p.providerId === ottPlatform);
+        if (selectedPlatform) {
+          body.withWatchProviders = selectedPlatform.providerId;
+          body.watchRegion = selectedPlatform.watchRegion;
+        }
+      }
       const { data } = await api.post('/tmdb/discover', body);
       return data as { items: TmdbPreviewItem[]; nextPage: number };
     },
@@ -257,6 +289,8 @@ export default function TmdbImportPage() {
     setResults([]);
     setSelected(new Set());
     setImportResult(null);
+    setSearchOttPlatform('');
+    setSearchDubbed('');
   };
 
   const handleSearch = (e?: React.FormEvent) => {
@@ -336,8 +370,50 @@ export default function TmdbImportPage() {
           {totalResults > 0 && results.length > 0 && (
             <p className="text-xs text-text-muted">
               Showing {results.length} of {totalResults} results
+              {searchOttPlatform && (
+                <span className="ml-2 text-gold font-medium">
+                  · Filtered by {OTT_PLATFORMS.find((p) => p.providerId === searchOttPlatform)?.label}
+                </span>
+              )}
             </p>
           )}
+
+          {/* OTT + Language filters row */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm text-text-secondary mb-1.5">OTT Platform</label>
+              <select
+                value={searchOttPlatform}
+                onChange={(e) => setSearchOttPlatform(e.target.value)}
+                className="w-full bg-surface-light border border-border rounded-lg px-3 py-2.5 text-sm text-text-primary focus:outline-none focus:border-gold"
+              >
+                {OTT_PLATFORMS.map((p) => (
+                  <option key={p.providerId} value={p.providerId}>{p.label}</option>
+                ))}
+              </select>
+              {searchOttPlatform && (
+                <p className="text-xs text-text-muted mt-1">
+                  Results filtered to {OTT_PLATFORMS.find((p) => p.providerId === searchOttPlatform)?.label} availability
+                </p>
+              )}
+            </div>
+            <div>
+              <label className="block text-sm text-text-secondary mb-1.5">Hindi Dub / Language</label>
+              <select
+                value={searchDubbed}
+                onChange={(e) => setSearchDubbed(e.target.value)}
+                className="w-full bg-surface-light border border-border rounded-lg px-3 py-2.5 text-sm text-text-primary focus:outline-none focus:border-gold"
+              >
+                <option value="">All Languages</option>
+                <option value="hi">Hindi (Bollywood)</option>
+                <option value="en">English (Hollywood)</option>
+                <option value="ta">Tamil</option>
+                <option value="te">Telugu</option>
+                <option value="ko">Korean</option>
+                <option value="ja">Japanese (Anime)</option>
+              </select>
+            </div>
+          </div>
         </div>
       )}
 
@@ -397,10 +473,22 @@ export default function TmdbImportPage() {
             </div>
           </div>
 
-          {/* Row 2: Language / Dubbed + Actor Search */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {/* Row 2: OTT Platform + Language / Dubbed + Actor Search */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
-              <label className="block text-sm text-text-secondary mb-1.5">Language / Dubbed</label>
+              <label className="block text-sm text-text-secondary mb-1.5">OTT Platform</label>
+              <select
+                value={ottPlatform}
+                onChange={(e) => { setOttPlatform(e.target.value); resetPage(); }}
+                className="w-full bg-surface-light border border-border rounded-lg px-3 py-2.5 text-sm text-text-primary focus:outline-none focus:border-gold"
+              >
+                {OTT_PLATFORMS.map((p) => (
+                  <option key={p.providerId} value={p.providerId}>{p.label}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm text-text-secondary mb-1.5">Hindi Dub / Language</label>
               <select
                 value={dubbed}
                 onChange={(e) => { setDubbed(e.target.value); resetPage(); }}
@@ -525,6 +613,36 @@ export default function TmdbImportPage() {
       {/* ══════════ RESULTS (shared) ══════════ */}
       {results.length > 0 && (
         <div className="space-y-4">
+          {/* Active filter badges */}
+          {((mode === 'discover' && (ottPlatform || dubbed)) || (mode === 'search' && (searchOttPlatform || searchDubbed))) && (
+            <div className="flex flex-wrap gap-2 items-center">
+              <span className="text-xs text-text-muted">Active filters:</span>
+              {mode === 'discover' && ottPlatform && (
+                <span className="flex items-center gap-1 bg-gold/10 text-gold border border-gold/20 px-2.5 py-1 rounded-full text-xs font-medium">
+                  {OTT_PLATFORMS.find((p) => p.providerId === ottPlatform)?.label}
+                  <button onClick={() => setOttPlatform('')} className="hover:text-gold-light"><X size={11} /></button>
+                </span>
+              )}
+              {mode === 'search' && searchOttPlatform && (
+                <span className="flex items-center gap-1 bg-gold/10 text-gold border border-gold/20 px-2.5 py-1 rounded-full text-xs font-medium">
+                  {OTT_PLATFORMS.find((p) => p.providerId === searchOttPlatform)?.label}
+                  <button onClick={() => setSearchOttPlatform('')} className="hover:text-gold-light"><X size={11} /></button>
+                </span>
+              )}
+              {mode === 'discover' && dubbed && (
+                <span className="flex items-center gap-1 bg-blue-500/10 text-blue-400 border border-blue-500/20 px-2.5 py-1 rounded-full text-xs font-medium">
+                  {DUBBED_OPTIONS.find((d) => d.value === dubbed)?.label}
+                  <button onClick={() => setDubbed('')} className="hover:text-blue-300"><X size={11} /></button>
+                </span>
+              )}
+              {mode === 'search' && searchDubbed && (
+                <span className="flex items-center gap-1 bg-blue-500/10 text-blue-400 border border-blue-500/20 px-2.5 py-1 rounded-full text-xs font-medium">
+                  Hindi/Language filter
+                  <button onClick={() => setSearchDubbed('')} className="hover:text-blue-300"><X size={11} /></button>
+                </span>
+              )}
+            </div>
+          )}
           {/* Action bar */}
           <div className="flex items-center justify-between flex-wrap gap-3">
             <div className="flex items-center gap-3">

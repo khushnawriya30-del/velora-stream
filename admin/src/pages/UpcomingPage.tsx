@@ -68,6 +68,19 @@ const DUBBED_OPTIONS = [
   { value: 'te', label: 'Telugu Dubbed' },
 ];
 
+const OTT_PLATFORMS = [
+  { label: 'All Platforms', providerId: '', watchRegion: 'IN' },
+  { label: '🎬 Netflix', providerId: '8', watchRegion: 'IN' },
+  { label: '🌟 Jio Hotstar / Disney+', providerId: '122', watchRegion: 'IN' },
+  { label: '📦 Amazon Prime Video', providerId: '119', watchRegion: 'IN' },
+  { label: '🎭 Max (HBO)', providerId: '1899', watchRegion: 'US' },
+  { label: '🌸 Crunchyroll', providerId: '283', watchRegion: 'US' },
+  { label: '📺 SonyLIV', providerId: '237', watchRegion: 'IN' },
+  { label: '📡 ZEE5', providerId: '232', watchRegion: 'IN' },
+  { label: '🍎 Apple TV+', providerId: '350', watchRegion: 'US' },
+  { label: '✨ Disney+', providerId: '337', watchRegion: 'US' },
+];
+
 const GENRES = [
   { id: 28, name: 'Action' },
   { id: 12, name: 'Adventure' },
@@ -103,6 +116,7 @@ export default function UpcomingPage() {
   const [region, setRegion] = useState('hollywood');
   const [count, setCount] = useState(20);
   const [dubbedLang, setDubbedLang] = useState('');
+  const [ottPlatform, setOttPlatform] = useState('');
   const [selectedGenres, setSelectedGenres] = useState<number[]>([]);
   const [nextPage, setNextPage] = useState(1);
   const [results, setResults] = useState<TmdbPreviewItem[]>([]);
@@ -188,6 +202,13 @@ export default function UpcomingPage() {
       if (selectedGenres.length > 0) body.genres = selectedGenres;
       if (selectedActors.length > 0) body.withCast = selectedActors.map((a) => a.id).join(',');
       if (dubbedLang) body.withLanguage = dubbedLang;
+      if (ottPlatform) {
+        const selectedPlatform = OTT_PLATFORMS.find((p) => p.providerId === ottPlatform);
+        if (selectedPlatform) {
+          body.withWatchProviders = selectedPlatform.providerId;
+          body.watchRegion = selectedPlatform.watchRegion;
+        }
+      }
       const { data } = await api.post('/tmdb/discover', body);
       return data as { items: TmdbPreviewItem[]; nextPage: number };
     },
@@ -443,7 +464,8 @@ export default function UpcomingPage() {
         <div className="space-y-6">
           {/* Filters */}
           <div className="bg-surface border border-border rounded-xl p-5 space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+            {/* Row 1: Content Type, Region, Count */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
                 <label className="block text-sm text-text-secondary mb-1">Content Type</label>
                 <select
@@ -482,9 +504,30 @@ export default function UpcomingPage() {
                   ))}
                 </select>
               </div>
+            </div>
+
+            {/* Row 2: OTT Platform + Language / Dubbed + Actor */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-sm text-text-secondary mb-1">OTT Platform</label>
+                <select
+                  value={ottPlatform}
+                  onChange={(e) => setOttPlatform(e.target.value)}
+                  className="w-full bg-surface-light border border-border rounded-xl px-4 py-2.5 text-sm text-text-primary focus:outline-none focus:border-gold"
+                >
+                  {OTT_PLATFORMS.map((p) => (
+                    <option key={p.providerId} value={p.providerId}>{p.label}</option>
+                  ))}
+                </select>
+                {ottPlatform && (
+                  <p className="text-xs text-text-muted mt-1">
+                    Showing upcoming on {OTT_PLATFORMS.find((p) => p.providerId === ottPlatform)?.label}
+                  </p>
+                )}
+              </div>
 
               <div>
-                <label className="block text-sm text-text-secondary mb-1">Language / Dubbed</label>
+                <label className="block text-sm text-text-secondary mb-1">Hindi Dub / Language</label>
                 <select
                   value={dubbedLang}
                   onChange={(e) => setDubbedLang(e.target.value)}

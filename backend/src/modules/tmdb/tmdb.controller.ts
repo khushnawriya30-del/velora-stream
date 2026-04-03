@@ -29,7 +29,14 @@ export class TmdbController {
   @Post('search')
   @ApiOperation({ summary: 'Search TMDB by title/name (Admin)' })
   async search(
-    @Body() body: { query: string; contentType: 'movies' | 'shows' | 'anime' | 'webseries'; page?: number },
+    @Body() body: {
+      query: string;
+      contentType: 'movies' | 'shows' | 'anime' | 'webseries';
+      page?: number;
+      watchProviders?: string;
+      watchRegion?: string;
+      withOriginalLanguage?: string;
+    },
   ) {
     return this.tmdbService.search(body);
   }

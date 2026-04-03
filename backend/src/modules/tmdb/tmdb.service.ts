@@ -45,6 +45,8 @@ export interface TmdbDiscoverOptions {
   withCast?: string; // comma-separated TMDB person IDs to filter by actor
   page?: number; // starting page for fresh results
   releaseStatus?: 'released' | 'upcoming'; // filter by release status
+  withWatchProviders?: string; // TMDB watch provider ID (e.g. '8' = Netflix, '122' = Hotstar)
+  watchRegion?: string; // ISO 3166-1 country code for provider availability (e.g. 'IN', 'US')
 }
 
 export interface TmdbPreviewItem {
@@ -94,7 +96,7 @@ export class TmdbService {
 
   /** Discover / preview content from TMDB without importing */
   async discover(opts: TmdbDiscoverOptions): Promise<{ items: TmdbPreviewItem[]; nextPage: number }> {
-    const { contentType, region, count, year, genres, withLanguage, withCast, releaseStatus } = opts;
+    const { contentType, region, count, year, genres, withLanguage, withCast, releaseStatus, withWatchProviders, watchRegion } = opts;
     const regionCfg = REGION_MAP[region.toLowerCase()] ?? { language: 'en-US' };
     const isAnime = contentType === 'anime';
     const mediaType = (contentType === 'movies') ? 'movie' : 'tv';
@@ -165,9 +167,10 @@ export class TmdbService {
         }
       }
 
-      // Dubbed language: find content available in this language
-      if (withLanguage) {
-        params.with_text_query = ''; // not needed, language param handles translation
+      // OTT platform / watch provider filter
+      if (withWatchProviders) {
+        params.with_watch_providers = withWatchProviders;
+        params.watch_region = watchRegion ?? 'IN';
       }
 
       const data = await this.tmdbGet(`/discover/${mediaType}`, params);
@@ -222,8 +225,11 @@ export class TmdbService {
     query: string;
     contentType: 'movies' | 'shows' | 'anime' | 'webseries';
     page?: number;
+    watchProviders?: string;
+    watchRegion?: string;
+    withOriginalLanguage?: string;
   }): Promise<{ items: TmdbPreviewItem[]; nextPage: number; totalResults: number }> {
-    const { query, contentType } = opts;
+    const { query, contentType, watchProviders, watchRegion, withOriginalLanguage } = opts;
     const page = opts.page || 1;
     if (!query?.trim()) throw new BadRequestException('Search query is required');
 
@@ -241,6 +247,16 @@ export class TmdbService {
     // For anime, filter to animation genre only
     if (contentType === 'anime') {
       results = results.filter((r: any) => (r.genre_ids ?? []).includes(16));
+    }
+
+    // Original language post-filter (e.g. 'hi' for Hindi content)
+    if (withOriginalLanguage) {
+      results = results.filter((r: any) => r.original_language === withOriginalLanguage);
+    }
+
+    // OTT platform post-filter: check watch providers for each result in parallel
+    if (watchProviders && watchRegion) {
+      results = await this.filterByWatchProviders(results, mediaType, watchProviders, watchRegion);
     }
 
     // Check which are already imported
@@ -297,6 +313,36 @@ export class TmdbService {
     }
 
     return { imported, skipped, items };
+  }
+
+  /** Filter items to only those available on a specific OTT platform/watch provider */
+  private async filterByWatchProviders(
+    results: any[],
+    mediaType: 'movie' | 'tv',
+    providerId: string,
+    region: string,
+  ): Promise<any[]> {
+    const checks = await Promise.all(
+      results.map(async (item) => {
+        try {
+          const data = await this.tmdbGet(`/${mediaType}/${item.id}/watch/providers`);
+          const regionData = data.results?.[region];
+          if (!regionData) return { item, hasProvider: false };
+          const allProviders = [
+            ...(regionData.flatrate ?? []),
+            ...(regionData.buy ?? []),
+            ...(regionData.rent ?? []),
+            ...(regionData.ads ?? []),
+            ...(regionData.free ?? []),
+          ];
+          const hasProvider = allProviders.some((p: any) => String(p.provider_id) === providerId);
+          return { item, hasProvider };
+        } catch {
+          return { item, hasProvider: false };
+        }
+      }),
+    );
+    return checks.filter((c) => c.hasProvider).map((c) => c.item);
   }
 
   private async fetchAndCreateMovie(
