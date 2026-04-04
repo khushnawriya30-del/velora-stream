@@ -337,6 +337,7 @@ export default function StoragePage() {
 function R2FileManager() {
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const folderInputRef = useRef<HTMLInputElement>(null);
   const [currentPath, setCurrentPath] = useState('');
   const [showCreateFolder, setShowCreateFolder] = useState(false);
   const [newFolderName, setNewFolderName] = useState('');
@@ -391,9 +392,95 @@ function R2FileManager() {
   // Upload files via presigned URL (small) or multipart (large)
   const CHUNK_SIZE = 50 * 1024 * 1024; // 50MB chunks
 
-  const uploadFiles = useCallback(async (files: FileList | File[]) => {
-    const fileArr = Array.from(files);
-    const newUploads = fileArr.map((f) => ({ name: f.name, progress: 0, status: 'uploading' as const }));
+  // Upload a single file with a specific R2 key
+  const uploadSingleFile = async (
+    file: File,
+    r2Key: string,
+    displayName: string,
+    uploadConfig: { workerUrl: string; apiKey: string } | null,
+  ) => {
+    if (file.size > CHUNK_SIZE && uploadConfig) {
+      // ── Multipart upload for large files ──
+      await multipartUpload(file, r2Key, uploadConfig, (pct) => {
+        setUploadingFiles((prev) =>
+          prev.map((u) => u.name === displayName ? { ...u, progress: pct } : u),
+        );
+      });
+    } else {
+      // ── Single PUT for small files ──
+      const folder = r2Key.substring(0, r2Key.lastIndexOf('/'));
+      const filename = r2Key.substring(r2Key.lastIndexOf('/') + 1);
+      const { data } = await api.post('/r2/presigned-url', {
+        folder,
+        filename,
+        contentType: file.type || 'application/octet-stream',
+      });
+
+      await new Promise<void>((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open('PUT', data.uploadUrl, true);
+        xhr.setRequestHeader('Content-Type', file.type || 'application/octet-stream');
+
+        xhr.upload.onprogress = (e) => {
+          if (e.lengthComputable) {
+            const pct = Math.round((e.loaded / e.total) * 100);
+            setUploadingFiles((prev) =>
+              prev.map((u) => u.name === displayName ? { ...u, progress: pct } : u),
+            );
+          }
+        };
+
+        xhr.onload = () => {
+          if (xhr.status >= 200 && xhr.status < 300) resolve();
+          else reject(new Error(`Upload failed: ${xhr.status}`));
+        };
+
+        xhr.onerror = () => reject(new Error('Upload failed'));
+        xhr.send(file);
+      });
+    }
+  };
+
+  // Helper: recursively read all files from a dropped directory entry
+  const readDirectoryEntries = (entry: FileSystemDirectoryEntry): Promise<{ file: File; relativePath: string }[]> => {
+    return new Promise((resolve) => {
+      const reader = entry.createReader();
+      const allFiles: { file: File; relativePath: string }[] = [];
+
+      const readBatch = () => {
+        reader.readEntries(async (entries) => {
+          if (entries.length === 0) {
+            resolve(allFiles);
+            return;
+          }
+          for (const e of entries) {
+            if (e.isFile) {
+              const fileEntry = e as FileSystemFileEntry;
+              const file = await new Promise<File>((res) => fileEntry.file(res));
+              allFiles.push({ file, relativePath: e.fullPath.replace(/^\//, '') });
+            } else if (e.isDirectory) {
+              const subFiles = await readDirectoryEntries(e as FileSystemDirectoryEntry);
+              allFiles.push(...subFiles);
+            }
+          }
+          readBatch(); // read next batch (readEntries may not return all at once)
+        });
+      };
+      readBatch();
+    });
+  };
+
+  const uploadFiles = useCallback(async (files: FileList | File[], relativePaths?: Map<string, string>) => {
+    const fileArr = Array.from(files).filter((f) => f.size > 0); // skip 0-byte folder entries
+    if (fileArr.length === 0) {
+      toast.error('No uploadable files found');
+      return;
+    }
+
+    const newUploads = fileArr.map((f) => {
+      const displayName = relativePaths?.get(f.name + f.size) || f.name;
+      return { name: displayName, progress: 0, status: 'uploading' as const };
+    });
     setUploadingFiles((prev) => [...prev, ...newUploads]);
 
     // Get worker config for multipart uploads
@@ -405,58 +492,26 @@ function R2FileManager() {
 
     for (let i = 0; i < fileArr.length; i++) {
       const file = fileArr[i];
+      const relPath = relativePaths?.get(file.name + file.size);
+      const displayName = relPath || file.name;
+
       try {
-        const folder = currentPath.replace(/\/$/, '');
-        const key = folder ? `${folder}/${file.name}` : file.name;
+        const base = currentPath.replace(/\/$/, '');
+        const r2Key = base
+          ? (relPath ? `${base}/${relPath}` : `${base}/${file.name}`)
+          : (relPath || file.name);
 
-        if (file.size > CHUNK_SIZE && uploadConfig) {
-          // ── Multipart upload for large files ──
-          await multipartUpload(file, key, uploadConfig, (pct) => {
-            setUploadingFiles((prev) =>
-              prev.map((u) => u.name === file.name ? { ...u, progress: pct } : u),
-            );
-          });
-        } else {
-          // ── Single PUT for small files ──
-          const { data } = await api.post('/r2/presigned-url', {
-            folder,
-            filename: file.name,
-            contentType: file.type || 'application/octet-stream',
-          });
-
-          await new Promise<void>((resolve, reject) => {
-            const xhr = new XMLHttpRequest();
-            xhr.open('PUT', data.uploadUrl, true);
-            xhr.setRequestHeader('Content-Type', file.type || 'application/octet-stream');
-
-            xhr.upload.onprogress = (e) => {
-              if (e.lengthComputable) {
-                const pct = Math.round((e.loaded / e.total) * 100);
-                setUploadingFiles((prev) =>
-                  prev.map((u) => u.name === file.name ? { ...u, progress: pct } : u),
-                );
-              }
-            };
-
-            xhr.onload = () => {
-              if (xhr.status >= 200 && xhr.status < 300) resolve();
-              else reject(new Error(`Upload failed: ${xhr.status}`));
-            };
-
-            xhr.onerror = () => reject(new Error('Upload failed'));
-            xhr.send(file);
-          });
-        }
+        await uploadSingleFile(file, r2Key, displayName, uploadConfig);
 
         setUploadingFiles((prev) =>
-          prev.map((u) => u.name === file.name ? { ...u, progress: 100, status: 'done' } : u),
+          prev.map((u) => u.name === displayName ? { ...u, progress: 100, status: 'done' } : u),
         );
-        toast.success(`Uploaded: ${file.name}`);
+        toast.success(`Uploaded: ${displayName}`);
       } catch (err: any) {
         setUploadingFiles((prev) =>
-          prev.map((u) => u.name === file.name ? { ...u, status: 'error' } : u),
+          prev.map((u) => u.name === displayName ? { ...u, status: 'error' } : u),
         );
-        toast.error(`Failed: ${file.name}`);
+        toast.error(`Failed: ${displayName}`);
       }
     }
 
@@ -538,9 +593,46 @@ function R2FileManager() {
     setDragOver(false);
   }, []);
 
-  const handleDrop = useCallback((e: React.DragEvent) => {
+  const handleDrop = useCallback(async (e: React.DragEvent) => {
     e.preventDefault();
     setDragOver(false);
+
+    // Check for directory entries (folder drop support)
+    const items = e.dataTransfer.items;
+    if (items && items.length > 0) {
+      const allFilesWithPaths: { file: File; relativePath: string }[] = [];
+      const plainFiles: File[] = [];
+
+      for (let i = 0; i < items.length; i++) {
+        const entry = items[i].webkitGetAsEntry?.();
+        if (entry?.isDirectory) {
+          // Recursively read directory
+          const dirFiles = await readDirectoryEntries(entry as FileSystemDirectoryEntry);
+          allFilesWithPaths.push(...dirFiles);
+        } else if (entry?.isFile) {
+          const fileEntry = entry as FileSystemFileEntry;
+          const file = await new Promise<File>((res) => fileEntry.file(res));
+          plainFiles.push(file);
+        }
+      }
+
+      if (allFilesWithPaths.length > 0) {
+        // Folder was dropped — upload all files preserving relative paths
+        const files = allFilesWithPaths.map((f) => f.file);
+        const pathMap = new Map<string, string>();
+        allFilesWithPaths.forEach((f) => pathMap.set(f.file.name + f.file.size, f.relativePath));
+        toast(`Uploading ${files.length} files from folder...`, { icon: '📂' });
+        uploadFiles(files, pathMap);
+        return;
+      }
+
+      if (plainFiles.length > 0) {
+        uploadFiles(plainFiles);
+        return;
+      }
+    }
+
+    // Fallback
     if (e.dataTransfer.files.length > 0) {
       uploadFiles(e.dataTransfer.files);
     }
@@ -634,6 +726,13 @@ function R2FileManager() {
             <Upload size={14} />
             Upload Files
           </button>
+          <button
+            onClick={() => folderInputRef.current?.click()}
+            className="flex items-center gap-1.5 bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded-lg text-sm font-medium transition-colors"
+          >
+            <FolderOpen size={14} />
+            Upload Folder
+          </button>
           <input
             ref={fileInputRef}
             type="file"
@@ -641,6 +740,26 @@ function R2FileManager() {
             accept="video/*,.mkv,.avi,.ts,.m3u8"
             className="hidden"
             onChange={(e) => e.target.files && uploadFiles(e.target.files)}
+          />
+          <input
+            ref={folderInputRef}
+            type="file"
+            className="hidden"
+            {...({ webkitdirectory: '', directory: '', multiple: true } as any)}
+            onChange={(e) => {
+              if (e.target.files && e.target.files.length > 0) {
+                const files = Array.from(e.target.files);
+                const pathMap = new Map<string, string>();
+                files.forEach((f) => {
+                  // webkitRelativePath = "FolderName/subfolder/file.mkv"
+                  if ((f as any).webkitRelativePath) {
+                    pathMap.set(f.name + f.size, (f as any).webkitRelativePath);
+                  }
+                });
+                toast(`Uploading ${files.length} files from folder...`, { icon: '📂' });
+                uploadFiles(files, pathMap);
+              }
+            }}
           />
         </div>
       </div>
