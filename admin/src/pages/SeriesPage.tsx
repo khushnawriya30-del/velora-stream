@@ -29,6 +29,7 @@ interface Episode {
   duration?: number;
   thumbnailUrl?: string;
   streamingSources: { quality: string; url: string; label: string }[];
+  isPremium?: boolean;
 }
 
 export default function SeriesPage() {

@@ -34,6 +34,8 @@ export interface Movie {
   tmdbId?: string;
   hlsUrl?: string;
   hlsStatus?: string;
+  isPremium?: boolean;
+  freeEpisodeCount?: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -107,6 +109,7 @@ export interface Episode {
   duration: number;
   thumbnailUrl?: string;
   streamingSources: StreamingSource[];
+  isPremium?: boolean;
 }
 
 export interface DashboardStats {
