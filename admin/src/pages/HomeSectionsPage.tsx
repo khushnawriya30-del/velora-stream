@@ -440,6 +440,7 @@ export default function HomeSectionsPage() {
     viewMoreText: 'View More',
     showTrendingNumbers: false,
     bannerImageUrl: '',
+    isPremiumOnly: false,
     section: 'home' as string,
   });
 
@@ -512,6 +513,7 @@ export default function HomeSectionsPage() {
       viewMoreText: 'View More',
       showTrendingNumbers: false,
       bannerImageUrl: '',
+      isPremiumOnly: false,
       section: activeSection,
     });
   };
@@ -526,6 +528,7 @@ export default function HomeSectionsPage() {
       viewMoreText: section.viewMoreText,
       showTrendingNumbers: section.showTrendingNumbers,
       bannerImageUrl: section.bannerImageUrl || '',
+      isPremiumOnly: (section as any).isPremiumOnly ?? false,
       section: section.section || activeSection,
     });
     setEditingId(section._id);
@@ -723,6 +726,19 @@ export default function HomeSectionsPage() {
               />
               <label htmlFor="showViewMore" className="text-sm text-text-secondary">
                 Show "View More" button
+              </label>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                id="isPremiumOnly"
+                checked={form.isPremiumOnly}
+                onChange={(e) => setForm({ ...form, isPremiumOnly: e.target.checked })}
+                className="rounded border-border"
+              />
+              <label htmlFor="isPremiumOnly" className="text-sm text-text-secondary">
+                Show only for Premium members
               </label>
             </div>
 

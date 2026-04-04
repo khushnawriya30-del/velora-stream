@@ -84,6 +84,9 @@ export class Episode {
 
   @Prop({ default: 0 })
   viewCount: number;
+
+  @Prop({ default: false })
+  isPremium: boolean; // Premium-only episode
 }
 
 export const EpisodeSchema = SchemaFactory.createForClass(Episode);

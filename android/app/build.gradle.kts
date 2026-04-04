@@ -15,8 +15,8 @@ android {
         applicationId = "com.cinevault.app"
         minSdk = 24
         targetSdk = 34
-        versionCode = 2
-        versionName = "1.1.0"
+        versionCode = 6
+        versionName = "1.4.2"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         vectorDrawables {
@@ -24,7 +24,7 @@ android {
         }
 
         buildConfigField("String", "BASE_URL", "\"https://velora-backend-fopqpbthva-el.a.run.app/api/v1/\"")
-        buildConfigField("String", "DRIVE_WORKER_URL", "\"https://drive-index.vishunawriya11122.workers.dev\"")
+        buildConfigField("String", "DRIVE_WORKER_URL", "\"https://drive-index.velora-stream.workers.dev\"")
     }
 
     signingConfigs {
@@ -48,7 +48,7 @@ android {
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
             buildConfigField("String", "BASE_URL", "\"https://velora-backend-fopqpbthva-el.a.run.app/api/v1/\"")
-            buildConfigField("String", "DRIVE_WORKER_URL", "\"https://drive-index.vishunawriya11122.workers.dev\"")
+            buildConfigField("String", "DRIVE_WORKER_URL", "\"https://drive-index.velora-stream.workers.dev\"")
             val signingConfig = signingConfigs.findByName("release")
             if (signingConfig?.storeFile?.exists() == true) {
                 this.signingConfig = signingConfig
@@ -122,11 +122,12 @@ dependencies {
     implementation("io.coil-kt:coil-compose:2.5.0")
 
     // ExoPlayer / Media3
-    implementation("androidx.media3:media3-exoplayer:1.2.1")
-    implementation("androidx.media3:media3-exoplayer-hls:1.2.1")
-    implementation("androidx.media3:media3-exoplayer-dash:1.2.1")
-    implementation("androidx.media3:media3-ui:1.2.1")
-    implementation("androidx.media3:media3-session:1.2.1")
+    implementation("androidx.media3:media3-exoplayer:1.4.1")
+    implementation("androidx.media3:media3-exoplayer-hls:1.4.1")
+    implementation("androidx.media3:media3-exoplayer-dash:1.4.1")
+    implementation("androidx.media3:media3-ui:1.4.1")
+    implementation("androidx.media3:media3-session:1.4.1")
+    implementation("androidx.media3:media3-datasource-okhttp:1.4.1")
 
     // Firebase
     implementation(platform("com.google.firebase:firebase-bom:32.7.0"))

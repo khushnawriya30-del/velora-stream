@@ -41,6 +41,7 @@ data class PlayerUiState(
     val availableAudioTracks: List<String> = emptyList(),
     val selectedAudioTrack: String = "default",
     val isSpeedOverride: Boolean = false,
+    val isPremium: Boolean = false,
 )
 
 @HiltViewModel
@@ -72,6 +73,12 @@ class PlayerViewModel @Inject constructor(
             loadContent()
             startProgressTimer()
             loadEpisodes()
+        }
+        // Collect premium status
+        viewModelScope.launch {
+            sessionManager.isPremium.collect { premium ->
+                _uiState.update { it.copy(isPremium = premium) }
+            }
         }
     }
 
@@ -202,20 +209,22 @@ class PlayerViewModel @Inject constructor(
      * If fallback URLs remain, switches to the next one automatically (silent retry).
      * If no more fallbacks, surfaces the error to the UI.
      */
-    fun onPlaybackError(errorMessage: String) {
+    fun onPlaybackError(message: String, playerPosition: Long = 0L) {
         val fallbacks = _uiState.value.fallbackUrls
         if (fallbacks.isNotEmpty()) {
             val next = fallbacks.first()
             val remaining = fallbacks.drop(1)
-            Log.d("CineVaultPlayer", "Playback error — switching to fallback URL (${remaining.size} remaining): ${next.take(100)}")
+            val resumeAt = if (playerPosition > 0) playerPosition else _uiState.value.currentPosition
+            Log.d("CineVaultPlayer", "Playback error — switching to fallback URL (${remaining.size} remaining) resumeAt=$resumeAt: ${next.take(100)}")
             _uiState.update { it.copy(
                 streamingUrl = next,
                 fallbackUrls = remaining,
+                currentPosition = resumeAt,
                 error = null,
             ) }
         } else {
-            Log.e("CineVaultPlayer", "All streaming layers exhausted: $errorMessage")
-            _uiState.update { it.copy(error = errorMessage) }
+            Log.e("CineVaultPlayer", "All streaming layers exhausted: $message")
+            _uiState.update { it.copy(error = message) }
         }
     }
 
@@ -234,14 +243,14 @@ class PlayerViewModel @Inject constructor(
                     val qualities = if (isHls)
                         listOf("auto", "1080p", "720p", "480p", "360p")
                     else
-                        listOf(source?.quality ?: "Original")
+                        listOf("1080p", "720p", "480p", "360p")
                     _uiState.update { it.copy(
                         isLoading = false,
                         streamingUrl = streamUrl,
                         fallbackUrls = fallbacks,
                         availableQualities = qualities,
                         isAdaptive = isHls,
-                        selectedQuality = if (isHls) "auto" else (source?.quality ?: "Original"),
+                        selectedQuality = if (isHls) "auto" else "1080p",
                         currentPosition = if (resumePosition >= 0) resumePosition else it.currentPosition,
                     ) }
                     return@launch
@@ -271,9 +280,7 @@ class PlayerViewModel @Inject constructor(
             val qualities = if (hasMultipleSources) {
                 listOf("auto") + sources.mapNotNull { it.quality }.distinct()
             } else {
-                // Single file: just show the detected quality
-                val sourceQuality = sources.firstOrNull()?.quality ?: "Original"
-                listOf(sourceQuality)
+                listOf("1080p", "720p", "480p", "360p")
             }
 
             // Pick source based on selected quality
@@ -298,7 +305,7 @@ class PlayerViewModel @Inject constructor(
                     fallbackUrls = fallbacks,
                     availableQualities = qualities,
                     isAdaptive = hasMultipleSources,
-                    selectedQuality = if (!hasMultipleSources) (sources.firstOrNull()?.quality ?: "Original") else it.selectedQuality,
+                    selectedQuality = if (!hasMultipleSources) "1080p" else it.selectedQuality,
                     currentPosition = if (resumePosition >= 0) resumePosition else it.currentPosition,
                 ) }
                 return@launch
@@ -512,13 +519,23 @@ class PlayerViewModel @Inject constructor(
     }
 
     fun updateAvailableQualities(detectedQualities: List<String>) {
-        val current = _uiState.value.availableQualities
-        if (current.size <= 1 && detectedQualities.isNotEmpty()) {
-            val sorted = detectedQualities.sortedByDescending { q ->
-                q.replace("p", "").toIntOrNull() ?: 0
+        // Only update the SELECTED QUALITY label to reflect what's actually playing.
+        // Never override availableQualities — it must stay as the hardcoded list
+        // (1080p / 720p / 480p / 360p) for all content types universally.
+        if (detectedQualities.isEmpty()) return
+        val highest = detectedQualities.maxByOrNull { q -> q.replace("p", "").toIntOrNull() ?: 0 }
+            ?: return
+        val current = _uiState.value
+        // For non-adaptive single-file content: highlight detected resolution in the list.
+        // If the detected height matches one of the hardcoded options, select it; otherwise
+        // keep the current selection so the UI label stays meaningful.
+        if (!current.isAdaptive) {
+            val match = current.availableQualities.find { it == highest }
+            if (match != null) {
+                _uiState.update { it.copy(selectedQuality = match) }
             }
-            _uiState.update { it.copy(availableQualities = listOf("auto") + sorted) }
         }
+        // For adaptive (HLS): track selector handles quality — don't touch selectedQuality
     }
 
     fun setQuality(quality: String) {

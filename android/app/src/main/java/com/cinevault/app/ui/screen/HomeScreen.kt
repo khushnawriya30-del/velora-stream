@@ -57,7 +57,7 @@ import kotlinx.coroutines.delay
 @Composable
 fun HomeScreen(
     onMovieClick: (String) -> Unit,
-    onPlayClick: (String) -> Unit = onMovieClick,
+    onPlayClick: (String, String?) -> Unit = { id, _ -> onMovieClick(id) },
     onSearchClick: () -> Unit,
     onNotificationsClick: () -> Unit = {},
     onSectionClick: ((HomeSectionDto) -> Unit)? = null,
@@ -124,7 +124,7 @@ fun HomeScreen(
                     SquareHeroBanner(
                         banner = if (uiState.tabBanners.isNotEmpty()) uiState.tabBanners[currentBannerIndex.coerceIn(0, (uiState.tabBanners.size - 1).coerceAtLeast(0))] else null,
                         onBannerClick = { contentId -> onMovieClick(contentId) },
-                        onPlayClick = { contentId -> onPlayClick(contentId) },
+                        onPlayClick = { contentId -> onPlayClick(contentId, null) },
                         onAddToWatchlist = { contentId -> onAddToWatchlist?.invoke(contentId) ?: viewModel.addToWatchlist(contentId) },
                         bannerCount = uiState.tabBanners.size,
                         currentIndex = currentBannerIndex.coerceIn(0, (uiState.tabBanners.size - 1).coerceAtLeast(0)),
@@ -363,7 +363,13 @@ fun HomeScreen(
 
                         // Continue button
                         Button(
-                            onClick = { onPlayClick(lastWatched.contentId) },
+                            onClick = {
+                                if (lastWatched.contentType == "episode" && lastWatched.seriesId != null) {
+                                    onPlayClick(lastWatched.seriesId!!, lastWatched.contentId)
+                                } else {
+                                    onPlayClick(lastWatched.contentId, null)
+                                }
+                            },
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = CineVaultTheme.colors.accentGold,
                             ),

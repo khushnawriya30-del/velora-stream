@@ -19,6 +19,7 @@ import {
   Clock,
   Trophy,
   Settings,
+  Crown,
 } from 'lucide-react';
 import { useState } from 'react';
 import { useAuthStore } from '../store/auth';
@@ -40,6 +41,7 @@ const navItems = [
   { to: '/upcoming', icon: Clock, label: 'Upcoming' },
   { to: '/storage', icon: Cloud, label: 'Storage CDN' },
   { to: '/ranking', icon: Trophy, label: 'Ranking' },
+  { to: '/premium', icon: Crown, label: 'Premium' },
   { to: '/settings', icon: Settings, label: 'Settings' },
 ];
 

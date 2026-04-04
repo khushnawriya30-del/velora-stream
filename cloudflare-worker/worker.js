@@ -247,74 +247,85 @@ function parseJsBlobs(html) {
  * ================================================================ */
 
 async function streamFile(fileId, request) {
-  // Step 1: Get the direct download URL (handle virus-scan confirmation)
-  const downloadUrl = `https://drive.usercontent.google.com/download?id=${fileId}&export=download&confirm=t`;
+  const startUrl = `https://drive.usercontent.google.com/download?id=${fileId}&export=download&confirm=t`;
+  const rangeHeader = request.headers.get('Range');
 
-  const headers = {
+  // Base headers for every outgoing request to Google
+  const baseHeaders = {
     'User-Agent': UA,
     Cookie: 'download_warning_token=1; CONSENT=PENDING+999',
   };
 
-  // Forward Range header from the client (ExoPlayer sends these)
-  const rangeHeader = request.headers.get('Range');
-  if (rangeHeader) {
-    headers['Range'] = rangeHeader;
-  }
+  // ──────────────────────────────────────────────────────────────────────────
+  // KEY FIX: Follow redirects MANUALLY so the Range header is NEVER dropped.
+  //
+  // Browsers (and Cloudflare Workers when redirect:'follow') strip non-simple
+  // headers such as Range when following a 3xx redirect. That causes Google's
+  // CDN to return a 200 (full file from byte 0) instead of a 206 (partial),
+  // so ExoPlayer thinks the stream starts at byte 0 and "rewinds" to the
+  // beginning on every seek.
+  //
+  // By using redirect:'manual' we catch each Location header ourselves and
+  // re-issue the request — with the Range header intact — until we reach the
+  // real content server.
+  // ──────────────────────────────────────────────────────────────────────────
+  const requestHeaders = { ...baseHeaders };
+  if (rangeHeader) requestHeaders['Range'] = rangeHeader;
 
-  const driveRes = await fetch(downloadUrl, {
-    headers,
-    redirect: 'follow',
-  });
+  let currentUrl = startUrl;
+  let driveRes = null;
 
-  // Detect HTML error pages (quota exceeded, file not found, etc.)
-  const ct = driveRes.headers.get('Content-Type') || '';
-  if (ct.includes('text/html')) {
-    // Google returned an HTML error page instead of video data
-    const bodyText = await driveRes.text();
-    if (bodyText.includes('Quota exceeded') || bodyText.includes('you can\u0027t view')) {
-      return jsonResponse(
-        { error: 'Google Drive quota exceeded. Try again later.' },
-        503,
-      );
+  for (let hop = 0; hop < 6; hop++) {
+    driveRes = await fetch(currentUrl, {
+      headers: requestHeaders,
+      redirect: 'manual', // Never let the runtime strip our Range header
+    });
+
+    const status = driveRes.status;
+
+    // 3xx → follow manually
+    if (status >= 300 && status < 400) {
+      const location = driveRes.headers.get('Location');
+      if (!location) break; // No Location? Give up and use what we have
+      await driveRes.body?.cancel(); // Discard the redirect body
+      currentUrl = location;
+      continue;
     }
-    return jsonResponse(
-      { error: 'Google Drive returned an error page instead of video.' },
-      502,
-    );
+
+    // Got a real response (2xx or 4xx/5xx) — stop following
+    break;
   }
 
-  // Reject suspiciously small files (likely error pages)
+  // ── Detect HTML error pages (quota exceeded, not found, etc.) ──
+  const mimeType = driveRes.headers.get('Content-Type') || '';
+  if (mimeType.includes('text/html')) {
+    const bodyText = await driveRes.text();
+    if (bodyText.includes('Quota exceeded') || bodyText.includes("can't view")) {
+      return jsonResponse({ error: 'Google Drive quota exceeded. Try again later.' }, 503);
+    }
+    return jsonResponse({ error: 'Google Drive returned an error page instead of video.' }, 502);
+  }
+
+  // ── Reject suspiciously tiny responses (error pages without Content-Type:text/html) ──
   const contentLength = driveRes.headers.get('Content-Length');
-  if (contentLength && !rangeHeader && Number(contentLength) < 10000) {
-    return jsonResponse(
-      { error: `File too small (${contentLength} bytes) — likely not a valid video.` },
-      502,
-    );
+  if (contentLength && !rangeHeader && Number(contentLength) < 10_000) {
+    return jsonResponse({ error: `Response too small (${contentLength} bytes) — likely not a video.` }, 502);
   }
 
-  // Build response headers
+  // ── Build response headers ──
   const responseHeaders = new Headers(CORS_HEADERS);
   responseHeaders.set('Accept-Ranges', 'bytes');
 
-  // Forward important headers from Google
-  const forwardHeaders = [
-    'Content-Type',
-    'Content-Length',
-    'Content-Range',
-    'Content-Disposition',
-  ];
-  for (const h of forwardHeaders) {
+  for (const h of ['Content-Type', 'Content-Length', 'Content-Range', 'Content-Disposition']) {
     const val = driveRes.headers.get(h);
     if (val) responseHeaders.set(h, val);
   }
 
-  // Default to video/mp4 if Content-Type is generic
-  const ct = driveRes.headers.get('Content-Type') || '';
-  if (ct === 'application/octet-stream' || !ct) {
+  // Default to video/mp4 when Content-Type is missing or generic
+  if (!mimeType.startsWith('video/') && !mimeType.startsWith('audio/')) {
     responseHeaders.set('Content-Type', 'video/mp4');
   }
 
-  // Cache for 1 hour at the edge
   responseHeaders.set('Cache-Control', 'public, max-age=3600');
 
   return new Response(driveRes.body, {

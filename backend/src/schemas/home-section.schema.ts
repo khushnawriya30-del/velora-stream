@@ -82,6 +82,9 @@ export class HomeSection {
 
   @Prop({ enum: TabSection, default: TabSection.HOME })
   section: TabSection;
+
+  @Prop({ default: false })
+  isPremiumOnly: boolean; // Only visible to premium users
 }
 
 export const HomeSectionSchema = SchemaFactory.createForClass(HomeSection);

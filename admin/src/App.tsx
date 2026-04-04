@@ -20,6 +20,7 @@ import StoragePage from './pages/StoragePage';
 import UpcomingPage from './pages/UpcomingPage';
 import RankingPage from './pages/RankingPage';
 import SettingsPage from './pages/SettingsPage';
+import PremiumPage from './pages/PremiumPage';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const token = useAuthStore((s) => s.token);
@@ -58,6 +59,7 @@ export default function App() {
         <Route path="storage" element={<StoragePage />} />
         <Route path="ranking" element={<RankingPage />} />
         <Route path="settings" element={<SettingsPage />} />
+        <Route path="premium" element={<PremiumPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

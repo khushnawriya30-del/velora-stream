@@ -161,7 +161,7 @@ export class HomeSectionsService implements OnModuleInit {
         movies = await this.movieModel
           .find(upFilter)
           .sort({ releaseDate: 1, createdAt: -1 })
-          .select('title posterUrl bannerUrl contentType contentRating genres releaseYear duration rating viewCount starRating videoQuality languages releaseDate');
+          .select('title posterUrl bannerUrl contentType contentRating genres releaseYear duration rating viewCount starRating videoQuality languages releaseDate isPremium');
 
         feed.push({
           id: section._id,
@@ -173,6 +173,7 @@ export class HomeSectionsService implements OnModuleInit {
           viewMoreText: section.viewMoreText,
           showTrendingNumbers: false,
           bannerImageUrl: null,
+          isPremiumOnly: !!(section as any).isPremiumOnly,
           items: movies,
         });
         continue;
@@ -198,11 +199,11 @@ export class HomeSectionsService implements OnModuleInit {
           .find(filter)
           .sort(sort)
           .limit(section.maxItems)
-          .select('title posterUrl bannerUrl contentType contentRating genres releaseYear duration rating viewCount starRating videoQuality languages');
+          .select('title posterUrl bannerUrl contentType contentRating genres releaseYear duration rating viewCount starRating videoQuality languages isPremium');
       } else {
         movies = await this.movieModel
           .find({ _id: { $in: section.contentIds }, status: ContentStatus.PUBLISHED })
-          .select('title posterUrl bannerUrl contentType contentRating genres releaseYear duration rating viewCount starRating videoQuality languages');
+          .select('title posterUrl bannerUrl contentType contentRating genres releaseYear duration rating viewCount starRating videoQuality languages isPremium');
       }
 
       // Always include the section, even without movies (show section title at minimum)
@@ -216,6 +217,7 @@ export class HomeSectionsService implements OnModuleInit {
         viewMoreText: section.viewMoreText,
         showTrendingNumbers: section.showTrendingNumbers,
         bannerImageUrl: section.bannerImageUrl,
+        isPremiumOnly: !!(section as any).isPremiumOnly,
         items: movies,
       });
     }

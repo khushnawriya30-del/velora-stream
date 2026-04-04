@@ -29,6 +29,7 @@ data class MovieDetailUiState(
     val isLiked: Boolean = false,
     val selectedTab: Int = 0,
     val watchProgress: WatchProgressDto? = null,
+    val isPremium: Boolean = false,
 )
 
 @HiltViewModel
@@ -50,6 +51,11 @@ class MovieDetailViewModel @Inject constructor(
         if (movieId.isNotEmpty()) {
             loadMovieDetail()
             observeLikedState()
+        }
+        viewModelScope.launch {
+            sessionManager.isPremium.collect { premium ->
+                _uiState.update { it.copy(isPremium = premium) }
+            }
         }
     }
 

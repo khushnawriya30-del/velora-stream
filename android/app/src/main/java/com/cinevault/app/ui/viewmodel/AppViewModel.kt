@@ -6,6 +6,7 @@ import com.cinevault.app.BuildConfig
 import com.cinevault.app.data.local.SessionManager
 import com.cinevault.app.data.model.AppVersionResponse
 import com.cinevault.app.data.remote.CineVaultApi
+import com.cinevault.app.data.repository.PremiumRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -16,7 +17,8 @@ import javax.inject.Inject
 @HiltViewModel
 class AppViewModel @Inject constructor(
     private val api: CineVaultApi,
-    private val sessionManager: SessionManager
+    private val sessionManager: SessionManager,
+    private val premiumRepository: PremiumRepository,
 ) : ViewModel() {
 
     private val _updateInfo = MutableStateFlow<AppVersionResponse?>(null)
@@ -24,6 +26,7 @@ class AppViewModel @Inject constructor(
 
     init {
         checkForUpdate()
+        refreshPremiumStatus()
     }
 
     fun checkForUpdate() {
@@ -60,5 +63,15 @@ class AppViewModel @Inject constructor(
     /** Session-only dismiss — popup reappears on next launch (for "Skip for now"). */
     fun dismissUpdate() {
         _updateInfo.value = null
+    }
+
+    private fun refreshPremiumStatus() {
+        viewModelScope.launch {
+            // Only refresh if user is logged in
+            val token = sessionManager.accessToken.first()
+            if (token != null) {
+                runCatching { premiumRepository.getPremiumStatus() }
+            }
+        }
     }
 }

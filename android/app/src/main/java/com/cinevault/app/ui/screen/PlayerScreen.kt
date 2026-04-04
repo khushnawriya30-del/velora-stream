@@ -51,15 +51,18 @@ import androidx.core.view.WindowInsetsControllerCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import android.util.Log
 import androidx.activity.compose.BackHandler
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.common.TrackSelectionOverride
-import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
+import androidx.media3.extractor.DefaultExtractorsFactory
 import androidx.media3.ui.PlayerView
 import com.cinevault.app.ui.viewmodel.PlayerViewModel
 import kotlinx.coroutines.delay
@@ -138,16 +141,26 @@ fun PlayerScreen(
     // -- ExoPlayer Setup --
     val trackSelector = remember { DefaultTrackSelector(context) }
     val exoPlayer = remember {
-        val httpFactory = DefaultHttpDataSource.Factory()
-            .setAllowCrossProtocolRedirects(true)
-            .setConnectTimeoutMs(15_000)
-            .setReadTimeoutMs(30_000)
+        // Use OkHttp for more reliable HTTP handling (Range requests, redirects, timeouts)
+        val okHttpClient = okhttp3.OkHttpClient.Builder()
+            .connectTimeout(15, java.util.concurrent.TimeUnit.SECONDS)
+            .readTimeout(60, java.util.concurrent.TimeUnit.SECONDS)  // Long timeout for seeking in large files
+            .followRedirects(true)
+            .followSslRedirects(true)
+            .build()
+        val dataSourceFactory = androidx.media3.datasource.okhttp.OkHttpDataSource.Factory(okHttpClient)
             .setUserAgent("Mozilla/5.0 (Linux; Android) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36")
+        // Enable approximate seeking for containers without proper seek tables
+        val extractorsFactory = DefaultExtractorsFactory()
+            .setConstantBitrateSeekingAlwaysEnabled(true)
         ExoPlayer.Builder(context)
-            .setMediaSourceFactory(DefaultMediaSourceFactory(httpFactory))
+            .setMediaSourceFactory(DefaultMediaSourceFactory(dataSourceFactory, extractorsFactory))
             .setTrackSelector(trackSelector)
             .build()
-            .apply { playWhenReady = true }
+            .apply {
+                playWhenReady = true
+                setSeekParameters(androidx.media3.exoplayer.SeekParameters.CLOSEST_SYNC)
+            }
     }
 
     var autoQualityLabel by remember { mutableStateOf("Auto") }
@@ -158,13 +171,40 @@ fun PlayerScreen(
         val listener = object : Player.Listener {
             override fun onPlayerError(error: PlaybackException) {
                 Log.e("CineVaultPlayer", "Playback error: ${error.errorCodeName} - ${error.message}", error)
-                viewModel.onPlaybackError("Playback error: ${error.errorCodeName}\n${error.message ?: "Unknown error"}")
+                val pos = exoPlayer.currentPosition.coerceAtLeast(0)
+                viewModel.onPlaybackError(
+                    message = "Playback error: ${error.errorCodeName}\n${error.message ?: "Unknown error"}",
+                    playerPosition = pos,
+                )
             }
             override fun onPlaybackStateChanged(playbackState: Int) {
+                val stateName = when (playbackState) {
+                    Player.STATE_IDLE -> "IDLE"
+                    Player.STATE_BUFFERING -> "BUFFERING"
+                    Player.STATE_READY -> "READY"
+                    Player.STATE_ENDED -> "ENDED"
+                    else -> "UNKNOWN($playbackState)"
+                }
+                Log.d("CineVaultPlayer", "State: $stateName, seekable=${exoPlayer.isCurrentMediaItemSeekable}, duration=${exoPlayer.duration}, pos=${exoPlayer.currentPosition}")
                 if (playbackState == Player.STATE_ENDED) {
                     val dur = exoPlayer.duration.coerceAtLeast(1)
                     viewModel.saveExplicitProgress(dur, dur)
                 }
+            }
+            override fun onPositionDiscontinuity(
+                oldPosition: Player.PositionInfo,
+                newPosition: Player.PositionInfo,
+                reason: Int
+            ) {
+                val reasonName = when (reason) {
+                    Player.DISCONTINUITY_REASON_SEEK -> "SEEK"
+                    Player.DISCONTINUITY_REASON_SEEK_ADJUSTMENT -> "SEEK_ADJUSTMENT"
+                    Player.DISCONTINUITY_REASON_AUTO_TRANSITION -> "AUTO_TRANSITION"
+                    Player.DISCONTINUITY_REASON_REMOVE -> "REMOVE"
+                    Player.DISCONTINUITY_REASON_INTERNAL -> "INTERNAL"
+                    else -> "UNKNOWN($reason)"
+                }
+                Log.d("CineVaultPlayer", "Position discontinuity: $reasonName, from=${oldPosition.positionMs}ms to=${newPosition.positionMs}ms")
             }
         }
         exoPlayer.addListener(listener)
@@ -177,23 +217,41 @@ fun PlayerScreen(
         onBack()
     }
 
+    // Pause playback when app goes to background or screen is locked
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner, exoPlayer) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_PAUSE) exoPlayer.pause()
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+
     // Quality track selector
-    LaunchedEffect(uiState.selectedQuality) {
+    LaunchedEffect(uiState.selectedQuality, uiState.isPremium) {
         val quality = uiState.selectedQuality
+        // Only apply track constraints for HLS (adaptive) content.
+        // For progressive single-file streams, track selection has no effect
+        // (there's only one video track) and changing parameters can cause rebuffering.
+        if (!uiState.isAdaptive) return@LaunchedEffect
         if (quality == "auto") {
+            // Non-premium users: cap auto at 720p
+            val maxAutoHeight = if (uiState.isPremium) Int.MAX_VALUE else 720
             exoPlayer.trackSelectionParameters = exoPlayer.trackSelectionParameters
                 .buildUpon()
-                .setMaxVideoSize(Int.MAX_VALUE, Int.MAX_VALUE)
+                .setMaxVideoSize(Int.MAX_VALUE, maxAutoHeight)
                 .setForceHighestSupportedBitrate(false)
                 .setForceLowestBitrate(false)
                 .build()
         } else {
             val maxHeight = quality.replace("p", "").toIntOrNull() ?: Int.MAX_VALUE
+            // Non-premium: clamp to 720p
+            val clampedHeight = if (!uiState.isPremium && maxHeight > 720) 720 else maxHeight
             exoPlayer.trackSelectionParameters = exoPlayer.trackSelectionParameters
                 .buildUpon()
-                .setMaxVideoSize(Int.MAX_VALUE, maxHeight)
+                .setMaxVideoSize(Int.MAX_VALUE, clampedHeight)
                 .setForceHighestSupportedBitrate(false)
-                .setForceLowestBitrate(maxHeight <= 360)
+                .setForceLowestBitrate(clampedHeight <= 360)
                 .build()
         }
     }
@@ -273,11 +331,17 @@ fun PlayerScreen(
                     for (i in 0 until group.length) {
                         val format = group.getTrackFormat(i)
                         val lang = format.language
-                        val label = format.label ?: if (lang != null) {
+                        // Always derive label from language code — ignore format.label which
+                        // pirate sites embed with their website name (e.g. "HDHub4u.Tv")
+                        val label = if (lang != null) {
                             val locale = Locale.forLanguageTag(lang)
                             val displayName = locale.getDisplayLanguage(Locale.ENGLISH)
                             if (displayName.isNotBlank() && displayName != lang) displayName else lang.uppercase()
-                        } else "Track ${discovered.size + 1}"
+                        } else {
+                            // No language code — use format.label but strip website names
+                            val rawLabel = format.label ?: "Track ${discovered.size + 1}"
+                            rawLabel.split(Regex("[–\\-|(/]")).first().trim().ifBlank { rawLabel }
+                        }
                         discovered.add(AudioTrackInfo(label, lang, globalGroupIdx, i))
                     }
                 }
@@ -334,6 +398,38 @@ fun PlayerScreen(
     var showAudioPopup by remember { mutableStateOf(false) }
     var showEpisodePopup by remember { mutableStateOf(false) }
 
+    // -- Promo Ad for non-premium users (every 20 minutes) --
+    var showPromoAd by remember { mutableStateOf(false) }
+    var promoSkipCountdown by remember { mutableIntStateOf(5) }
+    var promoWatchTime by remember { mutableLongStateOf(0L) }
+
+    // Track accumulated watch time and show promo every 20 minutes
+    LaunchedEffect(uiState.isPlaying, uiState.isPremium) {
+        if (uiState.isPremium || !uiState.isPlaying) return@LaunchedEffect
+        while (true) {
+            delay(1000)
+            if (uiState.isPlaying && !showPromoAd) {
+                promoWatchTime += 1000
+                if (promoWatchTime >= 20 * 60 * 1000) { // 20 minutes
+                    showPromoAd = true
+                    promoSkipCountdown = 5
+                    promoWatchTime = 0L
+                    exoPlayer.pause()
+                }
+            }
+        }
+    }
+
+    // Promo skip countdown
+    LaunchedEffect(showPromoAd) {
+        if (!showPromoAd) return@LaunchedEffect
+        promoSkipCountdown = 5
+        while (promoSkipCountdown > 0) {
+            delay(1000)
+            promoSkipCountdown--
+        }
+    }
+
     // -- Toast --
     var toastMessage by remember { mutableStateOf<String?>(null) }
     LaunchedEffect(toastMessage) {
@@ -382,11 +478,21 @@ fun PlayerScreen(
                 detectTapGestures(
                     onTap = { viewModel.toggleControls() },
                     onDoubleTap = { offset ->
+                        val pos = exoPlayer.currentPosition.coerceAtLeast(0)
+                        val dur = exoPlayer.duration.coerceAtLeast(0)
+                        val seekable = exoPlayer.isCurrentMediaItemSeekable
+                        Log.d("CineVaultPlayer", "DOUBLE-TAP: pos=$pos, dur=$dur, seekable=$seekable, side=${if (offset.x < screenWidth / 2) "LEFT" else "RIGHT"}")
                         if (offset.x < screenWidth / 2) {
-                            exoPlayer.seekTo((exoPlayer.currentPosition - 10_000).coerceAtLeast(0))
+                            val target = (pos - 10_000).coerceAtLeast(0)
+                            Log.d("CineVaultPlayer", "SEEK-BACK: target=$target")
+                            exoPlayer.seekTo(target)
+                            viewModel.seekTo(target)
                             doubleTapLabel = "bk"
                         } else {
-                            exoPlayer.seekTo(exoPlayer.currentPosition + 10_000)
+                            val target = if (dur > 0) (pos + 10_000).coerceAtMost(dur) else pos + 10_000
+                            Log.d("CineVaultPlayer", "SEEK-FWD: target=$target")
+                            exoPlayer.seekTo(target)
+                            viewModel.seekTo(target)
                             doubleTapLabel = "fw"
                         }
                     },
@@ -742,7 +848,9 @@ fun PlayerScreen(
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
                             IconButton(onClick = {
-                                exoPlayer.seekTo((exoPlayer.currentPosition - 10_000).coerceAtLeast(0))
+                                val target = (exoPlayer.currentPosition - 10_000).coerceAtLeast(0)
+                                exoPlayer.seekTo(target)
+                                viewModel.seekTo(target)
                                 doubleTapLabel = "bk"
                             }) {
                                 Icon(Icons.Filled.Replay10, contentDescription = "Rewind 10s", tint = Color.White, modifier = Modifier.size(42.dp))
@@ -776,7 +884,13 @@ fun PlayerScreen(
                             }
 
                             IconButton(onClick = {
-                                exoPlayer.seekTo(exoPlayer.currentPosition + 10_000)
+                                val pos = exoPlayer.currentPosition.coerceAtLeast(0)
+                                val dur = exoPlayer.duration.coerceAtLeast(0)
+                                val seekable = exoPlayer.isCurrentMediaItemSeekable
+                                val target = if (dur > 0) (pos + 10_000).coerceAtMost(dur) else pos + 10_000
+                                Log.d("CineVaultPlayer", "FWD-BTN: pos=$pos, dur=$dur, seekable=$seekable, target=$target")
+                                exoPlayer.seekTo(target)
+                                viewModel.seekTo(target)
                                 doubleTapLabel = "fw"
                             }) {
                                 Icon(Icons.Filled.Forward10, contentDescription = "Forward 10s", tint = Color.White, modifier = Modifier.size(42.dp))
@@ -797,9 +911,14 @@ fun PlayerScreen(
                                 totalDuration = uiState.totalDuration,
                                 bufferedPosition = bufferedPosition,
                                 onSeek = { fraction ->
-                                    val seekPos = (fraction * uiState.totalDuration).toLong()
-                                    exoPlayer.seekTo(seekPos)
-                                    viewModel.seekTo(seekPos)
+                                    val dur = uiState.totalDuration
+                                    if (dur > 0) {
+                                        val seekPos = (fraction * dur).toLong()
+                                        val seekable = exoPlayer.isCurrentMediaItemSeekable
+                                        Log.d("CineVaultPlayer", "PROGRESS-BAR: fraction=$fraction, dur=$dur, seekPos=$seekPos, seekable=$seekable, curPos=${exoPlayer.currentPosition}")
+                                        exoPlayer.seekTo(seekPos)
+                                        viewModel.seekTo(seekPos)
+                                    }
                                 },
                             )
 
@@ -910,7 +1029,7 @@ fun PlayerScreen(
         // -- Quality Popup --
         if (showQualityPopup) {
             ObsidianSidePanel(title = "VIDEO QUALITY", onDismiss = { showQualityPopup = false }) {
-                val qualities = if (uiState.isAdaptive) uiState.availableQualities else listOf(uiState.selectedQuality)
+                val qualities = uiState.availableQualities
                 qualities.forEach { quality ->
                     val displayLabel = when (quality) {
                         "auto" -> autoQualityLabel
@@ -934,12 +1053,19 @@ fun PlayerScreen(
                         "240p" -> "0.5 Mbps"
                         else -> ""
                     }
-                    val isPremiumQuality = quality == "1080p"
+                    val isPremiumQuality = quality == "1080p" || quality == "1440p" || quality == "2160p"
+                    val isLocked = isPremiumQuality && !uiState.isPremium
                     ObsidianMenuItem(
-                        label = displayLabel,
-                        subtitle = if (isPremiumQuality) "Premium • $subtitle" else subtitle,
+                        label = if (isLocked) "$displayLabel 👑" else displayLabel,
+                        subtitle = if (isLocked) "Premium Only" else if (isPremiumQuality) "Premium • $subtitle" else subtitle,
                         isSelected = uiState.selectedQuality == quality,
-                        onClick = { viewModel.setQuality(quality); showQualityPopup = false; toastMessage = "Quality: $displayLabel" },
+                        onClick = {
+                            if (isLocked) {
+                                toastMessage = "Upgrade to Premium for 1080p+ quality"
+                            } else {
+                                viewModel.setQuality(quality); showQualityPopup = false; toastMessage = "Quality: $displayLabel"
+                            }
+                        },
                     )
                     Spacer(Modifier.height(6.dp))
                 }
@@ -1019,6 +1145,63 @@ fun PlayerScreen(
                                 }
                             }
                         }
+                    }
+                }
+            }
+        }
+
+        // -- Promo Ad Overlay (non-premium, every 20 minutes) --
+        if (showPromoAd) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = 0.95f))
+                    .zIndex(100f),
+                contentAlignment = Alignment.Center,
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center,
+                    modifier = Modifier.padding(32.dp),
+                ) {
+                    Text(
+                        "👑",
+                        fontSize = 48.sp,
+                    )
+                    Spacer(Modifier.height(16.dp))
+                    Text(
+                        "Upgrade to Premium",
+                        color = GoldAccent,
+                        fontSize = 22.sp,
+                        fontWeight = FontWeight.Bold,
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        "Enjoy ad-free streaming, 1080p quality,\nand exclusive content",
+                        color = Color.White.copy(alpha = 0.7f),
+                        fontSize = 14.sp,
+                        textAlign = TextAlign.Center,
+                    )
+                    Spacer(Modifier.height(24.dp))
+                    Button(
+                        onClick = {
+                            if (promoSkipCountdown <= 0) {
+                                showPromoAd = false
+                                exoPlayer.play()
+                            }
+                        },
+                        enabled = promoSkipCountdown <= 0,
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = if (promoSkipCountdown <= 0) GoldAccent else SurfaceElevated,
+                        ),
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier.width(200.dp),
+                    ) {
+                        Text(
+                            if (promoSkipCountdown > 0) "Skip in ${promoSkipCountdown}s" else "Continue Watching",
+                            color = if (promoSkipCountdown <= 0) Color.Black else Color.White.copy(alpha = 0.5f),
+                            fontWeight = FontWeight.Bold,
+                        )
                     }
                 }
             }

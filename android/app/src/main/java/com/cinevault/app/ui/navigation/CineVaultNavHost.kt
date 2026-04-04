@@ -548,8 +548,8 @@ fun CineVaultNavHost(navController: NavHostController = rememberNavController())
             composable(Screen.Home.route) {
                 HomeScreen(
                     onMovieClick = { movieId -> navController.navigate(Screen.MovieDetail.createRoute(movieId)) },
-                    onPlayClick = { contentId ->
-                        requireAuth { navController.navigate(Screen.Player.createRoute(contentId, null)) }
+                    onPlayClick = { contentId, episodeId ->
+                        requireAuth { navController.navigate(Screen.Player.createRoute(contentId, episodeId)) }
                     },
                     onSearchClick = { navController.navigate(Screen.Find.route) },
                     onNotificationsClick = { navController.navigate(Screen.Notifications.route) },
@@ -658,6 +658,7 @@ fun CineVaultNavHost(navController: NavHostController = rememberNavController())
                     onNavigateToAbout = { navController.navigate(Screen.AboutCineVault.route) },
                     onNavigateToPrivacyPolicy = { navController.navigate(Screen.PrivacyPolicy.route) },
                     onNavigateToTerms = { navController.navigate(Screen.TermsOfService.route) },
+                    onNavigateToPremium = { navController.navigate(Screen.ActivatePremium.route) },
                 )
             }
 
@@ -698,6 +699,10 @@ fun CineVaultNavHost(navController: NavHostController = rememberNavController())
 
             composable(Screen.TermsOfService.route) {
                 TermsOfServiceScreen(onBack = { navController.popBackStack() })
+            }
+
+            composable(Screen.ActivatePremium.route) {
+                ActivatePremiumScreen(onBack = { navController.popBackStack() })
             }
 
             composable(Screen.Notifications.route) {

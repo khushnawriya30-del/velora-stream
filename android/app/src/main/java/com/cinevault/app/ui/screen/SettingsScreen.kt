@@ -36,6 +36,7 @@ fun SettingsScreen(
     onNavigateToAbout: () -> Unit = {},
     onNavigateToPrivacyPolicy: () -> Unit = {},
     onNavigateToTerms: () -> Unit = {},
+    onNavigateToPremium: () -> Unit = {},
     authViewModel: AuthViewModel = hiltViewModel(),
 ) {
     var showLogoutDialog by remember { mutableStateOf(false) }
@@ -99,6 +100,15 @@ fun SettingsScreen(
                     SettingsRowItem(icon = Icons.Filled.Lock, title = "Privacy & Security", onClick = onNavigateToPrivacySecurity)
                     HorizontalDivider(color = CineVaultTheme.colors.border.copy(alpha = 0.3f), modifier = Modifier.padding(start = 52.dp))
                     SettingsRowItem(icon = Icons.Filled.Password, title = "Change Password", onClick = onNavigateToChangePassword)
+                }
+            }
+
+            Spacer(Modifier.height(20.dp))
+
+            SettingsGroupHeader("Premium")
+            Surface(shape = RoundedCornerShape(14.dp), color = CineVaultTheme.colors.surface, modifier = Modifier.fillMaxWidth()) {
+                Column {
+                    SettingsRowItem(icon = Icons.Filled.Star, title = "Premium Subscription", onClick = onNavigateToPremium)
                 }
             }
 

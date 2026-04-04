@@ -59,7 +59,7 @@ interface ScannedSeason {
 @Injectable()
 export class BunnyService {
   private readonly logger = new Logger(BunnyService.name);
-  private readonly workerUrl = 'https://drive-index.vishunawriya11122.workers.dev';
+  private readonly workerUrl = 'https://drive-index.velora-stream.workers.dev';
 
   // Multi-job progress tracking
   private jobs = new Map<string, StreamProgress>();

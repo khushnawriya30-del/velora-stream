@@ -45,7 +45,10 @@ data class UserDto(
     val avatarUrl: String?,
     val role: String,
     val authProvider: String? = null,
-    val isEmailVerified: Boolean
+    val isEmailVerified: Boolean,
+    val isPremium: Boolean = false,
+    val premiumPlan: String? = null,
+    val premiumExpiresAt: String? = null,
 )
 
 // Profile
@@ -99,6 +102,8 @@ data class MovieDto(
     val tags: List<String>?,
     val platformOrigin: String?,
     val isFeatured: Boolean?,
+    val isPremium: Boolean? = false,
+    val freeEpisodeCount: Int? = 0,
     val rankingLabel: String?,
     val videoQuality: String?,
     val hlsUrl: String?,
@@ -116,7 +121,12 @@ data class MovieDto(
             if (langs.isEmpty()) return null
             if (langs.size >= 3) return "MULTILINGUAL"
             if (langs.size == 2) return "DUAL AUDIO"
-            return langs.first().uppercase()
+            // Strip website names / source info after separators (e.g. "Hindi – Vegamovies" → "Hindi")
+            val cleaned = langs.first()
+                .split(Regex("[–\\-|(/]"))
+                .first()
+                .trim()
+            return cleaned.ifBlank { langs.first() }.uppercase()
         }
 }
 
@@ -214,6 +224,7 @@ data class HomeSectionDto(
     val showTrendingNumbers: Boolean = false,
     val bannerImageUrl: String? = null,
     val contentId: String? = null, // For mid_banner: linked movie/show ID
+    val isPremiumOnly: Boolean = false,
     val items: List<MovieDto> = emptyList()
 )
 
@@ -242,7 +253,8 @@ data class EpisodeDto(
     val skipIntro: SkipTimestampDto?,
     val skipRecap: SkipTimestampDto?,
     val subtitles: List<SubtitleTrackDto>?,
-    val audioTracks: List<AudioTrackDto>?
+    val audioTracks: List<AudioTrackDto>?,
+    val isPremium: Boolean = false,
 )
 
 data class SkipTimestampDto(val start: Int, val end: Int)
@@ -356,4 +368,19 @@ data class NotificationDto(
 data class NotificationsResponse(
     val notifications: List<NotificationDto>,
     val total: Int,
+)
+
+// Premium
+data class ActivateCodeRequest(val code: String)
+data class PremiumStatusResponse(
+    val isPremium: Boolean,
+    val plan: String?,
+    val expiresAt: String?,
+    val activatedAt: String?,
+    val daysRemaining: Int?,
+)
+data class ActivateCodeResponse(
+    val message: String,
+    val user: UserDto?,
+    val expiresAt: String?,
 )

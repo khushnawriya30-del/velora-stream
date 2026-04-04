@@ -40,6 +40,11 @@ class SessionManager @Inject constructor(@ApplicationContext private val context
 
         // Update tracking — persisted so popup doesn't repeat after installing
         private val INSTALLED_VERSION_CODE = intPreferencesKey("installed_version_code")
+
+        // Premium
+        private val IS_PREMIUM = booleanPreferencesKey("is_premium")
+        private val PREMIUM_PLAN = stringPreferencesKey("premium_plan")
+        private val PREMIUM_EXPIRES_AT = stringPreferencesKey("premium_expires_at")
     }
 
     val accessToken: Flow<String?> = context.dataStore.data.map { it[ACCESS_TOKEN] }
@@ -66,6 +71,10 @@ class SessionManager @Inject constructor(@ApplicationContext private val context
 
     /** The highest versionCode the user has explicitly confirmed installing. */
     val installedVersionCode: Flow<Int> = context.dataStore.data.map { it[INSTALLED_VERSION_CODE] ?: 0 }
+
+    val isPremium: Flow<Boolean> = context.dataStore.data.map { it[IS_PREMIUM] ?: false }
+    val premiumPlan: Flow<String?> = context.dataStore.data.map { it[PREMIUM_PLAN] }
+    val premiumExpiresAt: Flow<String?> = context.dataStore.data.map { it[PREMIUM_EXPIRES_AT] }
 
     // Saved account flows
     val lastGoogleName: Flow<String?> = context.dataStore.data.map { it[LAST_GOOGLE_NAME] }
@@ -181,6 +190,14 @@ class SessionManager @Inject constructor(@ApplicationContext private val context
         context.dataStore.edit { prefs ->
             val current = prefs[INSTALLED_VERSION_CODE] ?: 0
             if (versionCode > current) prefs[INSTALLED_VERSION_CODE] = versionCode
+        }
+    }
+
+    suspend fun savePremiumStatus(isPremium: Boolean, plan: String?, expiresAt: String?) {
+        context.dataStore.edit { prefs ->
+            prefs[IS_PREMIUM] = isPremium
+            if (plan != null) prefs[PREMIUM_PLAN] = plan else prefs.remove(PREMIUM_PLAN)
+            if (expiresAt != null) prefs[PREMIUM_EXPIRES_AT] = expiresAt else prefs.remove(PREMIUM_EXPIRES_AT)
         }
     }
 

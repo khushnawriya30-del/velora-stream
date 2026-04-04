@@ -257,6 +257,13 @@ interface CineVaultApi {
     @GET("streaming/url")
     suspend fun getStreamUrl(@Query("path") path: String): Response<SignedUrlResponse>
 
+    // Premium
+    @GET("premium/status")
+    suspend fun getPremiumStatus(): Response<PremiumStatusResponse>
+
+    @POST("premium/activate")
+    suspend fun activatePremiumCode(@Body request: ActivateCodeRequest): Response<ActivateCodeResponse>
+
     // App Version
     @GET("app-version")
     suspend fun getAppVersion(): Response<AppVersionResponse>

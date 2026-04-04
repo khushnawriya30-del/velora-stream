@@ -80,6 +80,25 @@ export class User {
 
   @Prop()
   passwordResetOtpExpires: Date;
+
+  // ── Premium Subscription ──
+  @Prop({ default: false })
+  isPremium: boolean;
+
+  @Prop()
+  premiumPlan: string; // '1month', '3months', '6months', '1year'
+
+  @Prop()
+  premiumExpiresAt: Date;
+
+  @Prop()
+  premiumActivatedAt: Date;
+
+  @Prop()
+  activationCode: string; // The code used to activate
+
+  @Prop({ default: 0 })
+  maxDevices: number; // 0 = unlimited for free, 2 for premium
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

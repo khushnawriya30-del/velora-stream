@@ -383,6 +383,8 @@ export default function MovieFormPage() {
     languages: [] as string[],
     rankingLabel: '',
     isFeatured: false,
+    isPremium: false,
+    freeEpisodeCount: 0,
     platformOrigin: '',
     imdbId: '',
     tmdbId: '',
@@ -444,6 +446,8 @@ export default function MovieFormPage() {
         languages: movie.languages ?? [],
         rankingLabel: movie.rankingLabel ?? '',
         isFeatured: movie.isFeatured ?? false,
+        isPremium: movie.isPremium ?? false,
+        freeEpisodeCount: movie.freeEpisodeCount ?? 0,
         platformOrigin: movie.platformOrigin ?? '',
         imdbId: movie.imdbId ?? '',
         tmdbId: movie.tmdbId ?? '',
@@ -868,6 +872,34 @@ export default function MovieFormPage() {
                 Feature this content (show in hero banners)
               </label>
             </div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+            <div className="flex items-center gap-3 pt-2">
+              <input
+                type="checkbox"
+                id="isPremium"
+                checked={form.isPremium}
+                onChange={(e) => setForm({ ...form, isPremium: e.target.checked })}
+                className="w-4 h-4 accent-gold"
+              />
+              <label htmlFor="isPremium" className="text-sm text-text-primary cursor-pointer">
+                Premium Only (requires subscription)
+              </label>
+            </div>
+            {form.isPremium && (
+              <div>
+                <label className="block text-sm text-text-secondary mb-1">Free Episodes Count</label>
+                <input
+                  type="number"
+                  min="0"
+                  value={form.freeEpisodeCount}
+                  onChange={(e) => setForm({ ...form, freeEpisodeCount: Math.max(0, parseInt(e.target.value) || 0) })}
+                  placeholder="0"
+                  className="w-full bg-surface-light border border-border rounded-xl px-4 py-2.5 text-text-primary focus:outline-none focus:border-gold"
+                />
+                <p className="text-xs text-text-muted mt-1">Number of episodes free users can watch</p>
+              </div>
+            )}
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>

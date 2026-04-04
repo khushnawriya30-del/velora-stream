@@ -173,6 +173,12 @@ export class Movie {
 
   @Prop()
   driveFolderUrl: string; // Google Drive folder link for auto-indexing episodes
+
+  @Prop({ default: false })
+  isPremium: boolean; // Premium-only content
+
+  @Prop({ default: 0 })
+  freeEpisodeCount: number; // For series: first N episodes free, rest premium
 }
 
 export const MovieSchema = SchemaFactory.createForClass(Movie);

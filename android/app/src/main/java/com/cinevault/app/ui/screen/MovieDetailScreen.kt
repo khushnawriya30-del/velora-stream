@@ -175,6 +175,9 @@ fun MovieDetailScreen(
     val hasTrailer = !movie.trailerUrl.isNullOrBlank()
     val isSeries = movie.contentType in listOf("web_series", "tv_show", "anime")
     val isUpcoming = movie.status == "upcoming"
+    val isContentPremium = movie.isPremium == true
+    val isUserPremium = uiState.isPremium
+    val freeEpisodeCount = movie.freeEpisodeCount ?: 0
 
     // Resume watching logic
     val watchProgress = uiState.watchProgress
@@ -508,8 +511,47 @@ fun MovieDetailScreen(
 
             // ── Premium WATCH NOW / RESUME WATCHING button (hidden for upcoming) ──
             if (!isUpcoming) {
+            // Show premium badge if content is premium
+            if (isContentPremium && !isUserPremium && !isSeries) {
+                // Movie-level premium lock
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 8.dp)
+                        .background(
+                            Brush.horizontalGradient(
+                                listOf(Color(0xFF3A2F0B), Color(0xFF2A1F08))
+                            ),
+                            RoundedCornerShape(12.dp)
+                        )
+                        .padding(12.dp),
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text("👑", fontSize = 18.sp)
+                        Spacer(Modifier.width(8.dp))
+                        Column {
+                            Text(
+                                "Premium Content",
+                                color = Color(0xFFD4AF37),
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 14.sp,
+                            )
+                            Text(
+                                "Activate a Premium code to watch this content",
+                                color = Color.White.copy(alpha = 0.6f),
+                                fontSize = 12.sp,
+                            )
+                        }
+                    }
+                }
+            }
             Button(
                 onClick = {
+                    if (isContentPremium && !isUserPremium && !isSeries) {
+                        // Premium content locked for free users (movies)
+                        android.widget.Toast.makeText(context, "Activate Premium to watch this content", android.widget.Toast.LENGTH_SHORT).show()
+                        return@Button
+                    }
                     if (movie.id.isNotBlank()) {
                         val episodeIdToPlay = when {
                             // Series: resume last watched episode
@@ -547,14 +589,18 @@ fun MovieDetailScreen(
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(
-                            Icons.Default.PlayArrow,
+                            if (isContentPremium && !isUserPremium && !isSeries) Icons.Default.Lock else Icons.Default.PlayArrow,
                             "Play",
                             tint = Color.Black,
                             modifier = Modifier.size(26.dp)
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            if (hasProgress) "RESUME WATCHING" else "WATCH NOW",
+                            when {
+                                isContentPremium && !isUserPremium && !isSeries -> "PREMIUM ONLY 👑"
+                                hasProgress -> "RESUME WATCHING"
+                                else -> "WATCH NOW"
+                            },
                             fontSize = 15.sp,
                             fontWeight = FontWeight.ExtraBold,
                             color = Color.Black,
@@ -648,8 +694,20 @@ fun MovieDetailScreen(
                 selectedSeasonId = uiState.selectedSeasonId,
                 seriesPosterUrl = movie.posterUrl,
                 onSeasonSelected = { viewModel.selectSeason(it) },
-                onEpisodeClick = { episode -> onPlay(movie.id, episode.id) },
-                onMoreSeasonsClick = { showMoreSeasonsSheet = true }
+                onEpisodeClick = { episode ->
+                    val epIndex = uiState.episodes.indexOfFirst { it.id == episode.id }
+                    val isEpisodeLocked = isContentPremium && !isUserPremium &&
+                        (episode.isPremium || (freeEpisodeCount > 0 && epIndex >= freeEpisodeCount))
+                    if (isEpisodeLocked) {
+                        android.widget.Toast.makeText(context, "Activate Premium to watch this episode", android.widget.Toast.LENGTH_SHORT).show()
+                    } else {
+                        onPlay(movie.id, episode.id)
+                    }
+                },
+                onMoreSeasonsClick = { showMoreSeasonsSheet = true },
+                isContentPremium = isContentPremium,
+                isUserPremium = isUserPremium,
+                freeEpisodeCount = freeEpisodeCount,
             )
         }
 
@@ -986,6 +1044,9 @@ private fun EpisodesSection(
     onSeasonSelected: (String) -> Unit,
     onEpisodeClick: (EpisodeDto) -> Unit,
     onMoreSeasonsClick: () -> Unit,
+    isContentPremium: Boolean = false,
+    isUserPremium: Boolean = false,
+    freeEpisodeCount: Int = 0,
 ) {
     val selectedSeason = seasons.find { it.id == selectedSeasonId }
     val episodeCount = selectedSeason?.episodeCount?.takeIf { it > 0 } ?: episodes.size
@@ -1058,10 +1119,14 @@ private fun EpisodesSection(
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 items(episodes) { episode ->
+                    val epIndex = episodes.indexOf(episode)
+                    val isEpLocked = isContentPremium && !isUserPremium &&
+                        (episode.isPremium || (freeEpisodeCount > 0 && epIndex >= freeEpisodeCount))
                     HorizontalEpisodeCard(
                         episode = episode,
                         seriesPosterUrl = seriesPosterUrl,
-                        onClick = { onEpisodeClick(episode) }
+                        onClick = { onEpisodeClick(episode) },
+                        isLocked = isEpLocked,
                     )
                 }
             }
@@ -1214,6 +1279,7 @@ private fun HorizontalEpisodeCard(
     episode: EpisodeDto,
     seriesPosterUrl: String?,
     onClick: () -> Unit,
+    isLocked: Boolean = false,
 ) {
     Column(
         modifier = Modifier
@@ -1241,7 +1307,8 @@ private fun HorizontalEpisodeCard(
                         .fillMaxSize()
                         .background(
                             Color.Black.copy(
-                                alpha = if (episode.thumbnailUrl.isNullOrBlank()) 0.45f else 0.15f
+                                alpha = if (isLocked) 0.65f
+                                else if (episode.thumbnailUrl.isNullOrBlank()) 0.45f else 0.15f
                             )
                         )
                 )
@@ -1254,15 +1321,26 @@ private fun HorizontalEpisodeCard(
                 )
             }
 
-            // Centre play icon
-            Icon(
-                Icons.Default.PlayArrow,
-                contentDescription = "Play",
-                tint = Color.White.copy(alpha = 0.9f),
-                modifier = Modifier
-                    .size(36.dp)
-                    .align(Alignment.Center)
-            )
+            // Centre play/lock icon
+            if (isLocked) {
+                Icon(
+                    Icons.Default.Lock,
+                    contentDescription = "Premium",
+                    tint = Color(0xFFD4AF37),
+                    modifier = Modifier
+                        .size(32.dp)
+                        .align(Alignment.Center)
+                )
+            } else {
+                Icon(
+                    Icons.Default.PlayArrow,
+                    contentDescription = "Play",
+                    tint = Color.White.copy(alpha = 0.9f),
+                    modifier = Modifier
+                        .size(36.dp)
+                        .align(Alignment.Center)
+                )
+            }
 
             // Episode badge – top-left
             Box(

@@ -872,6 +872,7 @@ function EditEpisodeModal({ episode, seasonId, onClose }: { episode: Episode; se
     duration: episode.duration ?? '',
     thumbnailUrl: episode.thumbnailUrl || '',
     streamingUrl: episode.streamingSources?.[0]?.url || '',
+    isPremium: episode.isPremium ?? false,
   });
 
   const update = useMutation({
@@ -882,6 +883,7 @@ function EditEpisodeModal({ episode, seasonId, onClose }: { episode: Episode; se
         synopsis: form.synopsis || undefined,
         duration: form.duration ? Number(form.duration) : undefined,
         thumbnailUrl: form.thumbnailUrl || undefined,
+        isPremium: form.isPremium,
       };
 
       const originalUrl = episode.streamingSources?.[0]?.url || '';
@@ -982,6 +984,18 @@ function EditEpisodeModal({ episode, seasonId, onClose }: { episode: Episode; se
               placeholder="Synopsis (optional)"
               className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-gold"
             />
+          </div>
+          <div className="flex items-center gap-3 pt-1">
+            <input
+              type="checkbox"
+              id="isPremium"
+              checked={form.isPremium}
+              onChange={(e) => setForm({ ...form, isPremium: e.target.checked })}
+              className="w-4 h-4 accent-gold"
+            />
+            <label htmlFor="isPremium" className="text-sm text-text-primary cursor-pointer">
+              Premium Only (requires subscription)
+            </label>
           </div>
         </div>
         <div className="flex gap-2 justify-end pt-2 border-t border-border">
