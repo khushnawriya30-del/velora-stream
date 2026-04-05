@@ -5,14 +5,10 @@ import android.content.Context
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import android.util.Log
-import android.widget.Toast
-import com.google.android.gms.ads.AdError
-import com.google.android.gms.ads.AdRequest
-import com.google.android.gms.ads.FullScreenContentCallback
-import com.google.android.gms.ads.LoadAdError
-import com.google.android.gms.ads.MobileAds
-import com.google.android.gms.ads.interstitial.InterstitialAd
-import com.google.android.gms.ads.interstitial.InterstitialAdLoadCallback
+import com.startapp.sdk.adsbase.StartAppAd
+import com.startapp.sdk.adsbase.StartAppSDK
+import com.startapp.sdk.adsbase.adlisteners.AdDisplayListener
+import com.startapp.sdk.adsbase.adlisteners.AdEventListener
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withTimeoutOrNull
@@ -26,17 +22,7 @@ class AdManager @Inject constructor(
 ) {
     companion object {
         private const val TAG = "CineVaultAds"
-
-        // ── Toggle: set to true for testing, false for production ──
-        private const val USE_TEST_ADS = false
-
-        // Google's official test interstitial ID (always shows test ads)
-        private const val TEST_AD_UNIT_ID = "ca-app-pub-3940256099942544/1033173712"
-        // Production ad unit ID
-        private const val PROD_AD_UNIT_ID = "ca-app-pub-5582201158743100/4012614425"
-
-        val INTERSTITIAL_AD_UNIT_ID: String
-            get() = if (USE_TEST_ADS) TEST_AD_UNIT_ID else PROD_AD_UNIT_ID
+        private const val APP_ID = "203305409"
 
         /** Max time (ms) to wait for an ad to load when none is cached. */
         private const val AD_LOAD_TIMEOUT_MS = 10_000L
@@ -46,21 +32,23 @@ class AdManager @Inject constructor(
         private const val MAX_RETRIES = 3
     }
 
-    private var interstitialAd: InterstitialAd? = null
+    private var startAppAd: StartAppAd? = null
     private var isLoading = false
     private var isInitialized = false
     private var retryCount = 0
+    private var adReady = false
 
     fun initialize() {
         if (isInitialized) return
         isInitialized = true
-        Log.d(TAG, "Initializing Mobile Ads SDK...")
-        Log.d(TAG, "Using ${if (USE_TEST_ADS) "TEST" else "PRODUCTION"} ad unit: $INTERSTITIAL_AD_UNIT_ID")
-        MobileAds.initialize(context) { initStatus ->
-            val adapterStatus = initStatus.adapterStatusMap
-            Log.d(TAG, "Mobile Ads SDK initialized. Adapters: ${adapterStatus.entries.joinToString { "${it.key}=${it.value.initializationState}" }}")
-            loadInterstitialAd()
-        }
+        Log.d(TAG, "Initializing Start.io SDK with App ID: $APP_ID")
+
+        // Disable Start.io splash ad and return ad (we manage ad placement ourselves)
+        StartAppSDK.init(context, APP_ID, false)
+        StartAppAd.disableAutoInterstitial()
+
+        Log.d(TAG, "Start.io SDK initialized")
+        loadInterstitialAd()
     }
 
     private fun isNetworkAvailable(): Boolean {
@@ -71,8 +59,8 @@ class AdManager @Inject constructor(
     }
 
     fun loadInterstitialAd() {
-        if (isLoading || interstitialAd != null) {
-            Log.d(TAG, "loadInterstitialAd: skip (isLoading=$isLoading, adCached=${interstitialAd != null})")
+        if (isLoading || adReady) {
+            Log.d(TAG, "loadInterstitialAd: skip (isLoading=$isLoading, adReady=$adReady)")
             return
         }
         if (!isNetworkAvailable()) {
@@ -81,41 +69,38 @@ class AdManager @Inject constructor(
         }
 
         isLoading = true
-        Log.d(TAG, "Loading interstitial ad (unit: $INTERSTITIAL_AD_UNIT_ID)...")
+        Log.d(TAG, "Loading Start.io interstitial ad...")
 
-        val adRequest = AdRequest.Builder().build()
-        InterstitialAd.load(
-            context,
-            INTERSTITIAL_AD_UNIT_ID,
-            adRequest,
-            object : InterstitialAdLoadCallback() {
-                override fun onAdLoaded(ad: InterstitialAd) {
-                    Log.d(TAG, "✅ Interstitial ad LOADED successfully")
-                    interstitialAd = ad
-                    isLoading = false
+        val ad = StartAppAd(context)
+        ad.loadAd(StartAppAd.AdMode.FULLPAGE, object : AdEventListener {
+            override fun onReceiveAd(p0: com.startapp.sdk.adsbase.Ad) {
+                Log.d(TAG, "✅ Start.io interstitial ad LOADED successfully")
+                startAppAd = ad
+                adReady = true
+                isLoading = false
+                retryCount = 0
+            }
+
+            override fun onFailedToReceiveAd(p0: com.startapp.sdk.adsbase.Ad?) {
+                Log.e(TAG, "❌ Start.io interstitial ad FAILED to load")
+                startAppAd = null
+                adReady = false
+                isLoading = false
+
+                // Retry with backoff
+                if (retryCount < MAX_RETRIES) {
+                    retryCount++
+                    val delayMs = RETRY_DELAY_MS * retryCount
+                    Log.d(TAG, "Will retry loading ad in ${delayMs}ms (attempt $retryCount/$MAX_RETRIES)")
+                    android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
+                        loadInterstitialAd()
+                    }, delayMs)
+                } else {
+                    Log.w(TAG, "Max retries reached ($MAX_RETRIES). Ad will be loaded on next trigger.")
                     retryCount = 0
                 }
-
-                override fun onAdFailedToLoad(error: LoadAdError) {
-                    Log.e(TAG, "❌ Interstitial ad FAILED to load: code=${error.code}, message=${error.message}, domain=${error.domain}")
-                    interstitialAd = null
-                    isLoading = false
-
-                    // Retry with backoff
-                    if (retryCount < MAX_RETRIES) {
-                        retryCount++
-                        val delayMs = RETRY_DELAY_MS * retryCount
-                        Log.d(TAG, "Will retry loading ad in ${delayMs}ms (attempt $retryCount/$MAX_RETRIES)")
-                        android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
-                            loadInterstitialAd()
-                        }, delayMs)
-                    } else {
-                        Log.w(TAG, "Max retries reached ($MAX_RETRIES). Ad will be loaded on next trigger.")
-                        retryCount = 0
-                    }
-                }
-            },
-        )
+            }
+        })
     }
 
     /**
@@ -123,37 +108,34 @@ class AdManager @Inject constructor(
      * If not, calls [onAdDismissed] so video can proceed (no blocking).
      */
     fun showInterstitialAd(activity: Activity, onAdDismissed: () -> Unit) {
-        val ad = interstitialAd
-        if (ad != null) {
-            Log.d(TAG, "Showing interstitial ad...")
-            ad.fullScreenContentCallback = object : FullScreenContentCallback() {
-                override fun onAdDismissedFullScreenContent() {
+        val ad = startAppAd
+        if (ad != null && adReady) {
+            Log.d(TAG, "Showing Start.io interstitial ad...")
+            ad.showAd(object : AdDisplayListener {
+                override fun adHidden(p0: com.startapp.sdk.adsbase.Ad?) {
                     Log.d(TAG, "✅ Ad dismissed by user")
-                    interstitialAd = null
+                    startAppAd = null
+                    adReady = false
                     loadInterstitialAd() // Preload next
                     onAdDismissed()
                 }
 
-                override fun onAdFailedToShowFullScreenContent(adError: AdError) {
-                    Log.e(TAG, "❌ Ad failed to show: code=${adError.code}, message=${adError.message}")
-                    interstitialAd = null
-                    loadInterstitialAd()
-                    onAdDismissed()
-                }
-
-                override fun onAdShowedFullScreenContent() {
+                override fun adDisplayed(p0: com.startapp.sdk.adsbase.Ad?) {
                     Log.d(TAG, "✅ Ad shown full screen")
                 }
 
-                override fun onAdClicked() {
+                override fun adClicked(p0: com.startapp.sdk.adsbase.Ad?) {
                     Log.d(TAG, "Ad clicked")
                 }
 
-                override fun onAdImpression() {
-                    Log.d(TAG, "Ad impression recorded")
+                override fun adNotDisplayed(p0: com.startapp.sdk.adsbase.Ad?) {
+                    Log.e(TAG, "❌ Ad failed to display")
+                    startAppAd = null
+                    adReady = false
+                    loadInterstitialAd()
+                    onAdDismissed()
                 }
-            }
-            ad.show(activity)
+            })
         } else {
             Log.w(TAG, "⚠️ No ad cached — skipping ad, proceeding to video")
             loadInterstitialAd() // Start loading for next time
@@ -168,7 +150,7 @@ class AdManager @Inject constructor(
      */
     suspend fun showAdWithWait(activity: Activity, onAdDismissed: () -> Unit): Boolean {
         // If ad already cached, show immediately
-        if (interstitialAd != null) {
+        if (adReady && startAppAd != null) {
             showInterstitialAd(activity, onAdDismissed)
             return true
         }
@@ -177,7 +159,8 @@ class AdManager @Inject constructor(
 
         // Force a fresh load
         retryCount = 0
-        interstitialAd = null
+        startAppAd = null
+        adReady = false
         isLoading = false
         loadInterstitialAd()
 
@@ -187,7 +170,7 @@ class AdManager @Inject constructor(
                 val handler = android.os.Handler(android.os.Looper.getMainLooper())
                 val checkRunnable = object : Runnable {
                     override fun run() {
-                        if (interstitialAd != null) {
+                        if (adReady && startAppAd != null) {
                             if (cont.isActive) cont.resume(true)
                         } else if (isLoading) {
                             handler.postDelayed(this, 200)
@@ -202,7 +185,7 @@ class AdManager @Inject constructor(
             }
         } ?: false
 
-        if (loaded && interstitialAd != null) {
+        if (loaded && adReady && startAppAd != null) {
             Log.d(TAG, "✅ Ad loaded after waiting — showing now")
             showInterstitialAd(activity, onAdDismissed)
             return true
@@ -213,5 +196,5 @@ class AdManager @Inject constructor(
         }
     }
 
-    fun isAdReady(): Boolean = interstitialAd != null
+    fun isAdReady(): Boolean = adReady && startAppAd != null
 }

@@ -38,10 +38,10 @@
             </intent-filter>
         </service>
 
-        <!-- Google AdMob App ID (Production) -->
+        <!-- Start.io App ID -->
         <meta-data
-            android:name="com.google.android.gms.ads.APPLICATION_ID"
-            android:value="ca-app-pub-5582201158743100~2404019285" />
+            android:name="com.startapp.sdk.APPLICATION_ID"
+            android:value="203305409" />
 
         <provider
             android:name="androidx.core.content.FileProvider"

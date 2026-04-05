@@ -3,9 +3,9 @@
 -keepattributes Signature
 -keepattributes *Annotation*
 
-# Google Mobile Ads (AdMob)
--keep class com.google.android.gms.ads.** { *; }
--keep class com.google.ads.** { *; }
+# Start.io Ads SDK
+-keep class com.startapp.** { *; }
+-dontwarn com.startapp.**
 
 # Keep JavaScript interface methods for YouTube WebView player
 -keepclassmembers class * {
