@@ -15,6 +15,8 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
@@ -36,6 +38,8 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
@@ -76,22 +80,131 @@ fun ActivatePremiumScreen(
     var selectedPlanId by remember { mutableStateOf<String?>(null) }
     val selectedPlan = plans.firstOrNull { it.planId == selectedPlanId } ?: plans.firstOrNull()
 
+    // Activate Code Dialog state
+    var showActivateDialog by remember { mutableStateOf(false) }
+    var codeInput by remember { mutableStateOf("") }
+
     LaunchedEffect(plans) {
         if (selectedPlanId == null && plans.isNotEmpty()) selectedPlanId = plans.first().planId
     }
-    LaunchedEffect(uiState.activationSuccess) {
-        if (uiState.activationSuccess) {
-            Toast.makeText(context, "Premium Activated! \uD83C\uDF89", Toast.LENGTH_LONG).show()
-        }
-    }
     LaunchedEffect(uiState.error) {
-        uiState.error?.let { Toast.makeText(context, it, Toast.LENGTH_SHORT).show(); viewModel.clearError() }
+        if (uiState.error != null && !showActivateDialog) {
+            Toast.makeText(context, uiState.error, Toast.LENGTH_SHORT).show()
+            viewModel.clearError()
+        }
     }
 
     val animatedPrice by animateFloatAsState(
         targetValue = (selectedPlan?.price ?: 159).toFloat(),
         animationSpec = tween(200), label = "price",
     )
+
+    // On successful activation, close dialog and show toast
+    LaunchedEffect(uiState.activationSuccess) {
+        if (uiState.activationSuccess) {
+            showActivateDialog = false
+            codeInput = ""
+            Toast.makeText(context, "Premium Activated! \uD83C\uDF89", Toast.LENGTH_LONG).show()
+        }
+    }
+
+    // ─── Activate Code Dialog ───
+    if (showActivateDialog) {
+        AlertDialog(
+            onDismissRequest = {
+                if (!uiState.isActivating) {
+                    showActivateDialog = false
+                    codeInput = ""
+                }
+            },
+            containerColor = CardBg,
+            titleContentColor = White87,
+            textContentColor = White60,
+            title = {
+                Text("Activate Premium Code", fontWeight = FontWeight.Bold, fontSize = 18.sp)
+            },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text(
+                        "Enter your activation code to unlock Premium features.",
+                        fontSize = 13.sp,
+                        color = White60,
+                    )
+                    OutlinedTextField(
+                        value = codeInput,
+                        onValueChange = { codeInput = it.uppercase().take(14) },
+                        label = { Text("Premium Code", color = White40) },
+                        placeholder = { Text("VLRA-XXXX-XXXX", color = White40.copy(alpha = 0.5f)) },
+                        singleLine = true,
+                        enabled = !uiState.isActivating,
+                        keyboardOptions = KeyboardOptions(
+                            capitalization = KeyboardCapitalization.Characters,
+                            imeAction = ImeAction.Done,
+                        ),
+                        keyboardActions = KeyboardActions(
+                            onDone = {
+                                if (codeInput.isNotBlank() && !uiState.isActivating) {
+                                    viewModel.activateCode(codeInput.trim())
+                                }
+                            },
+                        ),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = Gold,
+                            unfocusedBorderColor = White40.copy(alpha = 0.3f),
+                            focusedLabelColor = Gold,
+                            cursorColor = Gold,
+                            focusedTextColor = White87,
+                            unfocusedTextColor = White87,
+                        ),
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    if (uiState.error != null) {
+                        Text(
+                            uiState.error ?: "",
+                            fontSize = 12.sp,
+                            color = Color(0xFFEF4444),
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = { viewModel.activateCode(codeInput.trim()) },
+                    enabled = codeInput.isNotBlank() && !uiState.isActivating,
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Gold,
+                        contentColor = BgPrimary,
+                        disabledContainerColor = Gold.copy(alpha = 0.4f),
+                    ),
+                ) {
+                    if (uiState.isActivating) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(18.dp),
+                            color = BgPrimary,
+                            strokeWidth = 2.dp,
+                        )
+                        Spacer(Modifier.width(8.dp))
+                    }
+                    Text(
+                        if (uiState.isActivating) "Activating..." else "Activate",
+                        fontWeight = FontWeight.Bold,
+                    )
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        showActivateDialog = false
+                        codeInput = ""
+                        viewModel.clearError()
+                    },
+                    enabled = !uiState.isActivating,
+                ) {
+                    Text("Cancel", color = White60)
+                }
+            },
+        )
+    }
 
     Box(
         modifier = Modifier
@@ -266,7 +379,9 @@ fun ActivatePremiumScreen(
                     Toast.makeText(context, "Buy Premium Code — Coming soon", Toast.LENGTH_SHORT).show()
                 }
                 ActionRow(icon = Icons.Outlined.VpnKey, label = "Activate with Premium Code") {
-                    Toast.makeText(context, "Activate Premium Code — Coming soon", Toast.LENGTH_SHORT).show()
+                    viewModel.clearError()
+                    codeInput = ""
+                    showActivateDialog = true
                 }
                 ActionRow(icon = Icons.Outlined.HelpOutline, label = "Help Center") {
                     Toast.makeText(context, "Help Center — Coming soon", Toast.LENGTH_SHORT).show()

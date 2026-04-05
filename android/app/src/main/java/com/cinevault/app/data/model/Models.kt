@@ -380,9 +380,10 @@ data class PremiumStatusResponse(
     val daysRemaining: Int?,
 )
 data class ActivateCodeResponse(
-    val message: String,
-    val user: UserDto?,
+    val success: Boolean,
+    val plan: String?,
     val expiresAt: String?,
+    val durationDays: Int?,
 )
 data class PremiumPlanDto(
     val _id: String,

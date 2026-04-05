@@ -76,6 +76,7 @@ export default function PremiumPage() {
   const [genPlan, setGenPlan] = useState('1month');
   const [genCount, setGenCount] = useState(1);
   const [genNote, setGenNote] = useState('');
+  const [genExpiry, setGenExpiry] = useState(90);
   const [generatedCodes, setGeneratedCodes] = useState<string[]>([]);
 
   // Filters
@@ -157,12 +158,14 @@ export default function PremiumPage() {
         plan: genPlan,
         count: genCount,
         note: genNote,
+        expiresInDays: genExpiry,
       });
       setGeneratedCodes(data.map((c: any) => c.code));
       fetchStats();
       if (tab === 'codes') fetchCodes();
-    } catch (e) {
-      alert('Failed to generate codes');
+    } catch (e: any) {
+      const msg = e.response?.data?.message || e.message || 'Unknown error';
+      alert('Failed to generate codes: ' + msg);
     }
   };
 
@@ -241,7 +244,7 @@ export default function PremiumPage() {
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-white">Premium Management</h1>
         <button
-          onClick={() => { setShowGenerate(true); setGeneratedCodes([]); }}
+          onClick={() => { setShowGenerate(true); setGeneratedCodes([]); setGenExpiry(90); }}
           className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg font-medium"
         >
           + Generate Codes
@@ -601,6 +604,17 @@ export default function PremiumPage() {
                     value={genNote}
                     onChange={(e) => setGenNote(e.target.value)}
                     placeholder="e.g., Promo giveaway, Influencer..."
+                    className="w-full bg-zinc-700 text-white rounded-lg px-3 py-2"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm text-zinc-400 mb-1">Code Expiry (days until unused code expires)</label>
+                  <input
+                    type="number"
+                    min={7}
+                    max={365}
+                    value={genExpiry}
+                    onChange={(e) => setGenExpiry(parseInt(e.target.value) || 90)}
                     className="w-full bg-zinc-700 text-white rounded-lg px-3 py-2"
                   />
                 </div>

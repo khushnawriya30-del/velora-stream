@@ -176,14 +176,14 @@ private fun MePremiumHeader(
     ) {
         Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Box(
-                modifier = Modifier.size(52.dp).clip(CircleShape)
-                    .background(Brush.radialGradient(colors = listOf(CineVaultTheme.colors.accentGold, CineVaultTheme.colors.accentGold.copy(alpha = 0.5f)))),
+                modifier = Modifier.size(58.dp).clip(CircleShape)
+                    .background(Color(0xFF333333)),
                 contentAlignment = Alignment.Center,
             ) {
                 Text(
                     text = userName.take(1).uppercase().ifEmpty { "?" },
-                    style = CineVaultTheme.typography.sectionTitle.copy(fontSize = 22.sp, fontWeight = FontWeight.Bold),
-                    color = Color.Black,
+                    style = CineVaultTheme.typography.sectionTitle.copy(fontSize = 24.sp, fontWeight = FontWeight.Bold),
+                    color = Color(0xFF999999),
                 )
             }
             Spacer(Modifier.width(14.dp))
@@ -200,10 +200,10 @@ private fun MePremiumHeader(
                 }
             }
             IconButton(onClick = onBellClick) {
-                Icon(Icons.Filled.Notifications, contentDescription = "Notifications", tint = CineVaultTheme.colors.textPrimary, modifier = Modifier.size(24.dp))
+                Icon(Icons.Filled.Notifications, contentDescription = "Notifications", tint = CineVaultTheme.colors.textPrimary, modifier = Modifier.size(28.dp))
             }
             IconButton(onClick = onSettingsClick) {
-                Icon(Icons.Filled.Settings, contentDescription = "Settings", tint = CineVaultTheme.colors.textPrimary, modifier = Modifier.size(24.dp))
+                Icon(Icons.Filled.Settings, contentDescription = "Settings", tint = CineVaultTheme.colors.textPrimary, modifier = Modifier.size(28.dp))
             }
         }
     }

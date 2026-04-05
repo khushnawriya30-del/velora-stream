@@ -51,7 +51,7 @@ class PremiumRepository @Inject constructor(
                 // Update local premium status
                 sessionManager.savePremiumStatus(
                     isPremium = true,
-                    plan = result.user?.premiumPlan,
+                    plan = result.plan,
                     expiresAt = result.expiresAt,
                 )
                 Result.Success(result)
