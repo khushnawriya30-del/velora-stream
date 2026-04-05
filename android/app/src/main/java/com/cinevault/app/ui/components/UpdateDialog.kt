@@ -34,8 +34,9 @@ fun UpdateDialog(info: AppVersionResponse, onDismiss: () -> Unit, onInstallClick
     var progress by remember { mutableFloatStateOf(0f) }
     var isDownloadComplete by remember { mutableStateOf(false) }
     var downloadedFile by remember { mutableStateOf<File?>(null) }
+    var downloadError by remember { mutableStateOf<String?>(null) }
 
-    val isDownloading = downloadId != -1L && !isDownloadComplete
+    val isDownloading = downloadId != -1L && !isDownloadComplete && downloadError == null
 
     val animatedProgress by animateFloatAsState(
         targetValue = progress,
@@ -43,10 +44,33 @@ fun UpdateDialog(info: AppVersionResponse, onDismiss: () -> Unit, onInstallClick
         label = "progress"
     )
 
+    // Resolve the final APK download URL (follow redirects) before handing to DownloadManager
+    fun startDownload() {
+        downloadError = null
+        progress = 0f
+        isDownloadComplete = false
+        val fileName = "velora-${info.versionName}.apk"
+        val file = File(
+            context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS),
+            fileName
+        )
+        if (file.exists()) file.delete()
+        downloadedFile = file
+        val request = DownloadManager.Request(Uri.parse(info.apkUrl))
+            .setTitle("VELORA Update")
+            .setDescription("Downloading v${info.versionName}")
+            .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
+            .setDestinationUri(Uri.fromFile(file))
+            .setAllowedOverMetered(true)
+            .setAllowedOverRoaming(true)
+        val dm = context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
+        downloadId = dm.enqueue(request)
+    }
+
     if (isDownloading) {
         LaunchedEffect(downloadId) {
             val dm = context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
-            while (isActive && !isDownloadComplete) {
+            while (isActive && !isDownloadComplete && downloadError == null) {
                 val query = DownloadManager.Query().setFilterById(downloadId)
                 val cursor = dm.query(query)
                 if (cursor.moveToFirst()) {
@@ -62,10 +86,22 @@ fun UpdateDialog(info: AppVersionResponse, onDismiss: () -> Unit, onInstallClick
                     if (bytesTotal > 0) {
                         progress = bytesDownloaded.toFloat() / bytesTotal.toFloat()
                     }
-                    if (status == DownloadManager.STATUS_SUCCESSFUL) {
-                        progress = 1f
-                        isDownloadComplete = true
+                    when (status) {
+                        DownloadManager.STATUS_SUCCESSFUL -> {
+                            progress = 1f
+                            isDownloadComplete = true
+                        }
+                        DownloadManager.STATUS_FAILED -> {
+                            val reason = cursor.getInt(
+                                cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_REASON)
+                            )
+                            downloadError = "Download failed (code: $reason). Please check your internet and try again."
+                            downloadId = -1L
+                        }
                     }
+                } else {
+                    downloadError = "Download was cancelled."
+                    downloadId = -1L
                 }
                 cursor.close()
                 delay(300)
@@ -130,6 +166,28 @@ fun UpdateDialog(info: AppVersionResponse, onDismiss: () -> Unit, onInstallClick
                             Text("Install Now", fontWeight = FontWeight.Bold, color = Color.White)
                         }
                     }
+                    downloadError != null -> {
+                        Text(
+                            text = downloadError!!,
+                            color = Color(0xFFFF6B6B),
+                            fontSize = 13.sp
+                        )
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Button(
+                            onClick = { startDownload() },
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE50914)),
+                            shape = RoundedCornerShape(8.dp)
+                        ) {
+                            Text("Retry Download", fontWeight = FontWeight.Bold, color = Color.White)
+                        }
+                        if (!info.forceUpdate) {
+                            Spacer(modifier = Modifier.height(8.dp))
+                            TextButton(onClick = onDismiss) {
+                                Text("Skip for Now", color = Color(0xFF9A9A9A))
+                            }
+                        }
+                    }
                     isDownloading -> {
                         LinearProgressIndicator(
                             progress = { animatedProgress },
@@ -146,24 +204,7 @@ fun UpdateDialog(info: AppVersionResponse, onDismiss: () -> Unit, onInstallClick
                     }
                     else -> {
                         Button(
-                            onClick = {
-                                val fileName = "velora-${info.versionName}.apk"
-                                val file = File(
-                                    context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS),
-                                    fileName
-                                )
-                                if (file.exists()) file.delete()
-                                downloadedFile = file
-                                val request = DownloadManager.Request(Uri.parse(info.apkUrl))
-                                    .setTitle("VELORA Update")
-                                    .setDescription("Downloading v${info.versionName}")
-                                    .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
-                                    .setDestinationUri(Uri.fromFile(file))
-                                    .setAllowedOverMetered(true)
-                                    .setAllowedOverRoaming(false)
-                                val dm = context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
-                                downloadId = dm.enqueue(request)
-                            },
+                            onClick = { startDownload() },
                             modifier = Modifier.fillMaxWidth(),
                             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE50914)),
                             shape = RoundedCornerShape(8.dp)

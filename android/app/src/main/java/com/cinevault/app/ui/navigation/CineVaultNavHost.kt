@@ -37,7 +37,6 @@ import androidx.navigation.NavType
 import androidx.navigation.compose.*
 import androidx.navigation.navArgument
 import com.cinevault.app.R
-import com.cinevault.app.ui.components.UpdateDialog
 import com.cinevault.app.ui.screen.*
 import com.cinevault.app.ui.theme.CineVaultTheme
 import com.cinevault.app.ui.viewmodel.AppViewModel
@@ -802,14 +801,6 @@ fun CineVaultNavHost(navController: NavHostController = rememberNavController())
                 pendingAuthAction?.invoke()
                 pendingAuthAction = null
             },
-        )
-    }
-
-    // Show update dialog on top of everything when an update is available
-    updateInfo?.let { info ->
-        UpdateDialog(
-            info = info,
-            onDismiss = { appViewModel.dismissUpdate() }
         )
     }
 }
