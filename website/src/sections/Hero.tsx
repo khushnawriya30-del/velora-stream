@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { APP_CONFIG } from '../config';
-
-const appVersion = APP_CONFIG.fallback.version;
+import { useGitHubRelease } from '../hooks/useGitHubRelease';
 
 export default function Hero() {
+  const { latest, loading } = useGitHubRelease();
+  const appVersion = latest?.version || APP_CONFIG.fallback.version;
   const [currentScreen, setCurrentScreen] = useState(0);
   const screenshots = APP_CONFIG.screenshots;
 

@@ -92,50 +92,12 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Upload APK to Vercel Blob (Direct Download CDN)
-        run: |
-          VERSION="${{ steps.version.outputs.VERSION }}"
-          APK_PATH="android/app/build/outputs/apk/release/VELORA-v${VERSION}.apk"
-          APK_NAME="VELORA-v${VERSION}.apk"
-          BLOB_TOKEN="${{ secrets.BLOB_READ_WRITE_TOKEN }}"
-          BLOB_BASE="https://3upclzuvtnblwr5f.public.blob.vercel-storage.com"
-
-          # Delete old VELORA-latest.apk
-          curl -s -X DELETE \
-            -H "Authorization: Bearer ${BLOB_TOKEN}" \
-            "https://blob.vercel-storage.com/velora-latest.apk" || true
-
-          # Upload new APK as VELORA-latest.apk
-          NEW_URL=$(curl -s -X PUT \
-            -H "Authorization: Bearer ${BLOB_TOKEN}" \
-            -H "Content-Type: application/vnd.android.package-archive" \
-            -H "x-vercel-blob-allow-overwrite: 1" \
-            --data-binary "@${APK_PATH}" \
-            "https://blob.vercel-storage.com/velora-latest.apk" | python3 -c "import sys,json; print(json.load(sys.stdin)['url'])")
-
-          echo "APK uploaded to: ${NEW_URL}"
-
-          # Update velora-latest.json metadata
-          META="{\"version\":\"${VERSION}\",\"name\":\"VELORA-v${VERSION}.apk\",\"url\":\"${BLOB_BASE}/VELORA-latest.apk\"}"
-          echo $META > /tmp/velora-latest.json
-
-          curl -s -X DELETE \
-            -H "Authorization: Bearer ${BLOB_TOKEN}" \
-            "https://blob.vercel-storage.com/velora-latest.json" || true
-
-          curl -s -X PUT \
-            -H "Authorization: Bearer ${BLOB_TOKEN}" \
-            -H "Content-Type: application/json" \
-            --data-binary "@/tmp/velora-latest.json" \
-            "https://blob.vercel-storage.com/velora-latest.json"
-
-          echo "Metadata updated for version ${VERSION}"
-
       - name: Update in-app version info on backend
+        continue-on-error: true
         run: |
           VERSION="${{ steps.version.outputs.VERSION }}"
           BUILD_NUM="${{ github.run_number }}"
-          APK_URL="https://3upclzuvtnblwr5f.public.blob.vercel-storage.com/VELORA-latest.apk"
+          APK_URL="https://github.com/khushnawriya30-del/velora-stream/releases/download/v${VERSION}/VELORA-v${VERSION}.apk"
           BACKEND_URL="https://velora-backend-fopqpbthva-el.a.run.app/api/v1"
 
           # Determine release notes

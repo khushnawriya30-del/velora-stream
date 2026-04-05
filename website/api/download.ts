@@ -1,4 +1,5 @@
-const BLOB_BASE = 'https://3upclzuvtnblwr5f.public.blob.vercel-storage.com';
+const GITHUB_OWNER = 'khushnawriya30-del';
+const GITHUB_REPO = 'velora-stream';
 
 export const config = {
   runtime: 'edge',
@@ -6,37 +7,46 @@ export const config = {
 
 export default async function handler(_req: Request): Promise<Response> {
   try {
-    // Fetch latest metadata from Vercel Blob CDN
-    const metaRes = await fetch(`${BLOB_BASE}/velora-latest.json`, {
-      headers: { 'Cache-Control': 'no-cache' },
-    });
+    // Fetch latest release from GitHub Releases API
+    const res = await fetch(
+      `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/releases/latest`,
+      {
+        headers: {
+          Accept: 'application/vnd.github.v3+json',
+          'User-Agent': 'VELORA-Website',
+        },
+      },
+    );
 
-    if (metaRes.ok) {
-      const meta = (await metaRes.json()) as { version: string; url: string; name: string };
-      if (meta.url) {
+    if (res.ok) {
+      const release = await res.json() as { assets: Array<{ name: string; browser_download_url: string }> };
+      const apk = release.assets?.find((a) => a.name.endsWith('.apk'));
+      if (apk?.browser_download_url) {
         return new Response(null, {
           status: 302,
           headers: {
-            Location: meta.url,
-            'Cache-Control': 'no-store',
-            'Content-Disposition': `attachment; filename="${meta.name || 'VELORA-latest.apk'}"`,
+            Location: apk.browser_download_url,
+            'Cache-Control': 'no-store, no-cache, must-revalidate',
+            'Content-Disposition': `attachment; filename="${apk.name}"`,
           },
         });
       }
     }
 
-    // Hard fallback to direct APK blob
+    // Fallback: redirect to GitHub releases page
     return new Response(null, {
       status: 302,
       headers: {
-        Location: `${BLOB_BASE}/VELORA-latest.apk`,
+        Location: `https://github.com/${GITHUB_OWNER}/${GITHUB_REPO}/releases/latest`,
         'Cache-Control': 'no-store',
       },
     });
   } catch {
     return new Response(null, {
       status: 302,
-      headers: { Location: `${BLOB_BASE}/VELORA-latest.apk` },
+      headers: {
+        Location: `https://github.com/${GITHUB_OWNER}/${GITHUB_REPO}/releases/latest`,
+      },
     });
   }
 }

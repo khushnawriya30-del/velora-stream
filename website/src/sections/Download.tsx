@@ -8,7 +8,7 @@ export default function Download() {
   const { latest, releases, loading } = useGitHubRelease();
   const [showHistory, setShowHistory] = useState(false);
 
-  const version = APP_CONFIG.fallback.version;
+  const version = latest?.version || APP_CONFIG.fallback.version;
   const downloadUrl = latest?.downloadUrl || APP_CONFIG.fallback.downloadUrl;
 
   return (
