@@ -36,4 +36,6 @@ jobs:
         working-directory: website
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: team_UTx4o0meWeCQeXFj5eJFMLBO
+          VERCEL_PROJECT_ID: prj_YFW8p7mhuAydYm0inIxA68PXU04v
         run: npx vercel --prod --yes --token=$VERCEL_TOKEN
