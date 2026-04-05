@@ -348,16 +348,12 @@ private fun MePremiumSection(
             ),
     ) {
         if (isPremium) {
-            // ── Gold Active Card PNG ──
+            // ── Gold Active Card PNG (full, uncropped) ──
             Image(
                 painter = painterResource(R.drawable.premium_card_active),
                 contentDescription = "Premium Active",
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .aspectRatio(2.6f)
-                    .clip(RoundedCornerShape(16.dp)),
-                contentScale = ContentScale.Crop,
-                alignment = Alignment.BottomCenter,
+                modifier = Modifier.fillMaxWidth(),
+                contentScale = ContentScale.FillWidth,
             )
             // Format expiry date: "DD MMM, YYYY"
             val formattedExpiry = remember(expiresAt) {
@@ -366,13 +362,14 @@ private fun MePremiumSection(
             val expiryAnnotated = buildAnnotatedString {
                 append("Your ")
                 withStyle(SpanStyle(fontWeight = FontWeight.Bold, fontSize = 15.sp)) { append("Premium Valid") }
-                append(" Till $formattedExpiry")
+                append(" Till ")
+                withStyle(SpanStyle(fontWeight = FontWeight.Bold)) { append(formattedExpiry) }
             }
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .matchParentSize()
-                    .padding(start = 20.dp, end = 20.dp, bottom = 42.dp),
+                    .padding(start = 20.dp, end = 20.dp, bottom = 80.dp),
                 verticalAlignment = Alignment.Bottom,
             ) {
                 Text(
