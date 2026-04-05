@@ -764,6 +764,7 @@ fun CineVaultNavHost(navController: NavHostController = rememberNavController())
             ) {
                 PlayerScreen(
                     onBack = { navController.popBackStack() },
+                    onNavigateToPremium = { navController.navigate(Screen.ActivatePremium.route) },
                 )
             }
 

@@ -47,6 +47,8 @@ data class PlayerUiState(
     val isQualitySwitching: Boolean = false,
     val shouldShowAd: Boolean = false,
     val isPreRollPending: Boolean = true,
+    /** True when user resumes video after pausing / returning — triggers pre-roll again. */
+    val isResumeAdPending: Boolean = false,
 )
 
 @HiltViewModel
@@ -650,11 +652,21 @@ class PlayerViewModel @Inject constructor(
     }
 
     fun markPreRollDone() {
-        _uiState.update { it.copy(isPreRollPending = false) }
+        _uiState.update { it.copy(isPreRollPending = false, isResumeAdPending = false) }
     }
 
     fun onAdDismissed() {
-        _uiState.update { it.copy(shouldShowAd = false) }
+        _uiState.update { it.copy(shouldShowAd = false, isResumeAdPending = false) }
+    }
+
+    /** Mark that the user returned to player (app foreground / resume) so a resume ad will fire. */
+    fun markResumeAdPending() {
+        if (_uiState.value.isPremium) return
+        _uiState.update { it.copy(isResumeAdPending = true) }
+    }
+
+    fun clearResumeAd() {
+        _uiState.update { it.copy(isResumeAdPending = false) }
     }
 
     /** Reset ad schedule for new episode playback. */

@@ -20,18 +20,15 @@ class AdManager @Inject constructor(
 ) {
     companion object {
         private const val TAG = "CineVaultAds"
-
-        // ┌──────────────────────────────────────────────────────────────┐
-        // │  TODO: Replace these TEST IDs with your real AdMob IDs      │
-        // │  before publishing to the Play Store.                        │
-        // │  Test IDs are safe for development — they won't charge.      │
-        // └──────────────────────────────────────────────────────────────┘
-        const val INTERSTITIAL_AD_UNIT_ID = "ca-app-pub-3940256099942544/1033173712" // Test ID
+        const val INTERSTITIAL_AD_UNIT_ID = "ca-app-pub-5582201158743100/4012614425"
     }
 
     private var interstitialAd: InterstitialAd? = null
     private var isLoading = false
     private var isInitialized = false
+
+    /** Callback invoked when the user closes the ad before it finishes (clicks back / swipe). */
+    var onAdClosed: (() -> Unit)? = null
 
     fun initialize() {
         if (isInitialized) return
@@ -69,7 +66,7 @@ class AdManager @Inject constructor(
 
     /**
      * Shows an interstitial ad if one is loaded.
-     * Calls [onAdDismissed] when the ad is closed or if no ad is available.
+     * Calls [onAdDismissed] when the ad is closed (finished or skipped).
      * Automatically preloads the next ad after showing.
      */
     fun showInterstitialAd(activity: Activity, onAdDismissed: () -> Unit) {

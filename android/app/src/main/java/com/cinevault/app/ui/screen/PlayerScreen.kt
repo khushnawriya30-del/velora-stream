@@ -112,6 +112,7 @@ private data class AudioTrackInfo(
 @Composable
 fun PlayerScreen(
     onBack: () -> Unit,
+    onNavigateToPremium: () -> Unit = {},
     viewModel: PlayerViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -418,20 +419,34 @@ fun PlayerScreen(
     val adManager = viewModel.adManager
     var preRollShown by remember { mutableStateOf(false) }
     var adInProgress by remember { mutableStateOf(false) }
+    /** True after ad finishes — show cross icon overlay before starting video. */
+    var showAdCrossIcon by remember { mutableStateOf(false) }
+    /** True when user tried to close ad during countdown — show warning popup. */
+    var showAdWarningDialog by remember { mutableStateOf(false) }
+    /** Countdown seconds remaining (30–40s). */
+    var adCountdown by remember { mutableIntStateOf(0) }
+    /** Whether the ad was user-cancelled (via warning dialog "Close" button). */
+    var adWasCancelled by remember { mutableStateOf(false) }
 
-    // Pre-roll ad: show when video first becomes ready to play
+    // Pre-roll ad: show when video first becomes ready to play (Watch Now click)
     LaunchedEffect(uiState.streamingUrl, uiState.isPlaying, uiState.isPremium) {
         if (uiState.isPremium || preRollShown || adInProgress) return@LaunchedEffect
         if (uiState.streamingUrl != null && uiState.isPlaying && uiState.isPreRollPending) {
             preRollShown = true
             adInProgress = true
+            adWasCancelled = false
             exoPlayer.pause()
+
+            // Start 35-second countdown (30–40 range)
+            adCountdown = 35
             val act = context as? Activity
             if (act != null) {
                 adManager.showInterstitialAd(act) {
+                    // Ad finished or was dismissed by AdMob SDK
                     adInProgress = false
-                    viewModel.markPreRollDone()
-                    exoPlayer.play()
+                    if (!adWasCancelled) {
+                        showAdCrossIcon = true // Show cross icon, user taps to start video
+                    }
                 }
             } else {
                 adInProgress = false
@@ -439,6 +454,60 @@ fun PlayerScreen(
                 exoPlayer.play()
             }
         }
+    }
+
+    // Resume ad: when user comes back to player after leaving
+    LaunchedEffect(uiState.isResumeAdPending, uiState.isPremium) {
+        if (uiState.isPremium || !uiState.isResumeAdPending || adInProgress) return@LaunchedEffect
+        if (uiState.streamingUrl != null && !uiState.isPreRollPending) {
+            adInProgress = true
+            adWasCancelled = false
+            exoPlayer.pause()
+            adCountdown = 35
+            val act = context as? Activity
+            if (act != null) {
+                adManager.showInterstitialAd(act) {
+                    adInProgress = false
+                    viewModel.clearResumeAd()
+                    if (!adWasCancelled) {
+                        showAdCrossIcon = true
+                    }
+                }
+            } else {
+                adInProgress = false
+                viewModel.clearResumeAd()
+                exoPlayer.play()
+            }
+        }
+    }
+
+    // Countdown timer for ad (ticks every second)
+    LaunchedEffect(adInProgress) {
+        if (!adInProgress) return@LaunchedEffect
+        while (adCountdown > 0) {
+            delay(1000)
+            adCountdown = (adCountdown - 1).coerceAtLeast(0)
+        }
+    }
+
+    // Detect app resume (ON_RESUME after ON_PAUSE) to trigger resume ad for non-premium
+    val resumeLifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(resumeLifecycleOwner) {
+        var wasPaused = false
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_PAUSE) {
+                wasPaused = true
+            }
+            if (event == Lifecycle.Event.ON_RESUME && wasPaused) {
+                wasPaused = false
+                // Only trigger resume ad if pre-roll already done (not the first load)
+                if (!uiState.isPreRollPending && !uiState.isPremium) {
+                    viewModel.markResumeAdPending()
+                }
+            }
+        }
+        resumeLifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { resumeLifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
     // Mid-roll ad checker: runs every second while playing (non-premium only)
@@ -450,15 +519,19 @@ fun PlayerScreen(
             val pos = exoPlayer.currentPosition
             if (dur > 0) {
                 viewModel.initAdSchedule(dur)
-                if (!adInProgress && viewModel.checkMidRollAd(pos)) {
+                if (!adInProgress && !showAdCrossIcon && viewModel.checkMidRollAd(pos)) {
                     adInProgress = true
+                    adWasCancelled = false
                     exoPlayer.pause()
+                    adCountdown = 35
                     val act = context as? Activity
                     if (act != null) {
                         adManager.showInterstitialAd(act) {
                             adInProgress = false
                             viewModel.onAdDismissed()
-                            exoPlayer.play()
+                            if (!adWasCancelled) {
+                                showAdCrossIcon = true
+                            }
                         }
                     } else {
                         adInProgress = false
@@ -753,6 +826,138 @@ fun PlayerScreen(
                         fontWeight = FontWeight.Medium,
                         modifier = Modifier.padding(horizontal = 22.dp, vertical = 12.dp),
                     )
+                }
+            }
+
+            // ============================================================
+            // AD CROSS ICON OVERLAY — shown after ad finishes, tap to play
+            // ============================================================
+            if (showAdCrossIcon) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color.Black.copy(alpha = 0.85f))
+                        .zIndex(90f),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    // Cross (X) icon button
+                    IconButton(
+                        onClick = {
+                            showAdCrossIcon = false
+                            viewModel.markPreRollDone()
+                            exoPlayer.play()
+                        },
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(top = 24.dp, end = 24.dp)
+                            .size(48.dp)
+                            .background(Color.White.copy(alpha = 0.15f), CircleShape),
+                    ) {
+                        Icon(
+                            Icons.Filled.Close,
+                            contentDescription = "Close and play video",
+                            tint = Color.White,
+                            modifier = Modifier.size(28.dp),
+                        )
+                    }
+                    Text(
+                        "Tap ✕ to start watching",
+                        color = Color.White.copy(alpha = 0.7f),
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Medium,
+                    )
+                }
+            }
+
+            // ============================================================
+            // AD WARNING DIALOG — shown when user tries to close ad
+            // ============================================================
+            if (showAdWarningDialog) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color.Black.copy(alpha = 0.75f))
+                        .zIndex(100f),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Surface(
+                        shape = RoundedCornerShape(20.dp),
+                        color = Color(0xFF1E1E1E),
+                        border = BorderStroke(1.dp, GoldAccent.copy(alpha = 0.4f)),
+                        modifier = Modifier
+                            .widthIn(max = 380.dp)
+                            .padding(horizontal = 32.dp),
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(24.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                        ) {
+                            Text(
+                                "You can't watch movies if you close advertisements",
+                                color = Color.White,
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Bold,
+                                textAlign = TextAlign.Center,
+                                lineHeight = 22.sp,
+                            )
+                            Spacer(Modifier.height(12.dp))
+                            Text(
+                                "But you can subscribe ",
+                                color = Color.White.copy(alpha = 0.8f),
+                                fontSize = 14.sp,
+                                textAlign = TextAlign.Center,
+                            )
+                            Text(
+                                "Subscribe Premium",
+                                color = GoldAccent,
+                                fontSize = 15.sp,
+                                fontWeight = FontWeight.Bold,
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier
+                                    .clickable {
+                                        showAdWarningDialog = false
+                                        adWasCancelled = true
+                                        adInProgress = false
+                                        viewModel.markPreRollDone()
+                                        onNavigateToPremium()
+                                    }
+                                    .padding(vertical = 4.dp),
+                            )
+                            Spacer(Modifier.height(20.dp))
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            ) {
+                                // Close button — closes ad, returns to Watch Now (video NOT played)
+                                OutlinedButton(
+                                    onClick = {
+                                        showAdWarningDialog = false
+                                        adWasCancelled = true
+                                        adInProgress = false
+                                        viewModel.markPreRollDone()
+                                        onBack()
+                                    },
+                                    modifier = Modifier.weight(1f),
+                                    shape = RoundedCornerShape(12.dp),
+                                    border = BorderStroke(1.dp, Color.White.copy(alpha = 0.3f)),
+                                ) {
+                                    Text("Close", color = Color.White, fontSize = 14.sp)
+                                }
+                                // Keep Playing Ad button
+                                Button(
+                                    onClick = {
+                                        showAdWarningDialog = false
+                                        // Ad continues playing (already showing via AdMob SDK)
+                                    },
+                                    modifier = Modifier.weight(1f),
+                                    shape = RoundedCornerShape(12.dp),
+                                    colors = ButtonDefaults.buttonColors(containerColor = GoldAccent),
+                                ) {
+                                    Text("Keep Playing", color = Color.Black, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                                }
+                            }
+                        }
+                    }
                 }
             }
 
