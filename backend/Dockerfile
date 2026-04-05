@@ -1,4 +1,4 @@
-FROM node:18-slim
+FROM node:20-slim
 WORKDIR /app
 COPY package*.json ./
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
