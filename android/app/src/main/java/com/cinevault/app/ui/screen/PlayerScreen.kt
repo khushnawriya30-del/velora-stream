@@ -414,35 +414,59 @@ fun PlayerScreen(
         }
     }
 
-    // -- Promo Ad for non-premium users (every 20 minutes) --
-    var showPromoAd by remember { mutableStateOf(false) }
-    var promoSkipCountdown by remember { mutableIntStateOf(5) }
-    var promoWatchTime by remember { mutableLongStateOf(0L) }
+    // -- Smart Ad System for non-premium users --
+    val adManager = viewModel.adManager
+    var preRollShown by remember { mutableStateOf(false) }
+    var adInProgress by remember { mutableStateOf(false) }
 
-    // Track accumulated watch time and show promo every 20 minutes
-    LaunchedEffect(uiState.isPlaying, uiState.isPremium) {
-        if (uiState.isPremium || !uiState.isPlaying) return@LaunchedEffect
-        while (true) {
-            delay(1000)
-            if (uiState.isPlaying && !showPromoAd) {
-                promoWatchTime += 1000
-                if (promoWatchTime >= 20 * 60 * 1000) { // 20 minutes
-                    showPromoAd = true
-                    promoSkipCountdown = 5
-                    promoWatchTime = 0L
-                    exoPlayer.pause()
+    // Pre-roll ad: show when video first becomes ready to play
+    LaunchedEffect(uiState.streamingUrl, uiState.isPlaying, uiState.isPremium) {
+        if (uiState.isPremium || preRollShown || adInProgress) return@LaunchedEffect
+        if (uiState.streamingUrl != null && uiState.isPlaying && uiState.isPreRollPending) {
+            preRollShown = true
+            adInProgress = true
+            exoPlayer.pause()
+            val act = context as? Activity
+            if (act != null) {
+                adManager.showInterstitialAd(act) {
+                    adInProgress = false
+                    viewModel.markPreRollDone()
+                    exoPlayer.play()
                 }
+            } else {
+                adInProgress = false
+                viewModel.markPreRollDone()
+                exoPlayer.play()
             }
         }
     }
 
-    // Promo skip countdown
-    LaunchedEffect(showPromoAd) {
-        if (!showPromoAd) return@LaunchedEffect
-        promoSkipCountdown = 5
-        while (promoSkipCountdown > 0) {
+    // Mid-roll ad checker: runs every second while playing (non-premium only)
+    LaunchedEffect(uiState.isPlaying, uiState.isPremium) {
+        if (uiState.isPremium || !uiState.isPlaying) return@LaunchedEffect
+        while (true) {
             delay(1000)
-            promoSkipCountdown--
+            val dur = exoPlayer.duration.coerceAtLeast(0)
+            val pos = exoPlayer.currentPosition
+            if (dur > 0) {
+                viewModel.initAdSchedule(dur)
+                if (!adInProgress && viewModel.checkMidRollAd(pos)) {
+                    adInProgress = true
+                    exoPlayer.pause()
+                    val act = context as? Activity
+                    if (act != null) {
+                        adManager.showInterstitialAd(act) {
+                            adInProgress = false
+                            viewModel.onAdDismissed()
+                            exoPlayer.play()
+                        }
+                    } else {
+                        adInProgress = false
+                        viewModel.onAdDismissed()
+                        exoPlayer.play()
+                    }
+                }
+            }
         }
     }
 
@@ -1211,62 +1235,7 @@ fun PlayerScreen(
             }
         }
 
-        // -- Promo Ad Overlay (non-premium, every 20 minutes) --
-        if (showPromoAd) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(Color.Black.copy(alpha = 0.95f))
-                    .zIndex(100f),
-                contentAlignment = Alignment.Center,
-            ) {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center,
-                    modifier = Modifier.padding(32.dp),
-                ) {
-                    Text(
-                        "👑",
-                        fontSize = 48.sp,
-                    )
-                    Spacer(Modifier.height(16.dp))
-                    Text(
-                        "Upgrade to Premium",
-                        color = GoldAccent,
-                        fontSize = 22.sp,
-                        fontWeight = FontWeight.Bold,
-                    )
-                    Spacer(Modifier.height(8.dp))
-                    Text(
-                        "Enjoy ad-free streaming, 1080p quality,\nand exclusive content",
-                        color = Color.White.copy(alpha = 0.7f),
-                        fontSize = 14.sp,
-                        textAlign = TextAlign.Center,
-                    )
-                    Spacer(Modifier.height(24.dp))
-                    Button(
-                        onClick = {
-                            if (promoSkipCountdown <= 0) {
-                                showPromoAd = false
-                                exoPlayer.play()
-                            }
-                        },
-                        enabled = promoSkipCountdown <= 0,
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = if (promoSkipCountdown <= 0) GoldAccent else SurfaceElevated,
-                        ),
-                        shape = RoundedCornerShape(12.dp),
-                        modifier = Modifier.width(200.dp),
-                    ) {
-                        Text(
-                            if (promoSkipCountdown > 0) "Skip in ${promoSkipCountdown}s" else "Continue Watching",
-                            color = if (promoSkipCountdown <= 0) Color.Black else Color.White.copy(alpha = 0.5f),
-                            fontWeight = FontWeight.Bold,
-                        )
-                    }
-                }
-            }
-        }
+        // (Smart Ad System uses AdMob interstitial ads — no in-app overlay needed)
     }
 }
 

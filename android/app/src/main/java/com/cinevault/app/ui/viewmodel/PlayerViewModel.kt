@@ -4,6 +4,8 @@ import android.util.Log
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.cinevault.app.ads.AdManager
+import com.cinevault.app.ads.SmartAdScheduler
 import com.cinevault.app.data.local.SessionManager
 import com.cinevault.app.data.model.*
 import com.cinevault.app.data.repository.ContentRepository
@@ -43,6 +45,8 @@ data class PlayerUiState(
     val isSpeedOverride: Boolean = false,
     val isPremium: Boolean = false,
     val isQualitySwitching: Boolean = false,
+    val shouldShowAd: Boolean = false,
+    val isPreRollPending: Boolean = true,
 )
 
 @HiltViewModel
@@ -51,6 +55,7 @@ class PlayerViewModel @Inject constructor(
     private val contentRepository: ContentRepository,
     private val watchProgressRepository: WatchProgressRepository,
     private val sessionManager: SessionManager,
+    val adManager: AdManager,
 ) : ViewModel() {
 
     private val contentId: String = savedStateHandle.get<String>("contentId") ?: ""
@@ -74,7 +79,13 @@ class PlayerViewModel @Inject constructor(
     /** Scope that survives ViewModel destruction — ensures save HTTP calls complete. */
     private val saveScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
+    /** Smart Ad Scheduling state */
+    private var adSchedule: SmartAdScheduler.AdSchedule? = null
+    private val triggeredAdTimesMs = mutableSetOf<Long>()
+
     init {
+        adManager.initialize()
+        adManager.loadInterstitialAd()
         if (contentId.isNotEmpty()) {
             loadContent()
             startProgressTimer()
@@ -390,6 +401,7 @@ class PlayerViewModel @Inject constructor(
     fun playEpisode(episode: com.cinevault.app.data.model.EpisodeDto) {
         saveProgressNow()
         currentEpisodeId = episode.id
+        resetAdSchedule()
         viewModelScope.launch {
             // Track unique episode view (fire and forget)
             launch { contentRepository.trackEpisodeView(episode.id) }
@@ -602,6 +614,54 @@ class PlayerViewModel @Inject constructor(
 
     fun setSpeedOverride(active: Boolean) {
         _uiState.update { it.copy(isSpeedOverride = active) }
+    }
+
+    // ── Smart Ad System ──────────────────────────────────────────────────────
+
+    /**
+     * Called when total duration becomes known. Computes the ad schedule
+     * once (movie vs episode logic handled by SmartAdScheduler).
+     */
+    fun initAdSchedule(durationMs: Long) {
+        if (adSchedule != null || durationMs <= 0) return
+        adSchedule = SmartAdScheduler.calculateSchedule(durationMs, isEpisode)
+        triggeredAdTimesMs.clear()
+        Log.d("CineVaultAds", "Ad schedule: preRoll=${adSchedule?.preRoll}, midRolls=${adSchedule?.midRollTimesMs}, total=${adSchedule?.totalAds}")
+    }
+
+    /**
+     * Check if the current position has crossed a mid-roll ad time.
+     * Returns true (and sets shouldShowAd) if an ad should be triggered.
+     */
+    fun checkMidRollAd(positionMs: Long): Boolean {
+        if (_uiState.value.isPremium || _uiState.value.shouldShowAd) return false
+        val schedule = adSchedule ?: return false
+
+        for (adTimeMs in schedule.midRollTimesMs) {
+            // Trigger within a 3-second window to avoid missing it
+            if (adTimeMs !in triggeredAdTimesMs && positionMs >= adTimeMs && positionMs < adTimeMs + 3000) {
+                triggeredAdTimesMs.add(adTimeMs)
+                Log.d("CineVaultAds", "Mid-roll ad triggered at ${positionMs / 60000}min (scheduled ${adTimeMs / 60000}min)")
+                _uiState.update { it.copy(shouldShowAd = true) }
+                return true
+            }
+        }
+        return false
+    }
+
+    fun markPreRollDone() {
+        _uiState.update { it.copy(isPreRollPending = false) }
+    }
+
+    fun onAdDismissed() {
+        _uiState.update { it.copy(shouldShowAd = false) }
+    }
+
+    /** Reset ad schedule for new episode playback. */
+    private fun resetAdSchedule() {
+        adSchedule = null
+        triggeredAdTimesMs.clear()
+        _uiState.update { it.copy(isPreRollPending = true, shouldShowAd = false) }
     }
 
     fun toggleFullscreen() {
