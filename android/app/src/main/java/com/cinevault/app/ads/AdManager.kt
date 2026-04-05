@@ -28,7 +28,7 @@ class AdManager @Inject constructor(
         private const val TAG = "CineVaultAds"
 
         // ── Toggle: set to true for testing, false for production ──
-        private const val USE_TEST_ADS = true
+        private const val USE_TEST_ADS = false
 
         // Google's official test interstitial ID (always shows test ads)
         private const val TEST_AD_UNIT_ID = "ca-app-pub-3940256099942544/1033173712"
