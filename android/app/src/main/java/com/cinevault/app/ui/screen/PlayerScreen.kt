@@ -899,42 +899,26 @@ fun PlayerScreen(
                             horizontalAlignment = Alignment.CenterHorizontally,
                         ) {
                             Text(
-                                "You can't watch movies if you close advertisements",
-                                color = Color.White,
-                                fontSize = 16.sp,
+                                "Skip Ads with Premium",
+                                color = GoldAccent,
+                                fontSize = 18.sp,
                                 fontWeight = FontWeight.Bold,
                                 textAlign = TextAlign.Center,
-                                lineHeight = 22.sp,
                             )
                             Spacer(Modifier.height(12.dp))
                             Text(
-                                "But you can subscribe ",
-                                color = Color.White.copy(alpha = 0.8f),
+                                "If you want to skip ads, subscribe to Premium",
+                                color = Color.White.copy(alpha = 0.85f),
                                 fontSize = 14.sp,
                                 textAlign = TextAlign.Center,
-                            )
-                            Text(
-                                "Subscribe Premium",
-                                color = GoldAccent,
-                                fontSize = 15.sp,
-                                fontWeight = FontWeight.Bold,
-                                textAlign = TextAlign.Center,
-                                modifier = Modifier
-                                    .clickable {
-                                        showAdWarningDialog = false
-                                        adWasCancelled = true
-                                        adInProgress = false
-                                        viewModel.markPreRollDone()
-                                        onNavigateToPremium()
-                                    }
-                                    .padding(vertical = 4.dp),
+                                lineHeight = 20.sp,
                             )
                             Spacer(Modifier.height(20.dp))
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                             ) {
-                                // Close button — closes ad, returns to Watch Now (video NOT played)
+                                // Close button — stops ad, returns to previous screen
                                 OutlinedButton(
                                     onClick = {
                                         showAdWarningDialog = false
@@ -949,11 +933,11 @@ fun PlayerScreen(
                                 ) {
                                     Text("Close", color = Color.White, fontSize = 14.sp)
                                 }
-                                // Keep Playing Ad button
+                                // Keep Playing — restart ad timer, user must complete it
                                 Button(
                                     onClick = {
                                         showAdWarningDialog = false
-                                        // Ad continues playing (already showing via AdMob SDK)
+                                        adCountdown = 35 // Restart timer
                                     },
                                     modifier = Modifier.weight(1f),
                                     shape = RoundedCornerShape(12.dp),

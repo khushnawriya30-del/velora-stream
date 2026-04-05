@@ -69,10 +69,10 @@ class AdManager @Inject constructor(
         }
 
         isLoading = true
-        Log.d(TAG, "Loading Start.io interstitial ad...")
+        Log.d(TAG, "Loading Start.io VIDEO interstitial ad...")
 
         val ad = StartAppAd(context)
-        ad.loadAd(StartAppAd.AdMode.FULLPAGE, object : AdEventListener {
+        ad.loadAd(StartAppAd.AdMode.VIDEO, object : AdEventListener {
             override fun onReceiveAd(p0: com.startapp.sdk.adsbase.Ad) {
                 Log.d(TAG, "✅ Start.io interstitial ad LOADED successfully")
                 startAppAd = ad

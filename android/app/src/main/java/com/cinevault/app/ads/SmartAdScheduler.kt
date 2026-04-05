@@ -1,11 +1,12 @@
 package com.cinevault.app.ads
 
 /**
- * Smart Ad Scheduler — calculates when to show mid-roll ads during playback.
+ * Smart Ad Scheduler — calculates when to show mid-roll video ads during playback.
  *
  * Rules (non-premium only):
- * ▸ Movie (2+ hours): pre-roll + mid-roll every 30 min → minimum 4 total ads
- * ▸ Episode (40–60 min): pre-roll + ads at 15 min and 30 min → 3 total
+ * ▸ Movie (2–3 hours): pre-roll + 3 mid-rolls → 3–4 total ads
+ *   Placement: before start, ~20-25 min, ~40-50 min, near ending
+ * ▸ Episode (40–50 min): pre-roll + 1 mid-roll at midpoint → 2 total
  * ▸ Short episode (<40 min): pre-roll + 1 mid-roll at midpoint → 2 total
  * ▸ Resume: always show pre-roll ad again
  * ▸ Premium users: no ads (checked externally)
@@ -21,9 +22,11 @@ object SmartAdScheduler {
         val totalAds: Int get() = (if (preRoll) 1 else 0) + midRollTimesMs.size
     }
 
-    private const val FIFTEEN_MIN_MS = 15L * 60 * 1000
-    private const val THIRTY_MIN_MS = 30L * 60 * 1000
+    private const val TWENTY_MIN_MS = 20L * 60 * 1000
+    private const val TWENTY_FIVE_MIN_MS = 25L * 60 * 1000
     private const val FORTY_MIN_MS = 40L * 60 * 1000
+    private const val FORTY_FIVE_MIN_MS = 45L * 60 * 1000
+    private const val TWO_HOURS_MS = 2L * 60 * 60 * 1000
 
     /**
      * Calculate an [AdSchedule] for the given content.
@@ -41,51 +44,49 @@ object SmartAdScheduler {
         }
     }
 
-    // ── Movie: mid-roll every 30 min, minimum 4 total ads ──────────────────
+    // ── Movie (2–3h): pre-roll + mid-rolls at ~22min, ~45min, near end ─────
 
     private fun calculateMovieSchedule(durationMs: Long): AdSchedule {
-        // Don't show ads in the last 2 minutes
-        val safeEnd = durationMs - 2 * 60 * 1000
+        // Don't show ads in the last 5 minutes
+        val safeEnd = durationMs - 5 * 60 * 1000
 
-        // Generate mid-rolls every 30 minutes
         val midRollTimes = mutableListOf<Long>()
-        var time = THIRTY_MIN_MS
-        while (time < safeEnd) {
-            midRollTimes.add(time)
-            time += THIRTY_MIN_MS
-        }
 
-        // Ensure minimum 3 mid-rolls (+ 1 pre-roll = 4 total) for 2h+ movies
-        // If not enough natural 30-min intervals, add extra at equal spacing
-        if (midRollTimes.size < 3 && durationMs >= 2 * 60 * 60 * 1000) {
-            val interval = durationMs / 4
-            midRollTimes.clear()
-            for (i in 1..3) {
-                val t = interval * i
-                if (t < safeEnd) midRollTimes.add(t)
+        if (durationMs >= TWO_HOURS_MS) {
+            // Long movie (2h+): 3 mid-rolls
+            // Ad 1: ~22 minutes in
+            val first = TWENTY_MIN_MS + (TWENTY_FIVE_MIN_MS - TWENTY_MIN_MS) / 2  // 22.5 min
+            if (first < safeEnd) midRollTimes.add(first)
+
+            // Ad 2: ~45 minutes in
+            if (FORTY_FIVE_MIN_MS < safeEnd) midRollTimes.add(FORTY_FIVE_MIN_MS)
+
+            // Ad 3: ~15 minutes before end
+            val nearEnd = durationMs - 15 * 60 * 1000
+            if (nearEnd > (midRollTimes.lastOrNull() ?: 0) + 10 * 60 * 1000 && nearEnd < safeEnd) {
+                midRollTimes.add(nearEnd)
             }
+        } else {
+            // Shorter movie (< 2h): 2 mid-rolls at 1/3 and 2/3
+            val third = durationMs / 3
+            val twoThirds = durationMs * 2 / 3
+            if (third in 1..safeEnd) midRollTimes.add(third)
+            if (twoThirds in 1..safeEnd) midRollTimes.add(twoThirds)
         }
 
         return AdSchedule(preRoll = true, midRollTimesMs = midRollTimes)
     }
 
-    // ── Episode: 15 min & 30 min, or midpoint for short ────────────────────
+    // ── Episode (40–50 min): pre-roll + 1 mid-roll at midpoint ─────────────
 
     private fun calculateEpisodeSchedule(durationMs: Long): AdSchedule {
         val safeEnd = durationMs - 2 * 60 * 1000
 
-        // Short episode (< 40 min): pre-roll + 1 mid-roll at midpoint
-        if (durationMs < FORTY_MIN_MS) {
-            val midPoint = durationMs / 2
-            return AdSchedule(
-                preRoll = true,
-                midRollTimesMs = if (midPoint in 1..safeEnd) listOf(midPoint) else emptyList(),
-            )
-        }
-
-        // Regular episode (40–60 min): pre-roll + ads at 15 min and 30 min
-        val midRollTimes = listOf(FIFTEEN_MIN_MS, THIRTY_MIN_MS).filter { it in 1..safeEnd }
-
-        return AdSchedule(preRoll = true, midRollTimesMs = midRollTimes)
+        // All episodes: pre-roll + 1 mid-roll at midpoint
+        val midPoint = durationMs / 2
+        return AdSchedule(
+            preRoll = true,
+            midRollTimesMs = if (midPoint in 1..safeEnd) listOf(midPoint) else emptyList(),
+        )
     }
 }
