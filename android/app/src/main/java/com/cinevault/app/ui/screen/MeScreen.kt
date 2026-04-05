@@ -47,8 +47,8 @@ import com.cinevault.app.ui.theme.CineVaultTheme
 import com.cinevault.app.ui.viewmodel.PremiumViewModel
 import com.cinevault.app.ui.viewmodel.ProfileViewModel
 
-// Premium text color
-private val PremTextOnGold = Color(0xFF7A5C1F)
+// Premium text color – dark brown for strong contrast on gold card
+private val PremTextOnGold = Color(0xFF4A3000)
 
 @Composable
 fun MeScreen(
@@ -337,7 +337,7 @@ private fun MePremiumSection(
 
     Box(
         modifier = Modifier
-            .padding(horizontal = 16.dp)
+            .padding(horizontal = 10.dp)
             .graphicsLayer { scaleX = scale; scaleY = scale }
             .clip(RoundedCornerShape(16.dp))
             .clickable(
@@ -360,9 +360,9 @@ private fun MePremiumSection(
                 formatPremiumDate(expiresAt)
             }
             val expiryAnnotated = buildAnnotatedString {
-                append("Your ")
+                withStyle(SpanStyle(fontWeight = FontWeight.SemiBold)) { append("Your ") }
                 withStyle(SpanStyle(fontWeight = FontWeight.Bold, fontSize = 15.sp)) { append("Premium Valid") }
-                append(" Till ")
+                withStyle(SpanStyle(fontWeight = FontWeight.SemiBold)) { append(" Till ") }
                 withStyle(SpanStyle(fontWeight = FontWeight.Bold)) { append(formattedExpiry) }
             }
             Row(
@@ -374,9 +374,9 @@ private fun MePremiumSection(
             ) {
                 Text(
                     text = expiryAnnotated,
-                    fontSize = 11.sp,
+                    fontSize = 13.sp,
                     color = PremTextOnGold,
-                    lineHeight = 14.sp,
+                    lineHeight = 16.sp,
                     maxLines = 1,
                     modifier = Modifier.weight(1f),
                 )
