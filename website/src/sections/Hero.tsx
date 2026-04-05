@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { APP_CONFIG } from '../config';
 
+const appVersion = APP_CONFIG.fallback.version;
+
 export default function Hero() {
   const [currentScreen, setCurrentScreen] = useState(0);
   const screenshots = APP_CONFIG.screenshots;
@@ -67,7 +69,7 @@ export default function Hero() {
               href="#download"
               className="px-8 py-3.5 bg-gradient-to-r from-gold to-gold-dark text-black font-bold rounded-full text-base hover:opacity-90 transition-all shadow-xl shadow-gold/25 hover:shadow-gold/40"
             >
-              Download APK v1.4.2
+              Download APK v{appVersion}
             </a>
             <a
               href="#features"

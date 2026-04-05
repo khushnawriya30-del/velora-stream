@@ -8,7 +8,7 @@ export default function Download() {
   const { latest, releases, loading } = useGitHubRelease();
   const [showHistory, setShowHistory] = useState(false);
 
-  const version = latest?.version || APP_CONFIG.fallback.version;
+  const version = APP_CONFIG.fallback.version;
   const downloadUrl = latest?.downloadUrl || APP_CONFIG.fallback.downloadUrl;
 
   return (
@@ -47,7 +47,7 @@ export default function Download() {
             className="group inline-flex items-center gap-3 px-10 py-4 bg-gradient-to-r from-gold via-gold to-gold-dark text-black font-bold rounded-2xl text-lg hover:opacity-90 transition-all shadow-2xl shadow-gold/25 hover:shadow-gold/40 hover:scale-[1.02] active:scale-[0.98]"
           >
             <DownloadIcon className="w-5 h-5 group-hover:animate-bounce" />
-            Download APK v{loading ? '...' : version}
+            Download APK v{version}
           </a>
         </motion.div>
 
