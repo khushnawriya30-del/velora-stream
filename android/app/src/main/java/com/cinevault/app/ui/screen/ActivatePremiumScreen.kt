@@ -20,7 +20,10 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.outlined.ContentCopy
+import androidx.compose.material.icons.outlined.HelpOutline
 import androidx.compose.material.icons.outlined.History
+import androidx.compose.material.icons.outlined.ShoppingCart
+import androidx.compose.material.icons.outlined.VpnKey
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -28,14 +31,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
-import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -47,11 +49,9 @@ import com.cinevault.app.ui.viewmodel.PremiumViewModel
 private val BgPrimary = Color(0xFF121212)
 private val BgSecondary = Color(0xFF1A1A1A)
 private val CardBg = Color(0xFF1E1E1E)
-private val CardBgLighter = Color(0xFF2A2A2A)
 private val Gold = Color(0xFFD4AF37)
 private val GoldDark = Color(0xFFC9A227)
 private val GoldSoft = Color(0xFFE6C55A)
-private val GoldDim = Color(0xFF8A7328)
 private val GoldFaint = Color(0xFF3D3520)
 private val White87 = Color.White.copy(alpha = 0.87f)
 private val White60 = Color.White.copy(alpha = 0.60f)
@@ -100,9 +100,7 @@ fun ActivatePremiumScreen(
             .systemBarsPadding(),
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
-            // ════════════════════════════════════
-            //  HEADER — Back + Title + Order History
-            // ════════════════════════════════════
+            // ═══════════ HEADER ═══════════
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -132,9 +130,7 @@ fun ActivatePremiumScreen(
                 }
             }
 
-            // ════════════════════════════════════
-            //  PROFILE — Avatar + Username + Copy
-            // ════════════════════════════════════
+            // ═══════════ PROFILE ═══════════
             val userName = uiState.userName ?: "Premium User"
             Row(
                 modifier = Modifier
@@ -142,7 +138,6 @@ fun ActivatePremiumScreen(
                     .padding(horizontal = 18.dp, vertical = 6.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                // Grey avatar with user initial
                 Box(
                     modifier = Modifier
                         .size(42.dp)
@@ -157,12 +152,7 @@ fun ActivatePremiumScreen(
                     )
                 }
                 Spacer(Modifier.width(12.dp))
-                Text(
-                    userName,
-                    fontSize = 17.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = White87,
-                )
+                Text(userName, fontSize = 17.sp, fontWeight = FontWeight.SemiBold, color = White87)
                 Spacer(Modifier.width(8.dp))
                 Icon(
                     Icons.Outlined.ContentCopy,
@@ -180,27 +170,25 @@ fun ActivatePremiumScreen(
 
             Spacer(Modifier.height(10.dp))
 
-            // ════════════════════════════════════════════
-            //  PREMIUM FEATURES — Gold Gradient Container
-            // ════════════════════════════════════════════
+            // ═══════════ PREMIUM FEATURES — Full-width seamless gradient ═══════════
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 14.dp)
                     .background(
                         Brush.verticalGradient(
                             colors = listOf(
-                                Color(0xFF2C2518),  // warm dark gold tint
-                                Color(0xFF1F1D18),  // darker
-                                CardBg,
+                                BgPrimary,
+                                Color(0xFF1E1A12),
+                                Color(0xFF2A2214),
+                                Color(0xFF1E1A12),
+                                BgPrimary,
                             ),
                         ),
-                        RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp),
                     )
-                    .padding(top = 18.dp, bottom = 14.dp),
+                    .padding(vertical = 20.dp),
             ) {
                 Row(
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
                     horizontalArrangement = Arrangement.SpaceEvenly,
                 ) {
                     val features = listOf(
@@ -235,20 +223,20 @@ fun ActivatePremiumScreen(
                 }
             }
 
-            // ════════════════════════════════════════════
-            //  PLAN CARDS — 2×2 Grid (seamless with features)
-            // ════════════════════════════════════════════
+            Spacer(Modifier.height(14.dp))
+
+            // ═══════════ PLAN CARDS — Perfect 2×2 Grid ═══════════
             val planList = plans.take(4)
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 14.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
+                    .padding(horizontal = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 for (rowIdx in 0..1) {
                     Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Max),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
                         for (colIdx in 0..1) {
                             val idx = rowIdx * 2 + colIdx
@@ -257,7 +245,7 @@ fun ActivatePremiumScreen(
                                     plan = planList[idx],
                                     isSelected = planList[idx].planId == selectedPlan?.planId,
                                     onClick = { selectedPlanId = planList[idx].planId },
-                                    modifier = Modifier.weight(1f),
+                                    modifier = Modifier.weight(1f).fillMaxHeight(),
                                 )
                             } else {
                                 Spacer(Modifier.weight(1f))
@@ -267,31 +255,27 @@ fun ActivatePremiumScreen(
                 }
             }
 
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(16.dp))
 
-            // ════════════════════════════════════
-            //  ACTION ROWS
-            // ════════════════════════════════════
+            // ═══════════ ACTION ROWS ═══════════
             Column(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp),
-                verticalArrangement = Arrangement.spacedBy(6.dp),
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                ActionRow(icon = R.drawable.ic_prem_first, label = "Buy Premium Code") {
+                ActionRow(icon = Icons.Outlined.ShoppingCart, label = "Buy Premium Code") {
                     Toast.makeText(context, "Buy Premium Code — Coming soon", Toast.LENGTH_SHORT).show()
                 }
-                ActionRow(icon = R.drawable.ic_prem_unlimited, label = "Activate with Premium Code") {
+                ActionRow(icon = Icons.Outlined.VpnKey, label = "Activate with Premium Code") {
                     Toast.makeText(context, "Activate Premium Code — Coming soon", Toast.LENGTH_SHORT).show()
                 }
-                ActionRow(icon = R.drawable.ic_prem_exclusive, label = "Help Center") {
+                ActionRow(icon = Icons.Outlined.HelpOutline, label = "Help Center") {
                     Toast.makeText(context, "Help Center — Coming soon", Toast.LENGTH_SHORT).show()
                 }
             }
 
             Spacer(Modifier.weight(1f))
 
-            // ════════════════════════════════════
-            //  BOTTOM CTA BAR
-            // ════════════════════════════════════
+            // ═══════════ BOTTOM CTA BAR ═══════════
             BottomPayBar(
                 selectedPlan = selectedPlan,
                 animatedPrice = animatedPrice,
@@ -308,7 +292,7 @@ fun ActivatePremiumScreen(
 }
 
 // ══════════════════════════════════════════
-// ── Plan Card ──
+// ── Plan Card — Equal height via fillMaxHeight ──
 // ══════════════════════════════════════════
 @Composable
 private fun PlanCard(
@@ -339,8 +323,8 @@ private fun PlanCard(
     ) {
         Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(start = 12.dp, end = 12.dp, top = 10.dp, bottom = 10.dp),
+                .fillMaxSize()
+                .padding(12.dp),
         ) {
             // Badge row
             Row(
@@ -367,7 +351,7 @@ private fun PlanCard(
                             .padding(horizontal = 7.dp, vertical = 3.dp),
                     )
                 } else {
-                    Spacer(Modifier.width(1.dp))
+                    Spacer(Modifier.height(22.dp))
                 }
                 Text(
                     "${plan.discountPercent}% Off",
@@ -380,17 +364,19 @@ private fun PlanCard(
                 )
             }
 
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(10.dp))
 
             // Plan name
             Text(plan.name, fontSize = 14.sp, fontWeight = FontWeight.Medium, color = White87)
 
-            Spacer(Modifier.height(4.dp))
+            Spacer(Modifier.height(6.dp))
 
-            // Price
+            // Price row
             Row(verticalAlignment = Alignment.Bottom) {
-                Text("₹", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = Gold,
-                    modifier = Modifier.padding(bottom = 2.dp))
+                Text(
+                    "₹", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = Gold,
+                    modifier = Modifier.padding(bottom = 2.dp),
+                )
                 Text(
                     "${plan.price}",
                     fontSize = 28.sp,
@@ -408,15 +394,15 @@ private fun PlanCard(
                 )
             }
 
-            // Per month
-            if (plan.months > 1) {
-                Text(
-                    "₹${plan.price / plan.months}/month",
-                    fontSize = 11.sp,
-                    color = GoldSoft.copy(alpha = 0.7f),
-                    modifier = Modifier.padding(top = 2.dp),
-                )
-            }
+            // Per month — always reserve space for alignment
+            Text(
+                if (plan.months > 1) "₹${plan.price / plan.months}/month" else " ",
+                fontSize = 11.sp,
+                color = GoldSoft.copy(alpha = 0.7f),
+                modifier = Modifier.padding(top = 2.dp),
+            )
+
+            Spacer(Modifier.weight(1f))
         }
 
         // Selection checkmark
@@ -435,28 +421,25 @@ private fun PlanCard(
 }
 
 // ══════════════════════════════════════════
-// ── Action Row ──
+// ── Action Row — Vector icons ──
 // ══════════════════════════════════════════
 @Composable
-private fun ActionRow(icon: Int, label: String, onClick: () -> Unit) {
+private fun ActionRow(icon: ImageVector, label: String, onClick: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .background(
-                Brush.horizontalGradient(listOf(CardBg, Color(0xFF1B1B1B))),
-                RoundedCornerShape(12.dp),
-            )
+            .background(CardBg, RoundedCornerShape(12.dp))
             .clickable(onClick = onClick)
-            .padding(horizontal = 14.dp, vertical = 14.dp),
+            .padding(horizontal = 16.dp, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Image(
-            painter = painterResource(icon),
+        Icon(
+            imageVector = icon,
             contentDescription = null,
-            modifier = Modifier.size(26.dp),
-            contentScale = ContentScale.Fit,
+            tint = Gold,
+            modifier = Modifier.size(24.dp),
         )
-        Spacer(Modifier.width(12.dp))
+        Spacer(Modifier.width(14.dp))
         Text(label, fontSize = 14.sp, color = White87, modifier = Modifier.weight(1f))
         Icon(
             Icons.AutoMirrored.Filled.KeyboardArrowRight,
@@ -491,7 +474,7 @@ private fun BottomPayBar(
                     colors = listOf(BgPrimary.copy(alpha = 0.0f), BgSecondary, BgSecondary),
                     startY = 0f,
                     endY = 60f,
-                )
+                ),
             )
             .padding(horizontal = 18.dp)
             .padding(top = 10.dp, bottom = 10.dp)
@@ -525,9 +508,7 @@ private fun BottomPayBar(
             Box(
                 modifier = Modifier
                     .clip(RoundedCornerShape(14.dp))
-                    .background(
-                        Brush.horizontalGradient(listOf(GoldDark, Gold, GoldSoft)),
-                    )
+                    .background(Brush.horizontalGradient(listOf(GoldDark, Gold, GoldSoft)))
                     .clickable(onClick = onPayClick)
                     .padding(horizontal = 28.dp, vertical = 14.dp),
                 contentAlignment = Alignment.Center,
