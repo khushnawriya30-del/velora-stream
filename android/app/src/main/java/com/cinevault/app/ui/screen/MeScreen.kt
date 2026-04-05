@@ -78,7 +78,7 @@ fun MeScreen(
         )
 
         // ── Premium Subscription Section ──
-        Spacer(Modifier.height(8.dp))
+        Spacer(Modifier.height(4.dp))
         MePremiumSection(
             isPremium = premiumState.isPremium,
             plan = premiumState.plan,
@@ -109,9 +109,9 @@ fun MeScreen(
                     )
                 }
             }
-            Spacer(Modifier.height(24.dp))
+            Spacer(Modifier.height(16.dp))
         } else {
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(4.dp))
         }
 
         if (uiState.watchHistory.isNotEmpty()) {
@@ -348,12 +348,13 @@ private fun MePremiumSection(
             ),
     ) {
         if (isPremium) {
-            // ── Gold Active Card PNG (full, uncropped) ──
+            // ── Gold Active Card PNG (cropped to remove transparent margins) ──
             Image(
                 painter = painterResource(R.drawable.premium_card_active),
                 contentDescription = "Premium Active",
-                modifier = Modifier.fillMaxWidth(),
-                contentScale = ContentScale.FillWidth,
+                modifier = Modifier.fillMaxWidth().aspectRatio(2.3f),
+                contentScale = ContentScale.Crop,
+                alignment = Alignment.Center,
             )
             // Format expiry date: "DD MMM, YYYY"
             val formattedExpiry = remember(expiresAt) {
@@ -369,14 +370,14 @@ private fun MePremiumSection(
                 modifier = Modifier
                     .fillMaxWidth()
                     .matchParentSize()
-                    .padding(start = 20.dp, end = 20.dp, bottom = 80.dp),
+                    .padding(start = 16.dp, end = 16.dp, bottom = 36.dp),
                 verticalAlignment = Alignment.Bottom,
             ) {
                 Text(
                     text = expiryAnnotated,
-                    fontSize = 13.sp,
+                    fontSize = 12.sp,
                     color = PremTextOnGold,
-                    lineHeight = 18.sp,
+                    lineHeight = 16.sp,
                     maxLines = 1,
                     modifier = Modifier.weight(1f),
                 )
