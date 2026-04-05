@@ -3,6 +3,8 @@ package com.cinevault.app.ui.screen
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
+import android.content.Intent
+import android.net.Uri
 import android.widget.Toast
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
@@ -61,6 +63,9 @@ private val White87 = Color.White.copy(alpha = 0.87f)
 private val White60 = Color.White.copy(alpha = 0.60f)
 private val White40 = Color.White.copy(alpha = 0.40f)
 private val GreenBadge = Color(0xFF22C55E)
+
+// Telegram bot link — user will be configured via admin panel
+private const val TELEGRAM_BOT_LINK = "https://t.me/VeloraPremiumBot"
 
 private val FALLBACK_PLANS = listOf(
     PremiumPlanDto("f1", "1m", "1 Month", 1, 159, 182, 10, null, 0, true),
@@ -395,11 +400,13 @@ fun ActivatePremiumScreen(
                 selectedPlan = selectedPlan,
                 animatedPrice = animatedPrice,
                 onPayClick = {
-                    Toast.makeText(
-                        context,
-                        "Payment for ${selectedPlan?.name ?: "plan"} — ₹${selectedPlan?.price ?: 0}",
-                        Toast.LENGTH_SHORT,
-                    ).show()
+                    // Open Telegram bot for payment
+                    try {
+                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(TELEGRAM_BOT_LINK))
+                        context.startActivity(intent)
+                    } catch (e: Exception) {
+                        Toast.makeText(context, "Please install Telegram to proceed", Toast.LENGTH_SHORT).show()
+                    }
                 },
             )
         }

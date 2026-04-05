@@ -28,6 +28,7 @@ import { SettingsModule } from './modules/settings/settings.module';
 import { R2StorageModule } from './modules/r2-storage/r2-storage.module';
 import { PremiumModule } from './modules/premium/premium.module';
 import { PremiumPlansModule } from './modules/premium-plans/premium-plans.module';
+import { TelegramBotModule } from './modules/telegram-bot/telegram-bot.module';
 
 @Module({
   imports: [
@@ -77,6 +78,7 @@ import { PremiumPlansModule } from './modules/premium-plans/premium-plans.module
     R2StorageModule,
     PremiumModule,
     PremiumPlansModule,
+    TelegramBotModule,
   ],
 })
 export class AppModule {}
