@@ -1,4 +1,11 @@
-"""Generate the full Premium Payment Screen PNG matching the provided design."""
+"""Ultra-Premium Dark Grey + Gold Subscription Screen Generator.
+
+Generates a 1080x2400 background PNG with:
+- Dark grey (#121212 → #1A1A1A) gradient background
+- Gold (#D4AF37) accent colors throughout
+- Embedded actual PNG icons from drawable-nodpi
+- 2×2 plan grid, 3 action rows, bottom pay bar
+"""
 from PIL import Image, ImageDraw, ImageFont
 import os
 
@@ -6,342 +13,298 @@ RES = os.path.join(os.path.dirname(__file__), "app", "src", "main", "res")
 NODPI = os.path.join(RES, "drawable-nodpi")
 os.makedirs(NODPI, exist_ok=True)
 
-# ── Screen dimensions (standard mobile) ──
+# ── Screen ──
 W = 1080
-H = 2160  # Full screen height
+H = 2400
 
-# ── Colors ──
-BG_TOP = (11, 15, 26)
-BG_BOT = (18, 24, 38)
-CARD_BG = (22, 27, 46)
-CARD_BORDER = (255, 255, 255, 15)
-GOLD = (212, 175, 55)
-GOLD_LIGHT = (245, 215, 110)
-GOLD_TEXT = (245, 197, 24)
-GOLD_DIM = (139, 115, 40)
-TEXT_WHITE = (255, 255, 255)
-TEXT_DIM = (255, 255, 255, 128)
-TEXT_FAINT = (255, 255, 255, 90)
-GREEN_BADGE = (34, 197, 94)
-ICON_BG = (30, 34, 51)
-ICON_BORDER = (139, 115, 40, 40)
-ACTION_BG = (22, 27, 46)
-BOTTOM_BG = (26, 28, 40)
-PAY_GOLD_1 = (212, 175, 55)
-PAY_GOLD_2 = (245, 197, 24)
-PAY_GOLD_3 = (184, 150, 30)
+# ── Dark Grey + Gold Palette ──
+BG_TOP        = (18, 18, 18)      # #121212
+BG_BOT        = (26, 26, 26)      # #1A1A1A
+CARD_BG_T     = (31, 31, 31)      # #1F1F1F
+CARD_BG_B     = (36, 36, 36)      # #242424
+GOLD          = (212, 175, 55)    # #D4AF37
+GOLD_SEC      = (201, 162, 39)    # #C9A227
+GOLD_SOFT     = (230, 197, 90)    # #E6C55A
+GOLD_DIM      = (160, 130, 40)
+WHITE         = (255, 255, 255)
+WHITE_87      = (222, 222, 222)
+WHITE_60      = (153, 153, 153)
+WHITE_38      = (97, 97, 97)
+GREEN_BADGE   = (34, 197, 94)
+TEXT_DARK     = (18, 12, 0)
+BAR_TOP       = (22, 22, 22)
+BAR_BOT       = (18, 18, 18)
 
 
 def lerp(c1, c2, t):
     return tuple(int(c1[i] + (c2[i] - c1[i]) * t) for i in range(min(len(c1), len(c2))))
 
 
-def draw_rounded_rect(draw, xy, r, fill=None, outline=None, width=1):
-    x0, y0, x1, y1 = xy
-    if fill:
-        draw.rounded_rectangle(xy, r, fill=fill)
-    if outline:
-        draw.rounded_rectangle(xy, r, outline=outline, width=width)
+def rounded_mask(w, h, r):
+    m = Image.new("L", (w, h), 0)
+    ImageDraw.Draw(m).rounded_rectangle([0, 0, w, h], r, fill=255)
+    return m
 
 
-def draw_gradient_rect(img, xy, r, c1, c2, alpha=255):
-    x0, y0, x1, y1 = xy
-    w, h = x1 - x0, y1 - y0
-    overlay = Image.new("RGBA", (w, h), (0, 0, 0, 0))
-    od = ImageDraw.Draw(overlay)
-    for y in range(h):
-        t = y / max(h - 1, 1)
-        c = lerp(c1, c2, t)
-        od.line([(0, y), (w, y)], fill=(*c, alpha))
-    mask = Image.new("L", (w, h), 0)
-    md = ImageDraw.Draw(mask)
-    md.rounded_rectangle([0, 0, w, h], r, fill=255)
-    overlay.putalpha(mask)
-    img.alpha_composite(overlay, (x0, y0))
+def draw_card(img, x, y, w, h, r=20):
+    """Dark gradient card with subtle white border."""
+    card = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+    for row in range(h):
+        t = row / max(h - 1, 1)
+        c = lerp(CARD_BG_T, CARD_BG_B, t)
+        ImageDraw.Draw(card).line([(0, row), (w, row)], fill=(*c, 255))
+    card.putalpha(rounded_mask(w, h, r))
+    img.alpha_composite(card, (x, y))
+    border = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+    ImageDraw.Draw(border).rounded_rectangle([0, 0, w - 1, h - 1], r, outline=(255, 255, 255, 28), width=1)
+    img.alpha_composite(border, (x, y))
 
 
-def make_premium_screen():
+def draw_gold_btn(img, x, y, w, h, r=20):
+    """Gold gradient rounded button."""
+    btn = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+    for row in range(h):
+        t = row / max(h - 1, 1)
+        c = lerp(GOLD_SOFT, GOLD_SEC, t)
+        ImageDraw.Draw(btn).line([(0, row), (w, row)], fill=(*c, 255))
+    btn.putalpha(rounded_mask(w, h, r))
+    img.alpha_composite(btn, (x, y))
+
+
+def font(name, size):
+    try:
+        return ImageFont.truetype(name, size)
+    except:
+        return ImageFont.load_default()
+
+
+def make_screen():
     img = Image.new("RGBA", (W, H), (0, 0, 0, 0))
 
-    # ── Background gradient ──
+    # ── Full dark-grey gradient background ──
     for y in range(H):
-        t = y / H
-        c = lerp(BG_TOP, BG_BOT, t)
+        c = lerp(BG_TOP, BG_BOT, y / H)
         ImageDraw.Draw(img).line([(0, y), (W, y)], fill=(*c, 255))
+
+    # ── Subtle gold glow at top ──
+    for y in range(220):
+        a = int(14 * (1 - y / 220))
+        ImageDraw.Draw(img).line([(0, y), (W, y)], fill=(*GOLD_DIM, a))
 
     draw = ImageDraw.Draw(img)
 
     # ── Fonts ──
-    try:
-        font_icon_label = ImageFont.truetype("arial.ttf", 28)
-        font_plan_label = ImageFont.truetype("arial.ttf", 34)
-        font_price_sym = ImageFont.truetype("arialbd.ttf", 38)
-        font_price = ImageFont.truetype("arialbd.ttf", 72)
-        font_original = ImageFont.truetype("arial.ttf", 30)
-        font_per_month = ImageFont.truetype("arial.ttf", 28)
-        font_badge = ImageFont.truetype("arialbd.ttf", 22)
-        font_discount = ImageFont.truetype("arialbd.ttf", 24)
-        font_action = ImageFont.truetype("arial.ttf", 36)
-        font_action_icon = ImageFont.truetype("arial.ttf", 40)
-        font_bottom_price = ImageFont.truetype("arialbd.ttf", 56)
-        font_bottom_plan = ImageFont.truetype("arial.ttf", 30)
-        font_bottom_valid = ImageFont.truetype("arial.ttf", 26)
-        font_pay = ImageFont.truetype("arialbd.ttf", 40)
-    except:
-        f = ImageFont.load_default()
-        font_icon_label = font_plan_label = font_price_sym = font_price = f
-        font_original = font_per_month = font_badge = font_discount = f
-        font_action = font_action_icon = font_bottom_price = f
-        font_bottom_plan = font_bottom_valid = font_pay = f
+    f_icon_lbl   = font("arial.ttf", 26)
+    f_plan_lbl   = font("arial.ttf", 34)
+    f_rupee      = font("arialbd.ttf", 40)
+    f_price_lg   = font("arialbd.ttf", 76)
+    f_price_sm   = font("arialbd.ttf", 64)
+    f_original   = font("arial.ttf", 30)
+    f_per_mo     = font("arial.ttf", 28)
+    f_badge      = font("arialbd.ttf", 22)
+    f_discount   = font("arialbd.ttf", 24)
+    f_act_lbl    = font("arial.ttf", 36)
+    f_act_icon   = font("arialbd.ttf", 44)
+    f_bot_price  = font("arialbd.ttf", 56)
+    f_bot_plan   = font("arial.ttf", 30)
+    f_bot_valid  = font("arial.ttf", 26)
+    f_pay        = font("arialbd.ttf", 40)
 
-    Y = 40  # current Y position tracker
+    CY = 50  # running Y cursor
 
-    # ══════════════════════════════════════════════
-    # ── Benefits Icons Row ──
-    # ══════════════════════════════════════════════
-    benefits_y = Y
-    benefits_h = 240
-    benefits_box = [32, benefits_y, W - 32, benefits_y + benefits_h]
+    # ══════════════════════════════════════
+    # ── Benefits Icon Row (real PNGs) ──
+    # ══════════════════════════════════════
+    ben_h = 260
+    pad = 32
+    draw_card(img, pad, CY, W - pad * 2, ben_h, r=24)
 
-    # Benefits background
-    draw_gradient_rect(img, benefits_box, 24, (30, 34, 51), (24, 28, 40))
-    draw = ImageDraw.Draw(img)
-    draw.rounded_rectangle(benefits_box, 24, outline=(139, 115, 40, 25), width=1)
-
-    benefits = [
-        ("∞", "Unlimited"),
-        ("★", "Premium\nFirst"),
-        ("AD", "No Ads"),
-        ("HD", "FHD\n1080P"),
-        ("♛", "Premium\nExclusive"),
+    icons = [
+        ("ic_prem_unlimited.png", "Unlimited"),
+        ("ic_prem_first.png", "Premium\nFirst"),
+        ("ic_prem_no_ads.png", "No Ads"),
+        ("ic_prem_fhd.png", "FHD\n1080P"),
+        ("ic_prem_exclusive.png", "Premium\nExclusive"),
     ]
+    ico_sz = 96
+    col_w = (W - pad * 2) // 5
+    ico_y = CY + 30
 
-    icon_size = 100
-    icon_y = benefits_y + 30
-    spacing = W // 5
-    for i, (icon_text, label) in enumerate(benefits):
-        cx = spacing // 2 + i * spacing
-        # Icon circle
-        ix = cx - icon_size // 2
-        iy = icon_y
-        # Circle with gold tint bg
-        circle_overlay = Image.new("RGBA", (icon_size, icon_size), (0, 0, 0, 0))
-        cd = ImageDraw.Draw(circle_overlay)
-        cd.ellipse([0, 0, icon_size, icon_size], fill=(40, 35, 20, 200))
-        cd.ellipse([2, 2, icon_size - 2, icon_size - 2], outline=(212, 175, 55, 80), width=2)
-        img.alpha_composite(circle_overlay, (ix, iy))
+    for i, (fname, label) in enumerate(icons):
+        cx = pad + col_w // 2 + i * col_w
+        ix, iy = cx - ico_sz // 2, ico_y
+
+        path = os.path.join(NODPI, fname)
+        if os.path.exists(path):
+            ic = Image.open(path).convert("RGBA").resize((ico_sz, ico_sz), Image.LANCZOS)
+            img.alpha_composite(ic, (ix, iy))
+        else:
+            ImageDraw.Draw(img).ellipse([ix, iy, ix + ico_sz, iy + ico_sz],
+                                         outline=(*GOLD_DIM, 100), width=2)
+
         draw = ImageDraw.Draw(img)
-
-        # Icon text centered in circle
-        icon_font = ImageFont.truetype("arialbd.ttf", 32) if icon_text not in ("∞", "♛") else ImageFont.truetype("arialbd.ttf", 40)
-        try:
-            pass
-        except:
-            icon_font = ImageFont.load_default()
-        bbox = draw.textbbox((0, 0), icon_text, font=icon_font)
-        tw, th = bbox[2] - bbox[0], bbox[3] - bbox[1]
-        draw.text((cx - tw // 2, iy + icon_size // 2 - th // 2 - 2), icon_text, fill=GOLD_TEXT, font=icon_font)
-
-        # Label below
-        label_y = iy + icon_size + 12
+        ly = iy + ico_sz + 12
         for li, line in enumerate(label.split("\n")):
-            bbox = draw.textbbox((0, 0), line, font=font_icon_label)
-            tw = bbox[2] - bbox[0]
-            draw.text((cx - tw // 2, label_y + li * 32), line, fill=(200, 200, 216, 180), font=font_icon_label)
+            bb = draw.textbbox((0, 0), line, font=f_icon_lbl)
+            draw.text((cx - (bb[2] - bb[0]) // 2, ly + li * 30),
+                      line, fill=WHITE_60, font=f_icon_lbl)
 
-    Y = benefits_y + benefits_h + 40
+    CY += ben_h + 40
 
-    # ══════════════════════════════════════════════
-    # ── Plan Cards (2x2 Grid) ──
-    # ══════════════════════════════════════════════
+    # ══════════════════════════════════════
+    # ── Plan Cards (2×2) ──
+    # ══════════════════════════════════════
     plans = [
-        {"label": "1 Month", "price": 159, "original": 182, "discount": 10, "badge": None, "months": 1},
-        {"label": "3 Months", "price": 459, "original": 543, "discount": 15, "badge": "Most popular", "months": 3},
-        {"label": "6 Months", "price": 829, "original": 1038, "discount": 20, "badge": None, "months": 6},
-        {"label": "12 Months", "price": 1529, "original": 2042, "discount": 25, "badge": "Best Value", "months": 12},
+        {"name": "1 Month",   "price": 159,  "orig": 182,  "disc": 10, "badge": None,           "mo": 1},
+        {"name": "3 Months",  "price": 459,  "orig": 543,  "disc": 15, "badge": "Most popular", "mo": 3},
+        {"name": "6 Months",  "price": 829,  "orig": 1038, "disc": 20, "badge": None,           "mo": 6},
+        {"name": "12 Months", "price": 1529, "orig": 2042, "disc": 25, "badge": "Best Value",   "mo": 12},
     ]
+    gap = 24
+    cw = (W - pad * 2 - gap) // 2
+    ch = 340
+    card_pos = []
 
-    card_w = (W - 32 * 2 - 24) // 2  # padding 32 each side, 24 gap
-    card_h = 320
-    card_positions = []
+    for idx, p in enumerate(plans):
+        r, c = idx // 2, idx % 2
+        cx = pad + c * (cw + gap)
+        cy = CY + r * (ch + gap)
+        card_pos.append((cx, cy, cx + cw, cy + ch))
 
-    for idx, plan in enumerate(plans):
-        row = idx // 2
-        col = idx % 2
-        cx = 32 + col * (card_w + 24)
-        cy = Y + row * (card_h + 24)
-        card_positions.append((cx, cy, cx + card_w, cy + card_h))
-
-        # Card background
-        draw_gradient_rect(img, (cx, cy, cx + card_w, cy + card_h), 20, CARD_BG, (18, 23, 38))
+        draw_card(img, cx, cy, cw, ch, r=20)
         draw = ImageDraw.Draw(img)
 
-        # Card border (subtle)
-        draw.rounded_rectangle([cx, cy, cx + card_w, cy + card_h], 20, outline=(255, 255, 255, 15), width=1)
+        ix = cx + 28
+        iy = cy + 22
 
-        # Badge + Discount row
-        inner_x = cx + 24
-        inner_y = cy + 20
+        # Badge
+        if p["badge"]:
+            bc = GREEN_BADGE if p["badge"] == "Most popular" else GOLD
+            bt = p["badge"]
+            bb = draw.textbbox((0, 0), bt, font=f_badge)
+            bw, bh = bb[2] - bb[0] + 18, bb[3] - bb[1] + 12
+            pill = Image.new("RGBA", (bw, bh), (0, 0, 0, 0))
+            pd = ImageDraw.Draw(pill)
+            pd.rounded_rectangle([0, 0, bw, bh], 8, fill=bc)
+            pd.text((9, 4), bt, fill=WHITE, font=f_badge)
+            img.alpha_composite(pill, (ix, iy))
+            draw = ImageDraw.Draw(img)
 
-        if plan["badge"]:
-            badge_color = GREEN_BADGE if plan["badge"] == "Most popular" else GOLD
-            badge_text = plan["badge"]
-            bbox = draw.textbbox((0, 0), badge_text, font=font_badge)
-            bw = bbox[2] - bbox[0] + 16
-            bh = bbox[3] - bbox[1] + 10
-            draw.rounded_rectangle([inner_x, inner_y, inner_x + bw, inner_y + bh], 8, fill=badge_color)
-            draw.text((inner_x + 8, inner_y + 3), badge_text, fill=TEXT_WHITE, font=font_badge)
+        # Discount (top-right)
+        dt = f"{p['disc']}% Off"
+        db = draw.textbbox((0, 0), dt, font=f_discount)
+        dw, dh = db[2] - db[0] + 22, db[3] - db[1] + 14
+        dx = cx + cw - 28 - dw
+        dp = Image.new("RGBA", (dw, dh), (0, 0, 0, 0))
+        ImageDraw.Draw(dp).rounded_rectangle([0, 0, dw, dh], 8, fill=(255, 255, 255, 18))
+        ImageDraw.Draw(dp).text((11, 5), dt, fill=GOLD, font=f_discount)
+        img.alpha_composite(dp, (dx, iy))
+        draw = ImageDraw.Draw(img)
 
-        # Discount tag (right side)
-        disc_text = f"{plan['discount']}% Off"
-        bbox = draw.textbbox((0, 0), disc_text, font=font_discount)
-        dw = bbox[2] - bbox[0] + 20
-        dh = bbox[3] - bbox[1] + 12
-        dx = cx + card_w - 24 - dw
-        draw.rounded_rectangle([dx, inner_y, dx + dw, inner_y + dh], 8, fill=(255, 255, 255, 20))
-        draw.text((dx + 10, inner_y + 4), disc_text, fill=GOLD_TEXT, font=font_discount)
+        # Plan name
+        ny = iy + 58
+        draw.text((ix, ny), p["name"], fill=WHITE_87, font=f_plan_lbl)
 
-        # Plan label
-        label_y = inner_y + 55
-        draw.text((inner_x, label_y), plan["label"], fill=(255, 255, 255, 200), font=font_plan_label)
+        # Price (gold)
+        py = ny + 52
+        draw.text((ix, py + 4), "₹", fill=GOLD, font=f_rupee)
+        rb = draw.textbbox((0, 0), "₹", font=f_rupee)
+        px = ix + rb[2] - rb[0] + 2
+        pf = f_price_lg if p["price"] < 1000 else f_price_sm
+        draw.text((px, py - 12), str(p["price"]), fill=GOLD, font=pf)
 
-        # Price row: ₹XXX  ₹original(strikethrough)
-        price_y = label_y + 50
-        draw.text((inner_x, price_y), "₹", fill=TEXT_WHITE, font=font_price_sym)
-        # Large price number
-        sym_bbox = draw.textbbox((0, 0), "₹", font=font_price_sym)
-        price_x = inner_x + sym_bbox[2] - sym_bbox[0] + 4
-        draw.text((price_x, price_y - 18), str(plan["price"]), fill=TEXT_WHITE, font=font_price)
+        # Original (strikethrough)
+        pb = draw.textbbox((0, 0), str(p["price"]), font=pf)
+        ox = px + pb[2] - pb[0] + 16
+        ot = f"₹{p['orig']}"
+        draw.text((ox, py + 10), ot, fill=WHITE_38, font=f_original)
+        ob = draw.textbbox((ox, py + 10), ot, font=f_original)
+        sly = (ob[1] + ob[3]) // 2
+        draw.line([(ox, sly), (ob[2], sly)], fill=WHITE_38, width=2)
 
-        # Original price (strikethrough)
-        price_bbox = draw.textbbox((0, 0), str(plan["price"]), font=font_price)
-        orig_x = price_x + price_bbox[2] - price_bbox[0] + 14
-        orig_text = f"₹{plan['original']}"
-        draw.text((orig_x, price_y + 8), orig_text, fill=(255, 255, 255, 100), font=font_original)
-        # Strikethrough line
-        orig_bbox = draw.textbbox((orig_x, price_y + 8), orig_text, font=font_original)
-        line_y = (orig_bbox[1] + orig_bbox[3]) // 2
-        draw.line([(orig_x, line_y), (orig_bbox[2], line_y)], fill=(255, 255, 255, 100), width=2)
+        # Per month
+        if p["mo"] > 1:
+            pm = p["price"] // p["mo"]
+            draw.text((ix, py + 78), f"₹{pm}/month", fill=GOLD_SOFT, font=f_per_mo)
 
-        # Per-month (for multi-month plans)
-        if plan["months"] > 1:
-            per_month = plan["price"] // plan["months"]
-            pm_y = price_y + 70
-            draw.text((inner_x, pm_y), f"₹{per_month}/month", fill=(245, 197, 24, 200), font=font_per_month)
+    CY = card_pos[-1][3] + 50
 
-    Y = card_positions[-1][3] + 50
-
-    # ══════════════════════════════════════════════
+    # ══════════════════════════════════════
     # ── Action Rows ──
-    # ══════════════════════════════════════════════
+    # ══════════════════════════════════════
     actions = [
         ("[M]", "Buy Premium Code"),
         ("[¥]", "Activate with Premium Code"),
         ("□", "Help Center"),
     ]
+    ah = 110
+    aw = W - pad * 2
+    act_pos = []
 
-    action_h = 110
-    for i, (icon, label) in enumerate(actions):
-        ax = 32
-        ay = Y + i * (action_h + 20)
-        aw = W - 64
+    for i, (ic, lbl) in enumerate(actions):
+        ax = pad
+        ay = CY + i * (ah + 20)
+        act_pos.append((ax, ay, ax + aw, ay + ah))
 
-        # Action row background
-        draw_gradient_rect(img, (ax, ay, ax + aw, ay + action_h), 18, ACTION_BG, (20, 24, 38))
+        draw_card(img, ax, ay, aw, ah, r=18)
         draw = ImageDraw.Draw(img)
-        draw.rounded_rectangle([ax, ay, ax + aw, ay + action_h], 18, outline=(255, 255, 255, 15), width=1)
+        draw.text((ax + 30, ay + 28), ic, fill=GOLD, font=f_act_icon)
+        draw.text((ax + 110, ay + 34), lbl, fill=WHITE_87, font=f_act_lbl)
+        draw.text((ax + aw - 55, ay + 32), ">", fill=GOLD_DIM, font=f_act_lbl)
 
-        # Icon
-        draw.text((ax + 28, ay + 30), icon, fill=(255, 255, 255, 150), font=font_action_icon)
+    CY = act_pos[-1][3] + 40
 
-        # Label
-        draw.text((ax + 100, ay + 34), label, fill=(255, 255, 255, 220), font=font_action)
-
-        # Chevron right
-        chev_x = ax + aw - 50
-        chev_y = ay + action_h // 2
-        draw.text((chev_x, chev_y - 18), ">", fill=(255, 255, 255, 80), font=font_action)
-
-    Y = Y + 3 * (action_h + 20) + 20
-
-    # Fill remaining space
-    # (leave room for bottom bar which will be overlaid in Compose)
-
-    # ══════════════════════════════════════════════
+    # ══════════════════════════════════════
     # ── Bottom Pay Bar ──
-    # ══════════════════════════════════════════════
-    bottom_h = 200
-    bottom_y = H - bottom_h
+    # ══════════════════════════════════════
+    bot_h = 220
+    bot_y = H - bot_h
 
-    # Bottom bar background
-    draw_gradient_rect(img, (0, bottom_y, W, H), 0, (26, 28, 40), (20, 22, 31))
+    bar = Image.new("RGBA", (W, bot_h), (0, 0, 0, 0))
+    for row in range(bot_h):
+        c = lerp(BAR_TOP, BAR_BOT, row / max(bot_h - 1, 1))
+        ImageDraw.Draw(bar).line([(0, row), (W, row)], fill=(*c, 255))
+    img.alpha_composite(bar, (0, bot_y))
     draw = ImageDraw.Draw(img)
 
-    # Top border line
-    draw.line([(0, bottom_y), (W, bottom_y)], fill=(139, 115, 40, 50), width=1)
+    # Gold separator
+    draw.line([(0, bot_y), (W, bot_y)], fill=(*GOLD_DIM, 50), width=2)
 
-    # Price text (left side)
-    draw.text((40, bottom_y + 24), "₹159", fill=TEXT_WHITE, font=font_bottom_price)
-    draw.text((40, bottom_y + 90), "Selected Plan: 1 Month", fill=(255, 255, 255, 130), font=font_bottom_plan)
-    draw.text((40, bottom_y + 130), "Valid until 06 May,2026", fill=(255, 255, 255, 90), font=font_bottom_valid)
+    # Price & info (left)
+    draw.text((44, bot_y + 28), "₹159", fill=GOLD, font=f_bot_price)
+    draw.text((44, bot_y + 100), "Selected Plan: 1 Month", fill=WHITE_60, font=f_bot_plan)
+    draw.text((44, bot_y + 142), "Valid until 06 May,2026", fill=WHITE_38, font=f_bot_valid)
 
-    # PAY NOW button (right side)
-    pay_x = W - 360
-    pay_y = bottom_y + 40
-    pay_w = 320
-    pay_h = 110
-    # Gold gradient button
-    for py_offset in range(pay_h):
-        t = py_offset / max(pay_h - 1, 1)
-        c = lerp(PAY_GOLD_1, PAY_GOLD_2, t)
-        draw.line([(pay_x, pay_y + py_offset), (pay_x + pay_w, pay_y + py_offset)], fill=(*c, 255))
-    # Round the button corners with mask
-    btn_overlay = Image.new("RGBA", (pay_w, pay_h), (0, 0, 0, 0))
-    btn_d = ImageDraw.Draw(btn_overlay)
-    for py_offset in range(pay_h):
-        t = py_offset / max(pay_h - 1, 1)
-        c = lerp(PAY_GOLD_1, PAY_GOLD_2, t)
-        btn_d.line([(0, py_offset), (pay_w, py_offset)], fill=(*c, 255))
-    btn_mask = Image.new("L", (pay_w, pay_h), 0)
-    bmd = ImageDraw.Draw(btn_mask)
-    bmd.rounded_rectangle([0, 0, pay_w, pay_h], 20, fill=255)
-    btn_overlay.putalpha(btn_mask)
-
-    # Clear the rectangular area first, then paste rounded button
-    clear = Image.new("RGBA", (pay_w, pay_h), (0, 0, 0, 0))
-    for py_offset in range(pay_h):
-        t = py_offset / max(pay_h - 1, 1)
-        c = lerp((26, 28, 40), (20, 22, 31), t)
-        ImageDraw.Draw(clear).line([(0, py_offset), (pay_w, py_offset)], fill=(*c, 255))
-    img.paste(clear, (pay_x, pay_y))
-    img.alpha_composite(btn_overlay, (pay_x, pay_y))
+    # PAY NOW gold button (right)
+    pay_w, pay_h = 320, 115
+    pay_x = W - 44 - pay_w
+    pay_y = bot_y + 46
+    draw_gold_btn(img, pay_x, pay_y, pay_w, pay_h, r=22)
     draw = ImageDraw.Draw(img)
-
-    # PAY NOW text
-    pay_text = "PAY NOW"
-    bbox = draw.textbbox((0, 0), pay_text, font=font_pay)
-    tw = bbox[2] - bbox[0]
-    th = bbox[3] - bbox[1]
-    draw.text((pay_x + pay_w // 2 - tw // 2, pay_y + pay_h // 2 - th // 2 - 2), pay_text, fill=(26, 18, 0), font=font_pay)
+    pt = "PAY NOW"
+    tb = draw.textbbox((0, 0), pt, font=f_pay)
+    tw, th = tb[2] - tb[0], tb[3] - tb[1]
+    draw.text((pay_x + pay_w // 2 - tw // 2, pay_y + pay_h // 2 - th // 2 - 2),
+              pt, fill=TEXT_DARK, font=f_pay)
 
     # ── Save ──
-    out_path = os.path.join(NODPI, "premium_screen_bg.png")
-    img.save(out_path)
-    print(f"✓ Premium screen saved: {out_path}")
+    out = os.path.join(NODPI, "premium_screen_bg.png")
+    img.save(out, optimize=True)
+    print(f"✓ Ultra-Premium screen saved: {out}")
     print(f"  Size: {W}x{H}")
 
-    # Also save card position data for reference
-    print("\n── Card Positions (for clickable overlays) ──")
-    for i, (x0, y0, x1, y1) in enumerate(card_positions):
-        print(f"  Plan {i}: ({x0},{y0}) -> ({x1},{y1})  [{x1-x0}x{y1-y0}]")
-    print(f"\n── Action Rows ──")
-    for i in range(3):
-        ay = Y - 20 - (3 - i) * (action_h + 20)
-        print(f"  Action {i}: y={ay} h={action_h}")
+    print("\n── Plan Card Positions ──")
+    for i, (x0, y0, x1, y1) in enumerate(card_pos):
+        print(f"  Plan {i} ({plans[i]['name']}): ({x0},{y0}) -> ({x1},{y1})")
+
+    print("\n── Action Row Positions ──")
+    for i, (x0, y0, x1, y1) in enumerate(act_pos):
+        print(f"  Action {i} ({actions[i][1]}): ({x0},{y0}) -> ({x1},{y1})")
+
     print(f"\n── Bottom Bar ──")
-    print(f"  Y: {bottom_y}, H: {bottom_h}")
-    print(f"  PAY button: ({pay_x},{pay_y}) -> ({pay_x+pay_w},{pay_y+pay_h})")
+    print(f"  Y: {bot_y}  H: {bot_h}")
+    print(f"  PAY: ({pay_x},{pay_y}) -> ({pay_x+pay_w},{pay_y+pay_h})")
 
 
 if __name__ == "__main__":
-    make_premium_screen()
+    make_screen()

@@ -33,24 +33,24 @@ private val FALLBACK_PLANS = listOf(
     PremiumPlanDto("f4", "12m", "12 Months", 12, 1529, 2042, 25, "Best Value", 3, true),
 )
 
-// ── Image coordinates (from 1080x2160 source) normalized to fractions ──
+// ── Image coordinates (from 1080x2400 source) normalized to fractions ──
 // Plan cards
 private val PLAN_RECTS = listOf(
-    floatArrayOf(32f / 1080f, 320f / 2160f, 528f / 1080f, 640f / 2160f),   // 1 Month
-    floatArrayOf(552f / 1080f, 320f / 2160f, 1048f / 1080f, 640f / 2160f), // 3 Months
-    floatArrayOf(32f / 1080f, 664f / 2160f, 528f / 1080f, 984f / 2160f),   // 6 Months
-    floatArrayOf(552f / 1080f, 664f / 2160f, 1048f / 1080f, 984f / 2160f), // 12 Months
+    floatArrayOf(32f / 1080f, 350f / 2400f, 528f / 1080f, 690f / 2400f),   // 1 Month
+    floatArrayOf(552f / 1080f, 350f / 2400f, 1048f / 1080f, 690f / 2400f), // 3 Months
+    floatArrayOf(32f / 1080f, 714f / 2400f, 528f / 1080f, 1054f / 2400f),  // 6 Months
+    floatArrayOf(552f / 1080f, 714f / 2400f, 1048f / 1080f, 1054f / 2400f),// 12 Months
 )
 // Action rows
 private val ACTION_RECTS = listOf(
-    floatArrayOf(32f / 1080f, 1034f / 2160f, 1048f / 1080f, 1144f / 2160f), // Buy Premium Code
-    floatArrayOf(32f / 1080f, 1164f / 2160f, 1048f / 1080f, 1274f / 2160f), // Activate with Premium Code
-    floatArrayOf(32f / 1080f, 1294f / 2160f, 1048f / 1080f, 1404f / 2160f), // Help Center
+    floatArrayOf(32f / 1080f, 1104f / 2400f, 1048f / 1080f, 1214f / 2400f), // Buy Premium Code
+    floatArrayOf(32f / 1080f, 1234f / 2400f, 1048f / 1080f, 1344f / 2400f), // Activate with Premium Code
+    floatArrayOf(32f / 1080f, 1364f / 2400f, 1048f / 1080f, 1474f / 2400f), // Help Center
 )
 // PAY NOW button
-private val PAY_RECT = floatArrayOf(720f / 1080f, 2000f / 2160f, 1040f / 1080f, 2110f / 2160f)
+private val PAY_RECT = floatArrayOf(716f / 1080f, 2226f / 2400f, 1036f / 1080f, 2341f / 2400f)
 // Bottom bar text area (for dynamic overlay)
-private val BOTTOM_TEXT_RECT = floatArrayOf(0f, 1960f / 2160f, 660f / 1080f, 2160f / 2160f)
+private val BOTTOM_TEXT_RECT = floatArrayOf(0f, 2180f / 2400f, 700f / 1080f, 2400f / 2400f)
 
 @Composable
 fun ActivatePremiumScreen(
@@ -211,19 +211,19 @@ fun ActivatePremiumScreen(
                         "₹${animatedPrice.toInt()}",
                         fontSize = 24.sp,
                         fontWeight = FontWeight.ExtraBold,
-                        color = Color.White,
+                        color = Color(0xFFD4AF37), // Gold
                     )
                     Spacer(Modifier.height(2.dp))
                     Text(
                         "Selected Plan: ${selectedPlan.name}",
                         fontSize = 13.sp,
-                        color = Color.White.copy(alpha = 0.5f),
+                        color = Color.White.copy(alpha = 0.6f),
                     )
                     Spacer(Modifier.height(2.dp))
                     Text(
                         "Valid until $formatted",
                         fontSize = 11.sp,
-                        color = Color.White.copy(alpha = 0.35f),
+                        color = Color.White.copy(alpha = 0.38f),
                     )
                 }
             }
