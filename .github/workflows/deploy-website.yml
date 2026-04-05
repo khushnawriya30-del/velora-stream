@@ -33,10 +33,7 @@ jobs:
         run: npm run build
 
       - name: Deploy to Vercel (Production)
-        uses: amondnet/vercel-action@v25
-        with:
-          vercel-token: ${{ secrets.VERCEL_TOKEN }}
-          vercel-org-id: team_UTx4o0meWeCQeXFj5eJFMLBO
-          vercel-project-id: prj_dpdYcrpaT39kMGf2RGR6m9oryUFN
-          working-directory: website
-          vercel-args: '--prod'
+        working-directory: website
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: npx vercel --prod --yes --token=$VERCEL_TOKEN
