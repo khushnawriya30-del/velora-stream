@@ -549,7 +549,7 @@ fun CineVaultNavHost(navController: NavHostController = rememberNavController())
                 HomeScreen(
                     onMovieClick = { movieId -> navController.navigate(Screen.MovieDetail.createRoute(movieId)) },
                     onPlayClick = { contentId, episodeId ->
-                        requireAuth { navController.navigate(Screen.Player.createRoute(contentId, episodeId)) }
+                        requireAuth { navController.navigate(Screen.CinematicIntro.createRoute(contentId, episodeId)) }
                     },
                     onSearchClick = { navController.navigate(Screen.Find.route) },
                     onNotificationsClick = { navController.navigate(Screen.Notifications.route) },
@@ -613,10 +613,11 @@ fun CineVaultNavHost(navController: NavHostController = rememberNavController())
                     MeScreen(
                         onNavigateToNotifications = { navController.navigate(Screen.Notifications.route) },
                         onNavigateToSettings = { navController.navigate(Screen.Settings.route) },
+                        onNavigateToPremium = { navController.navigate(Screen.ActivatePremium.route) },
                         onMovieClick = { movieId -> navController.navigate(Screen.MovieDetail.createRoute(movieId)) },
                         onHistoryItemClick = { contentId, episodeId ->
                             navController.navigate(Screen.MovieDetail.createRoute(contentId))
-                            navController.navigate(Screen.Player.createRoute(contentId, episodeId))
+                            navController.navigate(Screen.CinematicIntro.createRoute(contentId, episodeId))
                         },
                     )
                 } else {
@@ -722,7 +723,7 @@ fun CineVaultNavHost(navController: NavHostController = rememberNavController())
                     onHistoryItemClick = { contentId, episodeId ->
                         // Push DetailPage then Player: Back from Player → Trailer Page
                         navController.navigate(Screen.MovieDetail.createRoute(contentId))
-                        navController.navigate(Screen.Player.createRoute(contentId, episodeId))
+                        navController.navigate(Screen.CinematicIntro.createRoute(contentId, episodeId))
                     },
                 )
             }
@@ -747,7 +748,7 @@ fun CineVaultNavHost(navController: NavHostController = rememberNavController())
                 MovieDetailScreen(
                     onBack = { navController.popBackStack() },
                     onPlay = { contentId, episodeId ->
-                        requireAuth { navController.navigate(Screen.Player.createRoute(contentId, episodeId)) }
+                        requireAuth { navController.navigate(Screen.CinematicIntro.createRoute(contentId, episodeId)) }
                     },
                     onRelatedClick = { movieId ->
                         navController.navigate(Screen.MovieDetail.createRoute(movieId))
@@ -764,6 +765,25 @@ fun CineVaultNavHost(navController: NavHostController = rememberNavController())
             ) {
                 PlayerScreen(
                     onBack = { navController.popBackStack() },
+                )
+            }
+
+            composable(
+                Screen.CinematicIntro.route,
+                arguments = listOf(
+                    navArgument("contentId") { type = NavType.StringType },
+                    navArgument("episodeId") { type = NavType.StringType; nullable = true; defaultValue = null },
+                ),
+            ) { backStackEntry ->
+                val contentId = backStackEntry.arguments?.getString("contentId") ?: ""
+                val episodeId = backStackEntry.arguments?.getString("episodeId")
+                CinematicIntroScreen(
+                    onIntroFinished = {
+                        navController.navigate(Screen.Player.createRoute(contentId, episodeId)) {
+                            // Remove intro from back stack so Back goes to detail, not replay intro
+                            popUpTo(Screen.CinematicIntro.route) { inclusive = true }
+                        }
+                    },
                 )
             }
         }

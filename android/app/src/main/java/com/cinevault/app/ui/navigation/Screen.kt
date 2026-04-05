@@ -42,4 +42,11 @@ sealed class Screen(val route: String) {
             else "player/$contentId"
         }
     }
+
+    data object CinematicIntro : Screen("cinematic_intro/{contentId}?episodeId={episodeId}") {
+        fun createRoute(contentId: String, episodeId: String? = null): String {
+            return if (episodeId != null) "cinematic_intro/$contentId?episodeId=$episodeId"
+            else "cinematic_intro/$contentId"
+        }
+    }
 }

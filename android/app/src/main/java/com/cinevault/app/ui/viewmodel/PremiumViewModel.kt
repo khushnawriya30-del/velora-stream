@@ -3,6 +3,7 @@ package com.cinevault.app.ui.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.cinevault.app.data.local.SessionManager
+import com.cinevault.app.data.model.PremiumPlanDto
 import com.cinevault.app.data.model.Result
 import com.cinevault.app.data.repository.PremiumRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -18,6 +19,8 @@ data class PremiumUiState(
     val isActivating: Boolean = false,
     val activationSuccess: Boolean = false,
     val error: String? = null,
+    val plans: List<PremiumPlanDto> = emptyList(),
+    val isLoadingPlans: Boolean = false,
 )
 
 @HiltViewModel
@@ -38,6 +41,22 @@ class PremiumViewModel @Inject constructor(
         }
         // Fetch latest from server
         refreshStatus()
+        fetchPlans()
+    }
+
+    fun fetchPlans() {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoadingPlans = true) }
+            when (val result = premiumRepository.getPremiumPlans()) {
+                is Result.Success -> {
+                    _uiState.update { it.copy(plans = result.data, isLoadingPlans = false) }
+                }
+                is Result.Error -> {
+                    _uiState.update { it.copy(isLoadingPlans = false) }
+                }
+                is Result.Loading -> {}
+            }
+        }
     }
 
     fun refreshStatus() {

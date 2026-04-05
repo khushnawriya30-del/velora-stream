@@ -384,3 +384,15 @@ data class ActivateCodeResponse(
     val user: UserDto?,
     val expiresAt: String?,
 )
+data class PremiumPlanDto(
+    val _id: String,
+    val planId: String,
+    val name: String,
+    val months: Int,
+    val price: Int,
+    val originalPrice: Int,
+    val discountPercent: Int,
+    val badge: String? = null,
+    val order: Int = 0,
+    val isActive: Boolean = true,
+)

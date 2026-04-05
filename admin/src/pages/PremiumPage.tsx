@@ -36,6 +36,19 @@ interface PremiumUser {
   activationCode: string;
 }
 
+interface PlanConfig {
+  _id: string;
+  planId: string;
+  name: string;
+  months: number;
+  price: number;
+  originalPrice: number;
+  discountPercent: number;
+  badge: string;
+  order: number;
+  isActive: boolean;
+}
+
 const PLAN_LABELS: Record<string, string> = {
   '1month': '1 Month',
   '3months': '3 Months',
@@ -51,10 +64,11 @@ const PLAN_COLORS: Record<string, string> = {
 };
 
 export default function PremiumPage() {
-  const [tab, setTab] = useState<'dashboard' | 'codes' | 'users'>('dashboard');
+  const [tab, setTab] = useState<'dashboard' | 'codes' | 'users' | 'plans'>('dashboard');
   const [stats, setStats] = useState<PremiumStats | null>(null);
   const [codes, setCodes] = useState<ActivationCode[]>([]);
   const [users, setUsers] = useState<PremiumUser[]>([]);
+  const [plans, setPlans] = useState<PlanConfig[]>([]);
   const [loading, setLoading] = useState(false);
 
   // Generate modal
@@ -66,6 +80,21 @@ export default function PremiumPage() {
 
   // Filters
   const [codeFilter, setCodeFilter] = useState<'all' | 'available' | 'redeemed'>('all');
+
+  // Plans modal
+  const [showPlanModal, setShowPlanModal] = useState(false);
+  const [editingPlan, setEditingPlan] = useState<PlanConfig | null>(null);
+  const [planForm, setPlanForm] = useState({
+    planId: '',
+    name: '',
+    months: 1,
+    price: 0,
+    originalPrice: 0,
+    discountPercent: 0,
+    badge: '',
+    order: 0,
+    isActive: true,
+  });
 
   const fetchStats = useCallback(async () => {
     try {
@@ -101,6 +130,17 @@ export default function PremiumPage() {
     setLoading(false);
   }, []);
 
+  const fetchPlans = useCallback(async () => {
+    setLoading(true);
+    try {
+      const { data } = await api.get('/premium-plans/admin/all');
+      setPlans(data);
+    } catch (e) {
+      console.error('Failed to fetch plans', e);
+    }
+    setLoading(false);
+  }, []);
+
   useEffect(() => {
     fetchStats();
   }, [fetchStats]);
@@ -108,7 +148,8 @@ export default function PremiumPage() {
   useEffect(() => {
     if (tab === 'codes') fetchCodes();
     if (tab === 'users') fetchUsers();
-  }, [tab, fetchCodes, fetchUsers]);
+    if (tab === 'plans') fetchPlans();
+  }, [tab, fetchCodes, fetchUsers, fetchPlans]);
 
   const handleGenerate = async () => {
     try {
@@ -140,6 +181,61 @@ export default function PremiumPage() {
     navigator.clipboard.writeText(text);
   };
 
+  const openNewPlan = () => {
+    setEditingPlan(null);
+    setPlanForm({ planId: '', name: '', months: 1, price: 0, originalPrice: 0, discountPercent: 0, badge: '', order: plans.length, isActive: true });
+    setShowPlanModal(true);
+  };
+
+  const openEditPlan = (p: PlanConfig) => {
+    setEditingPlan(p);
+    setPlanForm({ planId: p.planId, name: p.name, months: p.months, price: p.price, originalPrice: p.originalPrice, discountPercent: p.discountPercent, badge: p.badge || '', order: p.order, isActive: p.isActive });
+    setShowPlanModal(true);
+  };
+
+  const handleSavePlan = async () => {
+    try {
+      if (editingPlan) {
+        const { planId, ...updateData } = planForm;
+        await api.put(`/premium-plans/admin/${editingPlan._id}`, updateData);
+      } else {
+        await api.post('/premium-plans/admin', planForm);
+      }
+      setShowPlanModal(false);
+      fetchPlans();
+    } catch (e: any) {
+      alert(e.response?.data?.message || 'Failed to save plan');
+    }
+  };
+
+  const handleDeletePlan = async (id: string) => {
+    if (!confirm('Delete this plan? This cannot be undone.')) return;
+    try {
+      await api.delete(`/premium-plans/admin/${id}`);
+      fetchPlans();
+    } catch (e) {
+      alert('Failed to delete plan');
+    }
+  };
+
+  const handleTogglePlan = async (p: PlanConfig) => {
+    try {
+      await api.put(`/premium-plans/admin/${p._id}`, { isActive: !p.isActive });
+      fetchPlans();
+    } catch (e) {
+      alert('Failed to toggle plan');
+    }
+  };
+
+  const handleSeedPlans = async () => {
+    try {
+      await api.post('/premium-plans/admin/seed');
+      fetchPlans();
+    } catch (e) {
+      alert('Failed to seed plans');
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -154,7 +250,7 @@ export default function PremiumPage() {
 
       {/* Tabs */}
       <div className="flex gap-1 bg-zinc-800 rounded-lg p-1 w-fit">
-        {(['dashboard', 'codes', 'users'] as const).map((t) => (
+        {(['dashboard', 'codes', 'users', 'plans'] as const).map((t) => (
           <button
             key={t}
             onClick={() => setTab(t)}
@@ -332,6 +428,106 @@ export default function PremiumPage() {
               )}
             </div>
           )}
+        </div>
+      )}
+
+      {/* Plans */}
+      {tab === 'plans' && (
+        <div className="space-y-4">
+          <div className="flex gap-2">
+            <button onClick={openNewPlan} className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg font-medium text-sm">+ Add Plan</button>
+            <button onClick={handleSeedPlans} className="px-4 py-2 bg-zinc-700 hover:bg-zinc-600 text-white rounded-lg font-medium text-sm">Seed Defaults</button>
+          </div>
+          {loading ? (
+            <div className="text-zinc-400">Loading...</div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              {plans.map((p) => (
+                <div key={p._id} className={`bg-zinc-800 rounded-xl p-5 border ${p.isActive ? 'border-zinc-700' : 'border-red-900/40 opacity-60'}`}>
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-xs font-mono text-zinc-500">{p.planId}</span>
+                    <div className="flex items-center gap-2">
+                      <button onClick={() => handleTogglePlan(p)} className={`text-xs px-2 py-0.5 rounded ${p.isActive ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
+                        {p.isActive ? 'Active' : 'Disabled'}
+                      </button>
+                    </div>
+                  </div>
+                  <div className="text-white font-semibold text-lg mb-1">{p.name}</div>
+                  {p.badge && <span className="inline-block px-2 py-0.5 text-xs rounded bg-amber-500/20 text-amber-400 mb-2">{p.badge}</span>}
+                  <div className="flex items-baseline gap-2 mb-1">
+                    <span className="text-2xl font-bold text-white">₹{p.price}</span>
+                    <span className="text-sm text-zinc-500 line-through">₹{p.originalPrice}</span>
+                    <span className="text-xs text-amber-400">{p.discountPercent}% off</span>
+                  </div>
+                  <div className="text-xs text-zinc-400 mb-3">{p.months} month{p.months > 1 ? 's' : ''} · Order: {p.order}</div>
+                  <div className="flex gap-2">
+                    <button onClick={() => openEditPlan(p)} className="flex-1 py-1.5 bg-zinc-700 hover:bg-zinc-600 text-white rounded text-xs">Edit</button>
+                    <button onClick={() => handleDeletePlan(p._id)} className="py-1.5 px-3 bg-red-900/30 hover:bg-red-900/50 text-red-400 rounded text-xs">Delete</button>
+                  </div>
+                </div>
+              ))}
+              {plans.length === 0 && (
+                <div className="col-span-full text-center text-zinc-500 py-8">No plans configured. Click "Seed Defaults" to create default plans.</div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Plan Edit Modal */}
+      {showPlanModal && (
+        <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
+          <div className="bg-zinc-800 rounded-xl p-6 w-full max-w-md space-y-4">
+            <h2 className="text-xl font-bold text-white">{editingPlan ? 'Edit Plan' : 'New Plan'}</h2>
+            {!editingPlan && (
+              <div>
+                <label className="block text-sm text-zinc-400 mb-1">Plan ID (unique, e.g. "1m")</label>
+                <input type="text" value={planForm.planId} onChange={(e) => setPlanForm({ ...planForm, planId: e.target.value })} className="w-full bg-zinc-700 text-white rounded-lg px-3 py-2" />
+              </div>
+            )}
+            <div>
+              <label className="block text-sm text-zinc-400 mb-1">Name</label>
+              <input type="text" value={planForm.name} onChange={(e) => setPlanForm({ ...planForm, name: e.target.value })} className="w-full bg-zinc-700 text-white rounded-lg px-3 py-2" placeholder="e.g. 1 Month" />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-sm text-zinc-400 mb-1">Months</label>
+                <input type="number" min={1} value={planForm.months} onChange={(e) => setPlanForm({ ...planForm, months: parseInt(e.target.value) || 1 })} className="w-full bg-zinc-700 text-white rounded-lg px-3 py-2" />
+              </div>
+              <div>
+                <label className="block text-sm text-zinc-400 mb-1">Order</label>
+                <input type="number" min={0} value={planForm.order} onChange={(e) => setPlanForm({ ...planForm, order: parseInt(e.target.value) || 0 })} className="w-full bg-zinc-700 text-white rounded-lg px-3 py-2" />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-sm text-zinc-400 mb-1">Price (₹)</label>
+                <input type="number" min={0} value={planForm.price} onChange={(e) => setPlanForm({ ...planForm, price: parseInt(e.target.value) || 0 })} className="w-full bg-zinc-700 text-white rounded-lg px-3 py-2" />
+              </div>
+              <div>
+                <label className="block text-sm text-zinc-400 mb-1">Original Price (₹)</label>
+                <input type="number" min={0} value={planForm.originalPrice} onChange={(e) => setPlanForm({ ...planForm, originalPrice: parseInt(e.target.value) || 0 })} className="w-full bg-zinc-700 text-white rounded-lg px-3 py-2" />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-sm text-zinc-400 mb-1">Discount %</label>
+                <input type="number" min={0} max={100} value={planForm.discountPercent} onChange={(e) => setPlanForm({ ...planForm, discountPercent: parseInt(e.target.value) || 0 })} className="w-full bg-zinc-700 text-white rounded-lg px-3 py-2" />
+              </div>
+              <div>
+                <label className="block text-sm text-zinc-400 mb-1">Badge</label>
+                <input type="text" value={planForm.badge} onChange={(e) => setPlanForm({ ...planForm, badge: e.target.value })} className="w-full bg-zinc-700 text-white rounded-lg px-3 py-2" placeholder="e.g. Most popular" />
+              </div>
+            </div>
+            <label className="flex items-center gap-2 text-sm text-zinc-300 cursor-pointer">
+              <input type="checkbox" checked={planForm.isActive} onChange={(e) => setPlanForm({ ...planForm, isActive: e.target.checked })} className="rounded" />
+              Active (visible in app)
+            </label>
+            <div className="flex gap-3">
+              <button onClick={() => setShowPlanModal(false)} className="flex-1 py-2 bg-zinc-700 hover:bg-zinc-600 text-zinc-300 rounded-lg">Cancel</button>
+              <button onClick={handleSavePlan} className="flex-1 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg font-medium">Save</button>
+            </div>
+          </div>
         </div>
       )}
 

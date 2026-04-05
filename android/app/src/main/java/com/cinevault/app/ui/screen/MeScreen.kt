@@ -1,8 +1,12 @@
 package com.cinevault.app.ui.screen
 
+import androidx.compose.animation.core.*
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -21,31 +25,44 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
+import com.cinevault.app.R
 import com.cinevault.app.data.model.MovieDto
 import com.cinevault.app.data.model.ProfileDto
 import com.cinevault.app.data.model.WatchProgressDto
 import com.cinevault.app.ui.theme.CineVaultTheme
+import com.cinevault.app.ui.viewmodel.PremiumViewModel
 import com.cinevault.app.ui.viewmodel.ProfileViewModel
+
+// Premium text color
+private val PremTextOnGold = Color(0xFF2A1A00)
 
 @Composable
 fun MeScreen(
     onNavigateToNotifications: () -> Unit = {},
     onNavigateToSettings: () -> Unit = {},
+    onNavigateToPremium: () -> Unit = {},
     onMovieClick: (String) -> Unit = {},
     /** Navigate to content from history. For movies: episodeId = null. For episodes: episodeId = episode id, contentId = seriesId. */
     onHistoryItemClick: (contentId: String, episodeId: String?) -> Unit = { _, _ -> },
     profileViewModel: ProfileViewModel = hiltViewModel(),
+    premiumViewModel: PremiumViewModel = hiltViewModel(),
 ) {
     val uiState by profileViewModel.uiState.collectAsState()
+    val premiumState by premiumViewModel.uiState.collectAsState()
 
     Column(
         modifier = Modifier
@@ -58,6 +75,17 @@ fun MeScreen(
             userEmail = uiState.userEmail,
             onBellClick = onNavigateToNotifications,
             onSettingsClick = onNavigateToSettings,
+        )
+
+        // ── Premium Subscription Section ──
+        Spacer(Modifier.height(8.dp))
+        MePremiumSection(
+            isPremium = premiumState.isPremium,
+            plan = premiumState.plan,
+            daysRemaining = premiumState.daysRemaining,
+            expiresAt = premiumState.expiresAt,
+            onSubscribeClick = onNavigateToPremium,
+            onRenewClick = onNavigateToPremium,
         )
 
         if (uiState.profiles.size > 1) {
@@ -284,6 +312,81 @@ private fun MeProfileChip(profile: ProfileDto, isActive: Boolean, onClick: () ->
         }
         Spacer(Modifier.height(4.dp))
         Text(profile.name, style = CineVaultTheme.typography.labelSmall.copy(fontSize = 10.sp), color = if (isActive) CineVaultTheme.colors.accentGold else CineVaultTheme.colors.textSecondary, maxLines = 1, overflow = TextOverflow.Ellipsis, textAlign = TextAlign.Center)
+    }
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// ── Premium Subscription Card (PNG-based) ──
+// ══════════════════════════════════════════════════════════════════════
+
+@Composable
+private fun MePremiumSection(
+    isPremium: Boolean,
+    plan: String?,
+    daysRemaining: Int?,
+    expiresAt: String?,
+    onSubscribeClick: () -> Unit,
+    onRenewClick: () -> Unit,
+) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+    val scale by animateFloatAsState(
+        targetValue = if (isPressed) 0.96f else 1f,
+        animationSpec = tween(150, easing = FastOutSlowInEasing),
+        label = "premCardTap",
+    )
+
+    Box(
+        modifier = Modifier
+            .padding(horizontal = 16.dp)
+            .graphicsLayer { scaleX = scale; scaleY = scale }
+            .clip(RoundedCornerShape(16.dp))
+            .clickable(
+                interactionSource = interactionSource,
+                indication = null,
+                onClick = if (isPremium) onRenewClick else onSubscribeClick,
+            ),
+    ) {
+        if (isPremium) {
+            // ── Gold Active Card PNG ──
+            Image(
+                painter = painterResource(R.drawable.premium_card_active),
+                contentDescription = "Premium Active",
+                modifier = Modifier.fillMaxWidth(),
+                contentScale = ContentScale.FillWidth,
+            )
+            // Dynamic expiry text overlay (positioned over the empty area of the gold card)
+            val expiryAnnotated = buildAnnotatedString {
+                append("Your ")
+                withStyle(SpanStyle(fontWeight = FontWeight.Bold)) { append("Premium Plan") }
+                append(" valid till ")
+                withStyle(SpanStyle(fontWeight = FontWeight.Bold)) {
+                    append(expiresAt ?: daysRemaining?.let { "$it days" } ?: "Active")
+                }
+            }
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .matchParentSize()
+                    .padding(start = 20.dp, end = 20.dp, bottom = 80.dp),
+                contentAlignment = Alignment.BottomStart,
+            ) {
+                Text(
+                    text = expiryAnnotated,
+                    fontSize = 13.sp,
+                    color = PremTextOnGold,
+                    lineHeight = 18.sp,
+                )
+            }
+        } else {
+            // ── Dark Subscribe Card PNG ──
+            Image(
+                painter = painterResource(R.drawable.premium_card_subscribe),
+                contentDescription = "Subscribe to Premium",
+                modifier = Modifier.fillMaxWidth(),
+                contentScale = ContentScale.FillWidth,
+            )
+        }
     }
 }
 

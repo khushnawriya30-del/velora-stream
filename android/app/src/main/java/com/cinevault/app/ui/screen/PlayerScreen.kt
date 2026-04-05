@@ -8,12 +8,15 @@ import android.view.WindowManager
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -27,6 +30,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Brush
@@ -397,6 +401,18 @@ fun PlayerScreen(
     var showSpeedPopup by remember { mutableStateOf(false) }
     var showAudioPopup by remember { mutableStateOf(false) }
     var showEpisodePopup by remember { mutableStateOf(false) }
+
+    // -- Quality switching: pause player during switch, resume after --
+    var wasPlayingBeforeSwitch by remember { mutableStateOf(false) }
+    LaunchedEffect(uiState.isQualitySwitching) {
+        if (uiState.isQualitySwitching) {
+            wasPlayingBeforeSwitch = exoPlayer.isPlaying || exoPlayer.playWhenReady
+            exoPlayer.pause()
+        } else if (wasPlayingBeforeSwitch) {
+            exoPlayer.play()
+            wasPlayingBeforeSwitch = false
+        }
+    }
 
     // -- Promo Ad for non-premium users (every 20 minutes) --
     var showPromoAd by remember { mutableStateOf(false) }
@@ -1033,41 +1049,48 @@ fun PlayerScreen(
                 qualities.forEach { quality ->
                     val displayLabel = when (quality) {
                         "auto" -> autoQualityLabel
-                        "2160p" -> "2160p 4K Ultra HD"
-                        "1440p" -> "1440p 2K QHD"
-                        "1080p" -> "1080p Full HD"
-                        "720p" -> "720p HD"
-                        "480p" -> "480p"
-                        "360p" -> "360p"
-                        "240p" -> "240p"
+                        "2160p" -> "4K Ultra HD"
+                        "1440p" -> "2K QHD"
+                        "1080p" -> "Full HD"
+                        "720p" -> "HD"
+                        "480p" -> "SD"
+                        "360p" -> "Low"
+                        "240p" -> "Data Saver"
+                        else -> quality
+                    }
+                    val qualityTag = when (quality) {
+                        "auto" -> ""
                         else -> quality
                     }
                     val subtitle = when (quality) {
-                        "auto" -> "Adaptive"
-                        "2160p" -> "20 Mbps"
-                        "1440p" -> "12 Mbps"
-                        "1080p" -> "8 Mbps"
-                        "720p" -> "4 Mbps"
-                        "480p" -> "2 Mbps"
-                        "360p" -> "1 Mbps"
-                        "240p" -> "0.5 Mbps"
+                        "auto" -> "Adaptive bitrate"
+                        "2160p" -> "20 Mbps • Best quality"
+                        "1440p" -> "12 Mbps • Ultra sharp"
+                        "1080p" -> "8 Mbps • Crystal clear"
+                        "720p" -> "4 Mbps • Balanced"
+                        "480p" -> "2 Mbps • Standard"
+                        "360p" -> "1 Mbps • Smooth playback"
+                        "240p" -> "0.5 Mbps • Save data"
                         else -> ""
                     }
+                    val fullLabel = if (qualityTag.isNotEmpty()) "$qualityTag $displayLabel" else displayLabel
                     val isPremiumQuality = quality == "1080p" || quality == "1440p" || quality == "2160p"
                     val isLocked = isPremiumQuality && !uiState.isPremium
-                    ObsidianMenuItem(
-                        label = if (isLocked) "$displayLabel 👑" else displayLabel,
-                        subtitle = if (isLocked) "Premium Only" else if (isPremiumQuality) "Premium • $subtitle" else subtitle,
+                    PremiumQualityItem(
+                        label = fullLabel,
+                        subtitle = subtitle,
+                        isPremium = isPremiumQuality,
+                        isLocked = isLocked,
                         isSelected = uiState.selectedQuality == quality,
                         onClick = {
                             if (isLocked) {
-                                toastMessage = "Upgrade to Premium for 1080p+ quality"
+                                toastMessage = "Upgrade to Premium for $quality quality"
                             } else {
-                                viewModel.setQuality(quality); showQualityPopup = false; toastMessage = "Quality: $displayLabel"
+                                viewModel.setQuality(quality); showQualityPopup = false; toastMessage = "Quality: $fullLabel"
                             }
                         },
                     )
-                    Spacer(Modifier.height(6.dp))
+                    Spacer(Modifier.height(8.dp))
                 }
             }
         }
@@ -1146,6 +1169,44 @@ fun PlayerScreen(
                             }
                         }
                     }
+                }
+            }
+        }
+
+        // -- Quality Switching Loading Overlay --
+        if (uiState.isQualitySwitching) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = 0.80f))
+                    .zIndex(90f),
+                contentAlignment = Alignment.Center,
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(48.dp),
+                        color = GoldAccent,
+                        strokeWidth = 3.dp,
+                    )
+                    Spacer(Modifier.height(16.dp))
+                    Text(
+                        text = "Switching to ${
+                            when (uiState.selectedQuality) {
+                                "auto" -> "Auto"
+                                "2160p" -> "2160p 4K Ultra HD"
+                                "1440p" -> "1440p 2K QHD"
+                                "1080p" -> "1080p Full HD"
+                                "720p" -> "720p HD"
+                                "480p" -> "480p"
+                                "360p" -> "360p"
+                                "240p" -> "240p"
+                                else -> uiState.selectedQuality
+                            }
+                        }...",
+                        color = Color.White,
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.Medium,
+                    )
                 }
             }
         }
@@ -1477,6 +1538,222 @@ private fun ObsidianMenuItem(label: String, subtitle: String? = null, isSelected
             }
             if (isSelected) {
                 Box(modifier = Modifier.size(6.dp).clip(CircleShape).background(CyanAccent))
+            }
+        }
+    }
+}
+
+// ── Premium Quality Selection Item ──
+private val PremiumGold = Color(0xFFD4AF37)
+private val PremiumGoldLight = Color(0xFFE8D48B)
+private val PremiumGoldDark = Color(0xFF8B7328)
+private val PremiumGoldBright = Color(0xFFF5D76E)
+
+@Composable
+private fun PremiumQualityItem(
+    label: String,
+    subtitle: String,
+    isPremium: Boolean,
+    isLocked: Boolean,
+    isSelected: Boolean,
+    onClick: () -> Unit,
+) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+    val scale by animateFloatAsState(
+        targetValue = if (isPressed) 0.96f else 1f,
+        animationSpec = tween(150, easing = FastOutSlowInEasing),
+        label = "qScale",
+    )
+
+    val infiniteTransition = rememberInfiniteTransition(label = "qGlow")
+    val glowAlpha by infiniteTransition.animateFloat(
+        initialValue = 0.15f,
+        targetValue = 0.35f,
+        animationSpec = infiniteRepeatable(tween(1800, easing = FastOutSlowInEasing), RepeatMode.Reverse),
+        label = "qGlowA",
+    )
+
+    val cardBg = when {
+        isSelected && isPremium -> Brush.linearGradient(
+            colors = listOf(PremiumGold.copy(alpha = 0.15f), PremiumGoldDark.copy(alpha = 0.08f), Color(0xFF1A1508)),
+        )
+        isSelected -> Brush.linearGradient(
+            colors = listOf(CyanAccent.copy(alpha = 0.12f), CyanAccent.copy(alpha = 0.04f)),
+        )
+        isPremium -> Brush.linearGradient(
+            colors = listOf(PremiumGold.copy(alpha = 0.06f), Color.Transparent),
+        )
+        else -> Brush.linearGradient(colors = listOf(Color.Transparent, Color.Transparent))
+    }
+
+    val borderBrush = when {
+        isSelected && isPremium -> Brush.linearGradient(
+            colors = listOf(PremiumGold.copy(alpha = 0.7f), PremiumGoldLight.copy(alpha = 0.4f), PremiumGoldDark.copy(alpha = 0.5f)),
+        )
+        isSelected -> Brush.linearGradient(
+            colors = listOf(CyanAccent.copy(alpha = 0.5f), CyanAccent.copy(alpha = 0.2f)),
+        )
+        isPremium -> Brush.linearGradient(
+            colors = listOf(PremiumGold.copy(alpha = 0.2f), PremiumGoldDark.copy(alpha = 0.1f)),
+        )
+        else -> Brush.linearGradient(colors = listOf(BorderSubtle.copy(alpha = 0.3f), BorderSubtle.copy(alpha = 0.15f)))
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .graphicsLayer { scaleX = scale; scaleY = scale }
+            .clip(RoundedCornerShape(14.dp))
+            .border(width = 1.dp, brush = borderBrush, shape = RoundedCornerShape(14.dp))
+            .background(cardBg, shape = RoundedCornerShape(14.dp))
+            .clickable(interactionSource = interactionSource, indication = null, onClick = onClick)
+            .padding(horizontal = 14.dp, vertical = 13.dp),
+    ) {
+        // Subtle glow for premium items
+        if (isPremium && !isLocked) {
+            Canvas(
+                modifier = Modifier
+                    .size(50.dp)
+                    .align(Alignment.CenterEnd)
+                    .offset(x = 10.dp)
+                    .alpha(glowAlpha)
+            ) {
+                drawCircle(
+                    brush = Brush.radialGradient(
+                        colorStops = arrayOf(
+                            0f to PremiumGold.copy(alpha = 0.25f),
+                            0.5f to PremiumGold.copy(alpha = 0.06f),
+                            1f to Color.Transparent,
+                        ),
+                    ),
+                    radius = size.minDimension * 0.5f,
+                )
+            }
+        }
+
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
+                // Quality icon
+                Box(
+                    modifier = Modifier
+                        .size(36.dp)
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(
+                            if (isPremium)
+                                Brush.linearGradient(listOf(PremiumGold.copy(alpha = 0.18f), PremiumGoldDark.copy(alpha = 0.08f)))
+                            else
+                                Brush.linearGradient(listOf(Color.White.copy(alpha = 0.06f), Color.White.copy(alpha = 0.03f)))
+                        ),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    if (isPremium) {
+                        Icon(
+                            imageVector = Icons.Filled.Star,
+                            contentDescription = null,
+                            tint = if (isLocked) PremiumGold.copy(alpha = 0.5f) else PremiumGoldBright,
+                            modifier = Modifier.size(18.dp),
+                        )
+                    } else {
+                        Icon(
+                            imageVector = Icons.Filled.HighQuality,
+                            contentDescription = null,
+                            tint = if (isSelected) CyanAccent else Color.White.copy(alpha = 0.45f),
+                            modifier = Modifier.size(18.dp),
+                        )
+                    }
+                }
+
+                Spacer(Modifier.width(12.dp))
+
+                Column {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = label,
+                            fontSize = 14.sp,
+                            fontWeight = if (isSelected || isPremium) FontWeight.SemiBold else FontWeight.Normal,
+                            color = when {
+                                isLocked -> Color.White.copy(alpha = 0.45f)
+                                isSelected && isPremium -> PremiumGoldLight
+                                isSelected -> CyanAccent
+                                isPremium -> Color.White.copy(alpha = 0.9f)
+                                else -> Color.White.copy(alpha = 0.85f)
+                            },
+                        )
+                        if (isPremium) {
+                            Spacer(Modifier.width(8.dp))
+                            // Premium pill badge
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(6.dp))
+                                    .background(
+                                        if (isLocked)
+                                            Brush.linearGradient(listOf(PremiumGold.copy(alpha = 0.15f), PremiumGoldDark.copy(alpha = 0.1f)))
+                                        else
+                                            Brush.linearGradient(listOf(PremiumGold.copy(alpha = 0.25f), PremiumGoldDark.copy(alpha = 0.15f)))
+                                    )
+                                    .border(
+                                        width = 0.5.dp,
+                                        brush = Brush.linearGradient(listOf(PremiumGold.copy(alpha = 0.4f), PremiumGoldDark.copy(alpha = 0.2f))),
+                                        shape = RoundedCornerShape(6.dp),
+                                    )
+                                    .padding(horizontal = 8.dp, vertical = 2.dp),
+                            ) {
+                                Text(
+                                    text = if (isLocked) "🔒 PREMIUM" else "✦ PREMIUM",
+                                    fontSize = 9.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = if (isLocked) PremiumGold.copy(alpha = 0.6f) else PremiumGoldBright,
+                                    letterSpacing = 1.sp,
+                                )
+                            }
+                        }
+                    }
+                    if (subtitle.isNotBlank()) {
+                        Spacer(Modifier.height(2.dp))
+                        Text(
+                            text = subtitle,
+                            fontSize = 11.sp,
+                            color = when {
+                                isLocked -> TextDim.copy(alpha = 0.4f)
+                                isPremium -> PremiumGold.copy(alpha = 0.55f)
+                                else -> TextDim
+                            },
+                        )
+                    }
+                }
+            }
+
+            // Selection indicator
+            if (isSelected) {
+                Box(
+                    modifier = Modifier
+                        .size(20.dp)
+                        .clip(CircleShape)
+                        .background(
+                            if (isPremium) Brush.radialGradient(listOf(PremiumGold, PremiumGoldDark))
+                            else Brush.radialGradient(listOf(CyanAccent, CyanAccent.copy(alpha = 0.6f)))
+                        ),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Check,
+                        contentDescription = null,
+                        tint = Color.Black,
+                        modifier = Modifier.size(13.dp),
+                    )
+                }
+            } else if (isLocked) {
+                Icon(
+                    imageVector = Icons.Filled.Lock,
+                    contentDescription = null,
+                    tint = PremiumGold.copy(alpha = 0.4f),
+                    modifier = Modifier.size(18.dp),
+                )
             }
         }
     }

@@ -11,6 +11,19 @@ class PremiumRepository @Inject constructor(
     private val api: CineVaultApi,
     private val sessionManager: SessionManager,
 ) {
+    suspend fun getPremiumPlans(): Result<List<PremiumPlanDto>> {
+        return try {
+            val response = api.getPremiumPlans()
+            if (response.isSuccessful) {
+                Result.Success(response.body()!!)
+            } else {
+                Result.Error("Failed to fetch plans")
+            }
+        } catch (e: Exception) {
+            Result.Error(e.message ?: "Network error")
+        }
+    }
+
     suspend fun getPremiumStatus(): Result<PremiumStatusResponse> {
         return try {
             val response = api.getPremiumStatus()

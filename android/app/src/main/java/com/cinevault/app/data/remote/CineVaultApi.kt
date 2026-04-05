@@ -264,6 +264,9 @@ interface CineVaultApi {
     @POST("premium/activate")
     suspend fun activatePremiumCode(@Body request: ActivateCodeRequest): Response<ActivateCodeResponse>
 
+    @GET("premium-plans")
+    suspend fun getPremiumPlans(): Response<List<PremiumPlanDto>>
+
     // App Version
     @GET("app-version")
     suspend fun getAppVersion(): Response<AppVersionResponse>

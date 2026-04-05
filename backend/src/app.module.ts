@@ -27,6 +27,7 @@ import { BunnyModule } from './modules/bunny/bunny.module';
 import { SettingsModule } from './modules/settings/settings.module';
 import { R2StorageModule } from './modules/r2-storage/r2-storage.module';
 import { PremiumModule } from './modules/premium/premium.module';
+import { PremiumPlansModule } from './modules/premium-plans/premium-plans.module';
 
 @Module({
   imports: [
@@ -75,6 +76,7 @@ import { PremiumModule } from './modules/premium/premium.module';
     SettingsModule,
     R2StorageModule,
     PremiumModule,
+    PremiumPlansModule,
   ],
 })
 export class AppModule {}

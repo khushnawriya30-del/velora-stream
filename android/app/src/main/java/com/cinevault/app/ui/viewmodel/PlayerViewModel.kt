@@ -42,6 +42,7 @@ data class PlayerUiState(
     val selectedAudioTrack: String = "default",
     val isSpeedOverride: Boolean = false,
     val isPremium: Boolean = false,
+    val isQualitySwitching: Boolean = false,
 )
 
 @HiltViewModel
@@ -64,6 +65,11 @@ class PlayerViewModel @Inject constructor(
     val uiState: StateFlow<PlayerUiState> = _uiState.asStateFlow()
 
     private var progressJob: Job? = null
+
+    /** Active streaming sources for current content (movie or episode) — used by quality switching. */
+    private var activeSources: List<StreamingSourceDto> = emptyList()
+    /** True when user manually selected a quality — prevents auto-detection override. */
+    private var userManualQuality: Boolean = false
 
     /** Scope that survives ViewModel destruction — ensures save HTTP calls complete. */
     private val saveScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -234,14 +240,26 @@ class PlayerViewModel @Inject constructor(
 
             // If episode sources are provided, use them directly (with 3-layer Drive fallback)
             if (!episodeSources.isNullOrEmpty()) {
-                val source = episodeSources.firstOrNull()
+                activeSources = episodeSources
+                userManualQuality = false
+                // Pick source based on selected quality when multiple sources exist
+                val selectedQuality = _uiState.value.selectedQuality
+                val source = if (episodeSources.size > 1) {
+                    episodeSources.find { it.quality?.lowercase() == selectedQuality.lowercase() }
+                        ?: episodeSources.minByOrNull { it.priority ?: Int.MAX_VALUE }
+                } else {
+                    episodeSources.firstOrNull()
+                }
                 val rawUrl = source?.url ?: ""
                 val (streamUrl, fallbacks) = buildStreamWithFallbacks(rawUrl)
                 Log.d("CineVaultPlayer", "Using episode source URL: ${streamUrl.take(150)}, fallbacks: ${fallbacks.size}")
                 if (streamUrl.startsWith("http://") || streamUrl.startsWith("https://")) {
                     val isHls = streamUrl.contains(".m3u8", ignoreCase = true)
+                    val hasMultipleSources = episodeSources.size > 1
                     val qualities = if (isHls)
                         listOf("auto", "1080p", "720p", "480p", "360p")
+                    else if (hasMultipleSources)
+                        listOf("auto") + episodeSources.mapNotNull { it.quality }.distinct()
                     else
                         listOf("1080p", "720p", "480p", "360p")
                     _uiState.update { it.copy(
@@ -250,7 +268,7 @@ class PlayerViewModel @Inject constructor(
                         fallbackUrls = fallbacks,
                         availableQualities = qualities,
                         isAdaptive = isHls,
-                        selectedQuality = if (isHls) "auto" else "1080p",
+                        selectedQuality = if (isHls) "auto" else if (hasMultipleSources) "auto" else "720p",
                         currentPosition = if (resumePosition >= 0) resumePosition else it.currentPosition,
                     ) }
                     return@launch
@@ -274,6 +292,8 @@ class PlayerViewModel @Inject constructor(
 
             // Fallback: use direct streaming source URL (single file — no quality switching)
             val sources = movie?.streamingSources ?: emptyList()
+            activeSources = sources
+            userManualQuality = false
 
             // For multiple sources with different qualities, allow switching between them
             val hasMultipleSources = sources.size > 1
@@ -519,33 +539,60 @@ class PlayerViewModel @Inject constructor(
     }
 
     fun updateAvailableQualities(detectedQualities: List<String>) {
-        // Only update the SELECTED QUALITY label to reflect what's actually playing.
-        // Never override availableQualities — it must stay as the hardcoded list
-        // (1080p / 720p / 480p / 360p) for all content types universally.
+        // Only auto-select resolution when user hasn't manually chosen a quality.
+        // This prevents the 2-second detection loop from overriding manual selection.
         if (detectedQualities.isEmpty()) return
+        if (userManualQuality) return  // User manually picked — don't override
         val highest = detectedQualities.maxByOrNull { q -> q.replace("p", "").toIntOrNull() ?: 0 }
             ?: return
         val current = _uiState.value
-        // For non-adaptive single-file content: highlight detected resolution in the list.
-        // If the detected height matches one of the hardcoded options, select it; otherwise
-        // keep the current selection so the UI label stays meaningful.
         if (!current.isAdaptive) {
             val match = current.availableQualities.find { it == highest }
-            if (match != null) {
+            if (match != null && current.selectedQuality != match) {
                 _uiState.update { it.copy(selectedQuality = match) }
             }
         }
-        // For adaptive (HLS): track selector handles quality — don't touch selectedQuality
     }
 
     fun setQuality(quality: String) {
         val oldQuality = _uiState.value.selectedQuality
-        _uiState.update { it.copy(selectedQuality = quality) }
-        // For multiple sources (non-HLS), reload URL with new quality source
-        val movie = _uiState.value.movie
-        if (movie?.hlsUrl.isNullOrBlank() && (movie?.streamingSources?.size ?: 0) > 1 && quality != oldQuality) {
-            val currentPos = _uiState.value.currentPosition
-            loadStreamingUrl(resumePosition = currentPos)
+        if (quality == oldQuality) return
+        userManualQuality = true
+        _uiState.update { it.copy(selectedQuality = quality, isQualitySwitching = true) }
+
+        viewModelScope.launch {
+            val state = _uiState.value
+
+            // HLS adaptive — ExoPlayer track selector reacts via LaunchedEffect in PlayerScreen.
+            // Show brief loading overlay so user sees visual feedback.
+            if (state.isAdaptive) {
+                delay(1000)
+                _uiState.update { it.copy(isQualitySwitching = false) }
+                return@launch
+            }
+
+            // Non-adaptive: check if a real source exists for the selected quality
+            val realSource = if (activeSources.size > 1) {
+                activeSources.find { it.quality?.lowercase() == quality.lowercase() }
+            } else null
+
+            if (realSource != null) {
+                // Real quality switch: update streaming URL to the matching source
+                val currentPos = state.currentPosition
+                val (streamUrl, fallbacks) = buildStreamWithFallbacks(realSource.url)
+                _uiState.update { it.copy(
+                    streamingUrl = streamUrl,
+                    fallbackUrls = fallbacks,
+                    currentPosition = currentPos,
+                ) }
+                // LaunchedEffect(streamingUrl) in PlayerScreen reloads the media
+                delay(1000)
+                _uiState.update { it.copy(isQualitySwitching = false) }
+            } else {
+                // No real source for this quality → simulate quality switch
+                delay(1500)
+                _uiState.update { it.copy(isQualitySwitching = false) }
+            }
         }
     }
 
