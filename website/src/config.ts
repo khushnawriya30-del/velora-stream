@@ -10,7 +10,7 @@ export const APP_CONFIG = {
   },
 
   fallback: {
-    version: '1.0.0',
+    version: '1.4.2',
     downloadUrl: '/api/download',
   },
 

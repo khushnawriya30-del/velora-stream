@@ -67,7 +67,7 @@ export default function Hero() {
               href="#download"
               className="px-8 py-3.5 bg-gradient-to-r from-gold to-gold-dark text-black font-bold rounded-full text-base hover:opacity-90 transition-all shadow-xl shadow-gold/25 hover:shadow-gold/40"
             >
-              Download Now
+              Download APK v1.4.2
             </a>
             <a
               href="#features"
