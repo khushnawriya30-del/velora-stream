@@ -1,8 +1,10 @@
 package com.cinevault.app.ui.screen
 
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
 import android.widget.Toast
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
@@ -11,20 +13,19 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.outlined.ContentCopy
+import androidx.compose.material.icons.outlined.History
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
@@ -34,6 +35,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -41,21 +43,21 @@ import com.cinevault.app.R
 import com.cinevault.app.data.model.PremiumPlanDto
 import com.cinevault.app.ui.viewmodel.PremiumViewModel
 
-// ── Theme Colors ──
+// ── Dark Luxury Theme ──
 private val BgPrimary = Color(0xFF121212)
 private val BgSecondary = Color(0xFF1A1A1A)
-private val CardBg = Color(0xFF1F1F1F)
-private val CardBgLight = Color(0xFF252525)
+private val CardBg = Color(0xFF1E1E1E)
+private val CardBgLighter = Color(0xFF2A2A2A)
 private val Gold = Color(0xFFD4AF37)
 private val GoldDark = Color(0xFFC9A227)
 private val GoldSoft = Color(0xFFE6C55A)
 private val GoldDim = Color(0xFF8A7328)
+private val GoldFaint = Color(0xFF3D3520)
 private val White87 = Color.White.copy(alpha = 0.87f)
 private val White60 = Color.White.copy(alpha = 0.60f)
-private val White38 = Color.White.copy(alpha = 0.38f)
+private val White40 = Color.White.copy(alpha = 0.40f)
 private val GreenBadge = Color(0xFF22C55E)
 
-// ── Fallback plans if API fails ──
 private val FALLBACK_PLANS = listOf(
     PremiumPlanDto("f1", "1m", "1 Month", 1, 159, 182, 10, null, 0, true),
     PremiumPlanDto("f2", "3m", "3 Months", 3, 459, 543, 15, "Most popular", 1, true),
@@ -83,239 +85,224 @@ fun ActivatePremiumScreen(
         }
     }
     LaunchedEffect(uiState.error) {
-        uiState.error?.let {
-            Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
-            viewModel.clearError()
-        }
+        uiState.error?.let { Toast.makeText(context, it, Toast.LENGTH_SHORT).show(); viewModel.clearError() }
     }
 
     val animatedPrice by animateFloatAsState(
         targetValue = (selectedPlan?.price ?: 159).toFloat(),
-        animationSpec = tween(250), label = "price",
+        animationSpec = tween(200), label = "price",
     )
 
-    Scaffold(
-        containerColor = BgPrimary,
-        contentWindowInsets = WindowInsets(0),
-    ) { innerPadding ->
-        Box(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
-            Column(
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(BgPrimary)
+            .systemBarsPadding(),
+    ) {
+        Column(modifier = Modifier.fillMaxSize()) {
+            // ════════════════════════════════════
+            //  HEADER — Back + Title + Order History
+            // ════════════════════════════════════
+            Row(
                 modifier = Modifier
-                    .fillMaxSize()
-                    .verticalScroll(rememberScrollState())
-                    .padding(bottom = 120.dp) // room for bottom bar
+                    .fillMaxWidth()
+                    .padding(horizontal = 8.dp, vertical = 6.dp),
+                verticalAlignment = Alignment.CenterVertically,
             ) {
-                // ═══════════════════════════════════════
-                //  TOP BAR
-                // ═══════════════════════════════════════
-                Spacer(Modifier.statusBarsPadding())
+                IconButton(onClick = onBack, modifier = Modifier.size(40.dp)) {
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = White87, modifier = Modifier.size(22.dp))
+                }
+                Text(
+                    "Premium Plan",
+                    fontSize = 19.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = White87,
+                    modifier = Modifier.weight(1f).padding(start = 2.dp),
+                )
                 Row(
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(8.dp))
+                        .clickable { Toast.makeText(context, "Order History — Coming soon", Toast.LENGTH_SHORT).show() }
+                        .padding(horizontal = 10.dp, vertical = 6.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = White87)
-                    }
-                    Text(
-                        "Premium Plans",
-                        fontSize = 22.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Gold,
-                        modifier = Modifier.padding(start = 4.dp),
+                    Icon(Icons.Outlined.History, "Order History", tint = White60, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(5.dp))
+                    Text("Order History", fontSize = 13.sp, color = White60)
+                }
+            }
+
+            // ════════════════════════════════════
+            //  PROFILE — Avatar + Username + Copy
+            // ════════════════════════════════════
+            val userName = uiState.userName ?: "Premium User"
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 18.dp, vertical = 6.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                // Grey silhouette avatar
+                Box(
+                    modifier = Modifier
+                        .size(42.dp)
+                        .background(Color(0xFF333333), CircleShape),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        painter = painterResource(android.R.drawable.sym_def_app_icon),
+                        contentDescription = null,
+                        tint = Color(0xFF666666),
+                        modifier = Modifier.size(26.dp),
                     )
                 }
-
-                // ═══════════════════════════════════════
-                //  PROFILE SECTION
-                // ═══════════════════════════════════════
-                ProfileCard(
-                    userName = uiState.userName ?: "Premium User",
-                    userId = uiState.userId,
-                )
-
-                Spacer(Modifier.height(20.dp))
-
-                // ═══════════════════════════════════════
-                //  PREMIUM FEATURES ROW
-                // ═══════════════════════════════════════
-                PremiumFeaturesRow()
-
-                Spacer(Modifier.height(24.dp))
-
-                // ═══════════════════════════════════════
-                //  PLAN CARDS GRID (2×2)
-                // ═══════════════════════════════════════
+                Spacer(Modifier.width(12.dp))
                 Text(
-                    "Choose Your Plan",
+                    userName,
                     fontSize = 17.sp,
                     fontWeight = FontWeight.SemiBold,
                     color = White87,
-                    modifier = Modifier.padding(horizontal = 20.dp),
                 )
-                Spacer(Modifier.height(14.dp))
-
-                val rows = plans.take(4).chunked(2)
-                rows.forEach { rowPlans ->
-                    Row(
-                        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    ) {
-                        rowPlans.forEach { plan ->
-                            PlanCard(
-                                plan = plan,
-                                isSelected = plan.planId == selectedPlan?.planId,
-                                onClick = { selectedPlanId = plan.planId },
-                                modifier = Modifier.weight(1f),
-                            )
-                        }
-                        // Fill empty slot if odd number
-                        if (rowPlans.size == 1) Spacer(Modifier.weight(1f))
-                    }
-                    Spacer(Modifier.height(12.dp))
-                }
-
-                Spacer(Modifier.height(16.dp))
-
-                // ═══════════════════════════════════════
-                //  ACTION ROWS
-                // ═══════════════════════════════════════
-                ActionRow(
-                    icon = R.drawable.ic_prem_first,
-                    label = "Buy Premium Code",
-                    onClick = {
-                        Toast.makeText(context, "Buy Premium Code — Coming soon", Toast.LENGTH_SHORT).show()
-                    },
+                Spacer(Modifier.width(8.dp))
+                Icon(
+                    Icons.Outlined.ContentCopy,
+                    contentDescription = "Copy",
+                    tint = White40,
+                    modifier = Modifier
+                        .size(18.dp)
+                        .clickable {
+                            val cm = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                            cm.setPrimaryClip(ClipData.newPlainText("username", userName))
+                            Toast.makeText(context, "Username copied", Toast.LENGTH_SHORT).show()
+                        },
                 )
-                ActionRow(
-                    icon = R.drawable.ic_prem_unlimited,
-                    label = "Activate with Premium Code",
-                    onClick = {
-                        Toast.makeText(context, "Activate Premium Code — Coming soon", Toast.LENGTH_SHORT).show()
-                    },
-                )
-                ActionRow(
-                    icon = R.drawable.ic_prem_exclusive,
-                    label = "Help Center",
-                    onClick = {
-                        Toast.makeText(context, "Help Center — Coming soon", Toast.LENGTH_SHORT).show()
-                    },
-                )
-
-                Spacer(Modifier.height(24.dp))
             }
 
-            // ═══════════════════════════════════════
-            //  BOTTOM PAY BAR (sticky)
-            // ═══════════════════════════════════════
+            Spacer(Modifier.height(10.dp))
+
+            // ════════════════════════════════════════════
+            //  PREMIUM FEATURES — Gold Gradient Container
+            // ════════════════════════════════════════════
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 14.dp)
+                    .background(
+                        Brush.verticalGradient(
+                            colors = listOf(
+                                Color(0xFF2C2518),  // warm dark gold tint
+                                Color(0xFF1F1D18),  // darker
+                                CardBg,
+                            ),
+                        ),
+                        RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp),
+                    )
+                    .padding(top = 18.dp, bottom = 14.dp),
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
+                    horizontalArrangement = Arrangement.SpaceEvenly,
+                ) {
+                    val features = listOf(
+                        R.drawable.ic_prem_unlimited to "Unlimited",
+                        R.drawable.ic_prem_first to "Premium\nFirst",
+                        R.drawable.ic_prem_no_ads to "No Ads",
+                        R.drawable.ic_prem_fhd to "FHD\n1080P",
+                        R.drawable.ic_prem_exclusive to "Premium\nExclusive",
+                    )
+                    features.forEach { (iconRes, label) ->
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            modifier = Modifier.weight(1f),
+                        ) {
+                            Image(
+                                painter = painterResource(iconRes),
+                                contentDescription = label,
+                                modifier = Modifier.size(42.dp),
+                                contentScale = ContentScale.Fit,
+                            )
+                            Spacer(Modifier.height(6.dp))
+                            Text(
+                                label,
+                                fontSize = 10.sp,
+                                color = White60,
+                                textAlign = TextAlign.Center,
+                                lineHeight = 13.sp,
+                                maxLines = 2,
+                            )
+                        }
+                    }
+                }
+            }
+
+            // ════════════════════════════════════════════
+            //  PLAN CARDS — 2×2 Grid (seamless with features)
+            // ════════════════════════════════════════════
+            val planList = plans.take(4)
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 14.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                for (rowIdx in 0..1) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        for (colIdx in 0..1) {
+                            val idx = rowIdx * 2 + colIdx
+                            if (idx < planList.size) {
+                                PlanCard(
+                                    plan = planList[idx],
+                                    isSelected = planList[idx].planId == selectedPlan?.planId,
+                                    onClick = { selectedPlanId = planList[idx].planId },
+                                    modifier = Modifier.weight(1f),
+                                )
+                            } else {
+                                Spacer(Modifier.weight(1f))
+                            }
+                        }
+                    }
+                }
+            }
+
+            Spacer(Modifier.height(12.dp))
+
+            // ════════════════════════════════════
+            //  ACTION ROWS
+            // ════════════════════════════════════
+            Column(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp),
+            ) {
+                ActionRow(icon = R.drawable.ic_prem_first, label = "Buy Premium Code") {
+                    Toast.makeText(context, "Buy Premium Code — Coming soon", Toast.LENGTH_SHORT).show()
+                }
+                ActionRow(icon = R.drawable.ic_prem_unlimited, label = "Activate with Premium Code") {
+                    Toast.makeText(context, "Activate Premium Code — Coming soon", Toast.LENGTH_SHORT).show()
+                }
+                ActionRow(icon = R.drawable.ic_prem_exclusive, label = "Help Center") {
+                    Toast.makeText(context, "Help Center — Coming soon", Toast.LENGTH_SHORT).show()
+                }
+            }
+
+            Spacer(Modifier.weight(1f))
+
+            // ════════════════════════════════════
+            //  BOTTOM CTA BAR
+            // ════════════════════════════════════
             BottomPayBar(
                 selectedPlan = selectedPlan,
                 animatedPrice = animatedPrice,
                 onPayClick = {
                     Toast.makeText(
                         context,
-                        "Payment flow for ${selectedPlan?.name ?: "plan"} — ₹${selectedPlan?.price ?: 0}",
+                        "Payment for ${selectedPlan?.name ?: "plan"} — ₹${selectedPlan?.price ?: 0}",
                         Toast.LENGTH_SHORT,
                     ).show()
                 },
-                modifier = Modifier.align(Alignment.BottomCenter),
             )
-        }
-    }
-}
-
-// ══════════════════════════════════════════
-// ── Profile Card ──
-// ══════════════════════════════════════════
-@Composable
-private fun ProfileCard(userName: String, userId: String?) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 20.dp)
-            .background(CardBg, RoundedCornerShape(16.dp))
-            .padding(16.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        // Avatar placeholder
-        Box(
-            modifier = Modifier
-                .size(52.dp)
-                .background(
-                    Brush.verticalGradient(listOf(Gold, GoldDark)),
-                    CircleShape,
-                ),
-            contentAlignment = Alignment.Center,
-        ) {
-            Text(
-                userName.take(1).uppercase(),
-                fontSize = 22.sp,
-                fontWeight = FontWeight.Bold,
-                color = BgPrimary,
-            )
-        }
-        Spacer(Modifier.width(14.dp))
-        Column {
-            Text(
-                userName,
-                fontSize = 17.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = White87,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-            if (userId != null) {
-                Spacer(Modifier.height(2.dp))
-                Text(
-                    "ID: ${userId.takeLast(8)}",
-                    fontSize = 13.sp,
-                    color = White38,
-                )
-            }
-        }
-    }
-}
-
-// ══════════════════════════════════════════
-// ── Premium Features Row ──
-// ══════════════════════════════════════════
-@Composable
-private fun PremiumFeaturesRow() {
-    val features = listOf(
-        R.drawable.ic_prem_unlimited to "Unlimited",
-        R.drawable.ic_prem_first to "First\nAccess",
-        R.drawable.ic_prem_no_ads to "No Ads",
-        R.drawable.ic_prem_fhd to "FHD\n1080P",
-        R.drawable.ic_prem_exclusive to "Exclusive",
-    )
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp)
-            .background(CardBg, RoundedCornerShape(16.dp))
-            .padding(vertical = 18.dp, horizontal = 8.dp),
-        horizontalArrangement = Arrangement.SpaceEvenly,
-    ) {
-        features.forEach { (iconRes, label) ->
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier.weight(1f),
-            ) {
-                Image(
-                    painter = painterResource(iconRes),
-                    contentDescription = label,
-                    modifier = Modifier.size(44.dp),
-                    contentScale = ContentScale.Fit,
-                )
-                Spacer(Modifier.height(8.dp))
-                Text(
-                    label,
-                    fontSize = 11.sp,
-                    color = White60,
-                    textAlign = TextAlign.Center,
-                    lineHeight = 14.sp,
-                    maxLines = 2,
-                )
-            }
         }
     }
 }
@@ -331,141 +318,118 @@ private fun PlanCard(
     modifier: Modifier = Modifier,
 ) {
     val borderColor by animateColorAsState(
-        targetValue = if (isSelected) Gold else Color.Transparent,
+        targetValue = if (isSelected) Gold else Color.White.copy(alpha = 0.06f),
         animationSpec = tween(200), label = "border",
     )
-    val elevation by animateDpAsState(
-        targetValue = if (isSelected) 8.dp else 2.dp,
-        animationSpec = tween(200), label = "elev",
+    val bgBrush = Brush.verticalGradient(
+        if (isSelected) listOf(Color(0xFF2A2518), Color(0xFF1E1C16))
+        else listOf(CardBg, Color(0xFF1A1A1A))
     )
 
     Box(
         modifier = modifier
-            .shadow(elevation, RoundedCornerShape(18.dp), ambientColor = if (isSelected) Gold.copy(alpha = 0.3f) else Color.Transparent)
-            .clip(RoundedCornerShape(18.dp))
-            .border(
-                width = if (isSelected) 2.dp else 0.dp,
-                color = borderColor,
-                shape = RoundedCornerShape(18.dp),
-            )
-            .background(CardBg)
+            .clip(RoundedCornerShape(14.dp))
+            .border(1.5.dp, borderColor, RoundedCornerShape(14.dp))
+            .background(bgBrush)
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null,
                 onClick = onClick,
             ),
     ) {
-        Column(modifier = Modifier.fillMaxWidth()) {
-            // Gold gradient highlight at top when selected
-            if (isSelected) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(4.dp)
-                        .background(
-                            Brush.horizontalGradient(listOf(GoldDark, Gold, GoldSoft)),
-                            RoundedCornerShape(topStart = 18.dp, topEnd = 18.dp),
-                        )
-                )
-            } else {
-                Spacer(Modifier.height(4.dp))
-            }
-
-            Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp)) {
-                // Badge + Discount row
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    if (plan.badge != null) {
-                        Text(
-                            plan.badge,
-                            fontSize = 10.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.White,
-                            modifier = Modifier
-                                .background(
-                                    if (plan.badge == "Most popular") GreenBadge else Gold,
-                                    RoundedCornerShape(6.dp),
-                                )
-                                .padding(horizontal = 8.dp, vertical = 3.dp),
-                        )
-                    } else {
-                        Spacer(Modifier.width(1.dp))
-                    }
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(start = 12.dp, end = 12.dp, top = 10.dp, bottom = 10.dp),
+        ) {
+            // Badge row
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                if (plan.badge != null) {
                     Text(
-                        "${plan.discountPercent}% Off",
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = Gold,
+                        plan.badge,
+                        fontSize = 9.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White,
                         modifier = Modifier
-                            .background(Color.White.copy(alpha = 0.06f), RoundedCornerShape(6.dp))
-                            .padding(horizontal = 8.dp, vertical = 3.dp),
+                            .background(
+                                Brush.horizontalGradient(
+                                    if (plan.badge == "Most popular")
+                                        listOf(GreenBadge, GreenBadge.copy(alpha = 0.8f))
+                                    else
+                                        listOf(Gold, GoldDark)
+                                ),
+                                RoundedCornerShape(5.dp),
+                            )
+                            .padding(horizontal = 7.dp, vertical = 3.dp),
                     )
+                } else {
+                    Spacer(Modifier.width(1.dp))
                 }
-
-                Spacer(Modifier.height(14.dp))
-
-                // Plan name
                 Text(
-                    plan.name,
-                    fontSize = 15.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = White87,
-                )
-
-                Spacer(Modifier.height(8.dp))
-
-                // Price row
-                Row(verticalAlignment = Alignment.Bottom) {
-                    Text("₹", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Gold)
-                    Text(
-                        "${plan.price}",
-                        fontSize = 32.sp,
-                        fontWeight = FontWeight.ExtraBold,
-                        color = Gold,
-                        lineHeight = 34.sp,
-                    )
-                    Spacer(Modifier.width(8.dp))
-                    Text(
-                        "₹${plan.originalPrice}",
-                        fontSize = 13.sp,
-                        color = White38,
-                        textDecoration = TextDecoration.LineThrough,
-                        modifier = Modifier.padding(bottom = 4.dp),
-                    )
-                }
-
-                // Per month
-                if (plan.months > 1) {
-                    Spacer(Modifier.height(4.dp))
-                    Text(
-                        "₹${plan.price / plan.months}/month",
-                        fontSize = 12.sp,
-                        color = GoldSoft.copy(alpha = 0.8f),
-                    )
-                }
-            }
-
-            // Checkmark at bottom-right when selected
-            if (isSelected) {
-                Box(
+                    "${plan.discountPercent}% Off",
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = GoldSoft,
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(end = 12.dp, bottom = 10.dp),
-                    contentAlignment = Alignment.BottomEnd,
-                ) {
-                    Icon(
-                        Icons.Filled.CheckCircle,
-                        contentDescription = "Selected",
-                        tint = Gold,
-                        modifier = Modifier.size(22.dp),
-                    )
-                }
-            } else {
-                Spacer(Modifier.height(32.dp))
+                        .background(GoldFaint.copy(alpha = 0.5f), RoundedCornerShape(5.dp))
+                        .padding(horizontal = 7.dp, vertical = 3.dp),
+                )
             }
+
+            Spacer(Modifier.height(8.dp))
+
+            // Plan name
+            Text(plan.name, fontSize = 14.sp, fontWeight = FontWeight.Medium, color = White87)
+
+            Spacer(Modifier.height(4.dp))
+
+            // Price
+            Row(verticalAlignment = Alignment.Bottom) {
+                Text("₹", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = Gold,
+                    modifier = Modifier.padding(bottom = 2.dp))
+                Text(
+                    "${plan.price}",
+                    fontSize = 28.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = Gold,
+                    lineHeight = 30.sp,
+                )
+                Spacer(Modifier.width(6.dp))
+                Text(
+                    "₹${plan.originalPrice}",
+                    fontSize = 12.sp,
+                    color = White40,
+                    textDecoration = TextDecoration.LineThrough,
+                    modifier = Modifier.padding(bottom = 3.dp),
+                )
+            }
+
+            // Per month
+            if (plan.months > 1) {
+                Text(
+                    "₹${plan.price / plan.months}/month",
+                    fontSize = 11.sp,
+                    color = GoldSoft.copy(alpha = 0.7f),
+                    modifier = Modifier.padding(top = 2.dp),
+                )
+            }
+        }
+
+        // Selection checkmark
+        if (isSelected) {
+            Icon(
+                Icons.Filled.CheckCircle,
+                contentDescription = "Selected",
+                tint = Gold,
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(8.dp)
+                    .size(20.dp),
+            )
         }
     }
 }
@@ -478,30 +442,27 @@ private fun ActionRow(icon: Int, label: String, onClick: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 5.dp)
-            .background(CardBg, RoundedCornerShape(14.dp))
+            .background(
+                Brush.horizontalGradient(listOf(CardBg, Color(0xFF1B1B1B))),
+                RoundedCornerShape(12.dp),
+            )
             .clickable(onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 16.dp),
+            .padding(horizontal = 14.dp, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Image(
             painter = painterResource(icon),
             contentDescription = null,
-            modifier = Modifier.size(28.dp),
+            modifier = Modifier.size(26.dp),
             contentScale = ContentScale.Fit,
         )
-        Spacer(Modifier.width(14.dp))
-        Text(
-            label,
-            fontSize = 15.sp,
-            color = White87,
-            modifier = Modifier.weight(1f),
-        )
+        Spacer(Modifier.width(12.dp))
+        Text(label, fontSize = 14.sp, color = White87, modifier = Modifier.weight(1f))
         Icon(
             Icons.AutoMirrored.Filled.KeyboardArrowRight,
             contentDescription = null,
-            tint = GoldDim,
-            modifier = Modifier.size(22.dp),
+            tint = White40,
+            modifier = Modifier.size(20.dp),
         )
     }
 }
@@ -514,67 +475,66 @@ private fun BottomPayBar(
     selectedPlan: PremiumPlanDto?,
     animatedPrice: Float,
     onPayClick: () -> Unit,
-    modifier: Modifier = Modifier,
 ) {
     if (selectedPlan == null) return
 
     val validDate = java.time.LocalDate.now().plusMonths(selectedPlan.months.toLong())
     val formatted = "${String.format("%02d", validDate.dayOfMonth)} " +
-        "${validDate.month.name.take(3).lowercase().replaceFirstChar { it.uppercase() }}, " +
+        "${validDate.month.name.take(3).lowercase().replaceFirstChar { it.uppercase() }}," +
         "${validDate.year}"
 
-    Box(
-        modifier = modifier
+    Column(
+        modifier = Modifier
             .fillMaxWidth()
             .background(
                 Brush.verticalGradient(
-                    colors = listOf(Color.Transparent, BgPrimary),
+                    colors = listOf(BgPrimary.copy(alpha = 0.0f), BgSecondary, BgSecondary),
                     startY = 0f,
-                    endY = 40f,
+                    endY = 60f,
                 )
             )
+            .padding(horizontal = 18.dp)
+            .padding(top = 10.dp, bottom = 10.dp)
+            .navigationBarsPadding(),
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(BgSecondary)
-                .navigationBarsPadding()
-                .padding(horizontal = 20.dp, vertical = 16.dp),
+            modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     "₹${animatedPrice.toInt()}",
-                    fontSize = 26.sp,
+                    fontSize = 24.sp,
                     fontWeight = FontWeight.ExtraBold,
                     color = Gold,
                 )
-                Spacer(Modifier.height(2.dp))
                 Text(
-                    "${selectedPlan.name} • until $formatted",
+                    "Selected Plan: ${selectedPlan.name}",
                     fontSize = 12.sp,
-                    color = White38,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
+                    color = White60,
+                    modifier = Modifier.padding(top = 1.dp),
+                )
+                Text(
+                    "Valid until $formatted",
+                    fontSize = 11.sp,
+                    color = White40,
+                    modifier = Modifier.padding(top = 1.dp),
                 )
             }
-            Spacer(Modifier.width(12.dp))
-            Button(
-                onClick = onPayClick,
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color.Transparent,
-                ),
-                shape = RoundedCornerShape(14.dp),
-                contentPadding = PaddingValues(horizontal = 32.dp, vertical = 14.dp),
+            Spacer(Modifier.width(10.dp))
+            Box(
                 modifier = Modifier
+                    .clip(RoundedCornerShape(14.dp))
                     .background(
                         Brush.horizontalGradient(listOf(GoldDark, Gold, GoldSoft)),
-                        RoundedCornerShape(14.dp),
-                    ),
+                    )
+                    .clickable(onClick = onPayClick)
+                    .padding(horizontal = 28.dp, vertical = 14.dp),
+                contentAlignment = Alignment.Center,
             ) {
                 Text(
                     "PAY NOW",
-                    fontSize = 16.sp,
+                    fontSize = 15.sp,
                     fontWeight = FontWeight.Bold,
                     color = BgPrimary,
                 )
