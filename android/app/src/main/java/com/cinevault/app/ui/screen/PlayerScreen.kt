@@ -436,19 +436,21 @@ fun PlayerScreen(
             adInProgress = true
             adWasCancelled = false
             exoPlayer.pause()
+            Log.d("CineVaultAds", "PRE-ROLL: Video paused, waiting for ad...")
 
-            // Start 35-second countdown (30–40 range)
             adCountdown = 35
             val act = context as? Activity
             if (act != null) {
-                adManager.showInterstitialAd(act) {
-                    // Ad finished or was dismissed by AdMob SDK
+                // Use showAdWithWait — waits up to 10s for ad to load if not cached
+                adManager.showAdWithWait(act) {
+                    Log.d("CineVaultAds", "PRE-ROLL: Ad finished/dismissed")
                     adInProgress = false
                     if (!adWasCancelled) {
-                        showAdCrossIcon = true // Show cross icon, user taps to start video
+                        showAdCrossIcon = true
                     }
                 }
             } else {
+                Log.w("CineVaultAds", "PRE-ROLL: No Activity context — skipping ad")
                 adInProgress = false
                 viewModel.markPreRollDone()
                 exoPlayer.play()
@@ -463,10 +465,12 @@ fun PlayerScreen(
             adInProgress = true
             adWasCancelled = false
             exoPlayer.pause()
+            Log.d("CineVaultAds", "RESUME-AD: Video paused, waiting for ad...")
             adCountdown = 35
             val act = context as? Activity
             if (act != null) {
-                adManager.showInterstitialAd(act) {
+                adManager.showAdWithWait(act) {
+                    Log.d("CineVaultAds", "RESUME-AD: Ad finished/dismissed")
                     adInProgress = false
                     viewModel.clearResumeAd()
                     if (!adWasCancelled) {
@@ -523,10 +527,12 @@ fun PlayerScreen(
                     adInProgress = true
                     adWasCancelled = false
                     exoPlayer.pause()
+                    Log.d("CineVaultAds", "MID-ROLL: Triggered at ${pos / 60000}min, pausing video...")
                     adCountdown = 35
                     val act = context as? Activity
                     if (act != null) {
-                        adManager.showInterstitialAd(act) {
+                        adManager.showAdWithWait(act) {
+                            Log.d("CineVaultAds", "MID-ROLL: Ad finished/dismissed")
                             adInProgress = false
                             viewModel.onAdDismissed()
                             if (!adWasCancelled) {
