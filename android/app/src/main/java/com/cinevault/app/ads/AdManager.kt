@@ -26,8 +26,8 @@ class AdManager @Inject constructor(
     companion object {
         private const val TAG = "CineVaultAds"
 
-        // Production interstitial ad unit ID
-        private const val AD_UNIT_ID = "ca-app-pub-5582201158743100/4012614425"
+        // Google AdMob test interstitial ad unit ID
+        private const val AD_UNIT_ID = "ca-app-pub-3940256099942544/1033173712"
 
         /** Max time (ms) to wait for an ad to load when none is cached. */
         private const val AD_LOAD_TIMEOUT_MS = 15_000L
