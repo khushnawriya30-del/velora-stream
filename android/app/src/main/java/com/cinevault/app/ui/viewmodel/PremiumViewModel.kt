@@ -21,6 +21,8 @@ data class PremiumUiState(
     val error: String? = null,
     val plans: List<PremiumPlanDto> = emptyList(),
     val isLoadingPlans: Boolean = false,
+    val userName: String? = null,
+    val userId: String? = null,
 )
 
 @HiltViewModel
@@ -37,6 +39,16 @@ class PremiumViewModel @Inject constructor(
         viewModelScope.launch {
             sessionManager.isPremium.collect { premium ->
                 _uiState.update { it.copy(isPremium = premium) }
+            }
+        }
+        viewModelScope.launch {
+            sessionManager.userName.collect { name ->
+                _uiState.update { it.copy(userName = name) }
+            }
+        }
+        viewModelScope.launch {
+            sessionManager.userId.collect { id ->
+                _uiState.update { it.copy(userId = id) }
             }
         }
         // Fetch latest from server
