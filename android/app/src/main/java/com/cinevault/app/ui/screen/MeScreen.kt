@@ -78,7 +78,6 @@ fun MeScreen(
         )
 
         // ── Premium Subscription Section ──
-        Spacer(Modifier.height(4.dp))
         MePremiumSection(
             isPremium = premiumState.isPremium,
             plan = premiumState.plan,
@@ -109,9 +108,9 @@ fun MeScreen(
                     )
                 }
             }
-            Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(12.dp))
         } else {
-            Spacer(Modifier.height(4.dp))
+            Spacer(Modifier.height(2.dp))
         }
 
         if (uiState.watchHistory.isNotEmpty()) {
@@ -172,7 +171,7 @@ private fun MePremiumHeader(
             .fillMaxWidth()
             .background(Brush.verticalGradient(colors = listOf(CineVaultTheme.colors.surface.copy(alpha = 0.9f), CineVaultTheme.colors.background)))
             .statusBarsPadding()
-            .padding(horizontal = 20.dp, vertical = 16.dp),
+            .padding(start = 20.dp, end = 20.dp, top = 16.dp, bottom = 6.dp),
     ) {
         Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Box(
@@ -370,14 +369,14 @@ private fun MePremiumSection(
                 modifier = Modifier
                     .fillMaxWidth()
                     .matchParentSize()
-                    .padding(start = 16.dp, end = 16.dp, bottom = 36.dp),
+                    .padding(start = 16.dp, end = 16.dp, bottom = 50.dp),
                 verticalAlignment = Alignment.Bottom,
             ) {
                 Text(
                     text = expiryAnnotated,
-                    fontSize = 12.sp,
+                    fontSize = 11.sp,
                     color = PremTextOnGold,
-                    lineHeight = 16.sp,
+                    lineHeight = 14.sp,
                     maxLines = 1,
                     modifier = Modifier.weight(1f),
                 )
