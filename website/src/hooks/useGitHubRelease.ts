@@ -50,15 +50,16 @@ export function useGitHubRelease(): ReleaseState {
         const apkAsset = r.assets?.find(
           (a: any) => a.name.endsWith('.apk'),
         );
+        const directDownloadUrl = apkAsset?.browser_download_url || '/api/download';
         return {
           tagName: r.tag_name,
           version: r.tag_name.replace(/^v/, ''),
           body: r.body || '',
           publishedAt: r.published_at,
-          downloadUrl: '/api/download',
+          downloadUrl: directDownloadUrl,
           assets: (r.assets || []).map((a: any) => ({
             name: a.name,
-            downloadUrl: '/api/download',
+            downloadUrl: a.browser_download_url || '/api/download',
             size: a.size,
           })),
         };
