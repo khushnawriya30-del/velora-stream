@@ -142,18 +142,18 @@ fun ActivatePremiumScreen(
                     .padding(horizontal = 18.dp, vertical = 6.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                // Grey silhouette avatar
+                // Grey avatar with user initial
                 Box(
                     modifier = Modifier
                         .size(42.dp)
                         .background(Color(0xFF333333), CircleShape),
                     contentAlignment = Alignment.Center,
                 ) {
-                    Icon(
-                        painter = painterResource(android.R.drawable.sym_def_app_icon),
-                        contentDescription = null,
-                        tint = Color(0xFF666666),
-                        modifier = Modifier.size(26.dp),
+                    Text(
+                        text = userName.firstOrNull()?.uppercase() ?: "P",
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF888888),
                     )
                 }
                 Spacer(Modifier.width(12.dp))
