@@ -15,8 +15,8 @@ android {
         applicationId = "com.cinevault.app"
         minSdk = 26
         targetSdk = 34
-        versionCode = 19
-        versionName = "1.6.2"
+        versionCode = 20
+        versionName = "1.6.3"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         vectorDrawables {
@@ -140,10 +140,8 @@ dependencies {
     // Lottie
     implementation("com.airbnb.android:lottie-compose:6.3.0")
 
-    // Start.io Ads SDK
-    implementation("com.startapp:inapp-sdk:5.+") {
-        exclude(group = "org.jetbrains.kotlin", module = "kotlin-stdlib")
-    }
+    // Google Mobile Ads (AdMob) — Interstitial Video Ads
+    implementation("com.google.android.gms:play-services-ads:23.6.0")
 
     // DataStore (Preferences)
     implementation("androidx.datastore:datastore-preferences:1.0.0")
