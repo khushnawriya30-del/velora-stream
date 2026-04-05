@@ -48,7 +48,7 @@ import com.cinevault.app.ui.viewmodel.PremiumViewModel
 import com.cinevault.app.ui.viewmodel.ProfileViewModel
 
 // Premium text color
-private val PremTextOnGold = Color(0xFF2A1A00)
+private val PremTextOnGold = Color(0xFF7A5C1F)
 
 @Composable
 fun MeScreen(
@@ -352,8 +352,12 @@ private fun MePremiumSection(
             Image(
                 painter = painterResource(R.drawable.premium_card_active),
                 contentDescription = "Premium Active",
-                modifier = Modifier.fillMaxWidth(),
-                contentScale = ContentScale.FillWidth,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .aspectRatio(2.6f)
+                    .clip(RoundedCornerShape(16.dp)),
+                contentScale = ContentScale.Crop,
+                alignment = Alignment.BottomCenter,
             )
             // Format expiry date: "DD MMM, YYYY"
             val formattedExpiry = remember(expiresAt) {
@@ -361,14 +365,14 @@ private fun MePremiumSection(
             }
             val expiryAnnotated = buildAnnotatedString {
                 append("Your ")
-                withStyle(SpanStyle(fontWeight = FontWeight.Bold)) { append("Premium Valid") }
+                withStyle(SpanStyle(fontWeight = FontWeight.Bold, fontSize = 15.sp)) { append("Premium Valid") }
                 append(" Till $formattedExpiry")
             }
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .matchParentSize()
-                    .padding(start = 20.dp, end = 20.dp, bottom = 80.dp),
+                    .padding(start = 20.dp, end = 20.dp, bottom = 42.dp),
                 verticalAlignment = Alignment.Bottom,
             ) {
                 Text(
