@@ -355,27 +355,29 @@ private fun MePremiumSection(
                 modifier = Modifier.fillMaxWidth(),
                 contentScale = ContentScale.FillWidth,
             )
-            // Dynamic expiry text overlay (positioned over the empty area of the gold card)
+            // Format expiry date: "DD MMM, YYYY"
+            val formattedExpiry = remember(expiresAt) {
+                formatPremiumDate(expiresAt)
+            }
             val expiryAnnotated = buildAnnotatedString {
                 append("Your ")
-                withStyle(SpanStyle(fontWeight = FontWeight.Bold)) { append("Premium Plan") }
-                append(" valid till ")
-                withStyle(SpanStyle(fontWeight = FontWeight.Bold)) {
-                    append(expiresAt ?: daysRemaining?.let { "$it days" } ?: "Active")
-                }
+                withStyle(SpanStyle(fontWeight = FontWeight.Bold)) { append("Premium Valid") }
+                append(" Till $formattedExpiry")
             }
-            Box(
+            Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .matchParentSize()
                     .padding(start = 20.dp, end = 20.dp, bottom = 80.dp),
-                contentAlignment = Alignment.BottomStart,
+                verticalAlignment = Alignment.Bottom,
             ) {
                 Text(
                     text = expiryAnnotated,
                     fontSize = 13.sp,
                     color = PremTextOnGold,
                     lineHeight = 18.sp,
+                    maxLines = 1,
+                    modifier = Modifier.weight(1f),
                 )
             }
         } else {
@@ -390,3 +392,21 @@ private fun MePremiumSection(
     }
 }
 
+/** Format ISO date or daysRemaining to "DD MMM, YYYY" */
+private fun formatPremiumDate(expiresAt: String?): String {
+    if (expiresAt == null) return "Active"
+    return try {
+        val monthAbbr = arrayOf(
+            "JAN", "FEB", "MAR", "APR", "MAY", "JUNE",
+            "JULY", "AUG", "SEPT", "OCT", "NOV", "DEC",
+        )
+        // Parse ISO date string (e.g. "2026-04-05T11:35:28.000Z")
+        val parsed = java.time.ZonedDateTime.parse(expiresAt)
+        val day = String.format("%02d", parsed.dayOfMonth)
+        val month = monthAbbr[parsed.monthValue - 1]
+        val year = parsed.year
+        "$day $month, $year"
+    } catch (_: Exception) {
+        expiresAt // fallback to raw string
+    }
+}

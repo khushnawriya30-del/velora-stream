@@ -577,8 +577,12 @@ private fun BottomPayBar(
     if (selectedPlan == null) return
 
     val validDate = java.time.LocalDate.now().plusMonths(selectedPlan.months.toLong())
+    val monthAbbr = arrayOf(
+        "JAN", "FEB", "MAR", "APR", "MAY", "JUNE",
+        "JULY", "AUG", "SEPT", "OCT", "NOV", "DEC",
+    )
     val formatted = "${String.format("%02d", validDate.dayOfMonth)} " +
-        "${validDate.month.name.take(3).lowercase().replaceFirstChar { it.uppercase() }}," +
+        "${monthAbbr[validDate.monthValue - 1]}, " +
         "${validDate.year}"
 
     Column(
