@@ -4,7 +4,7 @@ import { APP_CONFIG } from '../config';
 import { useGitHubRelease } from '../hooks/useGitHubRelease';
 
 export default function Hero() {
-  const { latest, loading } = useGitHubRelease();
+  const { latest } = useGitHubRelease();
   const appVersion = latest?.version || APP_CONFIG.fallback.version;
   const [currentScreen, setCurrentScreen] = useState(0);
   const screenshots = APP_CONFIG.screenshots;
@@ -48,7 +48,7 @@ export default function Hero() {
           <h1 className="text-5xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight leading-[1.1] mb-6">
             <span className="gradient-text">{APP_CONFIG.name}</span>
             <br />
-            <span className="text-white">{APP_CONFIG.tagline}</span>
+            <span className="text-white text-3xl sm:text-4xl lg:text-5xl">{APP_CONFIG.tagline}</span>
           </h1>
 
           <motion.p
@@ -67,16 +67,16 @@ export default function Hero() {
             className="flex flex-col sm:flex-row items-center gap-4 justify-center lg:justify-start"
           >
             <a
-              href="#download"
+              href="#pricing"
               className="px-8 py-3.5 bg-gradient-to-r from-gold to-gold-dark text-black font-bold rounded-full text-base hover:opacity-90 transition-all shadow-xl shadow-gold/25 hover:shadow-gold/40"
             >
-              Download APK v{appVersion}
+              Get Premium
             </a>
             <a
               href="#features"
               className="px-8 py-3.5 border border-white/10 text-white font-medium rounded-full text-base hover:bg-white/5 transition-all"
             >
-              Learn More
+              Explore Features
             </a>
           </motion.div>
         </motion.div>

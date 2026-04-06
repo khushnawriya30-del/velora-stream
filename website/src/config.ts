@@ -1,8 +1,16 @@
 export const APP_CONFIG = {
   name: 'VELORA',
-  tagline: 'Start Watching.',
+  brandFull: 'Velora by Vishu Nawariya',
+  tagline: 'Premium Digital Membership Platform',
   description:
-    'Premium streaming experience with ad-free content, multi-language support, and a beautiful interface.',
+    'Access curated digital experiences, premium features, and exclusive member benefits — all in one elegant platform.',
+
+  business: {
+    name: 'Velora by Vishu Nawariya',
+    type: 'Individual / Digital Services',
+    email: 'velorastream@gmail.com',
+    location: 'India',
+  },
 
   github: {
     owner: 'khushnawriya30-del',
@@ -10,8 +18,8 @@ export const APP_CONFIG = {
   },
 
   fallback: {
-    version: '1.7.4',
-    downloadUrl: 'https://github.com/khushnawriya30-del/velora-stream/releases/download/v1.7.4/VELORA-v1.7.4.apk',
+    version: '1.7.5',
+    downloadUrl: 'https://github.com/khushnawriya30-del/velora-stream/releases/download/v1.7.5/VELORA-v1.7.5.apk',
   },
 
   screenshots: [
@@ -22,63 +30,67 @@ export const APP_CONFIG = {
 
   features: [
     {
-      icon: 'Play',
-      title: 'Seamless, Ad-Free Streaming',
-      description: 'Enjoy uninterrupted content with zero ads. Just pure entertainment.',
-      gradient: 'from-red-500 to-orange-500',
+      icon: 'Crown',
+      title: 'Premium Access',
+      description: 'Unlock exclusive member features and curated digital experiences with a premium subscription.',
+      gradient: 'from-gold to-gold-dark',
     },
     {
-      icon: 'Globe',
-      title: 'Multi-Language Audio & Subtitles',
-      description: 'Watch in your language with support for multiple audio tracks and subtitle options.',
+      icon: 'Ban',
+      title: 'Ad-Free Experience',
+      description: 'Enjoy a clean, distraction-free interface with absolutely zero advertisements.',
       gradient: 'from-blue-500 to-cyan-500',
     },
     {
-      icon: 'Bookmark',
-      title: 'Create Watchlist',
-      description: 'Save your favorite movies and shows. Never lose track of what you want to watch.',
-      gradient: 'from-red-600 to-red-400',
-    },
-    {
-      icon: 'Zap',
-      title: 'Access Multiple Sources',
-      description: 'Stream from multiple content sources, all in one unified experience.',
-      gradient: 'from-yellow-500 to-pink-500',
-    },
-    {
       icon: 'MonitorPlay',
-      title: 'External Player Support',
-      description: 'Use your preferred external player or downloader for maximum flexibility.',
+      title: 'High-Quality Playback',
+      description: 'Experience content in stunning HD and 4K quality with adaptive bitrate support.',
+      gradient: 'from-purple-500 to-pink-500',
+    },
+    {
+      icon: 'Sparkles',
+      title: 'Personalized Recommendations',
+      description: 'Get intelligent suggestions tailored to your preferences and viewing history.',
       gradient: 'from-amber-500 to-yellow-400',
     },
     {
-      icon: 'Download',
-      title: 'Download & Watch Offline',
-      description: 'Download content to watch later. No internet? No problem.',
+      icon: 'Smartphone',
+      title: 'Multi-Device Support',
+      description: 'Seamlessly switch between devices. Your preferences and progress sync everywhere.',
       gradient: 'from-emerald-500 to-green-400',
+    },
+    {
+      icon: 'Shield',
+      title: 'Secure & Private',
+      description: 'Your data is encrypted and protected. We never sell your personal information.',
+      gradient: 'from-red-500 to-orange-500',
     },
   ],
 
   faq: [
     {
-      question: 'Are there any ads in VELORA?',
-      answer: 'No. VELORA is completely ad-free. Enjoy uninterrupted streaming without any advertisements.',
+      question: 'What is Velora?',
+      answer: 'Velora is a digital subscription and content discovery platform that provides premium features, curated recommendations, and an enhanced user experience for digital media consumption.',
     },
     {
-      question: 'How do I update the app?',
-      answer: 'Simply download the latest version from this page. The download button always points to the newest release.',
+      question: 'How does the subscription work?',
+      answer: 'Choose a plan that suits you (1, 3, 6, or 12 months), complete the payment via UPI, and your premium membership will be activated instantly. You can manage your subscription from within the app.',
     },
     {
-      question: 'Is the app free to use?',
-      answer: 'Yes, VELORA is free to download and use. No subscriptions or hidden charges.',
+      question: 'What payment methods are accepted?',
+      answer: 'We currently accept UPI payments for Indian users. All transactions are processed securely.',
     },
     {
-      question: 'Does it support subtitles?',
-      answer: 'Yes! VELORA supports multi-language subtitles and audio tracks for supported content.',
+      question: 'Can I cancel my subscription?',
+      answer: 'Yes, you can cancel your subscription at any time. Your premium access will remain active until the end of your current billing period. Please refer to our Refund Policy for more details.',
     },
     {
-      question: 'Can I use external players?',
-      answer: 'Yes, VELORA supports external players and downloaders for maximum flexibility.',
+      question: 'Is my data safe?',
+      answer: 'Absolutely. We use industry-standard encryption to protect your data. We do not sell or share your personal information with third parties. See our Privacy Policy for details.',
+    },
+    {
+      question: 'How do I contact support?',
+      answer: 'You can reach our support team at velorastream@gmail.com. We typically respond within 24 hours.',
     },
   ],
 };

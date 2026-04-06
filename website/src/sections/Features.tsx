@@ -1,21 +1,21 @@
 import { motion } from 'framer-motion';
 import {
-  Play,
-  Globe,
-  Bookmark,
-  Zap,
+  Crown,
+  Ban,
   MonitorPlay,
-  Download,
+  Sparkles,
+  Smartphone,
+  Shield,
 } from 'lucide-react';
 import { APP_CONFIG } from '../config';
 
 const iconMap: Record<string, React.ElementType> = {
-  Play,
-  Globe,
-  Bookmark,
-  Zap,
+  Crown,
+  Ban,
   MonitorPlay,
-  Download,
+  Sparkles,
+  Smartphone,
+  Shield,
 };
 
 export default function Features() {
@@ -31,17 +31,17 @@ export default function Features() {
           transition={{ duration: 0.6 }}
         >
           <h2 className="text-3xl sm:text-4xl font-bold mb-4">
-            Packed with <span className="gradient-text">Features</span>
+            Premium <span className="gradient-text">Features</span>
           </h2>
           <p className="text-gray-400 text-lg max-w-xl mx-auto">
-            Everything you need for the ultimate streaming experience.
+            Everything you need for a world-class digital membership experience.
           </p>
         </motion.div>
 
         {/* Feature grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {APP_CONFIG.features.map((feature, index) => {
-            const Icon = iconMap[feature.icon] || Play;
+            const Icon = iconMap[feature.icon] || Crown;
             return (
               <motion.div
                 key={feature.title}

@@ -1,14 +1,16 @@
 import { useState, useEffect } from 'react';
 import Navbar from './sections/Navbar';
 import Hero from './sections/Hero';
-import Download from './sections/Download';
 import Features from './sections/Features';
+import About from './sections/About';
 import Pricing from './sections/Pricing';
-import AppPreview from './sections/AppPreview';
+import Download from './sections/Download';
 import FAQ from './sections/FAQ';
+import Contact from './sections/Contact';
 import Footer from './sections/Footer';
 import Terms from './sections/Terms';
 import RefundPolicy from './sections/RefundPolicy';
+import PrivacyPolicy from './sections/PrivacyPolicy';
 
 export default function App() {
   const [page, setPage] = useState(window.location.pathname);
@@ -27,16 +29,21 @@ export default function App() {
     return <RefundPolicy />;
   }
 
+  if (page === '/privacy-policy') {
+    return <PrivacyPolicy />;
+  }
+
   return (
     <div className="min-h-screen bg-[#050505] text-white overflow-x-hidden">
       <Navbar />
       <main>
         <Hero />
-        <Download />
         <Features />
+        <About />
         <Pricing />
-        <AppPreview />
+        <Download />
         <FAQ />
+        <Contact />
         <Footer />
       </main>
     </div>

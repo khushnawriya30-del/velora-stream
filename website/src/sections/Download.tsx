@@ -29,7 +29,7 @@ export default function Download() {
             Get <span className="gradient-text">{APP_CONFIG.name}</span>
           </h2>
           <p className="text-gray-400 mb-10 text-lg">
-            Download the latest version and start streaming.
+            Download the latest version and get started.
           </p>
         </motion.div>
 

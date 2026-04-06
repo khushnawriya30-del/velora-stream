@@ -5,11 +5,11 @@ import { APP_CONFIG } from '../config';
 
 const links = [
   { label: 'Home', href: '#hero' },
-  { label: 'Download', href: '#download' },
   { label: 'Features', href: '#features' },
+  { label: 'About', href: '#about' },
   { label: 'Pricing', href: '#pricing' },
-  { label: 'Preview', href: '#preview' },
   { label: 'FAQ', href: '#faq' },
+  { label: 'Contact', href: '#contact' },
 ];
 
 export default function Navbar() {
@@ -54,10 +54,10 @@ export default function Navbar() {
             </a>
           ))}
           <a
-            href="#download"
+            href="#pricing"
             className="px-5 py-2 bg-gradient-to-r from-gold to-gold-dark text-black font-semibold rounded-full text-sm hover:opacity-90 transition-opacity shadow-lg shadow-gold/20"
           >
-            Download
+            Get Premium
           </a>
         </div>
 
@@ -93,11 +93,11 @@ export default function Navbar() {
                 </a>
               ))}
               <a
-                href="#download"
+                href="#pricing"
                 onClick={() => setOpen(false)}
                 className="mt-2 px-5 py-2.5 bg-gradient-to-r from-gold to-gold-dark text-black font-semibold rounded-full text-sm text-center"
               >
-                Download App
+                Get Premium
               </a>
             </div>
           </motion.div>

@@ -12,10 +12,10 @@ const plans = [
     badge: null,
     featured: false,
     features: [
-      'Ad-free Streaming',
-      'HD Quality',
-      'Multi-device Access',
-      'Download & Watch Offline',
+      'Premium Member Access',
+      'Ad-Free Experience',
+      'HD Quality Playback',
+      'Multi-Device Support',
     ],
   },
   {
@@ -28,10 +28,10 @@ const plans = [
     badge: 'Most Popular',
     featured: true,
     features: [
-      'Ad-free Streaming',
-      'HD & 4K Quality',
-      'Multi-device Access',
-      'Download & Watch Offline',
+      'Premium Member Access',
+      'Ad-Free Experience',
+      'HD & 4K Quality Playback',
+      'Multi-Device Support',
       'Priority Support',
     ],
   },
@@ -45,10 +45,10 @@ const plans = [
     badge: null,
     featured: false,
     features: [
-      'Ad-free Streaming',
-      'HD & 4K Quality',
-      'Multi-device Access',
-      'Download & Watch Offline',
+      'Premium Member Access',
+      'Ad-Free Experience',
+      'HD & 4K Quality Playback',
+      'Multi-Device Support',
       'Priority Support',
     ],
   },
@@ -62,12 +62,12 @@ const plans = [
     badge: 'Best Value',
     featured: false,
     features: [
-      'Ad-free Streaming',
-      'HD & 4K Quality',
-      'Multi-device Access',
-      'Download & Watch Offline',
+      'Premium Member Access',
+      'Ad-Free Experience',
+      'HD & 4K Quality Playback',
+      'Multi-Device Support',
       'Priority Support',
-      'Exclusive Content',
+      'Exclusive Features',
     ],
   },
 ];
@@ -91,13 +91,13 @@ export default function Pricing() {
         >
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-gold/10 border border-gold/20 mb-6">
             <Crown className="w-4 h-4 text-gold" />
-            <span className="text-gold text-sm font-medium">Premium Plans</span>
+            <span className="text-gold text-sm font-medium">Membership Plans</span>
           </div>
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-4">
-            Choose Your <span className="gradient-text">Premium</span> Plan
+            Choose Your <span className="gradient-text">Plan</span>
           </h2>
           <p className="text-gray-400 text-lg max-w-2xl mx-auto">
-            Unlock the ultimate streaming experience. All prices in ₹ INR.
+            Unlock premium membership features. All prices in ₹ INR.
           </p>
         </motion.div>
 
@@ -231,7 +231,7 @@ export default function Pricing() {
           viewport={{ once: true }}
           transition={{ duration: 0.5, delay: 0.5 }}
         >
-          All plans include a 7-day money-back guarantee · Pay securely via UPI
+          All plans include a 7-day money-back guarantee · Pay securely via UPI · See our <a href="/refund-policy" className="text-gold hover:underline">Refund Policy</a>
         </motion.p>
       </div>
     </section>
