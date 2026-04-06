@@ -3,6 +3,8 @@ package com.cinevault.app.ui.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.cinevault.app.data.local.SessionManager
+import com.cinevault.app.data.model.CreateOrderResponse
+import com.cinevault.app.data.model.OrderStatusResponse
 import com.cinevault.app.data.model.PremiumPlanDto
 import com.cinevault.app.data.model.Result
 import com.cinevault.app.data.repository.PremiumRepository
@@ -23,6 +25,16 @@ data class PremiumUiState(
     val isLoadingPlans: Boolean = false,
     val userName: String? = null,
     val userId: String? = null,
+    // UPI Payment
+    val isCreatingOrder: Boolean = false,
+    val currentOrder: CreateOrderResponse? = null,
+    val isSubmittingUtr: Boolean = false,
+    val utrSubmitSuccess: Boolean = false,
+    val utrSubmitMessage: String? = null,
+    val orderStatus: OrderStatusResponse? = null,
+    val isCheckingStatus: Boolean = false,
+    val myOrders: List<OrderStatusResponse> = emptyList(),
+    val isLoadingOrders: Boolean = false,
 )
 
 @HiltViewModel
@@ -117,5 +129,86 @@ class PremiumViewModel @Inject constructor(
 
     fun clearError() {
         _uiState.update { it.copy(error = null) }
+    }
+
+    fun createOrder(planId: String, deviceInfo: String? = null) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isCreatingOrder = true, error = null, currentOrder = null) }
+            when (val result = premiumRepository.createUpiOrder(planId, deviceInfo)) {
+                is Result.Success -> {
+                    _uiState.update { it.copy(isCreatingOrder = false, currentOrder = result.data) }
+                }
+                is Result.Error -> {
+                    _uiState.update { it.copy(isCreatingOrder = false, error = result.message) }
+                }
+                is Result.Loading -> {}
+            }
+        }
+    }
+
+    fun submitUtr(orderId: String, utrId: String) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isSubmittingUtr = true, error = null, utrSubmitSuccess = false) }
+            when (val result = premiumRepository.submitUtr(orderId, utrId)) {
+                is Result.Success -> {
+                    _uiState.update {
+                        it.copy(
+                            isSubmittingUtr = false,
+                            utrSubmitSuccess = true,
+                            utrSubmitMessage = result.data.message,
+                        )
+                    }
+                }
+                is Result.Error -> {
+                    _uiState.update { it.copy(isSubmittingUtr = false, error = result.message) }
+                }
+                is Result.Loading -> {}
+            }
+        }
+    }
+
+    fun checkOrderStatus(orderId: String) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isCheckingStatus = true) }
+            when (val result = premiumRepository.getOrderStatus(orderId)) {
+                is Result.Success -> {
+                    _uiState.update { it.copy(isCheckingStatus = false, orderStatus = result.data) }
+                    // If verified and has activation code, auto-activate
+                    if (result.data.status == "verified" && result.data.activationCode != null) {
+                        refreshStatus()
+                    }
+                }
+                is Result.Error -> {
+                    _uiState.update { it.copy(isCheckingStatus = false) }
+                }
+                is Result.Loading -> {}
+            }
+        }
+    }
+
+    fun fetchMyOrders() {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoadingOrders = true) }
+            when (val result = premiumRepository.getMyOrders()) {
+                is Result.Success -> {
+                    _uiState.update { it.copy(myOrders = result.data, isLoadingOrders = false) }
+                }
+                is Result.Error -> {
+                    _uiState.update { it.copy(isLoadingOrders = false) }
+                }
+                is Result.Loading -> {}
+            }
+        }
+    }
+
+    fun clearOrderState() {
+        _uiState.update {
+            it.copy(
+                currentOrder = null,
+                utrSubmitSuccess = false,
+                utrSubmitMessage = null,
+                orderStatus = null,
+            )
+        }
     }
 }

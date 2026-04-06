@@ -68,4 +68,68 @@ class PremiumRepository @Inject constructor(
             Result.Error(e.message ?: "Network error")
         }
     }
+
+    suspend fun createUpiOrder(planId: String, deviceInfo: String? = null): Result<CreateOrderResponse> {
+        return try {
+            val response = api.createUpiOrder(CreateOrderRequest(planId, deviceInfo))
+            if (response.isSuccessful) {
+                Result.Success(response.body()!!)
+            } else {
+                val errorBody = response.errorBody()?.string()
+                val message = try {
+                    com.google.gson.Gson().fromJson(errorBody, MessageResponse::class.java).message
+                } catch (_: Exception) {
+                    "Failed to create order"
+                }
+                Result.Error(message)
+            }
+        } catch (e: Exception) {
+            Result.Error(e.message ?: "Network error")
+        }
+    }
+
+    suspend fun submitUtr(orderId: String, utrId: String): Result<SubmitUtrResponse> {
+        return try {
+            val response = api.submitUtr(SubmitUtrRequest(orderId, utrId))
+            if (response.isSuccessful) {
+                Result.Success(response.body()!!)
+            } else {
+                val errorBody = response.errorBody()?.string()
+                val message = try {
+                    com.google.gson.Gson().fromJson(errorBody, MessageResponse::class.java).message
+                } catch (_: Exception) {
+                    "Failed to submit UTR"
+                }
+                Result.Error(message)
+            }
+        } catch (e: Exception) {
+            Result.Error(e.message ?: "Network error")
+        }
+    }
+
+    suspend fun getOrderStatus(orderId: String): Result<OrderStatusResponse> {
+        return try {
+            val response = api.getOrderStatus(orderId)
+            if (response.isSuccessful) {
+                Result.Success(response.body()!!)
+            } else {
+                Result.Error("Failed to get order status")
+            }
+        } catch (e: Exception) {
+            Result.Error(e.message ?: "Network error")
+        }
+    }
+
+    suspend fun getMyOrders(): Result<List<OrderStatusResponse>> {
+        return try {
+            val response = api.getMyOrders()
+            if (response.isSuccessful) {
+                Result.Success(response.body()!!)
+            } else {
+                Result.Error("Failed to get orders")
+            }
+        } catch (e: Exception) {
+            Result.Error(e.message ?: "Network error")
+        }
+    }
 }

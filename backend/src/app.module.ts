@@ -29,6 +29,7 @@ import { R2StorageModule } from './modules/r2-storage/r2-storage.module';
 import { PremiumModule } from './modules/premium/premium.module';
 import { PremiumPlansModule } from './modules/premium-plans/premium-plans.module';
 import { TelegramBotModule } from './modules/telegram-bot/telegram-bot.module';
+import { UpiPaymentModule } from './modules/upi-payment/upi-payment.module';
 
 @Module({
   imports: [
@@ -79,6 +80,7 @@ import { TelegramBotModule } from './modules/telegram-bot/telegram-bot.module';
     PremiumModule,
     PremiumPlansModule,
     TelegramBotModule,
+    UpiPaymentModule,
   ],
 })
 export class AppModule {}

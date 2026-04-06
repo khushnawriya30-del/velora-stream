@@ -397,3 +397,30 @@ data class PremiumPlanDto(
     val order: Int = 0,
     val isActive: Boolean = true,
 )
+
+// UPI Payment
+data class CreateOrderRequest(val planId: String, val deviceInfo: String? = null)
+data class CreateOrderResponse(
+    val orderId: String,
+    val plan: String,
+    val amount: Int,
+    val upiId: String,
+    val upiLink: String,
+    val expiresAt: String,
+)
+data class SubmitUtrRequest(val orderId: String, val utrId: String)
+data class SubmitUtrResponse(
+    val orderId: String,
+    val status: String,
+    val message: String,
+)
+data class OrderStatusResponse(
+    val orderId: String,
+    val plan: String,
+    val amount: Int,
+    val status: String,
+    val utrId: String?,
+    val activationCode: String?,
+    val rejectionReason: String?,
+    val createdAt: String,
+)

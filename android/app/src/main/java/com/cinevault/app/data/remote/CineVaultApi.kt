@@ -267,6 +267,19 @@ interface CineVaultApi {
     @GET("premium-plans")
     suspend fun getPremiumPlans(): Response<List<PremiumPlanDto>>
 
+    // UPI Payment
+    @POST("upi-payment/create-order")
+    suspend fun createUpiOrder(@Body request: CreateOrderRequest): Response<CreateOrderResponse>
+
+    @POST("upi-payment/submit-utr")
+    suspend fun submitUtr(@Body request: SubmitUtrRequest): Response<SubmitUtrResponse>
+
+    @GET("upi-payment/order/{orderId}")
+    suspend fun getOrderStatus(@Path("orderId") orderId: String): Response<OrderStatusResponse>
+
+    @GET("upi-payment/my-orders")
+    suspend fun getMyOrders(): Response<List<OrderStatusResponse>>
+
     // App Version
     @GET("app-version")
     suspend fun getAppVersion(): Response<AppVersionResponse>

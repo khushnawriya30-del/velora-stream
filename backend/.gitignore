@@ -4,3 +4,4 @@ node_modules/
 coverage/
 gcp-service-account.json
 .vercel
+env.yaml
