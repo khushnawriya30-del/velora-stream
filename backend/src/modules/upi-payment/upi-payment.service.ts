@@ -4,6 +4,7 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import * as crypto from 'crypto';
@@ -48,6 +49,7 @@ export class UpiPaymentService {
     private userModel: Model<UserDocument>,
     private readonly settingsService: SettingsService,
     private readonly premiumService: PremiumService,
+    private readonly configService: ConfigService,
   ) {}
 
   // ══════════════════════════════
@@ -447,5 +449,234 @@ export class UpiPaymentService {
       rejected,
       totalRevenue: totalRevenue[0]?.total || 0,
     };
+  }
+
+  // ══════════════════════════════
+  //  PAYMENT SESSION (Browser Flow)
+  // ══════════════════════════════
+
+  async createPaymentSession(planId: string, userId: string) {
+    const plan = await this.planModel
+      .findOne({ planId, isActive: true })
+      .lean();
+    if (!plan) throw new BadRequestException('Invalid plan');
+
+    const settings = await this.settingsService.getSettings();
+    const upiId = settings.paymentUpiId;
+    if (!upiId) throw new BadRequestException('Payment not configured');
+
+    // Rate limit: Max 5 pending sessions per user per hour
+    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+    const recentCount = await this.paymentModel.countDocuments({
+      userId: new Types.ObjectId(userId),
+      status: { $in: [UpiPaymentStatus.PENDING, UpiPaymentStatus.CONFIRMING] },
+      createdAt: { $gte: oneHourAgo },
+    });
+    if (recentCount >= 5) {
+      throw new BadRequestException(
+        'Too many pending payments. Please complete or wait for existing ones.',
+      );
+    }
+
+    // Generate unique amount
+    const uniqueAmount = await this.generateUniqueAmount(plan.price);
+
+    // Generate secure payment ID
+    const paymentId = `PAY-${crypto.randomBytes(12).toString('hex').toUpperCase()}`;
+
+    // Session expires in 5 minutes
+    const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
+
+    // Build UPI deep link with unique amount
+    const upiLink =
+      `upi://pay?pa=${encodeURIComponent(upiId)}` +
+      `&pn=${encodeURIComponent('Velora')}` +
+      `&am=${uniqueAmount.toFixed(2)}` +
+      `&cu=INR` +
+      `&tr=${encodeURIComponent(paymentId)}` +
+      `&tn=${encodeURIComponent(`Velora Premium ${plan.name}`)}`;
+
+    const payment = await this.paymentModel.create({
+      orderId: paymentId,
+      userId: new Types.ObjectId(userId),
+      plan: this.planEnumMap[plan.planId] || plan.planId,
+      planName: plan.name,
+      amount: plan.price,
+      uniqueAmount,
+      upiId,
+      status: UpiPaymentStatus.PENDING,
+      expiresAt,
+    });
+
+    this.logger.log(
+      `Payment session created: ${paymentId} | user=${userId} | plan=${plan.name} | amount=₹${uniqueAmount.toFixed(2)}`,
+    );
+
+    return {
+      paymentId: payment.orderId,
+      amount: uniqueAmount,
+      plan: payment.plan,
+      planName: payment.planName,
+      expiresAt,
+      upiId,
+      upiLink,
+    };
+  }
+
+  private async generateUniqueAmount(baseAmount: number): Promise<number> {
+    const maxAttempts = 50;
+    for (let i = 0; i < maxAttempts; i++) {
+      const decimal = Math.floor(Math.random() * 99) + 1; // 01-99
+      const amount = baseAmount + decimal / 100;
+      const roundedAmount = Math.round(amount * 100) / 100;
+
+      // Ensure no active session has the same amount
+      const existing = await this.paymentModel.findOne({
+        uniqueAmount: roundedAmount,
+        status: { $in: [UpiPaymentStatus.PENDING, UpiPaymentStatus.CONFIRMING] },
+        expiresAt: { $gt: new Date() },
+      });
+
+      if (!existing) return roundedAmount;
+    }
+    throw new BadRequestException(
+      'Unable to generate unique payment amount. Please try again.',
+    );
+  }
+
+  async getPaymentSession(paymentId: string) {
+    const payment = await this.paymentModel
+      .findOne({ orderId: paymentId })
+      .lean();
+    if (!payment) return null;
+
+    // Build UPI link
+    const upiLink =
+      `upi://pay?pa=${encodeURIComponent(payment.upiId || '')}` +
+      `&pn=${encodeURIComponent('Velora')}` +
+      `&am=${(payment.uniqueAmount || payment.amount).toFixed(2)}` +
+      `&cu=INR` +
+      `&tr=${encodeURIComponent(payment.orderId)}` +
+      `&tn=${encodeURIComponent(`Velora Premium ${payment.planName}`)}`;
+
+    return {
+      paymentId: payment.orderId,
+      plan: payment.plan,
+      planName: payment.planName,
+      amount: payment.amount,
+      uniqueAmount: payment.uniqueAmount || payment.amount,
+      upiId: payment.upiId,
+      upiLink,
+      status: payment.status,
+      expiresAt: payment.expiresAt,
+      createdAt: (payment as any).createdAt,
+    };
+  }
+
+  async getPaymentSessionStatus(paymentId: string) {
+    const payment = await this.paymentModel
+      .findOne({ orderId: paymentId })
+      .lean();
+    if (!payment) throw new NotFoundException('Payment session not found');
+
+    // Auto-expire if past expiry and still pending
+    if (
+      payment.status === UpiPaymentStatus.PENDING &&
+      payment.expiresAt &&
+      new Date() > payment.expiresAt
+    ) {
+      await this.paymentModel.updateOne(
+        { orderId: paymentId },
+        { status: UpiPaymentStatus.EXPIRED },
+      );
+      return { status: 'expired', paymentId };
+    }
+
+    const response: any = {
+      status: payment.status,
+      paymentId: payment.orderId,
+    };
+
+    if (payment.status === UpiPaymentStatus.VERIFIED) {
+      response.premiumActivated = true;
+      response.plan = payment.planName;
+    }
+
+    return response;
+  }
+
+  async confirmPayment(paymentId: string) {
+    const payment = await this.paymentModel.findOne({ orderId: paymentId });
+    if (!payment) throw new NotFoundException('Payment session not found');
+
+    if (payment.status === UpiPaymentStatus.VERIFIED) {
+      return { status: 'success', message: 'Payment already verified' };
+    }
+    if (payment.status === UpiPaymentStatus.EXPIRED) {
+      throw new BadRequestException('Payment session has expired');
+    }
+    if (payment.status === UpiPaymentStatus.REJECTED) {
+      throw new BadRequestException('Payment was rejected');
+    }
+    if (payment.expiresAt && new Date() > payment.expiresAt) {
+      payment.status = UpiPaymentStatus.EXPIRED;
+      await payment.save();
+      throw new BadRequestException('Payment session has expired');
+    }
+    if (payment.status === UpiPaymentStatus.CONFIRMING) {
+      return { status: 'confirming', message: 'Payment is being verified' };
+    }
+
+    // Mark as confirming
+    payment.status = UpiPaymentStatus.CONFIRMING;
+    payment.userConfirmedAt = new Date();
+    await payment.save();
+
+    this.logger.log(
+      `Payment confirmed by user: ${paymentId} | amount=₹${(payment.uniqueAmount || payment.amount).toFixed(2)}`,
+    );
+
+    // Auto-verify if enabled (testing mode)
+    const autoVerify =
+      this.configService.get<string>('PAYMENT_AUTO_VERIFY', 'false') === 'true';
+    if (autoVerify) {
+      return this.autoVerifyPayment(payment);
+    }
+
+    return {
+      status: 'confirming',
+      message: 'Payment is being verified. Please wait.',
+    };
+  }
+
+  private async autoVerifyPayment(payment: UpiPaymentDocument) {
+    payment.status = UpiPaymentStatus.VERIFIED;
+    payment.verifiedAt = new Date();
+    payment.note = 'Auto-verified (testing mode)';
+    await payment.save();
+
+    // Activate premium
+    if (payment.userId) {
+      const planKey = payment.plan;
+      const durationDays = this.planDurationDays[planKey] || 30;
+      const now = new Date();
+      const expiresAt = new Date(
+        now.getTime() + durationDays * 24 * 60 * 60 * 1000,
+      );
+
+      await this.userModel.findByIdAndUpdate(payment.userId, {
+        isPremium: true,
+        premiumPlan: planKey,
+        premiumActivatedAt: now,
+        premiumExpiresAt: expiresAt,
+        maxDevices: 2,
+      });
+
+      this.logger.log(
+        `Premium auto-activated: user=${payment.userId} plan=${planKey} expires=${expiresAt.toISOString()}`,
+      );
+    }
+
+    return { status: 'success', message: 'Payment verified! Premium activated.' };
   }
 }

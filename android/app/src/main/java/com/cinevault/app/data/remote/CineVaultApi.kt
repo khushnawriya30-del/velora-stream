@@ -271,6 +271,9 @@ interface CineVaultApi {
     @POST("upi-payment/create-order")
     suspend fun createUpiOrder(@Body request: CreateOrderRequest): Response<CreateOrderResponse>
 
+    @POST("upi-payment/create-session")
+    suspend fun createPaymentSession(@Body request: CreatePaymentSessionRequest): Response<CreatePaymentSessionResponse>
+
     @POST("upi-payment/submit-utr")
     suspend fun submitUtr(@Body request: SubmitUtrRequest): Response<SubmitUtrResponse>
 

@@ -6,6 +6,7 @@ export type UpiPaymentDocument = UpiPayment & Document;
 export enum UpiPaymentStatus {
   PENDING = 'pending',
   UTR_SUBMITTED = 'utr_submitted',
+  CONFIRMING = 'confirming',
   VERIFIED = 'verified',
   REJECTED = 'rejected',
   EXPIRED = 'expired',
@@ -54,6 +55,12 @@ export class UpiPayment {
 
   @Prop()
   expiresAt: Date; // Order expires after 30 min if no UTR submitted
+
+  @Prop()
+  uniqueAmount: number; // Unique decimal amount for this payment session
+
+  @Prop()
+  userConfirmedAt: Date; // When user clicked "I've Paid"
 
   @Prop()
   deviceInfo: string; // For fraud detection

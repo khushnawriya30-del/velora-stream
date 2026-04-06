@@ -1,12 +1,9 @@
 package com.cinevault.app.ui.screen
 
-import android.app.Activity
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.widget.Toast
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
@@ -88,67 +85,39 @@ fun ActivatePremiumScreen(
     var codeInput by remember { mutableStateOf("") }
     var showPaymentProcessing by remember { mutableStateOf(false) }
     var showPaymentResult by remember { mutableStateOf(false) }
-    var pendingOrderId by remember { mutableStateOf<String?>(null) }
 
-    // UPI intent launcher - captures result from UPI app
-    val upiLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.StartActivityForResult()
-    ) { result ->
-        val data = result.data
-        val orderId = pendingOrderId ?: return@rememberLauncherForActivityResult
+    // Lifecycle: refresh premium status when app resumes (after browser payment)
+    val lifecycleOwner = androidx.compose.ui.platform.LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
+            if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME) {
+                viewModel.refreshStatus()
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
 
-        // Parse UPI response from intent data — try multiple sources
-        val response = data?.getStringExtra("response")
-            ?: data?.getStringExtra("Response")
-            ?: data?.data?.getQueryParameter("response")
-            ?: data?.data?.toString()
-            ?: ""
-        val responseMap = parseUpiResponse(response)
-
-        // UPI apps return status in different keys/cases
-        val status = responseMap["Status"]
-            ?: responseMap["status"]
-            ?: responseMap["STATUS"]
-            ?: if (result.resultCode == Activity.RESULT_OK) "SUCCESS" else "FAILURE"
-        val txnId = responseMap["txnId"]
-            ?: responseMap["TxnId"]
-            ?: responseMap["txnid"]
-            ?: responseMap["TXNID"]
-            ?: ""
-        val responseCode = responseMap["responseCode"]
-            ?: responseMap["ResponseCode"]
-            ?: responseMap["responsecode"]
-            ?: ""
-        val approvalRefNo = responseMap["ApprovalRefNo"]
-            ?: responseMap["approvalRefNo"]
-            ?: responseMap["RRN"]
-            ?: ""
-
-        // Send to backend for verification + auto-activation
-        showPaymentProcessing = true
-        viewModel.verifyPayment(orderId, status, txnId, responseCode, approvalRefNo)
+    // When payment URL is ready, open browser
+    LaunchedEffect(uiState.paymentUrl) {
+        val url = uiState.paymentUrl ?: return@LaunchedEffect
+        try {
+            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+            context.startActivity(intent)
+        } catch (e: Exception) {
+            Toast.makeText(context, "Could not open payment page", Toast.LENGTH_LONG).show()
+        }
+        viewModel.clearPaymentState()
     }
 
     LaunchedEffect(plans) {
         if (selectedPlanId == null && plans.isNotEmpty()) selectedPlanId = plans.first().planId
     }
 
-    // When order is created, launch UPI intent
-    LaunchedEffect(uiState.currentOrder) {
-        val order = uiState.currentOrder ?: return@LaunchedEffect
-        pendingOrderId = order.orderId
-        try {
-            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(order.upiLink))
-            // Use chooser to let user pick their preferred UPI app
-            val chooser = Intent.createChooser(intent, "Pay with")
-            upiLauncher.launch(chooser)
-        } catch (e: Exception) {
-            Toast.makeText(
-                context,
-                "No UPI app found. Please install Google Pay, PhonePe, or Paytm.",
-                Toast.LENGTH_LONG
-            ).show()
-            viewModel.clearPaymentState()
+    // Premium status auto-navigation after browser payment
+    LaunchedEffect(uiState.isPremium) {
+        if (uiState.isPremium && uiState.plan != null) {
+            Toast.makeText(context, "Premium Activated! \uD83C\uDF89", Toast.LENGTH_LONG).show()
         }
     }
 
@@ -225,7 +194,6 @@ fun ActivatePremiumScreen(
             onDismissRequest = {
                 showPaymentResult = false
                 viewModel.clearPaymentState()
-                pendingOrderId = null
             },
             containerColor = CardBg,
             titleContentColor = White87,
@@ -285,7 +253,6 @@ fun ActivatePremiumScreen(
                     onClick = {
                         showPaymentResult = false
                         viewModel.clearPaymentState()
-                        pendingOrderId = null
                         if (isSuccess) onBack()
                     },
                     colors = ButtonDefaults.buttonColors(
@@ -621,9 +588,7 @@ fun ActivatePremiumScreen(
                 isLoading = uiState.isCreatingOrder,
                 onPayClick = {
                     if (selectedPlan != null && !uiState.isCreatingOrder) {
-                        val deviceInfo =
-                            "${Build.MANUFACTURER} ${Build.MODEL} | Android ${Build.VERSION.RELEASE}"
-                        viewModel.createOrder(selectedPlan.planId, deviceInfo)
+                        viewModel.createPaymentSession(selectedPlan.planId)
                     }
                 },
             )

@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { UpiPaymentService } from './upi-payment.service';
 import { UpiPaymentController } from './upi-payment.controller';
+import { PaymentPageController } from './payment-page.controller';
 import {
   UpiPayment,
   UpiPaymentSchema,
@@ -24,7 +25,7 @@ import { PremiumModule } from '../premium/premium.module';
     SettingsModule,
     PremiumModule,
   ],
-  controllers: [UpiPaymentController],
+  controllers: [UpiPaymentController, PaymentPageController],
   providers: [UpiPaymentService],
   exports: [UpiPaymentService],
 })

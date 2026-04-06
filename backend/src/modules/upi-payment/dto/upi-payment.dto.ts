@@ -9,6 +9,11 @@ export class CreateOrderDto {
   deviceInfo?: string;
 }
 
+export class CreatePaymentSessionDto {
+  @IsString()
+  planId: string; // '1m', '3m', '6m', '12m'
+}
+
 export class SubmitUtrDto {
   @IsString()
   orderId: string;

@@ -408,6 +408,16 @@ data class CreateOrderResponse(
     val upiLink: String,
     val expiresAt: String,
 )
+data class CreatePaymentSessionRequest(val planId: String)
+data class CreatePaymentSessionResponse(
+    val paymentId: String,
+    val amount: Double,
+    val plan: String,
+    val planName: String,
+    val expiresAt: String,
+    val upiId: String,
+    val upiLink: String,
+)
 data class SubmitUtrRequest(val orderId: String, val utrId: String)
 data class SubmitUtrResponse(
     val orderId: String,

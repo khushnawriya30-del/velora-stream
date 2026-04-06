@@ -2,6 +2,7 @@ package com.cinevault.app.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.cinevault.app.BuildConfig
 import com.cinevault.app.data.local.SessionManager
 import com.cinevault.app.data.model.CreateOrderResponse
 import com.cinevault.app.data.model.OrderStatusResponse
@@ -29,6 +30,7 @@ data class PremiumUiState(
     // UPI Payment
     val isCreatingOrder: Boolean = false,
     val currentOrder: CreateOrderResponse? = null,
+    val paymentUrl: String? = null,
     // Auto-verify via UPI intent
     val isVerifyingPayment: Boolean = false,
     val paymentVerified: Boolean = false,
@@ -132,6 +134,23 @@ class PremiumViewModel @Inject constructor(
         _uiState.update { it.copy(error = null) }
     }
 
+    fun createPaymentSession(planId: String) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isCreatingOrder = true, error = null, paymentUrl = null) }
+            when (val result = premiumRepository.createPaymentSession(planId)) {
+                is Result.Success -> {
+                    val rootUrl = BuildConfig.BASE_URL.replace("api/v1/", "")
+                    val paymentUrl = "${rootUrl}pay/${result.data.paymentId}"
+                    _uiState.update { it.copy(isCreatingOrder = false, paymentUrl = paymentUrl) }
+                }
+                is Result.Error -> {
+                    _uiState.update { it.copy(isCreatingOrder = false, error = result.message) }
+                }
+                is Result.Loading -> {}
+            }
+        }
+    }
+
     fun createOrder(planId: String, deviceInfo: String? = null) {
         viewModelScope.launch {
             _uiState.update { it.copy(isCreatingOrder = true, error = null, currentOrder = null) }
@@ -210,6 +229,7 @@ class PremiumViewModel @Inject constructor(
         _uiState.update {
             it.copy(
                 currentOrder = null,
+                paymentUrl = null,
                 paymentVerified = false,
                 paymentFailed = false,
                 verifyMessage = null,

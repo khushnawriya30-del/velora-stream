@@ -88,6 +88,25 @@ class PremiumRepository @Inject constructor(
         }
     }
 
+    suspend fun createPaymentSession(planId: String): Result<CreatePaymentSessionResponse> {
+        return try {
+            val response = api.createPaymentSession(CreatePaymentSessionRequest(planId))
+            if (response.isSuccessful) {
+                Result.Success(response.body()!!)
+            } else {
+                val errorBody = response.errorBody()?.string()
+                val message = try {
+                    com.google.gson.Gson().fromJson(errorBody, MessageResponse::class.java).message
+                } catch (_: Exception) {
+                    "Failed to create payment session"
+                }
+                Result.Error(message)
+            }
+        } catch (e: Exception) {
+            Result.Error(e.message ?: "Network error")
+        }
+    }
+
     suspend fun submitUtr(orderId: String, utrId: String): Result<SubmitUtrResponse> {
         return try {
             val response = api.submitUtr(SubmitUtrRequest(orderId, utrId))

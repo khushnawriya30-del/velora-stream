@@ -12,7 +12,7 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { UpiPaymentService } from './upi-payment.service';
-import { CreateOrderDto, SubmitUtrDto, VerifyPaymentDto } from './dto/upi-payment.dto';
+import { CreateOrderDto, CreatePaymentSessionDto, SubmitUtrDto, VerifyPaymentDto } from './dto/upi-payment.dto';
 
 @Controller('upi-payment')
 export class UpiPaymentController {
@@ -108,5 +108,26 @@ export class UpiPaymentController {
   @Roles('admin')
   async getStats() {
     return this.upiPaymentService.getStats();
+  }
+
+  // ── Payment Session (Browser Flow) ──
+
+  @Post('create-session')
+  @UseGuards(AuthGuard('jwt'))
+  async createPaymentSession(
+    @Body() dto: CreatePaymentSessionDto,
+    @CurrentUser('userId') userId: string,
+  ) {
+    return this.upiPaymentService.createPaymentSession(dto.planId, userId);
+  }
+
+  @Get('session-status/:paymentId')
+  async getSessionStatus(@Param('paymentId') paymentId: string) {
+    return this.upiPaymentService.getPaymentSessionStatus(paymentId);
+  }
+
+  @Post('confirm-payment/:paymentId')
+  async confirmPayment(@Param('paymentId') paymentId: string) {
+    return this.upiPaymentService.confirmPayment(paymentId);
   }
 }

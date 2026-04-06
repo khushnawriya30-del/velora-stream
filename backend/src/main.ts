@@ -1,5 +1,5 @@
 import { NestFactory } from '@nestjs/core';
-import { ValidationPipe } from '@nestjs/common';
+import { RequestMethod, ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { ConfigService } from '@nestjs/config';
 import * as cookieParser from 'cookie-parser';
@@ -14,7 +14,7 @@ async function bootstrap() {
   const configService = app.get(ConfigService);
 
   // Security
-  app.use(helmet());
+  app.use(helmet({ contentSecurityPolicy: false }));
   app.use(cookieParser());
 
   // Increase JSON body size limit (default 100KB is too small for base64 data)
@@ -41,7 +41,9 @@ async function bootstrap() {
 
   // Global prefix
   const apiPrefix = configService.get<string>('API_PREFIX', 'api/v1');
-  app.setGlobalPrefix(apiPrefix);
+  app.setGlobalPrefix(apiPrefix, {
+    exclude: [{ path: 'pay/:paymentId', method: RequestMethod.GET }],
+  });
 
   // Validation
   app.useGlobalPipes(
