@@ -6,6 +6,9 @@ import {
   Query,
   Body,
   UseGuards,
+  HttpCode,
+  ForbiddenException,
+  Req,
 } from '@nestjs/common';
 import { TelegramBotService } from './telegram-bot.service';
 import { AuthGuard } from '@nestjs/passport';
@@ -15,6 +18,23 @@ import { Roles } from '../auth/decorators/roles.decorator';
 @Controller('telegram-bot')
 export class TelegramBotController {
   constructor(private readonly botService: TelegramBotService) {}
+
+  // ════════════════════════════════════════════
+  //  WEBHOOK ENDPOINT (called by Telegram)
+  // ════════════════════════════════════════════
+
+  @Post('webhook/:secret')
+  @HttpCode(200)
+  async handleWebhook(
+    @Param('secret') secret: string,
+    @Body() update: any,
+  ) {
+    if (secret !== this.botService.getWebhookSecret()) {
+      throw new ForbiddenException();
+    }
+    await this.botService.handleWebhookUpdate(update);
+    return { ok: true };
+  }
 
   // ════════════════════════════════════════════
   //  ADMIN ENDPOINTS
@@ -76,8 +96,7 @@ export class TelegramBotController {
   @UseGuards(AuthGuard('jwt'), RolesGuard)
   @Roles('admin')
   async restartBot() {
-    // Fire-and-forget to avoid 504 timeout from Cloud Run
-    this.botService.restartBot().catch(() => {});
-    return { success: true, message: 'Bot restart initiated' };
+    await this.botService.restartBot();
+    return { success: true, message: 'Bot restarted' };
   }
 }

@@ -8,6 +8,7 @@ import {
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Telegraf, Markup } from 'telegraf';
+import * as crypto from 'crypto';
 import {
   TelegramPayment,
   TelegramPaymentDocument,
@@ -33,6 +34,7 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(TelegramBotService.name);
   private bot: Telegraf | null = null;
   private isRunning = false;
+  private webhookSecret: string = '';
 
   // In-memory state per Telegram user
   private userSessions = new Map<string, UserSession>();
@@ -44,6 +46,10 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
     '6m': '6months',
     '12m': '1year',
   };
+
+  // Cloud Run base URL
+  private readonly baseUrl =
+    process.env.BASE_URL || 'https://velora-backend-fopqpbthva-el.a.run.app';
 
   constructor(
     @InjectModel(TelegramPayment.name)
@@ -59,15 +65,15 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
   // ══════════════════════════════
 
   async onModuleInit() {
-    // Delay bot start to let NestJS fully initialize
-    setTimeout(() => this.startBot(), 3000);
+    // Start bot with webhook on init
+    await this.startBot();
   }
 
   async onModuleDestroy() {
     await this.stopBot();
   }
 
-  async startBot(retries = 3): Promise<void> {
+  async startBot(): Promise<void> {
     try {
       const settings = await this.settingsService.getSettings();
       const token = settings?.telegramBotToken;
@@ -80,30 +86,40 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
       // Stop existing bot if running
       if (this.bot) {
         try {
-          this.bot.stop('restart');
+          await this.bot.telegram.deleteWebhook();
         } catch {}
         this.bot = null;
         this.isRunning = false;
       }
 
+      // Generate a unique webhook secret path
+      this.webhookSecret = crypto.randomBytes(32).toString('hex');
+
       this.bot = new Telegraf(token);
       this.registerHandlers();
 
-      // Launch with polling, drop old updates
-      await this.bot.launch({ dropPendingUpdates: true });
-      this.isRunning = true;
-      this.logger.log('Telegram bot started successfully');
-    } catch (error: any) {
-      // 409 = old instance still polling; retry after delay
-      if (error.message?.includes('409') && retries > 0) {
-        this.logger.warn(
-          `Bot conflict (409), retrying in 5s... (${retries} left)`,
+      // Set webhook instead of polling
+      const webhookUrl = `${this.baseUrl}/api/v1/telegram-bot/webhook/${this.webhookSecret}`;
+      await this.bot.telegram.setWebhook(webhookUrl, {
+        drop_pending_updates: true,
+      });
+
+      // Verify the webhook was set
+      const info = await this.bot.telegram.getWebhookInfo();
+      if (info.url === webhookUrl) {
+        this.isRunning = true;
+        this.logger.log(
+          `Telegram bot webhook set successfully: ${webhookUrl.substring(0, 80)}...`,
         );
-        this.bot = null;
-        this.isRunning = false;
-        await new Promise((r) => setTimeout(r, 5000));
-        return this.startBot(retries - 1);
+      } else {
+        throw new Error('Webhook URL mismatch after setWebhook');
       }
+
+      // Fetch bot info
+      const me = await this.bot.telegram.getMe();
+      (this.bot as any).botInfo = me;
+      this.logger.log(`Bot username: @${me.username}`);
+    } catch (error: any) {
       this.logger.error('Failed to start Telegram bot: ' + error.message);
       this.isRunning = false;
       this.bot = null;
@@ -113,22 +129,34 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
   async stopBot() {
     if (this.bot) {
       try {
-        await this.bot.stop('shutdown');
+        await this.bot.telegram.deleteWebhook();
       } catch {}
       this.isRunning = false;
       this.bot = null;
+      this.webhookSecret = '';
       this.logger.log('Telegram bot stopped');
     }
   }
 
   async restartBot() {
-    try {
-      await this.stopBot();
-      await new Promise((r) => setTimeout(r, 1000));
-      await this.startBot();
-    } catch (e: any) {
-      this.logger.error('Restart failed: ' + e.message);
+    await this.stopBot();
+    await this.startBot();
+  }
+
+  // ══════════════════════════════
+  //  WEBHOOK HANDLER
+  // ══════════════════════════════
+
+  getWebhookSecret(): string {
+    return this.webhookSecret;
+  }
+
+  async handleWebhookUpdate(update: any): Promise<void> {
+    if (!this.bot) {
+      this.logger.warn('Received webhook update but bot is not initialized');
+      return;
     }
+    await this.bot.handleUpdate(update);
   }
 
   // ══════════════════════════════
