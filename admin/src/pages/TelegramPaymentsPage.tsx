@@ -180,12 +180,13 @@ export default function TelegramPaymentsPage() {
       const formData = new FormData();
       formData.append('file', file);
       const { data } = await api.post('/settings/upload-qr', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
+        headers: { 'Content-Type': undefined },
       });
       setSettings((s) => ({ ...s, paymentQrCodeUrl: data.url }));
       alert('QR code uploaded successfully!');
-    } catch {
-      alert('Failed to upload QR code');
+    } catch (err: any) {
+      const msg = err?.response?.data?.message || err?.message || 'Unknown error';
+      alert('Failed to upload QR code: ' + msg);
     } finally {
       setUploadingQr(false);
       if (qrFileRef.current) qrFileRef.current.value = '';
