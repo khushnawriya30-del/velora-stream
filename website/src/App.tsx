@@ -7,6 +7,7 @@ import AppPreview from './sections/AppPreview';
 import FAQ from './sections/FAQ';
 import Footer from './sections/Footer';
 import Terms from './sections/Terms';
+import RefundPolicy from './sections/RefundPolicy';
 
 export default function App() {
   const [page, setPage] = useState(window.location.pathname);
@@ -19,6 +20,10 @@ export default function App() {
 
   if (page === '/terms') {
     return <Terms />;
+  }
+
+  if (page === '/refund-policy') {
+    return <RefundPolicy />;
   }
 
   return (

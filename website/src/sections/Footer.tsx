@@ -59,6 +59,12 @@ export default function Footer() {
             >
               Terms & Conditions
             </a>
+            <a
+              href="/refund-policy"
+              className="text-sm text-gray-400 hover:text-white transition-colors"
+            >
+              Refund Policy
+            </a>
           </div>
 
           {/* Divider */}
