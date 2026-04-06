@@ -15,8 +15,8 @@ android {
         applicationId = "com.cinevault.app"
         minSdk = 26
         targetSdk = 34
-        versionCode = 24
-        versionName = "1.7.2"
+        versionCode = 25
+        versionName = "1.7.3"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         vectorDrawables {
@@ -29,16 +29,10 @@ android {
 
     signingConfigs {
         create("release") {
-            val keystoreFile = System.getenv("KEYSTORE_FILE")
-            val keystorePassword = System.getenv("STORE_PASSWORD")
-            val keyAlias = System.getenv("KEY_ALIAS")
-            val keyPassword = System.getenv("KEY_PASSWORD")
-            if (keystoreFile != null && keystorePassword != null) {
-                storeFile = file(keystoreFile)
-                storePassword = keystorePassword
-                this.keyAlias = keyAlias
-                this.keyPassword = keyPassword
-            }
+            storeFile = file("release-keystore.jks")
+            storePassword = "velora2026"
+            keyAlias = "velora"
+            keyPassword = "velora2026"
         }
     }
 
@@ -49,10 +43,7 @@ android {
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
             buildConfigField("String", "BASE_URL", "\"https://velora-backend-fopqpbthva-el.a.run.app/api/v1/\"")
             buildConfigField("String", "DRIVE_WORKER_URL", "\"https://drive-index.velora-stream.workers.dev\"")
-            val signingConfig = signingConfigs.findByName("release")
-            if (signingConfig?.storeFile?.exists() == true) {
-                this.signingConfig = signingConfig
-            }
+            signingConfig = signingConfigs.getByName("release")
         }
     }
 

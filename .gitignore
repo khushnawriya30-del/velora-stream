@@ -51,4 +51,5 @@ backend/gcp-service-account.json
 backend/.env
 android/local.properties
 android/app/keystore.jks
+android/app/release-keystore.jks
 .env.local
