@@ -14,6 +14,7 @@ async function bootstrap() {
     const configService = app.get(config_1.ConfigService);
     app.use((0, helmet_1.default)());
     app.use(cookieParser());
+    app.useBodyParser('json', { limit: '10mb' });
     const hlsDir = (0, path_1.join)(process.cwd(), 'public', 'hls');
     if (!fs.existsSync(hlsDir))
         fs.mkdirSync(hlsDir, { recursive: true });

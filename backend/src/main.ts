@@ -17,6 +17,9 @@ async function bootstrap() {
   app.use(helmet());
   app.use(cookieParser());
 
+  // Increase JSON body size limit (default 100KB is too small for base64 data)
+  app.useBodyParser('json', { limit: '10mb' });
+
   // Serve HLS files statically (before global prefix)
   const hlsDir = join(process.cwd(), 'public', 'hls');
   if (!fs.existsSync(hlsDir)) fs.mkdirSync(hlsDir, { recursive: true });

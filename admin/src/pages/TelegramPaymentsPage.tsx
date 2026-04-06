@@ -150,9 +150,14 @@ export default function TelegramPaymentsPage() {
   async function handleSaveSettings() {
     setSavingSettings(true);
     try {
-      await api.put('/settings', settings);
+      // Exclude QR from save payload (it's uploaded separately via upload-qr endpoint)
+      const { paymentQrCodeUrl, ...saveData } = settings;
+      await api.put('/settings', saveData);
       alert('Settings saved! Restart the bot to apply token changes.');
-    } catch {} finally {
+    } catch (err: any) {
+      const msg = err?.response?.data?.message || err?.message || 'Unknown error';
+      alert('Failed to save settings: ' + msg);
+    } finally {
       setSavingSettings(false);
     }
   }
