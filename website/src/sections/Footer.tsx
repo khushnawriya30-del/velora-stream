@@ -53,6 +53,12 @@ export default function Footer() {
               <Mail className="w-4 h-4" />
               Contact
             </a>
+            <a
+              href="/terms"
+              className="text-sm text-gray-400 hover:text-white transition-colors"
+            >
+              Terms & Conditions
+            </a>
           </div>
 
           {/* Divider */}
