@@ -28,17 +28,6 @@ async function bootstrap() {
     },
   });
 
-  // Serve uploaded files (QR codes, etc.)
-  const uploadsDir = join(process.cwd(), 'public', 'uploads');
-  if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
-  app.useStaticAssets(uploadsDir, {
-    prefix: '/uploads/',
-    setHeaders: (res) => {
-      res.set('Access-Control-Allow-Origin', '*');
-      res.set('Cache-Control', 'public, max-age=86400');
-    },
-  });
-
   // CORS
   app.enableCors({
     origin: true, // Allow all origins in development

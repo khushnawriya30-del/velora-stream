@@ -41,6 +41,11 @@ let BannersService = class BannersService {
             else {
                 filter.section = banner_schema_1.BannerSection.HOME;
             }
+            filter.type = { $in: [banner_schema_1.BannerType.HERO, null, undefined] };
+            filter.$and = [
+                { $or: [{ type: banner_schema_1.BannerType.HERO }, { type: { $exists: false } }, { type: null }] },
+            ];
+            delete filter.type;
             const banners = await this.bannerModel
                 .find(filter)
                 .sort({ displayOrder: 1 });
@@ -70,6 +75,36 @@ let BannersService = class BannersService {
         }
         catch (error) {
             console.error('Error fetching active banners:', error);
+            return [];
+        }
+    }
+    async getMidBanners(section) {
+        try {
+            const now = new Date();
+            const filter = {
+                isActive: true,
+                type: banner_schema_1.BannerType.MID,
+                $or: [
+                    { activeFrom: { $exists: false }, activeTo: { $exists: false } },
+                    { activeFrom: { $lte: now }, activeTo: { $gte: now } },
+                    { activeFrom: { $lte: now }, activeTo: { $exists: false } },
+                    { activeFrom: { $exists: false }, activeTo: { $gte: now } },
+                ],
+            };
+            if (section) {
+                filter.section = section;
+            }
+            else {
+                filter.section = banner_schema_1.BannerSection.HOME;
+            }
+            const banners = await this.bannerModel
+                .find(filter)
+                .sort({ displayOrder: 1 })
+                .populate('contentId', 'title contentType posterUrl bannerUrl');
+            return banners;
+        }
+        catch (error) {
+            console.error('Error fetching mid banners:', error);
             return [];
         }
     }

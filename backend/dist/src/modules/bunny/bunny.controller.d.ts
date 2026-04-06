@@ -113,6 +113,34 @@ export declare class BunnyController {
             status: string;
         }[];
     }>;
+    importSeriesFromBunnyCollection(seriesId: string, body: {
+        collectionId: string;
+    }): Promise<{
+        seasons: {
+            seasonNumber: number;
+            imported: number;
+            episodes: {
+                episodeNumber: number;
+                title: string;
+                videoId: string;
+                status: string;
+            }[];
+        }[];
+        totalImported: number;
+    }>;
+    previewCollectionStructure(collectionId: string): Promise<{
+        collectionName: string;
+        seasons: {
+            seasonNumber: number;
+            episodes: {
+                episodeNumber: number;
+                title: string;
+                videoId: string;
+                size: number;
+                duration: number;
+            }[];
+        }[];
+    }>;
     importMovieFromBunnyCollection(body: {
         videoId: string;
         collectionId: string;

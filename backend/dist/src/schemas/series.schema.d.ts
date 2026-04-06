@@ -57,6 +57,7 @@ export declare class Episode {
     subtitles: SubtitleTrack[];
     audioTracks: AudioTrack[];
     viewCount: number;
+    isPremium: boolean;
 }
 export declare const EpisodeSchema: import("mongoose").Schema<Episode, import("mongoose").Model<Episode, any, any, any, Document<unknown, any, Episode, any, {}> & Episode & {
     _id: Types.ObjectId;

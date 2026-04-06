@@ -87,6 +87,12 @@ let BunnyController = class BunnyController {
     async importFromBunnyCollection(seasonId, body) {
         return this.bunnyService.importFromBunnyCollection(seasonId, body.collectionId);
     }
+    async importSeriesFromBunnyCollection(seriesId, body) {
+        return this.bunnyService.importSeriesFromBunnyCollection(seriesId, body.collectionId);
+    }
+    async previewCollectionStructure(collectionId) {
+        return this.bunnyService.previewBunnyCollectionStructure(collectionId);
+    }
     async importMovieFromBunnyCollection(body) {
         try {
             if (!body.videoId) {
@@ -286,6 +292,25 @@ __decorate([
     __metadata("design:paramtypes", [String, Object]),
     __metadata("design:returntype", Promise)
 ], BunnyController.prototype, "importFromBunnyCollection", null);
+__decorate([
+    (0, common_1.Post)('stream/series/:seriesId/import-bunny-collection'),
+    (0, common_1.UseGuards)((0, passport_1.AuthGuard)('jwt'), roles_guard_1.RolesGuard),
+    (0, roles_decorator_1.Roles)('admin'),
+    __param(0, (0, common_1.Param)('seriesId')),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:returntype", Promise)
+], BunnyController.prototype, "importSeriesFromBunnyCollection", null);
+__decorate([
+    (0, common_1.Get)('stream/collections/:collectionId/preview'),
+    (0, common_1.UseGuards)((0, passport_1.AuthGuard)('jwt'), roles_guard_1.RolesGuard),
+    (0, roles_decorator_1.Roles)('admin'),
+    __param(0, (0, common_1.Param)('collectionId')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], BunnyController.prototype, "previewCollectionStructure", null);
 __decorate([
     (0, common_1.Post)('stream/movie/import-bunny'),
     (0, common_1.UseGuards)((0, passport_1.AuthGuard)('jwt'), roles_guard_1.RolesGuard),

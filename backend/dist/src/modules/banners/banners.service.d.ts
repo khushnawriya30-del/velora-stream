@@ -6,6 +6,7 @@ export declare class BannersService {
     private movieModel;
     constructor(bannerModel: Model<BannerDocument>, movieModel: Model<MovieDocument>);
     getActiveBanners(section?: string): Promise<any[]>;
+    getMidBanners(section?: string): Promise<any[]>;
     getAll(section?: string): Promise<BannerDocument[]>;
     create(data: Partial<Banner>): Promise<BannerDocument>;
     update(id: string, data: Partial<Banner>): Promise<BannerDocument>;

@@ -11,6 +11,7 @@ export declare class SearchService {
         yearMax?: number;
         ratingMin?: number;
         sort?: string;
+        platform?: string;
     }, page?: number, limit?: number): Promise<{
         results: MovieDocument[];
         total: number;
@@ -19,4 +20,7 @@ export declare class SearchService {
     getTrendingSearches(): Promise<string[]>;
     getGenres(): Promise<string[]>;
     getLanguages(): Promise<string[]>;
+    getPlatforms(): Promise<string[]>;
+    getYears(): Promise<number[]>;
+    getRanking(type?: string, contentType?: string, genre?: string, limit?: number): Promise<MovieDocument[]>;
 }

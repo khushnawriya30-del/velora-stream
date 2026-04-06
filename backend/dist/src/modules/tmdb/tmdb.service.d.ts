@@ -1,5 +1,6 @@
 import { ConfigService } from '@nestjs/config';
 import { Model } from 'mongoose';
+import { SettingsService } from '../settings/settings.service';
 import { MovieDocument } from '../../schemas/movie.schema';
 export interface TmdbDiscoverOptions {
     contentType: 'movies' | 'shows' | 'anime' | 'webseries';
@@ -11,6 +12,8 @@ export interface TmdbDiscoverOptions {
     withCast?: string;
     page?: number;
     releaseStatus?: 'released' | 'upcoming';
+    withWatchProviders?: string;
+    watchRegion?: string;
 }
 export interface TmdbPreviewItem {
     tmdbId: number;
@@ -27,8 +30,10 @@ export interface TmdbPreviewItem {
 export declare class TmdbService {
     private movieModel;
     private configService;
-    private accessToken;
-    constructor(movieModel: Model<MovieDocument>, configService: ConfigService);
+    private settingsService;
+    private envToken;
+    constructor(movieModel: Model<MovieDocument>, configService: ConfigService, settingsService: SettingsService);
+    private getToken;
     private tmdbGet;
     discover(opts: TmdbDiscoverOptions): Promise<{
         items: TmdbPreviewItem[];
@@ -46,6 +51,9 @@ export declare class TmdbService {
         query: string;
         contentType: 'movies' | 'shows' | 'anime' | 'webseries';
         page?: number;
+        watchProviders?: string;
+        watchRegion?: string;
+        withOriginalLanguage?: string;
     }): Promise<{
         items: TmdbPreviewItem[];
         nextPage: number;
@@ -56,5 +64,6 @@ export declare class TmdbService {
         skipped: number;
         items: any[];
     }>;
+    private filterByWatchProviders;
     private fetchAndCreateMovie;
 }

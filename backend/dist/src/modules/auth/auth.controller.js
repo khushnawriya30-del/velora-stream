@@ -71,6 +71,14 @@ let AuthController = class AuthController {
     async changePassword(userId, body) {
         return this.authService.changePassword(userId, body.currentPassword, body.newPassword);
     }
+    async sendEmailOtp(body) {
+        return this.authService.sendEmailLoginOtp(body.email);
+    }
+    async verifyEmailOtp(body, res) {
+        const result = await this.authService.verifyEmailLoginOtp(body.email, body.otp);
+        this.setRefreshTokenCookie(res, result.refreshToken);
+        return { accessToken: result.accessToken, refreshToken: result.refreshToken, user: result.user };
+    }
     async sendPhoneOtp(body) {
         return this.authService.sendPhoneOtp(body.phone);
     }
@@ -214,6 +222,25 @@ __decorate([
     __metadata("design:paramtypes", [String, Object]),
     __metadata("design:returntype", Promise)
 ], AuthController.prototype, "changePassword", null);
+__decorate([
+    (0, common_1.Post)('email-otp/send'),
+    (0, common_1.HttpCode)(common_1.HttpStatus.OK),
+    (0, swagger_1.ApiOperation)({ summary: 'Send login OTP to an email address' }),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], AuthController.prototype, "sendEmailOtp", null);
+__decorate([
+    (0, common_1.Post)('email-otp/verify'),
+    (0, common_1.HttpCode)(common_1.HttpStatus.OK),
+    (0, swagger_1.ApiOperation)({ summary: 'Verify email OTP and login/register' }),
+    __param(0, (0, common_1.Body)()),
+    __param(1, (0, common_1.Res)({ passthrough: true })),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, Object]),
+    __metadata("design:returntype", Promise)
+], AuthController.prototype, "verifyEmailOtp", null);
 __decorate([
     (0, common_1.Post)('phone/send-otp'),
     (0, common_1.HttpCode)(common_1.HttpStatus.OK),

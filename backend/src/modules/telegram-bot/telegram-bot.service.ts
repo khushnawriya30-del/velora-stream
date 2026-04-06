@@ -229,7 +229,14 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
     // Send QR code if available
     if (settings.paymentQrCodeUrl) {
       try {
-        await ctx.replyWithPhoto(settings.paymentQrCodeUrl);
+        if (settings.paymentQrCodeUrl.startsWith('data:')) {
+          // Base64 data URL – convert to buffer for Telegram
+          const base64Data = settings.paymentQrCodeUrl.split(',')[1];
+          const buffer = Buffer.from(base64Data, 'base64');
+          await ctx.replyWithPhoto({ source: buffer });
+        } else {
+          await ctx.replyWithPhoto(settings.paymentQrCodeUrl);
+        }
       } catch {
         this.logger.warn('Failed to send QR code image');
       }
@@ -375,7 +382,7 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
 
     const lines = payments.map((p, i) => {
       const emoji = statusEmoji[p.status] || '❓';
-      const date = new Date(p.createdAt).toLocaleDateString('en-IN');
+      const date = new Date((p as any).createdAt).toLocaleDateString('en-IN');
       return (
         `${i + 1}. ${emoji} <b>${p.plan}</b> — ₹${p.amount}\n` +
         `   UTR: <code>${p.utrId}</code>\n` +

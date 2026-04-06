@@ -32,6 +32,9 @@ export declare class AdminController {
     }> & {
         __v: number;
     }) | null>;
+    deleteUser(id: string, admin: any): Promise<{
+        message: string;
+    }>;
     getLogs(page?: number, limit?: number): Promise<{
         logs: (import("mongoose").Document<unknown, {}, AdminLogDocument, {}, {}> & AdminLog & import("mongoose").Document<Types.ObjectId, any, any, Record<string, any>, {}> & Required<{
             _id: Types.ObjectId;

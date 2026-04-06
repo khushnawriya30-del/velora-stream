@@ -3,6 +3,7 @@ export declare class BannersController {
     private readonly bannersService;
     constructor(bannersService: BannersService);
     getActive(section?: string): Promise<any[]>;
+    getMidBanners(section?: string): Promise<any[]>;
     getAll(section?: string): Promise<import("../../schemas/banner.schema").BannerDocument[]>;
     getTestUrls(): Promise<{
         id: any;

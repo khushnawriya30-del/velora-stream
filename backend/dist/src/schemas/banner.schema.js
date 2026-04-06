@@ -9,9 +9,14 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.BannerSchema = exports.Banner = exports.BannerSection = void 0;
+exports.BannerSchema = exports.Banner = exports.BannerSection = exports.BannerType = void 0;
 const mongoose_1 = require("@nestjs/mongoose");
 const mongoose_2 = require("mongoose");
+var BannerType;
+(function (BannerType) {
+    BannerType["HERO"] = "hero";
+    BannerType["MID"] = "mid";
+})(BannerType || (exports.BannerType = BannerType = {}));
 var BannerSection;
 (function (BannerSection) {
     BannerSection["HOME"] = "home";
@@ -74,6 +79,14 @@ __decorate([
     (0, mongoose_1.Prop)({ enum: BannerSection, default: BannerSection.HOME }),
     __metadata("design:type", String)
 ], Banner.prototype, "section", void 0);
+__decorate([
+    (0, mongoose_1.Prop)({ enum: BannerType, default: BannerType.HERO }),
+    __metadata("design:type", String)
+], Banner.prototype, "type", void 0);
+__decorate([
+    (0, mongoose_1.Prop)({ default: 2 }),
+    __metadata("design:type", Number)
+], Banner.prototype, "position", void 0);
 exports.Banner = Banner = __decorate([
     (0, mongoose_1.Schema)({ timestamps: true })
 ], Banner);

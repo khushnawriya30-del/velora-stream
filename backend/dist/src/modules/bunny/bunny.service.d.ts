@@ -96,6 +96,35 @@ export declare class BunnyService {
             status: string;
         }[];
     }>;
+    importSeriesFromBunnyCollection(seriesId: string, collectionId: string): Promise<{
+        seasons: {
+            seasonNumber: number;
+            imported: number;
+            episodes: {
+                episodeNumber: number;
+                title: string;
+                videoId: string;
+                status: string;
+            }[];
+        }[];
+        totalImported: number;
+    }>;
+    private parseVideoPath;
+    private extractEpisodeFromPath;
+    private cleanEpisodeTitleFromPath;
+    previewBunnyCollectionStructure(collectionId: string): Promise<{
+        collectionName: string;
+        seasons: {
+            seasonNumber: number;
+            episodes: {
+                episodeNumber: number;
+                title: string;
+                videoId: string;
+                size: number;
+                duration: number;
+            }[];
+        }[];
+    }>;
     importMovieFromBunnyVideo(videoId: string, titleOverride?: string, existingMovieId?: string): Promise<{
         movieId: string;
         title: string;

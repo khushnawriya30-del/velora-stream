@@ -32,6 +32,8 @@ let AppVersionService = class AppVersionService {
                 releaseNotes: 'Initial release',
             });
         }
+        const version = doc.versionName;
+        doc.apkUrl = `https://github.com/khushnawriya30-del/velora-stream/releases/download/v${version}/VELORA-v${version}.apk`;
         return doc;
     }
     async update(data) {

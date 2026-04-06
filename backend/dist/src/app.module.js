@@ -33,6 +33,11 @@ const app_version_module_1 = require("./modules/app-version/app-version.module")
 const tmdb_module_1 = require("./modules/tmdb/tmdb.module");
 const gdrive_folder_module_1 = require("./modules/gdrive-folder/gdrive-folder.module");
 const bunny_module_1 = require("./modules/bunny/bunny.module");
+const settings_module_1 = require("./modules/settings/settings.module");
+const r2_storage_module_1 = require("./modules/r2-storage/r2-storage.module");
+const premium_module_1 = require("./modules/premium/premium.module");
+const premium_plans_module_1 = require("./modules/premium-plans/premium-plans.module");
+const telegram_bot_module_1 = require("./modules/telegram-bot/telegram-bot.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -81,6 +86,11 @@ exports.AppModule = AppModule = __decorate([
             tmdb_module_1.TmdbModule,
             gdrive_folder_module_1.GdriveFolderModule,
             bunny_module_1.BunnyModule,
+            settings_module_1.SettingsModule,
+            r2_storage_module_1.R2StorageModule,
+            premium_module_1.PremiumModule,
+            premium_plans_module_1.PremiumPlansModule,
+            telegram_bot_module_1.TelegramBotModule,
         ],
     })
 ], AppModule);

@@ -1,16 +1,21 @@
+import { OnModuleInit } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { Model } from 'mongoose';
 import { UserDocument } from '../../schemas/user.schema';
 import { PhoneOtpDocument } from '../../schemas/phone-otp.schema';
+import { EmailOtpDocument } from '../../schemas/email-otp.schema';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
-export declare class AuthService {
+export declare class AuthService implements OnModuleInit {
     private userModel;
     private phoneOtpModel;
+    private emailOtpModel;
     private jwtService;
     private configService;
-    constructor(userModel: Model<UserDocument>, phoneOtpModel: Model<PhoneOtpDocument>, jwtService: JwtService, configService: ConfigService);
+    private readonly logger;
+    constructor(userModel: Model<UserDocument>, phoneOtpModel: Model<PhoneOtpDocument>, emailOtpModel: Model<EmailOtpDocument>, jwtService: JwtService, configService: ConfigService);
+    onModuleInit(): Promise<void>;
     register(dto: RegisterDto): Promise<{
         accessToken: string;
         refreshToken: string;
@@ -69,6 +74,15 @@ export declare class AuthService {
         user: any;
     }>;
     private sendSmsOtp;
+    sendEmailLoginOtp(email: string): Promise<{
+        message: string;
+        devOtp?: string;
+    }>;
+    verifyEmailLoginOtp(email: string, otp: string): Promise<{
+        accessToken: string;
+        refreshToken: string;
+        user: any;
+    }>;
     validateUser(userId: string): Promise<UserDocument | null>;
     private generateTokens;
     private sanitizeUser;

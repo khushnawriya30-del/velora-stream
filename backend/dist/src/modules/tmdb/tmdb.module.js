@@ -12,12 +12,16 @@ const mongoose_1 = require("@nestjs/mongoose");
 const tmdb_controller_1 = require("./tmdb.controller");
 const tmdb_service_1 = require("./tmdb.service");
 const movie_schema_1 = require("../../schemas/movie.schema");
+const settings_module_1 = require("../settings/settings.module");
 let TmdbModule = class TmdbModule {
 };
 exports.TmdbModule = TmdbModule;
 exports.TmdbModule = TmdbModule = __decorate([
     (0, common_1.Module)({
-        imports: [mongoose_1.MongooseModule.forFeature([{ name: movie_schema_1.Movie.name, schema: movie_schema_1.MovieSchema }])],
+        imports: [
+            mongoose_1.MongooseModule.forFeature([{ name: movie_schema_1.Movie.name, schema: movie_schema_1.MovieSchema }]),
+            settings_module_1.SettingsModule,
+        ],
         controllers: [tmdb_controller_1.TmdbController],
         providers: [tmdb_service_1.TmdbService],
     })

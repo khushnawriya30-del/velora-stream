@@ -20,6 +20,9 @@ export declare class TmdbController {
         query: string;
         contentType: 'movies' | 'shows' | 'anime' | 'webseries';
         page?: number;
+        watchProviders?: string;
+        watchRegion?: string;
+        withOriginalLanguage?: string;
     }): Promise<{
         items: import("./tmdb.service").TmdbPreviewItem[];
         nextPage: number;

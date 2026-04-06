@@ -112,6 +112,10 @@ __decorate([
     (0, mongoose_1.Prop)({ enum: TabSection, default: TabSection.HOME }),
     __metadata("design:type", String)
 ], HomeSection.prototype, "section", void 0);
+__decorate([
+    (0, mongoose_1.Prop)({ default: false }),
+    __metadata("design:type", Boolean)
+], HomeSection.prototype, "isPremiumOnly", void 0);
 exports.HomeSection = HomeSection = __decorate([
     (0, mongoose_1.Schema)({ timestamps: true })
 ], HomeSection);

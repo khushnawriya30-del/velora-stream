@@ -68,6 +68,25 @@ let AdminController = class AdminController {
         });
         return user;
     }
+    async deleteUser(id, admin) {
+        const user = await this.userModel.findById(id);
+        if (!user)
+            return { message: 'User not found' };
+        const userName = user.name || user.email;
+        await Promise.all([
+            this.watchProgressModel.deleteMany({ userId: new mongoose_2.Types.ObjectId(id) }),
+            this.userModel.findByIdAndDelete(id),
+        ]);
+        await this.adminLogModel.create({
+            adminId: admin.userId,
+            adminEmail: admin.email,
+            action: 'delete_user',
+            resource: 'user',
+            resourceId: id,
+            details: { userName },
+        });
+        return { message: `User ${userName} deleted successfully` };
+    }
     async getLogs(page = 1, limit = 50) {
         const skip = (Number(page) - 1) * Number(limit);
         const [logs, total] = await Promise.all([
@@ -128,6 +147,15 @@ __decorate([
     __metadata("design:paramtypes", [String, Object]),
     __metadata("design:returntype", Promise)
 ], AdminController.prototype, "unsuspendUser", null);
+__decorate([
+    (0, common_1.Delete)('users/:id'),
+    (0, swagger_1.ApiOperation)({ summary: 'Delete a user permanently (Admin)' }),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, current_user_decorator_1.CurrentUser)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:returntype", Promise)
+], AdminController.prototype, "deleteUser", null);
 __decorate([
     (0, common_1.Get)('logs'),
     (0, swagger_1.ApiOperation)({ summary: 'Get admin audit logs' }),

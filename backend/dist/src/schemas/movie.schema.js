@@ -232,6 +232,14 @@ __decorate([
     (0, mongoose_1.Prop)(),
     __metadata("design:type", String)
 ], Movie.prototype, "driveFolderUrl", void 0);
+__decorate([
+    (0, mongoose_1.Prop)({ default: false }),
+    __metadata("design:type", Boolean)
+], Movie.prototype, "isPremium", void 0);
+__decorate([
+    (0, mongoose_1.Prop)({ default: 0 }),
+    __metadata("design:type", Number)
+], Movie.prototype, "freeEpisodeCount", void 0);
 exports.Movie = Movie = __decorate([
     (0, mongoose_1.Schema)({ timestamps: true })
 ], Movie);

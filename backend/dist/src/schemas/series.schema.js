@@ -121,6 +121,10 @@ __decorate([
     (0, mongoose_1.Prop)({ default: 0 }),
     __metadata("design:type", Number)
 ], Episode.prototype, "viewCount", void 0);
+__decorate([
+    (0, mongoose_1.Prop)({ default: false }),
+    __metadata("design:type", Boolean)
+], Episode.prototype, "isPremium", void 0);
 exports.Episode = Episode = __decorate([
     (0, mongoose_1.Schema)({ timestamps: true })
 ], Episode);

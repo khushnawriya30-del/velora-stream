@@ -1,5 +1,9 @@
 import { Document, Types } from 'mongoose';
 export type BannerDocument = Banner & Document;
+export declare enum BannerType {
+    HERO = "hero",
+    MID = "mid"
+}
 export declare enum BannerSection {
     HOME = "home",
     MOVIES = "movies",
@@ -20,6 +24,8 @@ export declare class Banner {
     activeFrom: Date;
     activeTo: Date;
     section: BannerSection;
+    type: BannerType;
+    position: number;
 }
 export declare const BannerSchema: import("mongoose").Schema<Banner, import("mongoose").Model<Banner, any, any, any, Document<unknown, any, Banner, any, {}> & Banner & {
     _id: Types.ObjectId;

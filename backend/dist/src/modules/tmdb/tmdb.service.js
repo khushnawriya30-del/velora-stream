@@ -17,6 +17,7 @@ const common_1 = require("@nestjs/common");
 const mongoose_1 = require("@nestjs/mongoose");
 const config_1 = require("@nestjs/config");
 const mongoose_2 = require("mongoose");
+const settings_service_1 = require("../settings/settings.service");
 const movie_schema_1 = require("../../schemas/movie.schema");
 const TMDB_BASE = 'https://api.themoviedb.org/3';
 const TMDB_IMG = 'https://image.tmdb.org/t/p';
@@ -44,18 +45,25 @@ const GENRE_MAP = {
     10765: 'Sci-Fi & Fantasy', 10766: 'Soap', 10767: 'Talk', 10768: 'War & Politics',
 };
 let TmdbService = class TmdbService {
-    constructor(movieModel, configService) {
+    constructor(movieModel, configService, settingsService) {
         this.movieModel = movieModel;
         this.configService = configService;
-        this.accessToken = this.configService.get('TMDB_ACCESS_TOKEN', '');
+        this.settingsService = settingsService;
+        this.envToken = this.configService.get('TMDB_ACCESS_TOKEN', '');
+    }
+    async getToken() {
+        if (this.envToken)
+            return this.envToken;
+        return this.settingsService.getTmdbToken();
     }
     async tmdbGet(path, params = {}) {
-        if (!this.accessToken)
+        const token = await this.getToken();
+        if (!token)
             throw new common_1.BadRequestException('TMDB access token not configured');
         const url = new URL(`${TMDB_BASE}${path}`);
         Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
         const res = await fetch(url.toString(), {
-            headers: { Authorization: `Bearer ${this.accessToken}`, Accept: 'application/json' },
+            headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
         });
         if (!res.ok) {
             const body = await res.text();
@@ -64,7 +72,7 @@ let TmdbService = class TmdbService {
         return res.json();
     }
     async discover(opts) {
-        const { contentType, region, count, year, genres, withLanguage, withCast, releaseStatus } = opts;
+        const { contentType, region, count, year, genres, withLanguage, withCast, releaseStatus, withWatchProviders, watchRegion } = opts;
         const regionCfg = REGION_MAP[region.toLowerCase()] ?? { language: 'en-US' };
         const isAnime = contentType === 'anime';
         const mediaType = (contentType === 'movies') ? 'movie' : 'tv';
@@ -124,8 +132,9 @@ let TmdbService = class TmdbService {
                     params['first_air_date.lte'] = today;
                 }
             }
-            if (withLanguage) {
-                params.with_text_query = '';
+            if (withWatchProviders) {
+                params.with_watch_providers = withWatchProviders;
+                params.watch_region = watchRegion ?? 'IN';
             }
             const data = await this.tmdbGet(`/discover/${mediaType}`, params);
             allResults.push(...(data.results ?? []));
@@ -169,7 +178,7 @@ let TmdbService = class TmdbService {
         return { results };
     }
     async search(opts) {
-        const { query, contentType } = opts;
+        const { query, contentType, watchProviders, watchRegion, withOriginalLanguage } = opts;
         const page = opts.page || 1;
         if (!query?.trim())
             throw new common_1.BadRequestException('Search query is required');
@@ -184,6 +193,12 @@ let TmdbService = class TmdbService {
         let results = data.results ?? [];
         if (contentType === 'anime') {
             results = results.filter((r) => (r.genre_ids ?? []).includes(16));
+        }
+        if (withOriginalLanguage) {
+            results = results.filter((r) => r.original_language === withOriginalLanguage);
+        }
+        if (watchProviders && watchRegion) {
+            results = await this.filterByWatchProviders(results, mediaType, watchProviders, watchRegion);
         }
         const tmdbIds = results.map((r) => String(r.id));
         const existing = await this.movieModel.find({ tmdbId: { $in: tmdbIds } }).select('tmdbId');
@@ -228,6 +243,29 @@ let TmdbService = class TmdbService {
             }
         }
         return { imported, skipped, items };
+    }
+    async filterByWatchProviders(results, mediaType, providerId, region) {
+        const checks = await Promise.all(results.map(async (item) => {
+            try {
+                const data = await this.tmdbGet(`/${mediaType}/${item.id}/watch/providers`);
+                const regionData = data.results?.[region];
+                if (!regionData)
+                    return { item, hasProvider: false };
+                const allProviders = [
+                    ...(regionData.flatrate ?? []),
+                    ...(regionData.buy ?? []),
+                    ...(regionData.rent ?? []),
+                    ...(regionData.ads ?? []),
+                    ...(regionData.free ?? []),
+                ];
+                const hasProvider = allProviders.some((p) => String(p.provider_id) === providerId);
+                return { item, hasProvider };
+            }
+            catch {
+                return { item, hasProvider: false };
+            }
+        }));
+        return checks.filter((c) => c.hasProvider).map((c) => c.item);
     }
     async fetchAndCreateMovie(tmdbId, mediaType, contentType, asUpcoming = false) {
         const detail = await this.tmdbGet(`/${mediaType}/${tmdbId}`, {
@@ -330,6 +368,7 @@ exports.TmdbService = TmdbService = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, mongoose_1.InjectModel)(movie_schema_1.Movie.name)),
     __metadata("design:paramtypes", [mongoose_2.Model,
-        config_1.ConfigService])
+        config_1.ConfigService,
+        settings_service_1.SettingsService])
 ], TmdbService);
 //# sourceMappingURL=tmdb.service.js.map

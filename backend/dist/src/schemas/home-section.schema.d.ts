@@ -38,6 +38,7 @@ export declare class HomeSection {
     tags: string[];
     contentTypes: string[];
     section: TabSection;
+    isPremiumOnly: boolean;
 }
 export declare const HomeSectionSchema: import("mongoose").Schema<HomeSection, import("mongoose").Model<HomeSection, any, any, any, Document<unknown, any, HomeSection, any, {}> & HomeSection & {
     _id: Types.ObjectId;

@@ -20,8 +20,8 @@ let SearchController = class SearchController {
     constructor(searchService) {
         this.searchService = searchService;
     }
-    async search(q, contentType, genre, language, yearMin, yearMax, ratingMin, sort, page, limit) {
-        return this.searchService.search(q ?? '', { contentType, genre, language, yearMin, yearMax, ratingMin, sort }, page, limit);
+    async search(q, contentType, genre, language, yearMin, yearMax, ratingMin, sort, platform, page, limit) {
+        return this.searchService.search(q ?? '', { contentType, genre, language, yearMin, yearMax, ratingMin, sort, platform }, page, limit);
     }
     async autocomplete(q) {
         return this.searchService.autocomplete(q);
@@ -34,6 +34,15 @@ let SearchController = class SearchController {
     }
     async languages() {
         return this.searchService.getLanguages();
+    }
+    async platforms() {
+        return this.searchService.getPlatforms();
+    }
+    async years() {
+        return this.searchService.getYears();
+    }
+    async ranking(type, contentType, genre, limit) {
+        return this.searchService.getRanking(type, contentType, genre, limit);
     }
 };
 exports.SearchController = SearchController;
@@ -58,10 +67,11 @@ __decorate([
     __param(5, (0, common_1.Query)('yearMax')),
     __param(6, (0, common_1.Query)('ratingMin')),
     __param(7, (0, common_1.Query)('sort')),
-    __param(8, (0, common_1.Query)('page')),
-    __param(9, (0, common_1.Query)('limit')),
+    __param(8, (0, common_1.Query)('platform')),
+    __param(9, (0, common_1.Query)('page')),
+    __param(10, (0, common_1.Query)('limit')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, String, String, String, Number, Number, Number, String, Number, Number]),
+    __metadata("design:paramtypes", [String, String, String, String, Number, Number, Number, String, String, Number, Number]),
     __metadata("design:returntype", Promise)
 ], SearchController.prototype, "search", null);
 __decorate([
@@ -93,6 +103,35 @@ __decorate([
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", Promise)
 ], SearchController.prototype, "languages", null);
+__decorate([
+    (0, common_1.Get)('platforms'),
+    (0, swagger_1.ApiOperation)({ summary: 'Get all available platforms' }),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", Promise)
+], SearchController.prototype, "platforms", null);
+__decorate([
+    (0, common_1.Get)('years'),
+    (0, swagger_1.ApiOperation)({ summary: 'Get all available release years' }),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", Promise)
+], SearchController.prototype, "years", null);
+__decorate([
+    (0, common_1.Get)('ranking'),
+    (0, swagger_1.ApiOperation)({ summary: 'Get ranked content by category' }),
+    (0, swagger_1.ApiQuery)({ name: 'type', required: false, description: 'download or rating' }),
+    (0, swagger_1.ApiQuery)({ name: 'contentType', required: false }),
+    (0, swagger_1.ApiQuery)({ name: 'genre', required: false }),
+    (0, swagger_1.ApiQuery)({ name: 'limit', required: false, type: Number }),
+    __param(0, (0, common_1.Query)('type')),
+    __param(1, (0, common_1.Query)('contentType')),
+    __param(2, (0, common_1.Query)('genre')),
+    __param(3, (0, common_1.Query)('limit')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String, String, Number]),
+    __metadata("design:returntype", Promise)
+], SearchController.prototype, "ranking", null);
 exports.SearchController = SearchController = __decorate([
     (0, swagger_1.ApiTags)('Search'),
     (0, common_1.Controller)('search'),

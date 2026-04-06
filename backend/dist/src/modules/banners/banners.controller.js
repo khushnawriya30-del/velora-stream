@@ -26,6 +26,9 @@ let BannersController = class BannersController {
     async getActive(section) {
         return this.bannersService.getActiveBanners(section);
     }
+    async getMidBanners(section) {
+        return this.bannersService.getMidBanners(section);
+    }
     async getAll(section) {
         return this.bannersService.getAll(section);
     }
@@ -63,6 +66,14 @@ __decorate([
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", Promise)
 ], BannersController.prototype, "getActive", null);
+__decorate([
+    (0, common_1.Get)('mid'),
+    (0, swagger_1.ApiOperation)({ summary: 'Get active mid-banners (filtered by section)' }),
+    __param(0, (0, common_1.Query)('section')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], BannersController.prototype, "getMidBanners", null);
 __decorate([
     (0, common_1.Get)('all'),
     (0, swagger_1.ApiBearerAuth)(),

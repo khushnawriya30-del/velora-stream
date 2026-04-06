@@ -19,6 +19,7 @@ const mongoose_1 = require("@nestjs/mongoose");
 const mongoose_2 = require("mongoose");
 const home_section_schema_1 = require("../../schemas/home-section.schema");
 const movie_schema_1 = require("../../schemas/movie.schema");
+const banner_schema_1 = require("../../schemas/banner.schema");
 const RECENTLY_ADDED_DEFAULTS = [
     {
         slug: 'system-recently-added-home',
@@ -98,9 +99,10 @@ const TRENDING_DEFAULTS = [
     },
 ];
 let HomeSectionsService = HomeSectionsService_1 = class HomeSectionsService {
-    constructor(sectionModel, movieModel) {
+    constructor(sectionModel, movieModel, bannerModel) {
         this.sectionModel = sectionModel;
         this.movieModel = movieModel;
+        this.bannerModel = bannerModel;
         this.logger = new common_1.Logger(HomeSectionsService_1.name);
     }
     async onModuleInit() {
@@ -144,7 +146,7 @@ let HomeSectionsService = HomeSectionsService_1 = class HomeSectionsService {
                 movies = await this.movieModel
                     .find(upFilter)
                     .sort({ releaseDate: 1, createdAt: -1 })
-                    .select('title posterUrl bannerUrl contentType contentRating genres releaseYear duration rating viewCount starRating videoQuality languages releaseDate');
+                    .select('title posterUrl bannerUrl contentType contentRating genres releaseYear duration rating viewCount starRating videoQuality languages releaseDate isPremium');
                 feed.push({
                     id: section._id,
                     title: section.title,
@@ -155,6 +157,7 @@ let HomeSectionsService = HomeSectionsService_1 = class HomeSectionsService {
                     viewMoreText: section.viewMoreText,
                     showTrendingNumbers: false,
                     bannerImageUrl: null,
+                    isPremiumOnly: !!section.isPremiumOnly,
                     items: movies,
                 });
                 continue;
@@ -180,12 +183,12 @@ let HomeSectionsService = HomeSectionsService_1 = class HomeSectionsService {
                     .find(filter)
                     .sort(sort)
                     .limit(section.maxItems)
-                    .select('title posterUrl bannerUrl contentType contentRating genres releaseYear duration rating viewCount starRating videoQuality languages');
+                    .select('title posterUrl bannerUrl contentType contentRating genres releaseYear duration rating viewCount starRating videoQuality languages isPremium');
             }
             else {
                 movies = await this.movieModel
                     .find({ _id: { $in: section.contentIds }, status: movie_schema_1.ContentStatus.PUBLISHED })
-                    .select('title posterUrl bannerUrl contentType contentRating genres releaseYear duration rating viewCount starRating videoQuality languages');
+                    .select('title posterUrl bannerUrl contentType contentRating genres releaseYear duration rating viewCount starRating videoQuality languages isPremium');
             }
             feed.push({
                 id: section._id,
@@ -197,10 +200,56 @@ let HomeSectionsService = HomeSectionsService_1 = class HomeSectionsService {
                 viewMoreText: section.viewMoreText,
                 showTrendingNumbers: section.showTrendingNumbers,
                 bannerImageUrl: section.bannerImageUrl,
+                isPremiumOnly: !!section.isPremiumOnly,
                 items: movies,
             });
         }
-        return feed;
+        const sectionTab = filter.section || home_section_schema_1.TabSection.HOME;
+        const midBanners = await this.getMidBannersForFeed(sectionTab);
+        return this.interleaveMidBanners(feed, midBanners);
+    }
+    async getMidBannersForFeed(sectionTab) {
+        const now = new Date();
+        const filter = {
+            isActive: true,
+            type: banner_schema_1.BannerType.MID,
+            $or: [
+                { activeFrom: { $exists: false }, activeTo: { $exists: false } },
+                { activeFrom: { $lte: now }, activeTo: { $gte: now } },
+                { activeFrom: { $lte: now }, activeTo: { $exists: false } },
+                { activeFrom: { $exists: false }, activeTo: { $gte: now } },
+            ],
+        };
+        filter.section = sectionTab || banner_schema_1.BannerSection.HOME;
+        return this.bannerModel
+            .find(filter)
+            .sort({ displayOrder: 1 })
+            .populate('contentId', 'title contentType posterUrl bannerUrl');
+    }
+    interleaveMidBanners(feed, midBanners) {
+        if (!midBanners.length)
+            return feed;
+        const result = [...feed];
+        for (const banner of midBanners) {
+            const pos = banner.position || 2;
+            const insertAt = Math.min(pos, result.length);
+            result.splice(insertAt, 0, {
+                id: banner._id,
+                title: '',
+                type: 'mid_banner',
+                slug: null,
+                cardSize: 'small',
+                showViewMore: false,
+                viewMoreText: '',
+                showTrendingNumbers: false,
+                bannerImageUrl: banner.imageUrl,
+                contentId: typeof banner.contentId === 'object' && banner.contentId?._id
+                    ? String(banner.contentId._id)
+                    : banner.contentId ? String(banner.contentId) : null,
+                items: [],
+            });
+        }
+        return result;
     }
     async getAll(section) {
         const filter = {};
@@ -345,7 +394,9 @@ exports.HomeSectionsService = HomeSectionsService = HomeSectionsService_1 = __de
     (0, common_1.Injectable)(),
     __param(0, (0, mongoose_1.InjectModel)(home_section_schema_1.HomeSection.name)),
     __param(1, (0, mongoose_1.InjectModel)(movie_schema_1.Movie.name)),
+    __param(2, (0, mongoose_1.InjectModel)(banner_schema_1.Banner.name)),
     __metadata("design:paramtypes", [mongoose_2.Model,
+        mongoose_2.Model,
         mongoose_2.Model])
 ], HomeSectionsService);
 //# sourceMappingURL=home-sections.service.js.map

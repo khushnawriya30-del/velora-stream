@@ -18,6 +18,7 @@ const jwt_strategy_1 = require("./strategies/jwt.strategy");
 const google_strategy_1 = require("./strategies/google.strategy");
 const user_schema_1 = require("../../schemas/user.schema");
 const phone_otp_schema_1 = require("../../schemas/phone-otp.schema");
+const email_otp_schema_1 = require("../../schemas/email-otp.schema");
 const optionalProviders = [];
 if (process.env.GOOGLE_CLIENT_ID) {
     optionalProviders.push(google_strategy_1.GoogleStrategy);
@@ -42,6 +43,7 @@ exports.AuthModule = AuthModule = __decorate([
             mongoose_1.MongooseModule.forFeature([
                 { name: user_schema_1.User.name, schema: user_schema_1.UserSchema },
                 { name: phone_otp_schema_1.PhoneOtp.name, schema: phone_otp_schema_1.PhoneOtpSchema },
+                { name: email_otp_schema_1.EmailOtp.name, schema: email_otp_schema_1.EmailOtpSchema },
             ]),
         ],
         controllers: [auth_controller_1.AuthController],

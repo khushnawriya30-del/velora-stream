@@ -60,6 +60,20 @@ export declare class AuthController {
     }): Promise<{
         message: string;
     }>;
+    sendEmailOtp(body: {
+        email: string;
+    }): Promise<{
+        message: string;
+        devOtp?: string;
+    }>;
+    verifyEmailOtp(body: {
+        email: string;
+        otp: string;
+    }, res: Response): Promise<{
+        accessToken: string;
+        refreshToken: string;
+        user: any;
+    }>;
     sendPhoneOtp(body: {
         phone: string;
     }): Promise<{

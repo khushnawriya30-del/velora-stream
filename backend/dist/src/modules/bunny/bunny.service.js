@@ -33,7 +33,7 @@ let BunnyService = BunnyService_1 = class BunnyService {
         this.seasonModel = seasonModel;
         this.episodeModel = episodeModel;
         this.logger = new common_1.Logger(BunnyService_1.name);
-        this.workerUrl = 'https://drive-index.vishunawriya11122.workers.dev';
+        this.workerUrl = 'https://drive-index.velora-stream.workers.dev';
         this.jobs = new Map();
         this.MAX_JOBS_HISTORY = 20;
         this.driveAccessToken = null;
@@ -349,6 +349,150 @@ let BunnyService = BunnyService_1 = class BunnyService {
         await this.seasonModel.findByIdAndUpdate(seasonId, { episodeCount: epCount });
         this.logger.log(`[Bunny Import] Season ${season.seasonNumber}: ${imported} episodes imported, ${skipped} skipped`);
         return { imported, skipped, episodes: results };
+    }
+    async importSeriesFromBunnyCollection(seriesId, collectionId) {
+        const series = await this.movieModel.findById(seriesId);
+        if (!series)
+            throw new Error('Series not found');
+        const allVideos = [];
+        let page = 1;
+        while (true) {
+            const result = await this.listVideosInCollection(collectionId, page, 100);
+            allVideos.push(...result.items);
+            if (allVideos.length >= result.totalItems)
+                break;
+            page++;
+        }
+        if (allVideos.length === 0)
+            throw new Error('No videos found in this Bunny collection');
+        const seasonMap = new Map();
+        for (const video of allVideos) {
+            const { seasonNum, episodeTitle } = this.parseVideoPath(video.title);
+            if (!seasonMap.has(seasonNum))
+                seasonMap.set(seasonNum, []);
+            seasonMap.get(seasonNum).push(video);
+        }
+        const sortedSeasons = [...seasonMap.entries()].sort((a, b) => a[0] - b[0]);
+        const results = [];
+        let totalImported = 0;
+        for (const [seasonNum, videos] of sortedSeasons) {
+            videos.sort((a, b) => {
+                const aNum = this.extractEpisodeFromPath(a.title);
+                const bNum = this.extractEpisodeFromPath(b.title);
+                return aNum - bNum;
+            });
+            let season = await this.seasonModel.findOne({
+                seriesId: new mongoose_2.Types.ObjectId(seriesId),
+                seasonNumber: seasonNum,
+            });
+            if (!season) {
+                season = await this.seasonModel.create({
+                    seriesId: new mongoose_2.Types.ObjectId(seriesId),
+                    seasonNumber: seasonNum,
+                    title: `Season ${seasonNum}`,
+                    episodeCount: 0,
+                });
+            }
+            const existingEpisodes = await this.episodeModel.find({ seasonId: season._id }).exec();
+            const existingByNumber = new Map(existingEpisodes.map((e) => [e.episodeNumber, e]));
+            let imported = 0;
+            const episodeResults = [];
+            for (let i = 0; i < videos.length; i++) {
+                const video = videos[i];
+                const epNum = this.extractEpisodeFromPath(video.title) || (i + 1);
+                const epTitle = this.cleanEpisodeTitleFromPath(video.title, epNum);
+                const thumb = this.thumbnailUrl(video.guid);
+                const sources = this.buildStreamingSources(video.guid, video.availableResolutions || '');
+                if (existingByNumber.has(epNum)) {
+                    await this.episodeModel.findOneAndUpdate({ seasonId: season._id, episodeNumber: epNum }, { title: epTitle, streamingSources: sources, thumbnailUrl: thumb });
+                    episodeResults.push({ episodeNumber: epNum, title: epTitle, videoId: video.guid, status: 'updated' });
+                }
+                else {
+                    await this.episodeModel.create({
+                        seasonId: season._id,
+                        episodeNumber: epNum,
+                        title: epTitle,
+                        streamingSources: sources,
+                        thumbnailUrl: thumb,
+                    });
+                    episodeResults.push({ episodeNumber: epNum, title: epTitle, videoId: video.guid, status: 'created' });
+                }
+                imported++;
+            }
+            const epCount = await this.episodeModel.countDocuments({ seasonId: season._id });
+            await this.seasonModel.findByIdAndUpdate(season._id, { episodeCount: epCount });
+            results.push({ seasonNumber: seasonNum, imported, episodes: episodeResults });
+            totalImported += imported;
+        }
+        this.logger.log(`[Bunny Collection Import] ${series.title}: ${sortedSeasons.length} seasons, ${totalImported} total episodes`);
+        return { seasons: results, totalImported };
+    }
+    parseVideoPath(title) {
+        const folderMatch = title.match(/^(?:season|s)[\s._-]*(\d+)\s*[\/\\]\s*(.+)$/i);
+        if (folderMatch) {
+            return { seasonNum: parseInt(folderMatch[1], 10), episodeTitle: folderMatch[2] };
+        }
+        const inlineMatch = title.match(/(?:s|season)[\s._-]*(\d+)[\s._-]*(?:e|ep|episode)[\s._-]*(\d+)/i);
+        if (inlineMatch) {
+            return { seasonNum: parseInt(inlineMatch[1], 10), episodeTitle: title };
+        }
+        return { seasonNum: 1, episodeTitle: title };
+    }
+    extractEpisodeFromPath(title) {
+        const parts = title.split(/[\/\\]/);
+        const filename = parts[parts.length - 1];
+        const seMatch = filename.match(/(?:s|season)[\s._-]*\d+[\s._-]*(?:e|ep|episode)[\s._-]*(\d+)/i);
+        if (seMatch)
+            return parseInt(seMatch[1], 10);
+        const epMatch = filename.match(/(?:ep|episode|e)[\s._-]*(\d+)/i);
+        if (epMatch)
+            return parseInt(epMatch[1], 10);
+        const numMatch = filename.match(/(\d+)/);
+        if (numMatch)
+            return parseInt(numMatch[1], 10);
+        return 0;
+    }
+    cleanEpisodeTitleFromPath(title, epNum) {
+        const parts = title.split(/[\/\\]/);
+        const filename = parts[parts.length - 1];
+        let name = filename.replace(/\.[^.]+$/, '');
+        name = name.replace(/^(?:s|season)[\s._-]*\d+[\s._-]*/i, '');
+        name = name.replace(/^(?:ep|episode|e)[\s._-]*\d+[\s._-]*/i, '');
+        name = name.replace(/[._-]/g, ' ').trim();
+        return name || `Episode ${epNum}`;
+    }
+    async previewBunnyCollectionStructure(collectionId) {
+        const allVideos = [];
+        let page = 1;
+        while (true) {
+            const result = await this.listVideosInCollection(collectionId, page, 100);
+            allVideos.push(...result.items);
+            if (allVideos.length >= result.totalItems)
+                break;
+            page++;
+        }
+        const seasonMap = new Map();
+        for (const video of allVideos) {
+            const { seasonNum } = this.parseVideoPath(video.title);
+            const epNum = this.extractEpisodeFromPath(video.title);
+            const epTitle = this.cleanEpisodeTitleFromPath(video.title, epNum || 1);
+            if (!seasonMap.has(seasonNum))
+                seasonMap.set(seasonNum, []);
+            seasonMap.get(seasonNum).push({
+                episodeNumber: epNum || (seasonMap.get(seasonNum).length + 1),
+                title: epTitle,
+                videoId: video.guid,
+                size: video.storageSize || 0,
+                duration: video.length || 0,
+            });
+        }
+        const seasons = [...seasonMap.entries()]
+            .sort((a, b) => a[0] - b[0])
+            .map(([seasonNumber, episodes]) => ({
+            seasonNumber,
+            episodes: episodes.sort((a, b) => a.episodeNumber - b.episodeNumber),
+        }));
+        return { collectionName: '', seasons };
     }
     async importMovieFromBunnyVideo(videoId, titleOverride, existingMovieId) {
         const video = await this.getVideoStatus(videoId);

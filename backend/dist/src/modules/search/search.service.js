@@ -42,6 +42,8 @@ let SearchService = class SearchService {
         }
         if (filters?.ratingMin)
             filter.rating = { $gte: filters.ratingMin };
+        if (filters?.platform)
+            filter.platformOrigin = { $regex: filters.platform, $options: 'i' };
         let sortObj = {};
         if (query && query.trim() && !filters?.sort) {
             sortObj = { score: { $meta: 'textScore' }, popularityScore: -1 };
@@ -101,6 +103,38 @@ let SearchService = class SearchService {
     }
     async getLanguages() {
         return this.movieModel.distinct('languages', { status: movie_schema_1.ContentStatus.PUBLISHED });
+    }
+    async getPlatforms() {
+        return this.movieModel.distinct('platformOrigin', {
+            status: movie_schema_1.ContentStatus.PUBLISHED,
+            platformOrigin: { $nin: [null, ''] },
+        });
+    }
+    async getYears() {
+        const years = await this.movieModel.distinct('releaseYear', {
+            status: movie_schema_1.ContentStatus.PUBLISHED,
+            releaseYear: { $ne: null },
+        });
+        return years.sort((a, b) => b - a);
+    }
+    async getRanking(type = 'download', contentType, genre, limit = 20) {
+        const filter = { status: movie_schema_1.ContentStatus.PUBLISHED };
+        if (contentType)
+            filter.contentType = contentType;
+        if (genre)
+            filter.genres = genre;
+        let sortObj;
+        if (type === 'rating') {
+            sortObj = { starRating: -1, rating: -1, voteCount: -1 };
+        }
+        else {
+            sortObj = { popularityScore: -1, viewCount: -1 };
+        }
+        return this.movieModel
+            .find(filter)
+            .sort(sortObj)
+            .limit(limit)
+            .select('title posterUrl bannerUrl contentType contentRating genres releaseYear duration rating starRating languages viewCount popularityScore videoQuality country');
     }
 };
 exports.SearchService = SearchService;
