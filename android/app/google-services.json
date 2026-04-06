@@ -12,7 +12,20 @@
           "package_name": "com.cinevault.app"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "815681864630-compute@developer.gserviceaccount.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.cinevault.app",
+            "certificate_hash": "f54ce3551fa538255b244fbabfe680603f40815"
+          }
+        },
+        {
+          "client_id": "134822516206-19l2pi0afo6450c3gksg3be1404saksi.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyCYm3w06LQbfFGqCiGYSBYfbExNokEIJaw"
@@ -20,7 +33,12 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "134822516206-19l2pi0afo6450c3gksg3be1404saksi.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }

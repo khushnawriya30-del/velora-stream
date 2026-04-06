@@ -38,6 +38,7 @@ import com.cinevault.app.ui.theme.CineVaultTheme
 import com.cinevault.app.ui.viewmodel.AuthViewModel
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
+import com.google.android.gms.auth.api.signin.GoogleSignInStatusCodes
 import com.google.android.gms.common.api.ApiException
 
 @Composable
@@ -69,23 +70,28 @@ fun LoginScreen(
     val googleLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult(),
     ) { result ->
-        if (result.resultCode == Activity.RESULT_OK) {
-            try {
-                val account = GoogleSignIn.getSignedInAccountFromIntent(result.data)
-                    .getResult(ApiException::class.java)
-                val idToken = account.idToken
-                if (idToken != null) {
-                    viewModel.googleLogin(idToken)
-                } else {
-                    viewModel.onGoogleSignInError(
-                        "Could not get Google token. Make sure your Web Client ID in strings.xml is correct."
-                    )
-                }
-            } catch (e: ApiException) {
-                viewModel.onGoogleSignInError("Google Sign-In failed (code ${e.statusCode}). Check your Web Client ID configuration.")
+        try {
+            val account = GoogleSignIn.getSignedInAccountFromIntent(result.data)
+                .getResult(ApiException::class.java)
+            val idToken = account.idToken
+            if (idToken != null) {
+                viewModel.googleLogin(idToken)
+            } else {
+                viewModel.onGoogleSignInError(
+                    "Could not get Google token. Please try again."
+                )
+            }
+        } catch (e: ApiException) {
+            when (e.statusCode) {
+                GoogleSignInStatusCodes.SIGN_IN_CANCELLED -> { /* user cancelled */ }
+                GoogleSignInStatusCodes.DEVELOPER_ERROR ->
+                    viewModel.onGoogleSignInError("Google Sign-In configuration error. Please contact support.")
+                GoogleSignInStatusCodes.NETWORK_ERROR ->
+                    viewModel.onGoogleSignInError("Network error. Please check your connection.")
+                else ->
+                    viewModel.onGoogleSignInError("Google Sign-In failed (code ${e.statusCode}). Please try again.")
             }
         }
-        // RESULT_CANCELED = user pressed back — no error needed
     }
 
     fun launchGoogleSignIn() {

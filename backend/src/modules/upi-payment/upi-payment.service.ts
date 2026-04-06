@@ -103,6 +103,7 @@ export class UpiPaymentService {
       `&pn=${encodeURIComponent('Velora')}` +
       `&am=${plan.price}` +
       `&cu=INR` +
+      `&tr=${encodeURIComponent(orderId)}` +
       `&tn=${encodeURIComponent(`Velora Premium ${plan.name}`)}`;
 
     return {
@@ -217,8 +218,12 @@ export class UpiPaymentService {
     }
 
     // Check UPI payment status from intent response
+    // Different UPI apps return different status strings:
+    //   Google Pay: "SUCCESS", PhonePe: "Success", Paytm: "SUCCESS"/"S"
+    //   BHIM: "SUCCESS", some apps: "success", "COMPLETED", "completed"
     const normalizedStatus = (status || '').toUpperCase().trim();
-    if (normalizedStatus !== 'SUCCESS') {
+    const successStatuses = ['SUCCESS', 'S', 'COMPLETED'];
+    if (!successStatuses.includes(normalizedStatus)) {
       this.logger.warn(
         `Payment not successful for order ${orderId}: status=${status}, responseCode=${responseCode}`,
       );

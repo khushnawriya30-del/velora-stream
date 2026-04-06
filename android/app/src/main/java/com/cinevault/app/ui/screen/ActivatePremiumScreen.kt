@@ -1,5 +1,6 @@
 package com.cinevault.app.ui.screen
 
+import android.app.Activity
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
@@ -96,15 +97,32 @@ fun ActivatePremiumScreen(
         val data = result.data
         val orderId = pendingOrderId ?: return@rememberLauncherForActivityResult
 
-        // Parse UPI response from intent data
+        // Parse UPI response from intent data — try multiple sources
         val response = data?.getStringExtra("response")
-            ?: data?.data?.getQueryParameter("response") ?: ""
+            ?: data?.getStringExtra("Response")
+            ?: data?.data?.getQueryParameter("response")
+            ?: data?.data?.toString()
+            ?: ""
         val responseMap = parseUpiResponse(response)
 
-        val status = responseMap["Status"] ?: responseMap["status"] ?: "FAILURE"
-        val txnId = responseMap["txnId"] ?: responseMap["TxnId"] ?: ""
-        val responseCode = responseMap["responseCode"] ?: responseMap["ResponseCode"] ?: ""
-        val approvalRefNo = responseMap["ApprovalRefNo"] ?: responseMap["approvalRefNo"] ?: ""
+        // UPI apps return status in different keys/cases
+        val status = responseMap["Status"]
+            ?: responseMap["status"]
+            ?: responseMap["STATUS"]
+            ?: if (result.resultCode == Activity.RESULT_OK) "SUCCESS" else "FAILURE"
+        val txnId = responseMap["txnId"]
+            ?: responseMap["TxnId"]
+            ?: responseMap["txnid"]
+            ?: responseMap["TXNID"]
+            ?: ""
+        val responseCode = responseMap["responseCode"]
+            ?: responseMap["ResponseCode"]
+            ?: responseMap["responsecode"]
+            ?: ""
+        val approvalRefNo = responseMap["ApprovalRefNo"]
+            ?: responseMap["approvalRefNo"]
+            ?: responseMap["RRN"]
+            ?: ""
 
         // Send to backend for verification + auto-activation
         showPaymentProcessing = true
@@ -121,7 +139,9 @@ fun ActivatePremiumScreen(
         pendingOrderId = order.orderId
         try {
             val intent = Intent(Intent.ACTION_VIEW, Uri.parse(order.upiLink))
-            upiLauncher.launch(intent)
+            // Use chooser to let user pick their preferred UPI app
+            val chooser = Intent.createChooser(intent, "Pay with")
+            upiLauncher.launch(chooser)
         } catch (e: Exception) {
             Toast.makeText(
                 context,
@@ -611,13 +631,19 @@ fun ActivatePremiumScreen(
     }
 }
 
-// Parse UPI Response String
+// Parse UPI Response String — handles various formats from different UPI apps
 private fun parseUpiResponse(response: String): Map<String, String> {
     if (response.isBlank()) return emptyMap()
-    return response.split("&").associate { pair ->
+    // Some apps return URL-encoded format, some use & separator
+    val cleaned = response.trim()
+    return cleaned.split("&").mapNotNull { pair ->
         val parts = pair.split("=", limit = 2)
-        if (parts.size == 2) parts[0] to parts[1] else parts[0] to ""
-    }
+        if (parts.size == 2 && parts[0].isNotBlank()) {
+            val key = java.net.URLDecoder.decode(parts[0].trim(), "UTF-8")
+            val value = java.net.URLDecoder.decode(parts[1].trim(), "UTF-8")
+            key to value
+        } else null
+    }.toMap()
 }
 
 // Plan Card
