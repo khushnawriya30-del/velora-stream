@@ -1,148 +1,115 @@
-import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
+import { Crown, Shield, Zap, Users } from 'lucide-react';
 import { APP_CONFIG } from '../config';
-import { useGitHubRelease } from '../hooks/useGitHubRelease';
+
+const stats = [
+  { icon: Users, value: '10K+', label: 'Active Members' },
+  { icon: Crown, value: '4.8★', label: 'User Rating' },
+  { icon: Shield, value: '100%', label: 'Secure Payments' },
+  { icon: Zap, value: '99.9%', label: 'Uptime' },
+];
 
 export default function Hero() {
-  const { latest } = useGitHubRelease();
-  const appVersion = latest?.version || APP_CONFIG.fallback.version;
-  const [currentScreen, setCurrentScreen] = useState(0);
-  const screenshots = APP_CONFIG.screenshots;
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentScreen((prev) => (prev + 1) % screenshots.length);
-    }, 4000);
-    return () => clearInterval(timer);
-  }, [screenshots.length]);
-
   return (
     <section
       id="hero"
       className="relative min-h-screen flex items-center justify-center overflow-hidden pt-16"
     >
-      {/* Background glow */}
+      {/* Background effects */}
       <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-gold/5 rounded-full blur-[120px] animate-glow-pulse" />
-        <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-[#050505] to-transparent" />
+        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[800px] h-[800px] bg-gold/[0.04] rounded-full blur-[150px] animate-glow-pulse" />
+        <div className="absolute top-1/3 left-1/4 w-[300px] h-[300px] bg-purple-500/[0.03] rounded-full blur-[100px]" />
+        <div className="absolute top-1/2 right-1/4 w-[250px] h-[250px] bg-blue-500/[0.03] rounded-full blur-[100px]" />
+        <div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-[#050505] to-transparent" />
+        {/* Grid pattern */}
+        <div className="absolute inset-0 opacity-[0.03]" style={{
+          backgroundImage: 'linear-gradient(rgba(212,175,55,0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(212,175,55,0.3) 1px, transparent 1px)',
+          backgroundSize: '60px 60px',
+        }} />
       </div>
 
-      <div className="relative z-10 max-w-7xl mx-auto px-6 py-20 flex flex-col lg:flex-row items-center gap-16 lg:gap-20">
-        {/* Left: Text */}
+      <div className="relative z-10 max-w-6xl mx-auto px-6 py-24 text-center">
+        {/* Badge */}
         <motion.div
-          className="flex-1 text-center lg:text-left"
-          initial={{ opacity: 0, x: -40 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.8, ease: 'easeOut' }}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1, duration: 0.6 }}
+          className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-gold/10 border border-gold/20 mb-10"
         >
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2, duration: 0.6 }}
-            className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-gold/10 border border-gold/20 mb-8"
-          >
-            <div className="w-2 h-2 rounded-full bg-gold animate-pulse" />
-            <span className="text-gold text-sm font-medium">Now Available</span>
-          </motion.div>
-
-          <h1 className="text-5xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight leading-[1.1] mb-6">
-            <span className="gradient-text">{APP_CONFIG.name}</span>
-            <br />
-            <span className="text-white text-3xl sm:text-4xl lg:text-5xl">{APP_CONFIG.tagline}</span>
-          </h1>
-
-          <motion.p
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4, duration: 0.6 }}
-            className="text-gray-400 text-lg max-w-md mx-auto lg:mx-0 mb-10 leading-relaxed"
-          >
-            {APP_CONFIG.description}
-          </motion.p>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.6, duration: 0.6 }}
-            className="flex flex-col sm:flex-row items-center gap-4 justify-center lg:justify-start"
-          >
-            <a
-              href="#pricing"
-              className="px-8 py-3.5 bg-gradient-to-r from-gold to-gold-dark text-black font-bold rounded-full text-base hover:opacity-90 transition-all shadow-xl shadow-gold/25 hover:shadow-gold/40"
-            >
-              Get Premium
-            </a>
-            <a
-              href="#features"
-              className="px-8 py-3.5 border border-white/10 text-white font-medium rounded-full text-base hover:bg-white/5 transition-all"
-            >
-              Explore Features
-            </a>
-          </motion.div>
+          <div className="w-2 h-2 rounded-full bg-gold animate-pulse" />
+          <span className="text-gold text-sm font-medium">Trusted by 10,000+ Members Across India</span>
         </motion.div>
 
-        {/* Right: Phone Mockup */}
-        <motion.div
-          className="flex-shrink-0"
-          initial={{ opacity: 0, scale: 0.85, y: 40 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          transition={{ duration: 1, delay: 0.3, ease: 'easeOut' }}
+        {/* Heading */}
+        <motion.h1
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2, duration: 0.8, ease: 'easeOut' }}
+          className="text-5xl sm:text-6xl lg:text-7xl xl:text-8xl font-extrabold tracking-tight leading-[1.05] mb-6"
         >
-          <div className="relative">
-            {/* Glow behind phone */}
-            <div className="absolute -inset-12 bg-gradient-to-b from-gold/15 via-gold/5 to-transparent rounded-full blur-3xl animate-glow-pulse" />
+          <span className="gradient-text">{APP_CONFIG.name}</span>
+        </motion.h1>
 
-            {/* Phone floating animation */}
+        <motion.p
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.35, duration: 0.6 }}
+          className="text-2xl sm:text-3xl lg:text-4xl font-semibold text-white/90 mb-6"
+        >
+          {APP_CONFIG.tagline}
+        </motion.p>
+
+        <motion.p
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.5, duration: 0.6 }}
+          className="text-gray-400 text-lg sm:text-xl max-w-2xl mx-auto mb-12 leading-relaxed"
+        >
+          {APP_CONFIG.description}
+        </motion.p>
+
+        {/* CTAs */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.65, duration: 0.6 }}
+          className="flex flex-col sm:flex-row items-center gap-4 justify-center mb-20"
+        >
+          <a
+            href="#pricing"
+            className="group px-10 py-4 bg-gradient-to-r from-gold to-gold-dark text-black font-bold rounded-full text-base hover:opacity-90 transition-all shadow-xl shadow-gold/25 hover:shadow-gold/40 flex items-center gap-2"
+          >
+            <Crown className="w-5 h-5" />
+            Get Premium Access
+          </a>
+          <a
+            href="#features"
+            className="px-10 py-4 border border-white/10 text-white font-medium rounded-full text-base hover:bg-white/5 hover:border-white/20 transition-all"
+          >
+            Explore Features
+          </a>
+        </motion.div>
+
+        {/* Stats */}
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.8, duration: 0.6 }}
+          className="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-3xl mx-auto"
+        >
+          {stats.map((stat, index) => (
             <motion.div
-              animate={{ y: [0, -10, 0] }}
-              transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }}
-              className="relative"
+              key={stat.label}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.9 + index * 0.1, duration: 0.5 }}
+              className="p-5 rounded-2xl bg-white/[0.03] border border-white/[0.06] hover:border-gold/20 transition-colors"
             >
-              {/* Phone frame */}
-              <div className="relative w-[280px] h-[580px] rounded-[44px] border-[3px] border-white/10 bg-black overflow-hidden glow-gold">
-                {/* Dynamic Island */}
-                <div className="absolute top-3 left-1/2 -translate-x-1/2 w-28 h-[26px] bg-black rounded-full z-20" />
-
-                {/* Screenshot carousel */}
-                <AnimatePresence mode="wait">
-                  <motion.img
-                    key={currentScreen}
-                    src={screenshots[currentScreen]}
-                    alt="App preview"
-                    className="absolute inset-0 w-full h-full object-cover"
-                    initial={{ opacity: 0, scale: 1.05 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.95 }}
-                    transition={{ duration: 0.6 }}
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).style.display = 'none';
-                    }}
-                  />
-                </AnimatePresence>
-
-                {/* Fallback when no screenshots */}
-                <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-b from-surface to-black">
-                  <div className="text-center">
-                    <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-gold to-gold-dark flex items-center justify-center">
-                      <span className="text-black font-extrabold text-2xl">V</span>
-                    </div>
-                    <p className="text-gray-500 text-sm">{APP_CONFIG.name}</p>
-                  </div>
-                </div>
-
-                {/* Screen overlay gradient */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-black/10 pointer-events-none z-10" />
-
-                {/* Home indicator */}
-                <div className="absolute bottom-2 left-1/2 -translate-x-1/2 w-32 h-1 bg-white/30 rounded-full z-20" />
-              </div>
-
-              {/* Side buttons */}
-              <div className="absolute top-24 -right-[2px] w-[3px] h-12 bg-white/10 rounded-l-full" />
-              <div className="absolute top-20 -left-[2px] w-[3px] h-8 bg-white/10 rounded-r-full" />
-              <div className="absolute top-32 -left-[2px] w-[3px] h-16 bg-white/10 rounded-r-full" />
+              <stat.icon className="w-5 h-5 text-gold mx-auto mb-2" />
+              <p className="text-2xl font-bold text-white">{stat.value}</p>
+              <p className="text-xs text-gray-500 mt-1">{stat.label}</p>
             </motion.div>
-          </div>
+          ))}
         </motion.div>
       </div>
 

@@ -1,5 +1,6 @@
+import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Crown, Check } from 'lucide-react';
+import { Crown, Check, X, ArrowRight } from 'lucide-react';
 
 const plans = [
   {
@@ -16,6 +17,7 @@ const plans = [
       'Ad-Free Experience',
       'HD Quality Playback',
       'Multi-Device Support',
+      'Email Support',
     ],
   },
   {
@@ -33,6 +35,7 @@ const plans = [
       'HD & 4K Quality Playback',
       'Multi-Device Support',
       'Priority Support',
+      'Smart Recommendations',
     ],
   },
   {
@@ -50,6 +53,7 @@ const plans = [
       'HD & 4K Quality Playback',
       'Multi-Device Support',
       'Priority Support',
+      'Smart Recommendations',
     ],
   },
   {
@@ -67,15 +71,31 @@ const plans = [
       'HD & 4K Quality Playback',
       'Multi-Device Support',
       'Priority Support',
+      'Smart Recommendations',
       'Exclusive Features',
     ],
   },
 ];
 
+const comparisonFeatures = [
+  { name: 'Premium Member Access', plans: [true, true, true, true] },
+  { name: 'Ad-Free Experience', plans: [true, true, true, true] },
+  { name: 'HD Quality Playback', plans: [true, true, true, true] },
+  { name: '4K Quality Playback', plans: [false, true, true, true] },
+  { name: 'Multi-Device Sync', plans: [true, true, true, true] },
+  { name: 'Smart Recommendations', plans: [false, true, true, true] },
+  { name: 'Priority Support', plans: [false, true, true, true] },
+  { name: 'Exclusive Features', plans: [false, false, false, true] },
+  { name: 'Per-Month Cost', plans: ['₹159', '₹153', '₹138', '₹127'] },
+  { name: 'Savings', plans: ['10%', '15%', '20%', '25%'] },
+];
+
 export default function Pricing() {
+  const [showComparison, setShowComparison] = useState(false);
+
   return (
     <section id="pricing" className="relative py-28 px-6 overflow-hidden">
-      {/* Background ambient glow */}
+      {/* Background */}
       <div className="absolute inset-0 pointer-events-none">
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] bg-gold/[0.04] rounded-full blur-[150px]" />
       </div>
@@ -94,10 +114,10 @@ export default function Pricing() {
             <span className="text-gold text-sm font-medium">Membership Plans</span>
           </div>
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-4">
-            Choose Your <span className="gradient-text">Plan</span>
+            Simple, Transparent <span className="gradient-text">Pricing</span>
           </h2>
           <p className="text-gray-400 text-lg max-w-2xl mx-auto">
-            Unlock premium membership features. All prices in ₹ INR.
+            Choose the plan that works for you. All prices in ₹ INR. No hidden fees, cancel anytime.
           </p>
         </motion.div>
 
@@ -141,7 +161,6 @@ export default function Pricing() {
                       : 'bg-[#0A0A0A]/80 hover:bg-[#0F0F0F]'
                   } transition-colors duration-300`}
                 >
-                  {/* Plan name */}
                   <h3
                     className={`text-lg font-semibold mb-5 ${
                       plan.featured ? 'text-gold' : 'text-white'
@@ -150,7 +169,6 @@ export default function Pricing() {
                     {plan.name}
                   </h3>
 
-                  {/* Price block */}
                   <div className="mb-1">
                     <div className="flex items-baseline gap-1">
                       <span className="text-base text-gray-400 font-medium">₹</span>
@@ -169,7 +187,6 @@ export default function Pricing() {
                     )}
                   </div>
 
-                  {/* Original price & discount */}
                   <div className="flex items-center gap-2 mb-6">
                     <span className="text-sm text-gray-500 line-through">
                       ₹{plan.originalPrice.toLocaleString('en-IN')}
@@ -179,7 +196,6 @@ export default function Pricing() {
                     </span>
                   </div>
 
-                  {/* Divider */}
                   <div
                     className={`h-px mb-6 ${
                       plan.featured
@@ -188,7 +204,6 @@ export default function Pricing() {
                     }`}
                   />
 
-                  {/* Features */}
                   <ul className="space-y-3 mb-8 flex-1">
                     {plan.features.map((feature) => (
                       <li key={feature} className="flex items-center gap-2.5">
@@ -206,9 +221,8 @@ export default function Pricing() {
                     ))}
                   </ul>
 
-                  {/* CTA */}
                   <a
-                    href="#download"
+                    href="#contact"
                     className={`block w-full py-3 rounded-xl text-center text-sm font-semibold transition-all duration-300 ${
                       plan.featured
                         ? 'bg-gradient-to-r from-gold to-gold-dark text-black hover:shadow-lg hover:shadow-gold/25 hover:opacity-90'
@@ -223,16 +237,92 @@ export default function Pricing() {
           })}
         </div>
 
+        {/* Compare toggle */}
+        <motion.div
+          className="text-center mt-12"
+          initial={{ opacity: 0 }}
+          whileInView={{ opacity: 1 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5, delay: 0.3 }}
+        >
+          <button
+            onClick={() => setShowComparison(!showComparison)}
+            className="inline-flex items-center gap-2 text-gold hover:text-gold-light transition-colors text-sm font-medium"
+          >
+            <span>{showComparison ? 'Hide' : 'View'} Full Comparison</span>
+            <ArrowRight className={`w-4 h-4 transition-transform ${showComparison ? 'rotate-90' : ''}`} />
+          </button>
+        </motion.div>
+
+        {/* Comparison table */}
+        {showComparison && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            className="mt-8 overflow-x-auto"
+          >
+            <div className="min-w-[640px] rounded-2xl border border-white/5 overflow-hidden">
+              {/* Table header */}
+              <div className="grid grid-cols-5 bg-white/[0.03]">
+                <div className="p-4 text-sm font-semibold text-gray-400 border-r border-white/5">Feature</div>
+                {plans.map((plan) => (
+                  <div
+                    key={plan.id}
+                    className={`p-4 text-sm font-semibold text-center border-r border-white/5 last:border-r-0 ${
+                      plan.featured ? 'text-gold bg-gold/5' : 'text-white'
+                    }`}
+                  >
+                    {plan.name}
+                  </div>
+                ))}
+              </div>
+
+              {/* Table rows */}
+              {comparisonFeatures.map((feature, i) => (
+                <div
+                  key={feature.name}
+                  className={`grid grid-cols-5 ${i % 2 === 0 ? 'bg-white/[0.01]' : 'bg-transparent'} border-t border-white/5`}
+                >
+                  <div className="p-4 text-sm text-gray-300 border-r border-white/5">{feature.name}</div>
+                  {feature.plans.map((val, j) => (
+                    <div
+                      key={j}
+                      className={`p-4 text-center border-r border-white/5 last:border-r-0 ${
+                        plans[j].featured ? 'bg-gold/[0.03]' : ''
+                      }`}
+                    >
+                      {typeof val === 'boolean' ? (
+                        val ? (
+                          <Check className="w-5 h-5 text-emerald-400 mx-auto" />
+                        ) : (
+                          <X className="w-5 h-5 text-gray-600 mx-auto" />
+                        )
+                      ) : (
+                        <span className="text-sm font-medium text-gold">{val}</span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ))}
+            </div>
+          </motion.div>
+        )}
+
         {/* Bottom note */}
-        <motion.p
-          className="text-center text-gray-500 text-sm mt-12"
+        <motion.div
+          className="text-center mt-12 space-y-2"
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 1 }}
           viewport={{ once: true }}
           transition={{ duration: 0.5, delay: 0.5 }}
         >
-          All plans include a 7-day money-back guarantee · Pay securely via UPI · See our <a href="/refund-policy" className="text-gold hover:underline">Refund Policy</a>
-        </motion.p>
+          <p className="text-gray-500 text-sm">
+            All plans include a 7-day money-back guarantee · Pay securely via UPI
+          </p>
+          <p className="text-gray-600 text-xs">
+            See our <a href="/refund-policy" className="text-gold hover:underline">Refund Policy</a> · <a href="/terms" className="text-gold hover:underline">Terms of Service</a> · <a href="/privacy-policy" className="text-gold hover:underline">Privacy Policy</a>
+          </p>
+        </motion.div>
       </div>
     </section>
   );
