@@ -10,6 +10,7 @@ import {
   PremiumPlanConfig,
   PremiumPlanConfigSchema,
 } from '../../schemas/premium-plan.schema';
+import { User, UserSchema } from '../../schemas/user.schema';
 import { SettingsModule } from '../settings/settings.module';
 import { PremiumModule } from '../premium/premium.module';
 
@@ -18,6 +19,7 @@ import { PremiumModule } from '../premium/premium.module';
     MongooseModule.forFeature([
       { name: UpiPayment.name, schema: UpiPaymentSchema },
       { name: PremiumPlanConfig.name, schema: PremiumPlanConfigSchema },
+      { name: User.name, schema: UserSchema },
     ]),
     SettingsModule,
     PremiumModule,

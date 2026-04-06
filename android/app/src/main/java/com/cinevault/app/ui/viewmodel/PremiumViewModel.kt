@@ -7,6 +7,7 @@ import com.cinevault.app.data.model.CreateOrderResponse
 import com.cinevault.app.data.model.OrderStatusResponse
 import com.cinevault.app.data.model.PremiumPlanDto
 import com.cinevault.app.data.model.Result
+import com.cinevault.app.data.model.VerifyPaymentResponse
 import com.cinevault.app.data.repository.PremiumRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
@@ -28,11 +29,13 @@ data class PremiumUiState(
     // UPI Payment
     val isCreatingOrder: Boolean = false,
     val currentOrder: CreateOrderResponse? = null,
-    val isSubmittingUtr: Boolean = false,
-    val utrSubmitSuccess: Boolean = false,
-    val utrSubmitMessage: String? = null,
-    val orderStatus: OrderStatusResponse? = null,
-    val isCheckingStatus: Boolean = false,
+    // Auto-verify via UPI intent
+    val isVerifyingPayment: Boolean = false,
+    val paymentVerified: Boolean = false,
+    val paymentFailed: Boolean = false,
+    val verifyMessage: String? = null,
+    val verifyResponse: VerifyPaymentResponse? = null,
+    // Orders
     val myOrders: List<OrderStatusResponse> = emptyList(),
     val isLoadingOrders: Boolean = false,
 )
@@ -47,7 +50,6 @@ class PremiumViewModel @Inject constructor(
     val uiState: StateFlow<PremiumUiState> = _uiState.asStateFlow()
 
     init {
-        // Observe local premium status
         viewModelScope.launch {
             sessionManager.isPremium.collect { premium ->
                 _uiState.update { it.copy(isPremium = premium) }
@@ -63,7 +65,6 @@ class PremiumViewModel @Inject constructor(
                 _uiState.update { it.copy(userId = id) }
             }
         }
-        // Fetch latest from server
         refreshStatus()
         fetchPlans()
     }
@@ -97,7 +98,7 @@ class PremiumViewModel @Inject constructor(
                         )
                     }
                 }
-                is Result.Error -> { /* silent — use cached */ }
+                is Result.Error -> {}
                 is Result.Loading -> {}
             }
         }
@@ -146,40 +147,44 @@ class PremiumViewModel @Inject constructor(
         }
     }
 
-    fun submitUtr(orderId: String, utrId: String) {
+    fun verifyPayment(
+        orderId: String,
+        status: String,
+        txnId: String? = null,
+        responseCode: String? = null,
+        approvalRefNo: String? = null,
+    ) {
         viewModelScope.launch {
-            _uiState.update { it.copy(isSubmittingUtr = true, error = null, utrSubmitSuccess = false) }
-            when (val result = premiumRepository.submitUtr(orderId, utrId)) {
+            _uiState.update {
+                it.copy(
+                    isVerifyingPayment = true,
+                    paymentVerified = false,
+                    paymentFailed = false,
+                    verifyMessage = null,
+                    error = null,
+                )
+            }
+            when (val result = premiumRepository.verifyPayment(orderId, status, txnId, responseCode, approvalRefNo)) {
                 is Result.Success -> {
                     _uiState.update {
                         it.copy(
-                            isSubmittingUtr = false,
-                            utrSubmitSuccess = true,
-                            utrSubmitMessage = result.data.message,
+                            isVerifyingPayment = false,
+                            paymentVerified = true,
+                            verifyMessage = result.data.message,
+                            verifyResponse = result.data,
+                            isPremium = result.data.premiumPlan != null,
                         )
                     }
+                    refreshStatus()
                 }
                 is Result.Error -> {
-                    _uiState.update { it.copy(isSubmittingUtr = false, error = result.message) }
-                }
-                is Result.Loading -> {}
-            }
-        }
-    }
-
-    fun checkOrderStatus(orderId: String) {
-        viewModelScope.launch {
-            _uiState.update { it.copy(isCheckingStatus = true) }
-            when (val result = premiumRepository.getOrderStatus(orderId)) {
-                is Result.Success -> {
-                    _uiState.update { it.copy(isCheckingStatus = false, orderStatus = result.data) }
-                    // If verified and has activation code, auto-activate
-                    if (result.data.status == "verified" && result.data.activationCode != null) {
-                        refreshStatus()
+                    _uiState.update {
+                        it.copy(
+                            isVerifyingPayment = false,
+                            paymentFailed = true,
+                            verifyMessage = result.message,
+                        )
                     }
-                }
-                is Result.Error -> {
-                    _uiState.update { it.copy(isCheckingStatus = false) }
                 }
                 is Result.Loading -> {}
             }
@@ -201,13 +206,14 @@ class PremiumViewModel @Inject constructor(
         }
     }
 
-    fun clearOrderState() {
+    fun clearPaymentState() {
         _uiState.update {
             it.copy(
                 currentOrder = null,
-                utrSubmitSuccess = false,
-                utrSubmitMessage = null,
-                orderStatus = null,
+                paymentVerified = false,
+                paymentFailed = false,
+                verifyMessage = null,
+                verifyResponse = null,
             )
         }
     }

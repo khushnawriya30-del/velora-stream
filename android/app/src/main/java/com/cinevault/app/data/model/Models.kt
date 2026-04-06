@@ -424,3 +424,20 @@ data class OrderStatusResponse(
     val rejectionReason: String?,
     val createdAt: String,
 )
+data class VerifyPaymentRequest(
+    val orderId: String,
+    val status: String,
+    val txnId: String? = null,
+    val responseCode: String? = null,
+    val approvalRefNo: String? = null,
+)
+data class VerifyPaymentResponse(
+    val success: Boolean,
+    val message: String?,
+    val orderId: String?,
+    val plan: String?,
+    val premiumPlan: String?,
+    val premiumExpiresAt: String?,
+    val daysRemaining: Int?,
+    val alreadyVerified: Boolean? = null,
+)

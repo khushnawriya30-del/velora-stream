@@ -1,4 +1,4 @@
-import { IsString, IsOptional } from 'class-validator';
+import { IsString, IsOptional, IsNumber } from 'class-validator';
 
 export class CreateOrderDto {
   @IsString()
@@ -15,4 +15,24 @@ export class SubmitUtrDto {
 
   @IsString()
   utrId: string;
+}
+
+export class VerifyPaymentDto {
+  @IsString()
+  orderId: string;
+
+  @IsString()
+  status: string; // 'SUCCESS', 'FAILURE', 'SUBMITTED'
+
+  @IsOptional()
+  @IsString()
+  txnId?: string; // UPI transaction ID returned by payment app
+
+  @IsOptional()
+  @IsString()
+  responseCode?: string;
+
+  @IsOptional()
+  @IsString()
+  approvalRefNo?: string;
 }

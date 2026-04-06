@@ -274,6 +274,9 @@ interface CineVaultApi {
     @POST("upi-payment/submit-utr")
     suspend fun submitUtr(@Body request: SubmitUtrRequest): Response<SubmitUtrResponse>
 
+    @POST("upi-payment/verify-payment")
+    suspend fun verifyPayment(@Body request: VerifyPaymentRequest): Response<VerifyPaymentResponse>
+
     @GET("upi-payment/order/{orderId}")
     suspend fun getOrderStatus(@Path("orderId") orderId: String): Response<OrderStatusResponse>
 

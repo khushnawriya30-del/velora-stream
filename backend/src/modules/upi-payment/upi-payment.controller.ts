@@ -12,7 +12,7 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { UpiPaymentService } from './upi-payment.service';
-import { CreateOrderDto, SubmitUtrDto } from './dto/upi-payment.dto';
+import { CreateOrderDto, SubmitUtrDto, VerifyPaymentDto } from './dto/upi-payment.dto';
 
 @Controller('upi-payment')
 export class UpiPaymentController {
@@ -36,6 +36,22 @@ export class UpiPaymentController {
     @CurrentUser('userId') userId: string,
   ) {
     return this.upiPaymentService.submitUtr(dto.orderId, dto.utrId, userId);
+  }
+
+  @Post('verify-payment')
+  @UseGuards(AuthGuard('jwt'))
+  async verifyPayment(
+    @Body() dto: VerifyPaymentDto,
+    @CurrentUser('userId') userId: string,
+  ) {
+    return this.upiPaymentService.verifyPayment(
+      dto.orderId,
+      dto.status,
+      dto.txnId,
+      userId,
+      dto.responseCode,
+      dto.approvalRefNo,
+    );
   }
 
   @Get('order/:orderId')
@@ -73,7 +89,7 @@ export class UpiPaymentController {
   @Post('admin/verify/:id')
   @UseGuards(AuthGuard('jwt'), RolesGuard)
   @Roles('admin')
-  async verifyPayment(@Param('id') id: string) {
+  async adminVerifyPayment(@Param('id') id: string) {
     return this.upiPaymentService.adminVerify(id);
   }
 

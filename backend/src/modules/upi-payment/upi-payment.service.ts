@@ -16,6 +16,7 @@ import {
   PremiumPlanConfig,
   PremiumPlanConfigDocument,
 } from '../../schemas/premium-plan.schema';
+import { User, UserDocument } from '../../schemas/user.schema';
 import { PremiumPlan } from '../../schemas/activation-code.schema';
 import { SettingsService } from '../settings/settings.service';
 import { PremiumService } from '../premium/premium.service';
@@ -31,11 +32,20 @@ export class UpiPaymentService {
     '12m': '1year',
   };
 
+  private readonly planDurationDays: Record<string, number> = {
+    '1month': 30,
+    '3months': 90,
+    '6months': 180,
+    '1year': 365,
+  };
+
   constructor(
     @InjectModel(UpiPayment.name)
     private paymentModel: Model<UpiPaymentDocument>,
     @InjectModel(PremiumPlanConfig.name)
     private planModel: Model<PremiumPlanConfigDocument>,
+    @InjectModel(User.name)
+    private userModel: Model<UserDocument>,
     private readonly settingsService: SettingsService,
     private readonly premiumService: PremiumService,
   ) {}
@@ -166,6 +176,113 @@ export class UpiPaymentService {
       status: 'utr_submitted',
       message:
         'UTR submitted successfully. Your payment is being verified. You will receive your activation code shortly.',
+    };
+  }
+
+  // ══════════════════════════════
+  //  VERIFY PAYMENT (AUTO / UPI INTENT)
+  // ══════════════════════════════
+
+  async verifyPayment(
+    orderId: string,
+    status: string,
+    txnId?: string,
+    userId?: string,
+    responseCode?: string,
+    approvalRefNo?: string,
+  ) {
+    const order = await this.paymentModel.findOne({ orderId });
+    if (!order) throw new NotFoundException('Order not found');
+
+    // Verify ownership
+    if (userId && order.userId && order.userId.toString() !== userId) {
+      throw new BadRequestException('Order does not belong to you');
+    }
+
+    // Check order isn't already processed
+    if (order.status === UpiPaymentStatus.VERIFIED) {
+      return {
+        success: true,
+        alreadyVerified: true,
+        message: 'Payment already verified and premium activated',
+        orderId: order.orderId,
+      };
+    }
+
+    // Check order hasn't expired
+    if (order.expiresAt && new Date() > order.expiresAt) {
+      order.status = UpiPaymentStatus.EXPIRED;
+      await order.save();
+      throw new BadRequestException('Order has expired. Please create a new order.');
+    }
+
+    // Check UPI payment status from intent response
+    const normalizedStatus = (status || '').toUpperCase().trim();
+    if (normalizedStatus !== 'SUCCESS') {
+      this.logger.warn(
+        `Payment not successful for order ${orderId}: status=${status}, responseCode=${responseCode}`,
+      );
+      // Don't change order status for failed attempts - user can retry
+      throw new BadRequestException(
+        `Payment was not successful. Status: ${status}. Please try again.`,
+      );
+    }
+
+    // If txnId is provided, check for duplicates
+    if (txnId) {
+      const cleanTxnId = txnId.trim();
+      const existingPayment = await this.paymentModel.findOne({
+        utrId: cleanTxnId,
+        _id: { $ne: order._id },
+      });
+      if (existingPayment) {
+        throw new BadRequestException(
+          'This transaction ID has already been used.',
+        );
+      }
+      order.utrId = cleanTxnId;
+    }
+
+    // Mark order as verified
+    order.status = UpiPaymentStatus.VERIFIED;
+    order.verifiedAt = new Date();
+    order.note = `Auto-verified via UPI intent. responseCode=${responseCode || 'N/A'}, approvalRefNo=${approvalRefNo || 'N/A'}`;
+    await order.save();
+
+    // Activate premium on user account directly
+    if (order.userId) {
+      const planKey = order.plan; // '1month', '3months', '6months', '1year'
+      const durationDays = this.planDurationDays[planKey] || 30;
+      const now = new Date();
+      const expiresAt = new Date(now.getTime() + durationDays * 24 * 60 * 60 * 1000);
+
+      await this.userModel.findByIdAndUpdate(order.userId, {
+        isPremium: true,
+        premiumPlan: planKey,
+        premiumActivatedAt: now,
+        premiumExpiresAt: expiresAt,
+        maxDevices: 2,
+      });
+
+      this.logger.log(
+        `Premium activated for user ${order.userId}: plan=${planKey}, expires=${expiresAt.toISOString()}`,
+      );
+
+      return {
+        success: true,
+        message: 'Payment verified! Premium activated successfully.',
+        orderId: order.orderId,
+        plan: order.planName,
+        premiumPlan: planKey,
+        premiumExpiresAt: expiresAt,
+        daysRemaining: durationDays,
+      };
+    }
+
+    return {
+      success: true,
+      message: 'Payment verified successfully.',
+      orderId: order.orderId,
     };
   }
 

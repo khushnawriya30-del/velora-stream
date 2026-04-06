@@ -132,4 +132,40 @@ class PremiumRepository @Inject constructor(
             Result.Error(e.message ?: "Network error")
         }
     }
+
+    suspend fun verifyPayment(
+        orderId: String,
+        status: String,
+        txnId: String? = null,
+        responseCode: String? = null,
+        approvalRefNo: String? = null,
+    ): Result<VerifyPaymentResponse> {
+        return try {
+            val response = api.verifyPayment(
+                VerifyPaymentRequest(orderId, status, txnId, responseCode, approvalRefNo)
+            )
+            if (response.isSuccessful) {
+                val result = response.body()!!
+                if (result.success && result.premiumPlan != null) {
+                    // Update local premium status
+                    sessionManager.savePremiumStatus(
+                        isPremium = true,
+                        plan = result.premiumPlan,
+                        expiresAt = result.premiumExpiresAt,
+                    )
+                }
+                Result.Success(result)
+            } else {
+                val errorBody = response.errorBody()?.string()
+                val message = try {
+                    com.google.gson.Gson().fromJson(errorBody, MessageResponse::class.java).message
+                } catch (_: Exception) {
+                    "Payment verification failed"
+                }
+                Result.Error(message)
+            }
+        } catch (e: Exception) {
+            Result.Error(e.message ?: "Network error")
+        }
+    }
 }
