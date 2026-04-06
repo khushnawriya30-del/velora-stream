@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Heart } from 'lucide-react';
+import { Heart, Mail } from 'lucide-react';
 import { APP_CONFIG } from '../config';
 
 export default function Footer() {
@@ -45,6 +45,13 @@ export default function Footer() {
               className="text-sm text-gray-400 hover:text-white transition-colors"
             >
               FAQ
+            </a>
+            <a
+              href="mailto:velorastream@gmail.com"
+              className="text-sm text-gray-400 hover:text-white transition-colors flex items-center gap-1.5"
+            >
+              <Mail className="w-4 h-4" />
+              Contact
             </a>
           </div>
 
