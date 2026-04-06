@@ -21,17 +21,29 @@ import { PremiumPlan } from '../../schemas/activation-code.schema';
 import { SettingsService } from '../settings/settings.service';
 import { PremiumService } from '../premium/premium.service';
 
+interface UserSession {
+  plan: string;
+  amount: number;
+  planName: string;
+  state: 'selected_plan' | 'awaiting_utr';
+}
+
 @Injectable()
 export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(TelegramBotService.name);
   private bot: Telegraf | null = null;
   private isRunning = false;
 
-  // In-memory state for user sessions (telegramUserId → selected plan)
-  private userSessions = new Map<
-    string,
-    { plan: string; amount: number; planName: string; awaitingUtr: boolean }
-  >();
+  // In-memory state per Telegram user
+  private userSessions = new Map<string, UserSession>();
+
+  // Map planId to PremiumPlan enum
+  private readonly planEnumMap: Record<string, string> = {
+    '1m': '1month',
+    '3m': '3months',
+    '6m': '6months',
+    '12m': '1year',
+  };
 
   constructor(
     @InjectModel(TelegramPayment.name)
@@ -42,128 +54,211 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
     private readonly premiumService: PremiumService,
   ) {}
 
+  // ══════════════════════════════
+  //  LIFECYCLE
+  // ══════════════════════════════
+
   async onModuleInit() {
-    await this.startBot();
+    // Delay bot start to let NestJS fully initialize
+    setTimeout(() => this.startBot(), 3000);
   }
 
   async onModuleDestroy() {
     await this.stopBot();
   }
 
-  // ══════════════════════════════════════════
-  //  BOT LIFECYCLE
-  // ══════════════════════════════════════════
-
   async startBot() {
     try {
       const settings = await this.settingsService.getSettings();
-      const token = settings.telegramBotToken;
+      const token = settings?.telegramBotToken;
 
       if (!token) {
-        this.logger.warn(
-          'Telegram bot token not configured. Set it in Admin → Settings.',
-        );
+        this.logger.warn('Telegram bot token not configured - skipping start');
         return;
+      }
+
+      // Stop existing bot if running
+      if (this.bot) {
+        try {
+          this.bot.stop('restart');
+        } catch {}
+        this.bot = null;
+        this.isRunning = false;
       }
 
       this.bot = new Telegraf(token);
       this.registerHandlers();
 
-      // Use polling (not webhook) for simplicity
+      // Launch with polling, drop old updates
       await this.bot.launch({ dropPendingUpdates: true });
       this.isRunning = true;
       this.logger.log('Telegram bot started successfully');
-    } catch (error) {
-      this.logger.error('Failed to start Telegram bot:', error.message);
+    } catch (error: any) {
+      this.logger.error('Failed to start Telegram bot: ' + error.message);
+      this.isRunning = false;
+      this.bot = null;
     }
   }
 
   async stopBot() {
-    if (this.bot && this.isRunning) {
-      this.bot.stop('NestJS shutdown');
+    if (this.bot) {
+      try {
+        this.bot.stop('shutdown');
+      } catch {}
       this.isRunning = false;
+      this.bot = null;
       this.logger.log('Telegram bot stopped');
     }
   }
 
   async restartBot() {
     await this.stopBot();
+    await new Promise((r) => setTimeout(r, 2000));
     await this.startBot();
   }
 
-  // ══════════════════════════════════════════
-  //  BOT HANDLERS
-  // ══════════════════════════════════════════
+  // ══════════════════════════════
+  //  HANDLERS
+  // ══════════════════════════════
 
   private registerHandlers() {
     if (!this.bot) return;
 
-    // /start command
+    // ── /start ──
     this.bot.start(async (ctx) => {
-      const firstName = ctx.from.first_name || 'there';
-      await ctx.replyWithHTML(
-        `<b>👋 Welcome to VELORA Premium, ${this.escapeHtml(firstName)}!</b>\n\n` +
-          `Purchase Premium subscription via UPI payment.\n\n` +
-          `Tap <b>"Buy Premium"</b> below to get started.`,
-        Markup.keyboard([['🛒 Buy Premium'], ['📋 My Payments', '❓ Help']])
-          .resize()
-          .oneTime(false),
-      );
-    });
+      try {
+        const firstName = ctx.from.first_name || 'User';
+        this.userSessions.delete(ctx.from.id.toString());
 
-    // Buy Premium button
-    this.bot.hears('🛒 Buy Premium', async (ctx) => {
-      await this.showPlans(ctx);
-    });
-
-    // My Payments button
-    this.bot.hears('📋 My Payments', async (ctx) => {
-      await this.showMyPayments(ctx);
-    });
-
-    // Help button
-    this.bot.hears('❓ Help', async (ctx) => {
-      await ctx.replyWithHTML(
-        `<b>ℹ️ How to buy Premium:</b>\n\n` +
-          `1. Tap <b>"Buy Premium"</b>\n` +
-          `2. Select your plan\n` +
-          `3. Pay using the QR code shown\n` +
-          `4. Enter your UTR/Transaction ID\n` +
-          `5. Get your activation code\n` +
-          `6. Enter code in the app → Premium → Activate Code\n\n` +
-          `<b>Need help?</b> Contact support.`,
-      );
-    });
-
-    // Plan selection callbacks
-    this.bot.action(/^plan_(.+)$/, async (ctx) => {
-      await ctx.answerCbQuery();
-      const planId = ctx.match[1];
-      await this.handlePlanSelection(ctx, planId);
-    });
-
-    // Cancel payment callback
-    this.bot.action('cancel_payment', async (ctx) => {
-      await ctx.answerCbQuery('Cancelled');
-      const tgUserId = ctx.from.id.toString();
-      this.userSessions.delete(tgUserId);
-      await ctx.editMessageText('❌ Payment cancelled. Tap "Buy Premium" to start again.');
-    });
-
-    // Handle text input (UTR ID)
-    this.bot.on('text', async (ctx) => {
-      const tgUserId = ctx.from.id.toString();
-      const session = this.userSessions.get(tgUserId);
-
-      if (session?.awaitingUtr) {
-        await this.handleUtrSubmission(ctx, session);
+        await ctx.replyWithHTML(
+          `<b>Welcome to Velora Premium, ${this.esc(firstName)}!</b>\n\n` +
+            `Get Premium access to unlimited movies, series & more.\n\n` +
+            `Tap <b>Purchase Plan</b> to get started.`,
+          Markup.keyboard([['Purchase Plan'], ['Exit']])
+            .resize()
+            .oneTime(false),
+        );
+      } catch (e: any) {
+        this.logger.error('start error: ' + e.message);
       }
+    });
+
+    // ── Purchase Plan ──
+    this.bot.hears('Purchase Plan', async (ctx) => {
+      try {
+        await this.showPlans(ctx);
+      } catch (e: any) {
+        this.logger.error('showPlans: ' + e.message);
+      }
+    });
+
+    // ── Exit ──
+    this.bot.hears('Exit', async (ctx) => {
+      try {
+        this.userSessions.delete(ctx.from.id.toString());
+        await ctx.reply(
+          'Thank you for visiting Velora Premium!\n\nType /start anytime to come back.',
+          Markup.removeKeyboard(),
+        );
+      } catch {}
+    });
+
+    // ── My Payments ──
+    this.bot.hears('My Payments', async (ctx) => {
+      try {
+        await this.showMyPayments(ctx);
+      } catch (e: any) {
+        this.logger.error('myPayments: ' + e.message);
+      }
+    });
+
+    // ── Help ──
+    this.bot.hears('Help', async (ctx) => {
+      try {
+        await ctx.replyWithHTML(
+          `<b>How to buy Premium:</b>\n\n` +
+            `1. Tap <b>Purchase Plan</b>\n` +
+            `2. Select your plan\n` +
+            `3. Scan QR code and pay via UPI\n` +
+            `4. Tap <b>Done</b> after payment\n` +
+            `5. Enter your UTR / Transaction ID\n` +
+            `6. Get your activation code\n` +
+            `7. Open app → Premium → Activate Code`,
+        );
+      } catch {}
+    });
+
+    // ── Plan selection callback ──
+    this.bot.action(/^plan_(.+)$/, async (ctx) => {
+      try {
+        await ctx.answerCbQuery();
+        await this.handlePlanSelection(ctx, ctx.match[1]);
+      } catch (e: any) {
+        this.logger.error('planSel: ' + e.message);
+      }
+    });
+
+    // ── Done button (after payment) ──
+    this.bot.action('payment_done', async (ctx) => {
+      try {
+        await ctx.answerCbQuery();
+        const tgUserId = ctx.from.id.toString();
+        const session = this.userSessions.get(tgUserId);
+
+        if (!session || session.state !== 'selected_plan') {
+          await ctx.editMessageText(
+            'No active payment session. Type /start to begin again.',
+          );
+          return;
+        }
+
+        // Move to awaiting UTR state
+        session.state = 'awaiting_utr';
+        this.userSessions.set(tgUserId, session);
+
+        await ctx.editMessageText(
+          'Please send your UTR ID / Transaction ID now.\n\n' +
+            '(The reference number from your UPI payment)',
+        );
+      } catch (e: any) {
+        this.logger.error('paymentDone: ' + e.message);
+      }
+    });
+
+    // ── Cancel payment ──
+    this.bot.action('cancel_payment', async (ctx) => {
+      try {
+        await ctx.answerCbQuery('Cancelled');
+        this.userSessions.delete(ctx.from.id.toString());
+        await ctx.editMessageText(
+          'Payment cancelled.\n\nType /start or tap Purchase Plan to try again.',
+        );
+      } catch {}
+    });
+
+    // ── Text handler (UTR submission) ──
+    this.bot.on('text', async (ctx) => {
+      try {
+        const tgUserId = ctx.from.id.toString();
+        const session = this.userSessions.get(tgUserId);
+
+        if (session?.state === 'awaiting_utr') {
+          await this.handleUtrSubmission(ctx, session);
+        }
+      } catch (e: any) {
+        this.logger.error('text: ' + e.message);
+      }
+    });
+
+    // Global error handler
+    this.bot.catch((err: any) => {
+      this.logger.error('Bot error: ' + (err?.message || err));
     });
   }
 
-  // ══════════════════════════════════════════
-  //  PLAN SELECTION
-  // ══════════════════════════════════════════
+  // ══════════════════════════════
+  //  SHOW PLANS
+  // ══════════════════════════════
 
   private async showPlans(ctx: any) {
     const plans = await this.planModel
@@ -178,124 +273,117 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
 
     const planButtons = plans.map((p) => [
       Markup.button.callback(
-        `${p.name} — ₹${p.price} ${p.badge ? `(${p.badge})` : ''}`,
+        `${p.name} - ₹${p.price}${p.badge ? ` (${p.badge})` : ''}`,
         `plan_${p.planId}`,
       ),
     ]);
 
+    const planLines = plans.map(
+      (p) =>
+        `• <b>${p.name}</b> - ₹${p.price}` +
+        (p.originalPrice > p.price
+          ? ` <s>₹${p.originalPrice}</s> (${p.discountPercent}% off)`
+          : '') +
+        (p.badge ? ` | ${p.badge}` : ''),
+    );
+
     await ctx.replyWithHTML(
-      `<b>🔱 VELORA Premium Plans</b>\n\n` +
-        plans
-          .map(
-            (p) =>
-              `• <b>${p.name}</b> — ₹${p.price} ` +
-              (p.originalPrice > p.price
-                ? `<s>₹${p.originalPrice}</s> (${p.discountPercent}% off)`
-                : '') +
-              (p.badge ? ` 🏷 ${p.badge}` : ''),
-          )
-          .join('\n') +
-        `\n\n<i>Select a plan below:</i>`,
+      `<b>Velora Premium Plans</b>\n\n` +
+        planLines.join('\n') +
+        `\n\n<i>Select a plan:</i>`,
       Markup.inlineKeyboard(planButtons),
     );
   }
 
+  // ══════════════════════════════
+  //  PLAN SELECTION → QR + Amount
+  // ══════════════════════════════
+
   private async handlePlanSelection(ctx: any, planId: string) {
-    const plan = await this.planModel.findOne({ planId, isActive: true }).lean();
+    const plan = await this.planModel
+      .findOne({ planId, isActive: true })
+      .lean();
     if (!plan) {
       await ctx.editMessageText('This plan is no longer available.');
       return;
     }
 
     const tgUserId = ctx.from.id.toString();
-
-    // Map planId to PremiumPlan enum value
-    const planEnumMap: Record<string, string> = {
-      '1m': '1month',
-      '3m': '3months',
-      '6m': '6months',
-      '12m': '1year',
-    };
-
     this.userSessions.set(tgUserId, {
-      plan: planEnumMap[plan.planId] || plan.planId,
+      plan: this.planEnumMap[plan.planId] || plan.planId,
       amount: plan.price,
       planName: plan.name,
-      awaitingUtr: true,
+      state: 'selected_plan',
     });
 
     const settings = await this.settingsService.getSettings();
 
-    // Send QR code if available
+    // Send QR code
     if (settings.paymentQrCodeUrl) {
       try {
         if (settings.paymentQrCodeUrl.startsWith('data:')) {
-          // Base64 data URL – convert to buffer for Telegram
           const base64Data = settings.paymentQrCodeUrl.split(',')[1];
           const buffer = Buffer.from(base64Data, 'base64');
           await ctx.replyWithPhoto({ source: buffer });
         } else {
           await ctx.replyWithPhoto(settings.paymentQrCodeUrl);
         }
-      } catch {
-        this.logger.warn('Failed to send QR code image');
+      } catch (e: any) {
+        this.logger.warn('Failed to send QR: ' + e.message);
       }
     }
 
     const upiId = settings.paymentUpiId || 'N/A';
     const instructions =
       settings.paymentInstructions ||
-      'Please complete the payment using the QR code above or the UPI ID.';
+      'Please scan the QR code and complete the payment.';
 
+    // Show payment details + Done/Cancel buttons
     await ctx.replyWithHTML(
-      `<b>💳 Payment for ${this.escapeHtml(plan.name)}</b>\n\n` +
-        `<b>Amount:</b> ₹${plan.price}\n` +
-        `<b>UPI ID:</b> <code>${this.escapeHtml(upiId)}</code>\n\n` +
-        `${this.escapeHtml(instructions)}\n\n` +
-        `After payment, <b>enter your UTR ID / Transaction ID</b> below to verify your payment.`,
+      `<b>${this.esc(plan.name)} - ₹${plan.price}</b>\n\n` +
+        `<b>UPI ID:</b> <code>${this.esc(upiId)}</code>\n\n` +
+        `${this.esc(instructions)}\n\n` +
+        `After payment, click <b>Done</b> below.`,
       Markup.inlineKeyboard([
-        [Markup.button.callback('❌ Cancel Payment', 'cancel_payment')],
+        [Markup.button.callback('✅ Done', 'payment_done')],
+        [Markup.button.callback('❌ Cancel', 'cancel_payment')],
       ]),
     );
   }
 
-  // ══════════════════════════════════════════
-  //  UTR SUBMISSION & VERIFICATION
-  // ══════════════════════════════════════════
+  // ══════════════════════════════
+  //  UTR SUBMISSION & VERIFY
+  // ══════════════════════════════
 
-  private async handleUtrSubmission(
-    ctx: any,
-    session: { plan: string; amount: number; planName: string },
-  ) {
+  private async handleUtrSubmission(ctx: any, session: UserSession) {
     const tgUserId = ctx.from.id.toString();
     const utrId = ctx.message.text.trim().toUpperCase();
 
-    // Basic UTR validation (must be alphanumeric, 6-30 chars)
+    // Validate UTR format
     if (!/^[A-Z0-9]{6,30}$/.test(utrId)) {
-      await ctx.replyWithHTML(
-        `⚠️ Invalid UTR format. Please enter a valid UTR/Transaction ID (6-30 alphanumeric characters).`,
+      await ctx.reply(
+        'Invalid UTR format. Please enter a valid UTR / Transaction ID (6-30 alphanumeric characters).',
       );
       return;
     }
 
-    // Check if UTR already used
-    const existingPayment = await this.paymentModel.findOne({ utrId }).lean();
-    if (existingPayment) {
+    // Check duplicate UTR
+    const existing = await this.paymentModel.findOne({ utrId }).lean();
+    if (existing) {
       await ctx.replyWithHTML(
-        `❌ <b>This UTR ID has already been used.</b>\n\n` +
-          `Each UTR can only be used once. Please check your UTR ID and try again.`,
+        `<b>This UTR ID has already been used.</b>\n\n` +
+          `Each UTR can only be used once. Please check and try again.`,
       );
       return;
     }
 
-    // Send processing message
-    const processingMsg = await ctx.replyWithHTML('⏳ Verifying your payment...');
+    const processingMsg = await ctx.reply('Verifying your payment...');
 
     try {
-      // Generate activation code using existing PremiumService
+      // Generate activation code
       const planEnum = session.plan as PremiumPlan;
       const codes = await this.premiumService.generateCodes(planEnum, 1, {
-        note: `Telegram payment | UTR: ${utrId} | User: ${tgUserId}`,
+        note: `Telegram | UTR: ${utrId} | User: ${tgUserId}`,
         expiresInDays: 30,
       });
 
@@ -322,43 +410,37 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
         await ctx.deleteMessage(processingMsg.message_id);
       } catch {}
 
-      // Send success message with code
+      // Send success + code
       await ctx.replyWithHTML(
-        `✅ <b>Payment Verified Successfully!</b>\n\n` +
-          `<b>Plan:</b> ${this.escapeHtml(session.planName)}\n` +
+        `<b>Payment Verified Successfully!</b>\n\n` +
+          `<b>Plan:</b> ${this.esc(session.planName)}\n` +
           `<b>Amount:</b> ₹${session.amount}\n` +
           `<b>UTR:</b> <code>${utrId}</code>\n\n` +
-          `🔑 <b>Your Premium Activation Code:</b>\n\n` +
+          `<b>Your Premium Activation Code:</b>\n\n` +
           `<code>${activationCode}</code>\n\n` +
-          `<i>Copy the code and enter it in the app:\nPremium → Activate Code</i>`,
-        Markup.inlineKeyboard([
-          [
-            Markup.button.url(
-              '📱 Open VELORA App',
-              'https://play.google.com/store/apps/details?id=com.cinevault.app',
-            ),
-          ],
-        ]),
+          `<i>Use this code in the app to activate Premium:\nOpen App → Premium → Activate Code</i>`,
+        Markup.keyboard([['Purchase Plan'], ['My Payments', 'Help']])
+          .resize()
+          .oneTime(false),
       );
-    } catch (error) {
-      this.logger.error(`Payment verification failed for UTR ${utrId}:`, error);
+    } catch (error: any) {
+      this.logger.error(
+        `UTR verify failed for ${utrId}: ${error.message}`,
+      );
 
-      // Delete processing message
       try {
         await ctx.deleteMessage(processingMsg.message_id);
       } catch {}
 
-      await ctx.replyWithHTML(
-        `❌ <b>Payment verification failed.</b>\n\n` +
-          `Please check your UTR ID and try again.\n` +
-          `If the issue persists, contact support.`,
+      await ctx.reply(
+        'Verification failed. Please check your UTR ID and try again.\nIf the issue persists, contact support.',
       );
     }
   }
 
-  // ══════════════════════════════════════════
+  // ══════════════════════════════
   //  MY PAYMENTS
-  // ══════════════════════════════════════════
+  // ══════════════════════════════
 
   private async showMyPayments(ctx: any) {
     const tgUserId = ctx.from.id.toString();
@@ -373,7 +455,7 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
       return;
     }
 
-    const statusEmoji: Record<string, string> = {
+    const emoji: Record<string, string> = {
       pending: '⏳',
       verified: '✅',
       rejected: '❌',
@@ -381,26 +463,26 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
     };
 
     const lines = payments.map((p, i) => {
-      const emoji = statusEmoji[p.status] || '❓';
+      const e = emoji[p.status] || '❓';
       const date = new Date((p as any).createdAt).toLocaleDateString('en-IN');
       return (
-        `${i + 1}. ${emoji} <b>${p.plan}</b> — ₹${p.amount}\n` +
+        `${i + 1}. ${e} <b>${p.plan}</b> - ₹${p.amount}\n` +
         `   UTR: <code>${p.utrId}</code>\n` +
         (p.activationCode
           ? `   Code: <code>${p.activationCode}</code>\n`
           : '') +
-        `   Date: ${date} | Status: ${p.status}`
+        `   ${date} | ${p.status}`
       );
     });
 
     await ctx.replyWithHTML(
-      `<b>📋 Your Payments (last 10)</b>\n\n${lines.join('\n\n')}`,
+      `<b>Your Payments (last 10)</b>\n\n${lines.join('\n\n')}`,
     );
   }
 
-  // ══════════════════════════════════════════
-  //  ADMIN API METHODS (called by controller)
-  // ══════════════════════════════════════════
+  // ══════════════════════════════
+  //  ADMIN API METHODS
+  // ══════════════════════════════
 
   async getPayments(filters?: {
     status?: string;
@@ -409,7 +491,6 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
   }) {
     const query: any = {};
     if (filters?.status) query.status = filters.status;
-
     const page = filters?.page || 1;
     const limit = filters?.limit || 50;
 
@@ -423,7 +504,13 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
       this.paymentModel.countDocuments(query),
     ]);
 
-    return { payments, total, page, limit, totalPages: Math.ceil(total / limit) };
+    return {
+      payments,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    };
   }
 
   async getPaymentStats() {
@@ -467,7 +554,6 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
       throw new BadRequestException('Payment already verified');
     }
 
-    // Generate code
     const planEnum = payment.plan as PremiumPlan;
     const codes = await this.premiumService.generateCodes(planEnum, 1, {
       note: `Manual verify | UTR: ${payment.utrId} | TG: ${payment.telegramUserId}`,
@@ -479,12 +565,12 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
     payment.verifiedAt = new Date();
     await payment.save();
 
-    // Try to send code to user via bot
+    // Notify user via bot
     if (this.bot && this.isRunning) {
       try {
         await this.bot.telegram.sendMessage(
           payment.telegramUserId,
-          `✅ <b>Payment Manually Approved!</b>\n\n` +
+          `<b>Payment Approved!</b>\n\n` +
             `Your Premium Activation Code:\n\n` +
             `<code>${codes[0].code}</code>\n\n` +
             `<i>Enter this code in the app → Premium → Activate Code</i>`,
@@ -492,7 +578,7 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
         );
       } catch {
         this.logger.warn(
-          `Could not send code to Telegram user ${payment.telegramUserId}`,
+          `Could not send code to TG user ${payment.telegramUserId}`,
         );
       }
     }
@@ -507,7 +593,7 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
     };
   }
 
-  private escapeHtml(text: string): string {
+  private esc(text: string): string {
     return text
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')
