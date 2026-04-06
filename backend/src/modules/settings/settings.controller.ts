@@ -13,6 +13,7 @@ import { memoryStorage } from 'multer';
 import { AuthGuard } from '@nestjs/passport';
 import { SettingsService } from './settings.service';
 import { AppSettings } from './settings.schema';
+import { UpdateSettingsDto } from './dto/update-settings.dto';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { extname } from 'path';
@@ -29,7 +30,7 @@ export class SettingsController {
   }
 
   @Put()
-  updateSettings(@Body() body: Partial<AppSettings>): Promise<AppSettings> {
+  updateSettings(@Body() body: UpdateSettingsDto): Promise<AppSettings> {
     return this.service.updateSettings(body);
   }
 
