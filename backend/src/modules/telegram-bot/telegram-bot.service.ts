@@ -67,7 +67,7 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
     await this.stopBot();
   }
 
-  async startBot(retries = 3) {
+  async startBot(retries = 3): Promise<void> {
     try {
       const settings = await this.settingsService.getSettings();
       const token = settings?.telegramBotToken;
