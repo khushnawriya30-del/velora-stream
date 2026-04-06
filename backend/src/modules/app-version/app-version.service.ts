@@ -22,7 +22,7 @@ export class AppVersionService {
     }
     // Always return the GitHub Releases APK URL based on versionName
     const version = doc.versionName;
-    doc.apkUrl = `https://github.com/khushnawriya30-del/velora-stream/releases/download/v${version}/VELORA-v${version}.apk`;
+    doc.apkUrl = `https://github.com/khushnawriya30-del/velora-stream/releases/download/v${version}/Velora-v${version}.apk`;
     return doc;
   }
 
