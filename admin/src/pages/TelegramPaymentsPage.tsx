@@ -8,12 +8,10 @@ import {
   Clock,
   DollarSign,
   RefreshCw,
-  Eye,
   Copy,
   Settings,
   Save,
   Power,
-  Upload,
 } from 'lucide-react';
 
 interface TelegramPayment {
