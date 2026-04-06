@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import api from '../lib/api';
 import {
   Bot,
@@ -12,6 +12,7 @@ import {
   Settings,
   Save,
   Power,
+  Upload,
 } from 'lucide-react';
 
 interface TelegramPayment {
@@ -70,6 +71,8 @@ export default function TelegramPaymentsPage() {
   });
   const [savingSettings, setSavingSettings] = useState(false);
   const [restartingBot, setRestartingBot] = useState(false);
+  const [uploadingQr, setUploadingQr] = useState(false);
+  const qrFileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     fetchStats();
@@ -167,6 +170,26 @@ export default function TelegramPaymentsPage() {
 
   function copyText(text: string) {
     navigator.clipboard.writeText(text);
+  }
+
+  async function handleQrUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingQr(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const { data } = await api.post('/settings/upload-qr', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      setSettings((s) => ({ ...s, paymentQrCodeUrl: data.url }));
+      alert('QR code uploaded successfully!');
+    } catch {
+      alert('Failed to upload QR code');
+    } finally {
+      setUploadingQr(false);
+      if (qrFileRef.current) qrFileRef.current.value = '';
+    }
   }
 
   // ── Render ──
@@ -538,20 +561,26 @@ export default function TelegramPaymentsPage() {
               />
             </div>
 
-            {/* QR Code URL */}
+            {/* QR Code Upload */}
             <div>
               <label className="block text-sm text-text-muted mb-1.5">
-                Payment QR Code Image URL
+                Payment QR Code
               </label>
               <input
-                type="text"
-                value={settings.paymentQrCodeUrl}
-                onChange={(e) =>
-                  setSettings((s) => ({ ...s, paymentQrCodeUrl: e.target.value }))
-                }
-                placeholder="https://example.com/qr-code.png"
-                className="w-full px-3 py-2 bg-surface-light rounded-lg border border-border text-sm focus:outline-none focus:border-gold"
+                ref={qrFileRef}
+                type="file"
+                accept="image/*"
+                onChange={handleQrUpload}
+                className="hidden"
               />
+              <button
+                onClick={() => qrFileRef.current?.click()}
+                disabled={uploadingQr}
+                className="flex items-center gap-2 px-4 py-2.5 bg-surface-light rounded-lg border border-border text-sm hover:border-gold transition-colors disabled:opacity-50"
+              >
+                <Upload size={16} />
+                {uploadingQr ? 'Uploading...' : settings.paymentQrCodeUrl ? 'Change QR Code' : 'Upload QR Code'}
+              </button>
               {settings.paymentQrCodeUrl && (
                 <div className="mt-3 p-3 bg-white rounded-lg inline-block">
                   <img
@@ -624,7 +653,7 @@ export default function TelegramPaymentsPage() {
               </li>
               <li>Copy the bot token and paste it above</li>
               <li>Set your bot username (without @)</li>
-              <li>Upload your UPI QR code to any image host and paste the URL</li>
+              <li>Upload your UPI QR code image using the upload button above</li>
               <li>Enter your UPI ID</li>
               <li>Save settings and restart the bot</li>
               <li>
