@@ -6,6 +6,8 @@
 # Google Mobile Ads (AdMob)
 -keep class com.google.android.gms.ads.** { *; }
 -keep class com.google.ads.** { *; }
+-dontwarn android.media.LoudnessCodecController$OnLoudnessCodecUpdateListener
+-dontwarn android.media.LoudnessCodecController
 
 # Keep JavaScript interface methods for YouTube WebView player
 -keepclassmembers class * {

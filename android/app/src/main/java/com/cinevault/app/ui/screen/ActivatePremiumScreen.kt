@@ -564,7 +564,7 @@ fun ActivatePremiumScreen(
                     ) {
                         try {
                             val whatsappUri = Uri.parse(
-                                "https://wa.me/917015920368?text=${
+                                "https://wa.me/919625459277?text=${
                                     Uri.encode("Hi, I want to buy a Premium Code for Velora.")
                                 }"
                             )
