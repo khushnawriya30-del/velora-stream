@@ -65,8 +65,10 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
   // ══════════════════════════════
 
   async onModuleInit() {
-    // Start bot with webhook on init
-    await this.startBot();
+    // Start bot with webhook on init (non-blocking so app can start listening)
+    this.startBot().catch((err) =>
+      this.logger.error('Bot startup failed: ' + err.message),
+    );
   }
 
   async onModuleDestroy() {

@@ -12,3 +12,4 @@ extract*.js
 vercel.json
 fly.toml
 render.yaml
+env.yaml
