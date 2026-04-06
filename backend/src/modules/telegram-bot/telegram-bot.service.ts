@@ -67,7 +67,7 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
     await this.stopBot();
   }
 
-  async startBot() {
+  async startBot(retries = 3) {
     try {
       const settings = await this.settingsService.getSettings();
       const token = settings?.telegramBotToken;
@@ -94,6 +94,16 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
       this.isRunning = true;
       this.logger.log('Telegram bot started successfully');
     } catch (error: any) {
+      // 409 = old instance still polling; retry after delay
+      if (error.message?.includes('409') && retries > 0) {
+        this.logger.warn(
+          `Bot conflict (409), retrying in 5s... (${retries} left)`,
+        );
+        this.bot = null;
+        this.isRunning = false;
+        await new Promise((r) => setTimeout(r, 5000));
+        return this.startBot(retries - 1);
+      }
       this.logger.error('Failed to start Telegram bot: ' + error.message);
       this.isRunning = false;
       this.bot = null;
