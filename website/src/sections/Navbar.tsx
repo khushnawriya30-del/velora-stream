@@ -7,6 +7,7 @@ const links = [
   { label: 'Home', href: '#hero' },
   { label: 'Download', href: '#download' },
   { label: 'Features', href: '#features' },
+  { label: 'Pricing', href: '#pricing' },
   { label: 'Preview', href: '#preview' },
   { label: 'FAQ', href: '#faq' },
 ];

@@ -3,6 +3,7 @@ import Navbar from './sections/Navbar';
 import Hero from './sections/Hero';
 import Download from './sections/Download';
 import Features from './sections/Features';
+import Pricing from './sections/Pricing';
 import AppPreview from './sections/AppPreview';
 import FAQ from './sections/FAQ';
 import Footer from './sections/Footer';
@@ -33,6 +34,7 @@ export default function App() {
         <Hero />
         <Download />
         <Features />
+        <Pricing />
         <AppPreview />
         <FAQ />
         <Footer />
