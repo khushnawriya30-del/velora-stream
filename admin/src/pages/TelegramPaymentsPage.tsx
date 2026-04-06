@@ -166,9 +166,14 @@ export default function TelegramPaymentsPage() {
     setRestartingBot(true);
     try {
       await api.post('/telegram-bot/admin/restart');
+      // Give the bot 3s to restart, then check status
+      await new Promise((r) => setTimeout(r, 3000));
       await fetchBotStatus();
       alert('Bot restarted successfully');
-    } catch {} finally {
+    } catch (err: any) {
+      const msg = err?.response?.data?.message || err?.message || 'Unknown error';
+      alert('Failed to restart bot: ' + msg);
+    } finally {
       setRestartingBot(false);
     }
   }

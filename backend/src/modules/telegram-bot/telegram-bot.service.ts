@@ -103,7 +103,7 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
   async stopBot() {
     if (this.bot) {
       try {
-        this.bot.stop('shutdown');
+        await this.bot.stop('shutdown');
       } catch {}
       this.isRunning = false;
       this.bot = null;
@@ -112,9 +112,13 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
   }
 
   async restartBot() {
-    await this.stopBot();
-    await new Promise((r) => setTimeout(r, 2000));
-    await this.startBot();
+    try {
+      await this.stopBot();
+      await new Promise((r) => setTimeout(r, 1000));
+      await this.startBot();
+    } catch (e: any) {
+      this.logger.error('Restart failed: ' + e.message);
+    }
   }
 
   // ══════════════════════════════

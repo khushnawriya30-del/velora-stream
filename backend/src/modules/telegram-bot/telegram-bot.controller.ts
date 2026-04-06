@@ -76,7 +76,8 @@ export class TelegramBotController {
   @UseGuards(AuthGuard('jwt'), RolesGuard)
   @Roles('admin')
   async restartBot() {
-    await this.botService.restartBot();
-    return { success: true, message: 'Bot restarted' };
+    // Fire-and-forget to avoid 504 timeout from Cloud Run
+    this.botService.restartBot().catch(() => {});
+    return { success: true, message: 'Bot restart initiated' };
   }
 }
