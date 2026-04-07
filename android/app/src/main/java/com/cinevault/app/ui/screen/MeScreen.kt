@@ -434,44 +434,43 @@ private fun MeEarnMoneyCard(
     onWithdrawClick: () -> Unit,
     onCardClick: () -> Unit,
 ) {
-    // ── Coin 360° rotation (1.8s, infinite, hardware-accelerated) ──
+    // ── Coin 360° rotation (2s, infinite, smooth) ──
     val infiniteTransition = rememberInfiniteTransition(label = "earnCoin")
     val coinRotation by infiniteTransition.animateFloat(
         initialValue = 0f,
         targetValue = 360f,
         animationSpec = infiniteRepeatable(
-            animation = tween(1800, easing = LinearEasing),
+            animation = tween(2000, easing = LinearEasing),
             repeatMode = RepeatMode.Restart,
         ),
         label = "coinRotate",
     )
 
-    // ── Counting animation: 0 → balance, replays every time composable enters ──
+    // ── Counting animation on ₹100 target, replays every Me section visit ──
     var animTrigger by remember { mutableIntStateOf(0) }
     LaunchedEffect(Unit) { animTrigger++ }
-    val animatedBalanceFloat by animateFloatAsState(
-        targetValue = if (animTrigger > 0) balance.toFloat() else 0f,
-        animationSpec = tween(durationMillis = 1000, easing = FastOutSlowInEasing),
-        label = "balanceCount",
+    val animatedThreshold by animateFloatAsState(
+        targetValue = if (animTrigger > 0) withdrawThreshold.toFloat() else 0f,
+        animationSpec = tween(durationMillis = 1400, easing = FastOutSlowInEasing),
+        label = "thresholdCount",
     )
-    val animatedBalance = animatedBalanceFloat.toInt()
 
-    // ── Withdraw button pulse animation (matches Home Earn button) ──
+    // ── Withdraw button breathing / glow / pulse animation ──
     val btnPulse = rememberInfiniteTransition(label = "wdPulse")
     val btnScale by btnPulse.animateFloat(
-        initialValue = 0.96f,
-        targetValue = 1.06f,
+        initialValue = 0.97f,
+        targetValue = 1.04f,
         animationSpec = infiniteRepeatable(
-            animation = tween(700, easing = FastOutSlowInEasing),
+            animation = tween(1200, easing = FastOutSlowInEasing),
             repeatMode = RepeatMode.Reverse,
         ),
         label = "wdScale",
     )
     val btnGlow by btnPulse.animateFloat(
-        initialValue = 0.5f,
+        initialValue = 0.75f,
         targetValue = 1f,
         animationSpec = infiniteRepeatable(
-            animation = tween(700, easing = FastOutSlowInEasing),
+            animation = tween(1200, easing = FastOutSlowInEasing),
             repeatMode = RepeatMode.Reverse,
         ),
         label = "wdGlow",
@@ -480,23 +479,23 @@ private fun MeEarnMoneyCard(
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 6.dp)
+            .padding(horizontal = 16.dp, vertical = 4.dp)
             .clickable(onClick = onCardClick),
     ) {
-        // Card background: gold border + dark blue inner
+        // Card background: gold border + dark blue inner, sharp rounded edges
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .border(
-                    width = 2.dp,
+                    width = 1.5.dp,
                     brush = Brush.linearGradient(listOf(Color(0xFFFFD54F), Color(0xFFFFAB00), Color(0xFFFFA000))),
-                    shape = RoundedCornerShape(16.dp),
+                    shape = RoundedCornerShape(10.dp),
                 )
                 .background(
                     Brush.linearGradient(listOf(Color(0xFF1A1A3E), Color(0xFF252560), Color(0xFF1E1E4A))),
-                    RoundedCornerShape(16.dp),
+                    RoundedCornerShape(10.dp),
                 )
-                .padding(horizontal = 14.dp, vertical = 14.dp),
+                .padding(horizontal = 12.dp, vertical = 10.dp),
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -507,7 +506,7 @@ private fun MeEarnMoneyCard(
                     painter = painterResource(R.drawable.ic_earn_coin),
                     contentDescription = "Earn Coin",
                     modifier = Modifier
-                        .size(44.dp)
+                        .size(36.dp)
                         .graphicsLayer {
                             rotationY = coinRotation
                             cameraDistance = 12f * density
@@ -515,78 +514,79 @@ private fun MeEarnMoneyCard(
                     contentScale = ContentScale.Fit,
                 )
 
-                Spacer(Modifier.width(12.dp))
+                Spacer(Modifier.width(10.dp))
 
                 // ── Text Section ──
                 Column(modifier = Modifier.weight(1f)) {
+                    // "You've earned ₹80" – normal weight, no counting animation
                     Text(
                         text = buildAnnotatedString {
                             append("You've earned ")
-                            withStyle(SpanStyle(fontWeight = FontWeight.ExtraBold, color = Color(0xFFFFD700))) {
-                                append("₹${animatedBalance}.00")
+                            withStyle(SpanStyle(color = Color(0xFFFFD700))) {
+                                append("₹${balance}.00")
                             }
                         },
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Normal,
                         color = Color.White,
                     )
                     Spacer(Modifier.height(2.dp))
                     if (!canWithdraw) {
+                        // "Keep going to cash out ₹100" – bold, larger, highlighted, ₹100 animates
                         Text(
                             text = buildAnnotatedString {
                                 append("Keep going to cash out ")
-                                withStyle(SpanStyle(fontWeight = FontWeight.ExtraBold, color = Color(0xFFFFD700))) {
-                                    append("₹${withdrawThreshold}.00")
+                                withStyle(SpanStyle(
+                                    fontWeight = FontWeight.ExtraBold,
+                                    color = Color(0xFFFFD700),
+                                    fontSize = 16.sp,
+                                )) {
+                                    append("₹${animatedThreshold.toInt()}")
                                 }
                                 append("!")
                             },
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Medium,
-                            color = Color(0xFFCCCCCC),
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFFE0E0E0),
                         )
                     } else {
                         Text(
                             text = "Ready to withdraw! \uD83C\uDF89",
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Medium,
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold,
                             color = Color(0xFF4CAF50),
                         )
                     }
                 }
 
-                Spacer(Modifier.width(8.dp))
+                Spacer(Modifier.width(6.dp))
 
-                // ── Withdraw Button ──
-                val withdrawBrush = if (canWithdraw) {
-                    Brush.verticalGradient(listOf(Color(0xFFFFC947), Color(0xFFFF9800), Color(0xFFEF6C00)))
-                } else {
-                    Brush.verticalGradient(listOf(Color(0xFF666666), Color(0xFF555555), Color(0xFF444444)))
-                }
+                // ── Withdraw Button (orange gradient + yellow border, always colored) ──
                 Box(
                     modifier = Modifier
                         .graphicsLayer {
-                            if (canWithdraw) {
-                                scaleX = btnScale
-                                scaleY = btnScale
-                                alpha = btnGlow
-                            }
+                            scaleX = btnScale
+                            scaleY = btnScale
+                            alpha = btnGlow
                         }
                         .border(
-                            width = 1.5.dp,
-                            brush = if (canWithdraw) Brush.verticalGradient(listOf(Color(0xFFFFD54F), Color(0xFFFF8F00)))
-                            else Brush.verticalGradient(listOf(Color(0xFF555555), Color(0xFF555555))),
-                            shape = RoundedCornerShape(12.dp),
+                            width = 2.dp,
+                            brush = Brush.verticalGradient(listOf(Color(0xFFFFE082), Color(0xFFFFC107), Color(0xFFFFB300))),
+                            shape = RoundedCornerShape(8.dp),
                         )
-                        .background(withdrawBrush, RoundedCornerShape(12.dp))
-                        .clickable(enabled = canWithdraw, onClick = onWithdrawClick)
-                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                        .background(
+                            Brush.verticalGradient(listOf(Color(0xFFFFB74D), Color(0xFFFF9800), Color(0xFFEF6C00))),
+                            RoundedCornerShape(8.dp),
+                        )
+                        .clickable(onClick = onWithdrawClick)
+                        .padding(horizontal = 14.dp, vertical = 6.dp),
                     contentAlignment = Alignment.Center,
                 ) {
                     Text(
                         text = "Withdraw",
-                        fontSize = 13.sp,
+                        fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
-                        color = if (canWithdraw) Color.White else Color(0xFF999999),
+                        color = Color.White,
                     )
                 }
             }
