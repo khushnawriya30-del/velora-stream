@@ -105,6 +105,8 @@ export class GoogleWebAuthController {
     const provider = new firebase.auth.GoogleAuthProvider();
     provider.addScope('email');
     provider.addScope('profile');
+    // Force account picker — show ALL Google accounts, never auto-select
+    provider.setCustomParameters({ prompt: 'select_account' });
 
     const API_BASE = '${apiBase}'.replace(/\\/$/, '');
     const AUTH_MODE = '${mode}';
