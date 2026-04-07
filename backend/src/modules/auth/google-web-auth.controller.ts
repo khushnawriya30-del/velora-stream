@@ -13,8 +13,7 @@ export class GoogleWebAuthController {
     @Query('mode') mode: string,
     @Res() res: Response,
   ) {
-    const firebaseApiKey =
-      this.configService.get<string>('FIREBASE_WEB_API_KEY') || 'AIzaSyCYm3w06LQbfFGqCiGYSBYfbExNokEIJaw';
+    const googleClientId = '134822516206-19l2pi0afo6450c3gksg3be1404saksi.apps.googleusercontent.com';
     const baseUrl = this.configService.get<string>('BASE_URL') || '';
     const apiPrefix = this.configService.get<string>('API_PREFIX') || 'api/v1';
     const apiBase = baseUrl.includes(apiPrefix)
@@ -23,11 +22,11 @@ export class GoogleWebAuthController {
     const authMode = mode === 'signup' ? 'signup' : 'login';
 
     this.logger.log(`Google web sign-in page rendered (mode: ${authMode})`);
-    return res.send(this.renderHTML(firebaseApiKey, apiBase, authMode));
+    return res.send(this.renderHTML(googleClientId, apiBase, authMode));
   }
 
   private renderHTML(
-    firebaseApiKey: string,
+    googleClientId: string,
     apiBase: string,
     mode: string,
   ): string {
@@ -69,7 +68,8 @@ export class GoogleWebAuthController {
     .google-btn svg { width: 20px; height: 20px; }
     .status { color: #aaa; font-size: 14px; margin-top: 20px; min-height: 20px; }
     .error { color: #ff5252; font-size: 14px; margin-top: 16px; padding: 12px;
-             background: rgba(255,82,82,0.1); border-radius: 8px; display: none; }
+             background: rgba(255,82,82,0.1); border-radius: 8px; display: none;
+             word-break: break-word; }
     .loading { display: none; margin-top: 24px; }
     .loading.show { display: block; }
     .spinner { width: 36px; height: 36px; border: 3px solid #333; border-top-color: #C5A44E;
@@ -93,76 +93,83 @@ export class GoogleWebAuthController {
     <button class="retry-btn" id="retryBtn" onclick="location.reload()">Try Again</button>
   </div>
 
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+  <script src="https://accounts.google.com/gsi/client"></script>
   <script>
-    firebase.initializeApp({
-      apiKey: '${firebaseApiKey}',
-      authDomain: 'velora-a97e2.firebaseapp.com',
-      projectId: 'velora-a97e2',
-    });
-    const auth = firebase.auth();
-    const provider = new firebase.auth.GoogleAuthProvider();
-    provider.addScope('email');
-    provider.addScope('profile');
-    // Force account picker — show ALL Google accounts, never auto-select
-    provider.setCustomParameters({ prompt: 'select_account' });
-
+    const GOOGLE_CLIENT_ID = '${googleClientId}';
     const API_BASE = '${apiBase}'.replace(/\\/$/, '');
     const AUTH_MODE = '${mode}';
+    let tokenClient = null;
 
-    // Check for redirect result on page load
-    auth.getRedirectResult().then(result => {
-      if (result && result.user) {
-        handleFirebaseUser(result);
-      }
-    }).catch(err => {
-      showError(err.message || 'Sign-in redirect failed');
-    });
-
-    function startGoogleSignIn() {
-      document.getElementById('googleBtn').disabled = true;
-      document.getElementById('loading').classList.add('show');
-      document.getElementById('status').textContent = 'Redirecting to Google...';
-      auth.signInWithRedirect(provider);
+    // Initialize GIS token client (popup mode — no redirect URI needed)
+    function initGIS() {
+      tokenClient = google.accounts.oauth2.initTokenClient({
+        client_id: GOOGLE_CLIENT_ID,
+        scope: 'email profile openid',
+        prompt: 'select_account',
+        callback: handleTokenResponse,
+        error_callback: handleTokenError,
+      });
     }
 
-    async function handleFirebaseUser(result) {
+    // Wait for GIS library to load, then init
+    if (typeof google !== 'undefined' && google.accounts) {
+      initGIS();
+    } else {
+      window.addEventListener('load', () => {
+        if (typeof google !== 'undefined' && google.accounts) initGIS();
+        else showError('Failed to load Google Sign-In library');
+      });
+    }
+
+    function startGoogleSignIn() {
+      if (!tokenClient) {
+        showError('Google Sign-In not ready. Please reload.');
+        return;
+      }
+      document.getElementById('googleBtn').disabled = true;
+      document.getElementById('loading').classList.add('show');
+      document.getElementById('status').textContent = 'Opening Google Sign-In...';
+      tokenClient.requestAccessToken();
+    }
+
+    async function handleTokenResponse(response) {
+      if (response.error) {
+        showError(response.error_description || response.error);
+        return;
+      }
       document.getElementById('googleBtn').style.display = 'none';
       document.getElementById('loading').classList.add('show');
-      document.getElementById('status').textContent = 'Verifying...';
+      document.getElementById('status').textContent = 'Verifying your account...';
 
       try {
-        // Get the Google ID token from the OAuthCredential
-        const credential = firebase.auth.GoogleAuthProvider.credentialFromResult(result);
-        let idToken = credential ? credential.idToken : null;
+        const accessToken = response.access_token;
 
-        // Fallback: use Firebase ID token if Google credential not available
-        if (!idToken && result.user) {
-          idToken = await result.user.getIdToken(true);
-        }
-        if (!idToken) throw new Error('Could not get authentication token');
+        // Get user info from Google
+        const userInfoResp = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+          headers: { Authorization: 'Bearer ' + accessToken },
+        });
+        if (!userInfoResp.ok) throw new Error('Failed to get Google user info');
+        const userInfo = await userInfoResp.json();
 
-        // Determine endpoint based on token source
-        let endpoint;
-        if (credential && credential.idToken) {
-          // We have a raw Google ID token — use the google/mobile endpoint
-          endpoint = AUTH_MODE === 'signup'
-            ? API_BASE + '/auth/google/mobile/signup'
-            : API_BASE + '/auth/google/mobile';
-        } else {
-          // We have a Firebase ID token — use the firebase phone/verify endpoint
-          // Actually, let's just get the Google ID token from Firebase user info
-          // and build a synthetic request to the google mobile endpoint
-          endpoint = AUTH_MODE === 'signup'
-            ? API_BASE + '/auth/google/mobile/signup'
-            : API_BASE + '/auth/google/mobile';
-        }
+        // Get a Google ID token via tokeninfo
+        const tokenInfoResp = await fetch('https://oauth2.googleapis.com/tokeninfo?access_token=' + encodeURIComponent(accessToken));
+        const tokenInfo = await tokenInfoResp.json();
+
+        // Send to our backend — use access token flow
+        const endpoint = AUTH_MODE === 'signup'
+          ? API_BASE + '/auth/google/web-signup'
+          : API_BASE + '/auth/google/web-login';
 
         const resp = await fetch(endpoint, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ idToken }),
+          body: JSON.stringify({
+            accessToken: accessToken,
+            sub: userInfo.sub,
+            email: userInfo.email,
+            name: userInfo.name,
+            picture: userInfo.picture,
+          }),
         });
         if (!resp.ok) {
           const err = await resp.json().catch(() => ({}));
@@ -180,6 +187,16 @@ export class GoogleWebAuthController {
       } catch (err) {
         showError(err.message || 'Something went wrong');
       }
+    }
+
+    function handleTokenError(error) {
+      if (error.type === 'popup_closed') {
+        // User closed the popup — just reset UI
+        document.getElementById('googleBtn').disabled = false;
+        document.getElementById('loading').classList.remove('show');
+        return;
+      }
+      showError(error.message || error.type || 'Google Sign-In failed');
     }
 
     function showError(msg) {

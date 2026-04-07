@@ -353,6 +353,61 @@ export class AuthService implements OnModuleInit {
   }
 
   /**
+   * Google Login/Signup via access token (web flow).
+   * Verifies the access token against Google's userinfo endpoint server-side.
+   */
+  async googleVerifyAccessToken(accessToken: string): Promise<{ accessToken: string; refreshToken: string; user: any }> {
+    let userInfo: any;
+    try {
+      const response = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      userInfo = await response.json();
+    } catch {
+      throw new UnauthorizedException('Failed to verify Google access token');
+    }
+
+    if (!userInfo.sub || !userInfo.email) {
+      throw new UnauthorizedException('Invalid Google access token');
+    }
+
+    const uid = userInfo.sub;
+    const email = userInfo.email;
+    const name = userInfo.name ?? email.split('@')[0];
+    const picture = userInfo.picture ?? '';
+
+    // Same find-or-create logic as googleVerifyIdToken
+    let user = await this.userModel.findOne({ googleId: uid });
+    if (!user) {
+      user = await this.userModel.findOne({ email: email.toLowerCase(), authProvider: AuthProvider.GOOGLE });
+    }
+
+    if (!user) {
+      user = await this.userModel.create({
+        name,
+        email: email.toLowerCase(),
+        googleId: uid,
+        authProvider: AuthProvider.GOOGLE,
+        avatarUrl: picture,
+        isEmailVerified: true,
+      });
+    } else {
+      let needsSave = false;
+      if (!user.googleId) { user.googleId = uid; needsSave = true; }
+      if (picture && !user.avatarUrl) { user.avatarUrl = picture; needsSave = true; }
+      if (needsSave) await user.save();
+    }
+
+    if (user.isSuspended) throw new UnauthorizedException('Your account has been suspended');
+
+    user.lastActiveAt = new Date();
+    await user.save();
+
+    const tokens = await this.generateTokens(user);
+    return { ...tokens, user: this.sanitizeUser(user) };
+  }
+
+  /**
    * Verify a Google ID token via Google's tokeninfo endpoint.
    */
   private async verifyGoogleToken(idToken: string): Promise<{ uid: string; email: string; name: string; picture: string }> {

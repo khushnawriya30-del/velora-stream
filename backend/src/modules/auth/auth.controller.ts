@@ -86,6 +86,30 @@ export class AuthController {
     return { accessToken: result.accessToken, refreshToken: result.refreshToken, user: result.user };
   }
 
+  @Post('google/web-login')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Login with Google access token (web flow)' })
+  async googleWebLogin(
+    @Body() body: { accessToken: string },
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const result = await this.authService.googleVerifyAccessToken(body.accessToken);
+    this.setRefreshTokenCookie(res, result.refreshToken);
+    return { accessToken: result.accessToken, refreshToken: result.refreshToken, user: result.user };
+  }
+
+  @Post('google/web-signup')
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: 'Sign up with Google access token (web flow)' })
+  async googleWebSignup(
+    @Body() body: { accessToken: string },
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const result = await this.authService.googleVerifyAccessToken(body.accessToken);
+    this.setRefreshTokenCookie(res, result.refreshToken);
+    return { accessToken: result.accessToken, refreshToken: result.refreshToken, user: result.user };
+  }
+
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Refresh access token using refresh token (cookie or body)' })
