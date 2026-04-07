@@ -45,6 +45,8 @@ async function bootstrap() {
     exclude: [
       { path: 'pay/:paymentId', method: RequestMethod.GET },
       { path: 'auth/google-web', method: RequestMethod.GET },
+      { path: 'auth/google-web/callback', method: RequestMethod.GET },
+      { path: 'auth/google-web/verify', method: RequestMethod.POST },
     ],
   });
 
