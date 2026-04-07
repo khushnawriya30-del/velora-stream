@@ -55,6 +55,7 @@ fun MeScreen(
     onNavigateToNotifications: () -> Unit = {},
     onNavigateToSettings: () -> Unit = {},
     onNavigateToPremium: () -> Unit = {},
+    onNavigateToEarnMoney: () -> Unit = {},
     onMovieClick: (String) -> Unit = {},
     /** Navigate to content from history. For movies: episodeId = null. For episodes: episodeId = episode id, contentId = seriesId. */
     onHistoryItemClick: (contentId: String, episodeId: String?) -> Unit = { _, _ -> },
@@ -86,6 +87,9 @@ fun MeScreen(
             onSubscribeClick = onNavigateToPremium,
             onRenewClick = onNavigateToPremium,
         )
+
+        // ── Earn Money Card ──
+        MeEarnMoneyCard(onNavigateToEarnMoney)
 
         if (uiState.profiles.size > 1) {
             Spacer(Modifier.height(4.dp))
@@ -409,5 +413,72 @@ private fun formatPremiumDate(expiresAt: String?): String {
         "$day $month, $year"
     } catch (_: Exception) {
         expiresAt // fallback to raw string
+    }
+}
+
+// ── Earn Money Card for Me Tab ──
+@Composable
+private fun MeEarnMoneyCard(onClick: () -> Unit) {
+    val infiniteTransition = rememberInfiniteTransition(label = "coin")
+    val coinScale by infiniteTransition.animateFloat(
+        initialValue = 1f,
+        targetValue = 1.15f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(600, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse,
+        ),
+        label = "coinPulse",
+    )
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 6.dp)
+            .clickable(onClick = onClick),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF1A1A2E)),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(
+                    Brush.horizontalGradient(
+                        listOf(Color(0xFF1A1A2E), Color(0xFF2A1F0A)),
+                    ),
+                )
+                .padding(horizontal = 16.dp, vertical = 14.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            // Animated coin
+            Text(
+                text = "\uD83E\uDE99",
+                fontSize = 28.sp,
+                modifier = Modifier.graphicsLayer {
+                    scaleX = coinScale
+                    scaleY = coinScale
+                },
+            )
+            Spacer(Modifier.width(12.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "Earn Money",
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFFFFD700),
+                )
+                Text(
+                    text = "Invite friends & withdraw cash",
+                    fontSize = 12.sp,
+                    color = Color(0xFFAAAAAA),
+                )
+            }
+            Icon(
+                imageVector = Icons.Default.ChevronRight,
+                contentDescription = null,
+                tint = Color(0xFFFFD700),
+                modifier = Modifier.size(24.dp),
+            )
+        }
     }
 }

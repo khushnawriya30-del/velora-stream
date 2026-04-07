@@ -60,6 +60,7 @@ fun HomeScreen(
     onPlayClick: (String, String?) -> Unit = { id, _ -> onMovieClick(id) },
     onSearchClick: () -> Unit,
     onNotificationsClick: () -> Unit = {},
+    onEarnMoneyClick: () -> Unit = {},
     onSectionClick: ((HomeSectionDto) -> Unit)? = null,
     onAddToWatchlist: ((String) -> Unit)? = null,
     viewModel: HomeViewModel = hiltViewModel(),
@@ -103,6 +104,7 @@ fun HomeScreen(
                     SearchBarWithBell(
                         onSearchClick = onSearchClick,
                         onNotificationsClick = onNotificationsClick,
+                        onEarnMoneyClick = onEarnMoneyClick,
                         movieTitles = uiState.homeSections
                             .flatMap { it.items }
                             .map { it.title }
@@ -416,6 +418,7 @@ fun HomeScreen(
 fun SearchBarWithBell(
     onSearchClick: () -> Unit,
     onNotificationsClick: () -> Unit,
+    onEarnMoneyClick: () -> Unit = {},
     movieTitles: List<String>,
 ) {
     val placeholders = if (movieTitles.isNotEmpty()) movieTitles
@@ -511,6 +514,53 @@ fun SearchBarWithBell(
                     tint = CineVaultTheme.colors.textPrimary,
                     modifier = Modifier.size(22.dp)
                 )
+            }
+        }
+
+        // Earn Money animated button
+        val earnPulse = rememberInfiniteTransition(label = "earn")
+        val earnScale by earnPulse.animateFloat(
+            initialValue = 0.95f,
+            targetValue = 1.08f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(700, easing = FastOutSlowInEasing),
+                repeatMode = RepeatMode.Reverse,
+            ),
+            label = "earnScale",
+        )
+        Surface(
+            modifier = Modifier
+                .height(44.dp)
+                .graphicsLayer { scaleX = earnScale; scaleY = earnScale },
+            shape = RoundedCornerShape(22.dp),
+            color = Color.Transparent,
+            onClick = onEarnMoneyClick,
+        ) {
+            Box(
+                modifier = Modifier
+                    .background(
+                        Brush.linearGradient(
+                            listOf(
+                                Color(0xFFC5A44E),
+                                Color(0xFFF2D078),
+                                Color(0xFFC5A44E),
+                            ),
+                        ),
+                        RoundedCornerShape(22.dp),
+                    )
+                    .padding(horizontal = 12.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("\uD83E\uDE99", fontSize = 14.sp)
+                    Spacer(Modifier.width(4.dp))
+                    Text(
+                        "Earn",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = Color(0xFF1A1200),
+                    )
+                }
             }
         }
     }

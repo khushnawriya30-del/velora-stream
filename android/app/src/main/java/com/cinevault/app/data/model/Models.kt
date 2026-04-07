@@ -451,3 +451,54 @@ data class VerifyPaymentResponse(
     val daysRemaining: Int?,
     val alreadyVerified: Boolean? = null,
 )
+
+// ── Wallet / Referral / Withdrawal ──
+data class WalletBalanceResponse(
+    val balance: Int,
+    val totalEarned: Int,
+    val totalWithdrawn: Int,
+    val totalReferrals: Int,
+    val withdrawThreshold: Int,
+    val canWithdraw: Boolean,
+    val amountNeeded: Int,
+)
+
+data class ReferralStatsResponse(
+    val referralCode: String,
+    val totalInvited: Int,
+    val totalEarned: Int,
+    val referrals: List<ReferralItem>,
+)
+
+data class ReferralItem(
+    val id: String,
+    val amount: Int,
+    val status: String,
+    val createdAt: String,
+)
+
+data class EarningItem(
+    val id: String,
+    val type: String,
+    val amount: Int,
+    val description: String,
+    val createdAt: String,
+)
+
+data class WithdrawRequest(val amount: Int, val upiId: String)
+
+data class WithdrawResponse(
+    val id: String,
+    val amount: Int,
+    val upiId: String,
+    val status: String,
+    val createdAt: String,
+)
+
+data class WithdrawalHistoryItem(
+    val id: String,
+    val amount: Int,
+    val upiId: String,
+    val status: String,
+    val createdAt: String,
+)

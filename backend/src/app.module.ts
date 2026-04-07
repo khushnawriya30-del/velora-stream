@@ -30,6 +30,9 @@ import { PremiumModule } from './modules/premium/premium.module';
 import { PremiumPlansModule } from './modules/premium-plans/premium-plans.module';
 import { TelegramBotModule } from './modules/telegram-bot/telegram-bot.module';
 import { UpiPaymentModule } from './modules/upi-payment/upi-payment.module';
+import { WalletModule } from './modules/wallet/wallet.module';
+import { ReferralModule } from './modules/referral/referral.module';
+import { WithdrawalModule } from './modules/withdrawal/withdrawal.module';
 
 @Module({
   imports: [
@@ -81,6 +84,9 @@ import { UpiPaymentModule } from './modules/upi-payment/upi-payment.module';
     PremiumPlansModule,
     TelegramBotModule,
     UpiPaymentModule,
+    WalletModule,
+    ReferralModule,
+    WithdrawalModule,
   ],
 })
 export class AppModule {}

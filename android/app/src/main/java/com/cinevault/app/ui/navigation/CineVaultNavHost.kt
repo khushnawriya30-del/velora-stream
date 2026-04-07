@@ -574,6 +574,7 @@ fun CineVaultNavHost(navController: NavHostController = rememberNavController())
                     },
                     onSearchClick = { navController.navigate(Screen.Find.route) },
                     onNotificationsClick = { navController.navigate(Screen.Notifications.route) },
+                    onEarnMoneyClick = { requireAuth { navController.navigate(Screen.EarnMoney.route) } },
                     onSectionClick = { section ->
                         SectionDataHolder.set(section)
                         navController.navigate(Screen.SectionDetail.createRoute(section.id))
@@ -635,6 +636,7 @@ fun CineVaultNavHost(navController: NavHostController = rememberNavController())
                         onNavigateToNotifications = { navController.navigate(Screen.Notifications.route) },
                         onNavigateToSettings = { navController.navigate(Screen.Settings.route) },
                         onNavigateToPremium = { navController.navigate(Screen.ActivatePremium.route) },
+                        onNavigateToEarnMoney = { navController.navigate(Screen.EarnMoney.route) },
                         onMovieClick = { movieId -> navController.navigate(Screen.MovieDetail.createRoute(movieId)) },
                         onHistoryItemClick = { contentId, episodeId ->
                             navController.navigate(Screen.MovieDetail.createRoute(contentId))
@@ -725,6 +727,10 @@ fun CineVaultNavHost(navController: NavHostController = rememberNavController())
 
             composable(Screen.ActivatePremium.route) {
                 ActivatePremiumScreen(onBack = { navController.popBackStack() })
+            }
+
+            composable(Screen.EarnMoney.route) {
+                EarnMoneyScreen(onBack = { navController.popBackStack() })
             }
 
             composable(Screen.Notifications.route) {

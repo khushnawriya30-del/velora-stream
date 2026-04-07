@@ -97,6 +97,12 @@ export class User {
   @Prop()
   activationCode: string; // The code used to activate
 
+  @Prop({ unique: true, sparse: true })
+  referralCode: string;
+
+  @Prop({ type: Types.ObjectId, ref: 'User' })
+  referredBy: Types.ObjectId;
+
   @Prop({ default: 0 })
   maxDevices: number; // 0 = unlimited for free, 2 for premium
 }

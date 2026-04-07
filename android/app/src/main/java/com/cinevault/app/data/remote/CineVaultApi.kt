@@ -289,4 +289,25 @@ interface CineVaultApi {
     // App Version
     @GET("app-version")
     suspend fun getAppVersion(): Response<AppVersionResponse>
+
+    // ── Wallet ──
+    @GET("wallet/balance")
+    suspend fun getWalletBalance(): Response<WalletBalanceResponse>
+
+    // ── Referral ──
+    @GET("referral/stats")
+    suspend fun getReferralStats(): Response<ReferralStatsResponse>
+
+    @GET("referral/earnings")
+    suspend fun getReferralEarnings(): Response<List<EarningItem>>
+
+    @POST("referral/apply")
+    suspend fun applyReferral(@Body body: Map<String, String>): Response<MessageResponse>
+
+    // ── Withdrawal ──
+    @POST("withdraw")
+    suspend fun requestWithdrawal(@Body request: WithdrawRequest): Response<WithdrawResponse>
+
+    @GET("withdraw/history")
+    suspend fun getWithdrawalHistory(): Response<List<WithdrawalHistoryItem>>
 }
