@@ -23,6 +23,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.paint
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
@@ -44,6 +45,7 @@ import com.cinevault.app.data.model.MovieDto
 import com.cinevault.app.data.model.ProfileDto
 import com.cinevault.app.data.model.WatchProgressDto
 import com.cinevault.app.ui.theme.CineVaultTheme
+import com.cinevault.app.ui.viewmodel.EarnMoneyViewModel
 import com.cinevault.app.ui.viewmodel.PremiumViewModel
 import com.cinevault.app.ui.viewmodel.ProfileViewModel
 
@@ -61,9 +63,11 @@ fun MeScreen(
     onHistoryItemClick: (contentId: String, episodeId: String?) -> Unit = { _, _ -> },
     profileViewModel: ProfileViewModel = hiltViewModel(),
     premiumViewModel: PremiumViewModel = hiltViewModel(),
+    earnMoneyViewModel: EarnMoneyViewModel = hiltViewModel(),
 ) {
     val uiState by profileViewModel.uiState.collectAsState()
     val premiumState by premiumViewModel.uiState.collectAsState()
+    val walletState by earnMoneyViewModel.uiState.collectAsState()
 
     Column(
         modifier = Modifier
@@ -89,7 +93,13 @@ fun MeScreen(
         )
 
         // ── Earn Money Card ──
-        MeEarnMoneyCard(onNavigateToEarnMoney)
+        MeEarnMoneyCard(
+            balance = walletState.balance,
+            withdrawThreshold = walletState.withdrawThreshold,
+            canWithdraw = walletState.canWithdraw,
+            onWithdrawClick = onNavigateToEarnMoney,
+            onCardClick = onNavigateToEarnMoney,
+        )
 
         if (uiState.profiles.size > 1) {
             Spacer(Modifier.height(4.dp))
@@ -418,67 +428,161 @@ private fun formatPremiumDate(expiresAt: String?): String {
 
 // ── Earn Money Card for Me Tab ──
 @Composable
-private fun MeEarnMoneyCard(onClick: () -> Unit) {
-    val infiniteTransition = rememberInfiniteTransition(label = "coin")
-    val coinScale by infiniteTransition.animateFloat(
-        initialValue = 1f,
-        targetValue = 1.15f,
+private fun MeEarnMoneyCard(
+    balance: Int,
+    withdrawThreshold: Int,
+    canWithdraw: Boolean,
+    onWithdrawClick: () -> Unit,
+    onCardClick: () -> Unit,
+) {
+    // ── Coin 360° rotation (1.8s, infinite, hardware-accelerated) ──
+    val infiniteTransition = rememberInfiniteTransition(label = "earnCoin")
+    val coinRotation by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 360f,
         animationSpec = infiniteRepeatable(
-            animation = tween(600, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse,
+            animation = tween(1800, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart,
         ),
-        label = "coinPulse",
+        label = "coinRotate",
     )
 
-    Card(
+    // ── Counting animation: 0 → balance, replays every time composable enters ──
+    var animTrigger by remember { mutableIntStateOf(0) }
+    LaunchedEffect(Unit) { animTrigger++ }
+    val animatedBalanceFloat by animateFloatAsState(
+        targetValue = if (animTrigger > 0) balance.toFloat() else 0f,
+        animationSpec = tween(durationMillis = 1000, easing = FastOutSlowInEasing),
+        label = "balanceCount",
+    )
+    val animatedBalance = animatedBalanceFloat.toInt()
+
+    // ── Withdraw button pulse animation (matches Home Earn button) ──
+    val btnPulse = rememberInfiniteTransition(label = "wdPulse")
+    val btnScale by btnPulse.animateFloat(
+        initialValue = 0.96f,
+        targetValue = 1.06f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(700, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse,
+        ),
+        label = "wdScale",
+    )
+    val btnGlow by btnPulse.animateFloat(
+        initialValue = 0.5f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(700, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse,
+        ),
+        label = "wdGlow",
+    )
+
+    Box(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 6.dp)
-            .clickable(onClick = onClick),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF1A1A2E)),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+            .clickable(onClick = onCardClick),
     ) {
-        Row(
+        // Card background (gold-bordered dark blue)
+        Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(
-                    Brush.horizontalGradient(
-                        listOf(Color(0xFF1A1A2E), Color(0xFF2A1F0A)),
-                    ),
+                .clip(RoundedCornerShape(16.dp))
+                .paint(
+                    painter = painterResource(R.drawable.earn_card_bg),
+                    contentScale = ContentScale.FillBounds,
                 )
-                .padding(horizontal = 16.dp, vertical = 14.dp),
-            verticalAlignment = Alignment.CenterVertically,
+                .padding(horizontal = 14.dp, vertical = 14.dp),
         ) {
-            // Animated coin
-            Text(
-                text = "\uD83E\uDE99",
-                fontSize = 28.sp,
-                modifier = Modifier.graphicsLayer {
-                    scaleX = coinScale
-                    scaleY = coinScale
-                },
-            )
-            Spacer(Modifier.width(12.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = "Earn Money",
-                    fontSize = 15.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color(0xFFFFD700),
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                // ── Rotating Coin ──
+                Image(
+                    painter = painterResource(R.drawable.ic_earn_coin),
+                    contentDescription = "Earn Coin",
+                    modifier = Modifier
+                        .size(44.dp)
+                        .graphicsLayer {
+                            rotationY = coinRotation
+                            cameraDistance = 12f * density
+                        },
+                    contentScale = ContentScale.Fit,
                 )
-                Text(
-                    text = "Invite friends & withdraw cash",
-                    fontSize = 12.sp,
-                    color = Color(0xFFAAAAAA),
-                )
+
+                Spacer(Modifier.width(12.dp))
+
+                // ── Text Section ──
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = buildAnnotatedString {
+                            append("You've earned ")
+                            withStyle(SpanStyle(fontWeight = FontWeight.ExtraBold, color = Color(0xFFFFD700))) {
+                                append("₹${animatedBalance}.00")
+                            }
+                        },
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color.White,
+                    )
+                    Spacer(Modifier.height(2.dp))
+                    if (!canWithdraw) {
+                        Text(
+                            text = buildAnnotatedString {
+                                append("Keep going to cash out ")
+                                withStyle(SpanStyle(fontWeight = FontWeight.ExtraBold, color = Color(0xFFFFD700))) {
+                                    append("₹${withdrawThreshold}.00")
+                                }
+                                append("!")
+                            },
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = Color(0xFFCCCCCC),
+                        )
+                    } else {
+                        Text(
+                            text = "Ready to withdraw! \uD83C\uDF89",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = Color(0xFF4CAF50),
+                        )
+                    }
+                }
+
+                Spacer(Modifier.width(8.dp))
+
+                // ── Withdraw Button ──
+                Box(
+                    modifier = Modifier
+                        .graphicsLayer {
+                            if (canWithdraw) {
+                                scaleX = btnScale
+                                scaleY = btnScale
+                                alpha = btnGlow
+                            }
+                        }
+                        .clip(RoundedCornerShape(12.dp))
+                        .paint(
+                            painter = painterResource(
+                                if (canWithdraw) R.drawable.btn_withdraw_bg
+                                else R.drawable.btn_withdraw_disabled_bg,
+                            ),
+                            contentScale = ContentScale.FillBounds,
+                        )
+                        .clickable(enabled = canWithdraw, onClick = onWithdrawClick)
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        text = "Withdraw",
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = if (canWithdraw) Color.White else Color(0xFF999999),
+                    )
+                }
             }
-            Icon(
-                imageVector = Icons.Default.ChevronRight,
-                contentDescription = null,
-                tint = Color(0xFFFFD700),
-                modifier = Modifier.size(24.dp),
-            )
         }
     }
 }

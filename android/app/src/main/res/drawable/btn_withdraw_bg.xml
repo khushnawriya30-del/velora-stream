@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Outer glow / border -->
+    <item>
+        <shape android:shape="rectangle">
+            <gradient
+                android:startColor="#FFFFD54F"
+                android:endColor="#FFFF8F00"
+                android:angle="270" />
+            <corners android:radius="12dp" />
+        </shape>
+    </item>
+    <!-- Inner orange gradient button -->
+    <item
+        android:left="1.5dp"
+        android:top="1.5dp"
+        android:right="1.5dp"
+        android:bottom="1.5dp">
+        <shape android:shape="rectangle">
+            <gradient
+                android:startColor="#FFFFC947"
+                android:centerColor="#FFFF9800"
+                android:endColor="#FFEF6C00"
+                android:angle="270" />
+            <corners android:radius="11dp" />
+        </shape>
+    </item>
+</layer-list>
