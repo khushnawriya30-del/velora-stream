@@ -23,7 +23,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.paint
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
@@ -484,14 +483,18 @@ private fun MeEarnMoneyCard(
             .padding(horizontal = 16.dp, vertical = 6.dp)
             .clickable(onClick = onCardClick),
     ) {
-        // Card background (gold-bordered dark blue)
+        // Card background: gold border + dark blue inner
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(16.dp))
-                .paint(
-                    painter = painterResource(R.drawable.earn_card_bg),
-                    contentScale = ContentScale.FillBounds,
+                .border(
+                    width = 2.dp,
+                    brush = Brush.linearGradient(listOf(Color(0xFFFFD54F), Color(0xFFFFAB00), Color(0xFFFFA000))),
+                    shape = RoundedCornerShape(16.dp),
+                )
+                .background(
+                    Brush.linearGradient(listOf(Color(0xFF1A1A3E), Color(0xFF252560), Color(0xFF1E1E4A))),
+                    RoundedCornerShape(16.dp),
                 )
                 .padding(horizontal = 14.dp, vertical = 14.dp),
         ) {
@@ -554,6 +557,11 @@ private fun MeEarnMoneyCard(
                 Spacer(Modifier.width(8.dp))
 
                 // ── Withdraw Button ──
+                val withdrawBrush = if (canWithdraw) {
+                    Brush.verticalGradient(listOf(Color(0xFFFFC947), Color(0xFFFF9800), Color(0xFFEF6C00)))
+                } else {
+                    Brush.verticalGradient(listOf(Color(0xFF666666), Color(0xFF555555), Color(0xFF444444)))
+                }
                 Box(
                     modifier = Modifier
                         .graphicsLayer {
@@ -563,14 +571,13 @@ private fun MeEarnMoneyCard(
                                 alpha = btnGlow
                             }
                         }
-                        .clip(RoundedCornerShape(12.dp))
-                        .paint(
-                            painter = painterResource(
-                                if (canWithdraw) R.drawable.btn_withdraw_bg
-                                else R.drawable.btn_withdraw_disabled_bg,
-                            ),
-                            contentScale = ContentScale.FillBounds,
+                        .border(
+                            width = 1.5.dp,
+                            brush = if (canWithdraw) Brush.verticalGradient(listOf(Color(0xFFFFD54F), Color(0xFFFF8F00)))
+                            else Brush.verticalGradient(listOf(Color(0xFF555555), Color(0xFF555555))),
+                            shape = RoundedCornerShape(12.dp),
                         )
+                        .background(withdrawBrush, RoundedCornerShape(12.dp))
                         .clickable(enabled = canWithdraw, onClick = onWithdrawClick)
                         .padding(horizontal = 16.dp, vertical = 8.dp),
                     contentAlignment = Alignment.Center,
