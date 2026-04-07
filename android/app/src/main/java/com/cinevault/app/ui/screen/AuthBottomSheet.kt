@@ -44,8 +44,7 @@ import coil.compose.AsyncImage
 import com.cinevault.app.R
 import com.cinevault.app.ui.theme.CineVaultTheme
 import com.cinevault.app.ui.viewmodel.AuthViewModel
-import com.cinevault.app.util.getGoogleIdToken
-import androidx.credentials.exceptions.GetCredentialCancellationException
+import com.cinevault.app.util.launchGoogleWebSignIn
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.PhoneAuthCredential
 import com.google.firebase.auth.PhoneAuthOptions
@@ -119,22 +118,9 @@ fun AuthBottomSheet(
     var phoneLoading by remember { mutableStateOf(false) }
     var countdownSeconds by remember { mutableIntStateOf(0) }
 
-    // Google Sign-In via Credential Manager
-    val webClientId = stringResource(R.string.google_web_client_id)
-    val scope = rememberCoroutineScope()
+    // Google Sign-In via Chrome Custom Tab (web-based)
     fun launchGoogleSignIn() {
-        scope.launch {
-            try {
-                val idToken = getGoogleIdToken(context, webClientId)
-                viewModel.googleLogin(idToken)
-            } catch (e: GetCredentialCancellationException) {
-                // user cancelled
-            } catch (e: Exception) {
-                viewModel.onGoogleSignInError(
-                    "Google Sign-In failed: ${e.localizedMessage ?: "Unknown error"}"
-                )
-            }
-        }
+        launchGoogleWebSignIn(context, mode = "login")
     }
 
     // Firebase phone OTP sending

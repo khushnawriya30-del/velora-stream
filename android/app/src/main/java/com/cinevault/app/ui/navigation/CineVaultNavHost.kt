@@ -430,6 +430,28 @@ fun CineVaultNavHost(navController: NavHostController = rememberNavController())
     var pendingAuthAction by remember { mutableStateOf<(() -> Unit)?>(null) }
     var hasShownAutoPopup by remember { mutableStateOf(false) }
 
+    // Handle Google web auth callback deep link (velora://auth-callback)
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val activity = context as? com.cinevault.app.MainActivity
+    val pendingAuthUri by (activity?.pendingAuthUri ?: kotlinx.coroutines.flow.MutableStateFlow(null)).collectAsState()
+    LaunchedEffect(pendingAuthUri) {
+        pendingAuthUri?.let { uri ->
+            authViewModel.handleWebAuthCallback(uri)
+            activity?.clearPendingAuthUri()
+        }
+    }
+
+    // When loginSuccess fires from web auth, navigate to Home
+    val authUiState by authViewModel.uiState.collectAsState()
+    LaunchedEffect(authUiState.loginSuccess) {
+        if (authUiState.loginSuccess && currentRoute != Screen.Home.route) {
+            navController.navigate(Screen.Home.route) {
+                popUpTo(0) { inclusive = true }
+            }
+            authViewModel.resetState()
+        }
+    }
+
     // Auto-show login popup on first Home visit when not logged in
     LaunchedEffect(isLoggedIn, currentRoute) {
         if (isLoggedIn == false && currentRoute == Screen.Home.route && !hasShownAutoPopup) {

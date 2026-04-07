@@ -131,6 +131,9 @@ dependencies {
     implementation("androidx.credentials:credentials-play-services-auth:1.3.0")
     implementation("com.google.android.libraries.identity.googleid:googleid:1.1.1")
 
+    // Chrome Custom Tabs (for web-based Google Sign-In)
+    implementation("androidx.browser:browser:1.7.0")
+
     // Lottie
     implementation("com.airbnb.android:lottie-compose:6.3.0")
 

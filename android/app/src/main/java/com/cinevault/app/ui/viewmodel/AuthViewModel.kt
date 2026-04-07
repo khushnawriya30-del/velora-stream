@@ -1,10 +1,13 @@
 package com.cinevault.app.ui.viewmodel
 
+import android.net.Uri
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.cinevault.app.data.local.SessionManager
 import com.cinevault.app.data.model.Result
 import com.cinevault.app.data.repository.AuthRepository
+import com.google.gson.Gson
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -216,6 +219,41 @@ class AuthViewModel @Inject constructor(
         _uiState.update { it.copy(error = message) }
     }
 
+    /**
+     * Handles the auth callback from Chrome Custom Tab (velora://auth-callback?...)
+     * Parses tokens + user JSON, saves to session, and triggers loginSuccess.
+     */
+    fun handleWebAuthCallback(uri: Uri) {
+        val accessToken = uri.getQueryParameter("accessToken")
+        val refreshToken = uri.getQueryParameter("refreshToken")
+        val userJson = uri.getQueryParameter("user")
+        if (accessToken == null || refreshToken == null || userJson == null) {
+            Log.e("AuthViewModel", "Missing parameters in auth callback")
+            _uiState.update { it.copy(error = "Google sign-in failed: missing data") }
+            return
+        }
+        viewModelScope.launch {
+            try {
+                val user = Gson().fromJson(userJson, WebAuthUser::class.java)
+                sessionManager.saveSession(
+                    token = accessToken,
+                    userId = user._id ?: user.id ?: "",
+                    name = user.name ?: "",
+                    email = user.email ?: "",
+                    avatar = user.avatarUrl,
+                    role = user.role ?: "user",
+                )
+                sessionManager.saveRefreshToken(refreshToken)
+                sessionManager.saveGoogleAccount(user.name ?: "", user.email ?: "", user.avatarUrl)
+                Log.d("AuthViewModel", "Web auth callback: session saved for ${user.email}")
+                _uiState.update { it.copy(loginSuccess = true) }
+            } catch (e: Exception) {
+                Log.e("AuthViewModel", "Failed to handle web auth callback", e)
+                _uiState.update { it.copy(error = "Google sign-in failed: ${e.message}") }
+            }
+        }
+    }
+
     fun completeOnboarding() {
         viewModelScope.launch {
             sessionManager.completeOnboarding()
@@ -230,3 +268,13 @@ class AuthViewModel @Inject constructor(
         _uiState.update { AuthUiState() }
     }
 }
+
+/** Minimal user model for parsing the web auth callback JSON */
+private data class WebAuthUser(
+    val _id: String? = null,
+    val id: String? = null,
+    val name: String? = null,
+    val email: String? = null,
+    val avatarUrl: String? = null,
+    val role: String? = null,
+)

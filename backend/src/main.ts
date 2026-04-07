@@ -42,7 +42,10 @@ async function bootstrap() {
   // Global prefix
   const apiPrefix = configService.get<string>('API_PREFIX', 'api/v1');
   app.setGlobalPrefix(apiPrefix, {
-    exclude: [{ path: 'pay/:paymentId', method: RequestMethod.GET }],
+    exclude: [
+      { path: 'pay/:paymentId', method: RequestMethod.GET },
+      { path: 'auth/google-web', method: RequestMethod.GET },
+    ],
   });
 
   // Validation

@@ -21,6 +21,7 @@
         <activity
             android:name=".MainActivity"
             android:exported="true"
+            android:launchMode="singleTask"
             android:theme="@style/Theme.CineVault"
             android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize"
             android:supportsPictureInPicture="true">

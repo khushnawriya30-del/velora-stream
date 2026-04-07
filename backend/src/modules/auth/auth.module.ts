@@ -4,6 +4,7 @@ import { PassportModule } from '@nestjs/passport';
 import { MongooseModule } from '@nestjs/mongoose';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { AuthController } from './auth.controller';
+import { GoogleWebAuthController } from './google-web-auth.controller';
 import { AuthService } from './auth.service';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { GoogleStrategy } from './strategies/google.strategy';
@@ -35,7 +36,7 @@ if (process.env.GOOGLE_CLIENT_ID) {
       { name: EmailOtp.name, schema: EmailOtpSchema },
     ]),
   ],
-  controllers: [AuthController],
+  controllers: [AuthController, GoogleWebAuthController],
   providers: [AuthService, JwtStrategy, ...optionalProviders],
   exports: [AuthService, JwtStrategy, PassportModule],
 })

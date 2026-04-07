@@ -33,9 +33,7 @@ import com.cinevault.app.R
 import com.cinevault.app.ui.components.GoldButton
 import com.cinevault.app.ui.theme.CineVaultTheme
 import com.cinevault.app.ui.viewmodel.AuthViewModel
-import com.cinevault.app.util.getGoogleIdToken
-import androidx.credentials.exceptions.GetCredentialCancellationException
-import kotlinx.coroutines.launch
+import com.cinevault.app.util.launchGoogleWebSignIn
 
 @Composable
 fun RegisterScreen(
@@ -53,10 +51,8 @@ fun RegisterScreen(
     var password by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
-    val scope = rememberCoroutineScope()
 
-    // Google Sign-In via Credential Manager
-    val webClientId = stringResource(R.string.google_web_client_id)
+    // Google Sign-In via Chrome Custom Tab
 
     LaunchedEffect(uiState.registerSuccess) {
         if (uiState.registerSuccess) {
@@ -236,18 +232,7 @@ fun RegisterScreen(
             // Sign Up with Google
             Button(
                 onClick = {
-                    scope.launch {
-                        try {
-                            val idToken = getGoogleIdToken(context, webClientId)
-                            viewModel.googleSignup(idToken)
-                        } catch (e: GetCredentialCancellationException) {
-                            // user cancelled
-                        } catch (e: Exception) {
-                            viewModel.onGoogleSignInError(
-                                "Google Sign-In failed: ${e.localizedMessage ?: "Unknown error"}"
-                            )
-                        }
-                    }
+                    launchGoogleWebSignIn(context, mode = "signup")
                 },
                 enabled = !uiState.isLoading,
                 modifier = Modifier
