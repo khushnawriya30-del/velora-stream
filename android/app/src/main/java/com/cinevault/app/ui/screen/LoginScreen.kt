@@ -1,8 +1,6 @@
 package com.cinevault.app.ui.screen
 
-import android.app.Activity
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -36,10 +34,9 @@ import com.cinevault.app.R
 import com.cinevault.app.ui.components.GoldButton
 import com.cinevault.app.ui.theme.CineVaultTheme
 import com.cinevault.app.ui.viewmodel.AuthViewModel
-import com.google.android.gms.auth.api.signin.GoogleSignIn
-import com.google.android.gms.auth.api.signin.GoogleSignInOptions
-import com.google.android.gms.auth.api.signin.GoogleSignInStatusCodes
-import com.google.android.gms.common.api.ApiException
+import com.cinevault.app.util.getGoogleIdToken
+import androidx.credentials.exceptions.GetCredentialCancellationException
+import kotlinx.coroutines.launch
 
 @Composable
 fun LoginScreen(
@@ -56,48 +53,22 @@ fun LoginScreen(
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
 
-    // Google Sign-In client — sign out first each time to force the account picker
+    // Google Sign-In via Credential Manager
     val webClientId = stringResource(R.string.google_web_client_id)
-    val googleSignInClient = remember(webClientId) {
-        val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
-            .requestIdToken(webClientId)
-            .requestEmail()
-            .build()
-        GoogleSignIn.getClient(context, gso)
-    }
-
-    val googleLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.StartActivityForResult(),
-    ) { result ->
-        try {
-            val account = GoogleSignIn.getSignedInAccountFromIntent(result.data)
-                .getResult(ApiException::class.java)
-            val idToken = account.idToken
-            if (idToken != null) {
+    fun launchGoogleSignIn() {
+        scope.launch {
+            try {
+                val idToken = getGoogleIdToken(context, webClientId)
                 viewModel.googleLogin(idToken)
-            } else {
+            } catch (e: GetCredentialCancellationException) {
+                // user cancelled
+            } catch (e: Exception) {
                 viewModel.onGoogleSignInError(
-                    "Could not get Google token. Please try again."
+                    "Google Sign-In failed: ${e.localizedMessage ?: "Unknown error"}"
                 )
             }
-        } catch (e: ApiException) {
-            when (e.statusCode) {
-                GoogleSignInStatusCodes.SIGN_IN_CANCELLED -> { /* user cancelled */ }
-                GoogleSignInStatusCodes.DEVELOPER_ERROR ->
-                    viewModel.onGoogleSignInError("Google Sign-In configuration error. Please contact support.")
-                GoogleSignInStatusCodes.NETWORK_ERROR ->
-                    viewModel.onGoogleSignInError("Network error. Please check your connection.")
-                else ->
-                    viewModel.onGoogleSignInError("Google Sign-In failed (code ${e.statusCode}). Please try again.")
-            }
-        }
-    }
-
-    fun launchGoogleSignIn() {
-        // Sign out first to always show the account picker
-        googleSignInClient.signOut().addOnCompleteListener {
-            googleLauncher.launch(googleSignInClient.signInIntent)
         }
     }
 

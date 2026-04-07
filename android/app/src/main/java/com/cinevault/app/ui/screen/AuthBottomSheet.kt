@@ -1,8 +1,6 @@
 package com.cinevault.app.ui.screen
 
 import android.app.Activity
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.*
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.*
@@ -46,10 +44,8 @@ import coil.compose.AsyncImage
 import com.cinevault.app.R
 import com.cinevault.app.ui.theme.CineVaultTheme
 import com.cinevault.app.ui.viewmodel.AuthViewModel
-import com.google.android.gms.auth.api.signin.GoogleSignIn
-import com.google.android.gms.auth.api.signin.GoogleSignInOptions
-import com.google.android.gms.auth.api.signin.GoogleSignInStatusCodes
-import com.google.android.gms.common.api.ApiException
+import com.cinevault.app.util.getGoogleIdToken
+import androidx.credentials.exceptions.GetCredentialCancellationException
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.PhoneAuthCredential
 import com.google.firebase.auth.PhoneAuthOptions
@@ -57,6 +53,7 @@ import com.google.firebase.auth.PhoneAuthProvider
 import java.util.concurrent.TimeUnit
 import androidx.compose.runtime.snapshotFlow
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 private enum class AuthPage {
     MAIN, EMAIL_INPUT, EMAIL_OTP, PHONE_INPUT, PHONE_OTP
@@ -122,43 +119,21 @@ fun AuthBottomSheet(
     var phoneLoading by remember { mutableStateOf(false) }
     var countdownSeconds by remember { mutableIntStateOf(0) }
 
-    // Google Sign-In
+    // Google Sign-In via Credential Manager
     val webClientId = stringResource(R.string.google_web_client_id)
-    val googleSignInClient = remember(webClientId) {
-        val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
-            .requestIdToken(webClientId)
-            .requestEmail()
-            .build()
-        GoogleSignIn.getClient(context, gso)
-    }
-    val googleLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.StartActivityForResult(),
-    ) { result ->
-        try {
-            val account = GoogleSignIn.getSignedInAccountFromIntent(result.data)
-                .getResult(ApiException::class.java)
-            val idToken = account.idToken
-            if (idToken != null) {
-                viewModel.googleLogin(idToken)
-            } else {
-                viewModel.onGoogleSignInError("Could not get Google token. Please try again.")
-            }
-        } catch (e: ApiException) {
-            when (e.statusCode) {
-                GoogleSignInStatusCodes.SIGN_IN_CANCELLED -> { /* user cancelled */ }
-                GoogleSignInStatusCodes.DEVELOPER_ERROR ->
-                    viewModel.onGoogleSignInError("Google Sign-In configuration error. Please contact support.")
-                GoogleSignInStatusCodes.NETWORK_ERROR ->
-                    viewModel.onGoogleSignInError("Network error. Please check your connection.")
-                else ->
-                    viewModel.onGoogleSignInError("Google Sign-In failed (code ${e.statusCode}). Please try again.")
-            }
-        }
-    }
-
+    val scope = rememberCoroutineScope()
     fun launchGoogleSignIn() {
-        googleSignInClient.signOut().addOnCompleteListener {
-            googleLauncher.launch(googleSignInClient.signInIntent)
+        scope.launch {
+            try {
+                val idToken = getGoogleIdToken(context, webClientId)
+                viewModel.googleLogin(idToken)
+            } catch (e: GetCredentialCancellationException) {
+                // user cancelled
+            } catch (e: Exception) {
+                viewModel.onGoogleSignInError(
+                    "Google Sign-In failed: ${e.localizedMessage ?: "Unknown error"}"
+                )
+            }
         }
     }
 

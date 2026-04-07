@@ -1,8 +1,6 @@
 package com.cinevault.app.ui.screen
 
-import android.app.Activity
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -35,9 +33,9 @@ import com.cinevault.app.R
 import com.cinevault.app.ui.components.GoldButton
 import com.cinevault.app.ui.theme.CineVaultTheme
 import com.cinevault.app.ui.viewmodel.AuthViewModel
-import com.google.android.gms.auth.api.signin.GoogleSignIn
-import com.google.android.gms.auth.api.signin.GoogleSignInOptions
-import com.google.android.gms.common.api.ApiException
+import com.cinevault.app.util.getGoogleIdToken
+import androidx.credentials.exceptions.GetCredentialCancellationException
+import kotlinx.coroutines.launch
 
 @Composable
 fun RegisterScreen(
@@ -55,36 +53,10 @@ fun RegisterScreen(
     var password by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
 
-    // Google Sign-In for signup
+    // Google Sign-In via Credential Manager
     val webClientId = stringResource(R.string.google_web_client_id)
-    val googleSignInClient = remember(webClientId) {
-        val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
-            .requestIdToken(webClientId)
-            .requestEmail()
-            .build()
-        GoogleSignIn.getClient(context, gso)
-    }
-    val googleLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.StartActivityForResult(),
-    ) { result ->
-        if (result.resultCode == Activity.RESULT_OK) {
-            try {
-                val account = GoogleSignIn.getSignedInAccountFromIntent(result.data)
-                    .getResult(ApiException::class.java)
-                val idToken = account.idToken
-                if (idToken != null) {
-                    viewModel.googleSignup(idToken)
-                } else {
-                    viewModel.onGoogleSignInError(
-                        "Could not get Google token. Check your Web Client ID configuration."
-                    )
-                }
-            } catch (e: ApiException) {
-                viewModel.onGoogleSignInError("Google Sign-In failed (code ${e.statusCode}).")
-            }
-        }
-    }
 
     LaunchedEffect(uiState.registerSuccess) {
         if (uiState.registerSuccess) {
@@ -264,8 +236,17 @@ fun RegisterScreen(
             // Sign Up with Google
             Button(
                 onClick = {
-                    googleSignInClient.signOut().addOnCompleteListener {
-                        googleLauncher.launch(googleSignInClient.signInIntent)
+                    scope.launch {
+                        try {
+                            val idToken = getGoogleIdToken(context, webClientId)
+                            viewModel.googleSignup(idToken)
+                        } catch (e: GetCredentialCancellationException) {
+                            // user cancelled
+                        } catch (e: Exception) {
+                            viewModel.onGoogleSignInError(
+                                "Google Sign-In failed: ${e.localizedMessage ?: "Unknown error"}"
+                            )
+                        }
                     }
                 },
                 enabled = !uiState.isLoading,
