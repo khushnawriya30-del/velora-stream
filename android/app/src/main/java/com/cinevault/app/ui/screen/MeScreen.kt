@@ -426,33 +426,45 @@ private fun DynamicPremiumSubscribeCard(
         Column(
             modifier = Modifier
                 .align(Alignment.TopStart)
-                .fillMaxWidth(0.55f)
-                .padding(start = 18.dp, top = 14.dp),
-            verticalArrangement = Arrangement.spacedBy(3.dp),
+                .fillMaxWidth(0.58f)
+                .padding(start = 20.dp, top = 18.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
             if (offer?.bannerText?.isNotBlank() == true) {
                 Text(
                     text = offer.bannerText,
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = Color.White.copy(alpha = 0.88f),
-                    lineHeight = 14.sp,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = Color.White.copy(alpha = 0.90f),
+                    lineHeight = 18.sp,
                     maxLines = 2,
                 )
             }
             if (offer != null) {
-                Text(
-                    text = "₹${offer.discountPrice}",
-                    fontSize = 22.sp,
-                    fontWeight = FontWeight.Black,
-                    color = Color(0xFFF3E5AB),
-                    lineHeight = 26.sp,
-                )
-                Text(
-                    text = if (offer.durationMonths == 1) "per month" else "for ${offer.durationMonths} months",
-                    fontSize = 10.sp,
-                    color = Color(0xFFF3E5AB).copy(alpha = 0.7f),
-                )
+                val durationLabel = when (offer.durationMonths) {
+                    1 -> "/ month"
+                    3 -> "/ 3 months"
+                    6 -> "/ 6 months"
+                    12 -> "/ year"
+                    else -> "/ ${offer.durationMonths} months"
+                }
+                Row(verticalAlignment = Alignment.Bottom) {
+                    Text(
+                        text = "₹${offer.discountPrice}",
+                        fontSize = 38.sp,
+                        fontWeight = FontWeight.Black,
+                        color = Color(0xFFF3E5AB),
+                        lineHeight = 42.sp,
+                    )
+                    Spacer(Modifier.width(6.dp))
+                    Text(
+                        text = durationLabel,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFFF3E5AB),
+                        modifier = Modifier.padding(bottom = 6.dp),
+                    )
+                }
             }
         }
     }

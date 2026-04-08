@@ -214,98 +214,65 @@ export default function PremiumOffersPage() {
             <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={() => setShowForm(false)}>
               <div className="bg-surface rounded-xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
                 <h2 className="text-lg font-bold text-gold mb-4">{editId ? 'Edit Offer' : 'Create Offer'}</h2>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="col-span-2">
-                    <label className="text-xs text-text-muted">Title</label>
-                    <input className="w-full mt-1 px-3 py-2 bg-background border border-border rounded-lg text-sm text-text-primary" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
+                <div className="space-y-4">
+                  {/* Banner preview */}
+                  <div className="bg-[#1e1e2e] rounded-xl p-4 border border-gold/20">
+                    <p className="text-xs text-text-muted mb-2">📱 Banner Preview</p>
+                    <p className="text-white text-sm font-semibold">{form.bannerText || 'Your message here'}</p>
+                    <div className="flex items-baseline gap-2 mt-1">
+                      <span className="text-[#F3E5AB] text-3xl font-black">₹{form.discountPrice}</span>
+                      <span className="text-[#F3E5AB] text-base font-bold">
+                        {form.durationMonths === 1 ? '/ month' : form.durationMonths === 3 ? '/ 3 months' : form.durationMonths === 6 ? '/ 6 months' : '/ year'}
+                      </span>
+                    </div>
                   </div>
-                  <div className="col-span-2">
-                    <label className="text-xs text-text-muted">Subtitle</label>
-                    <input className="w-full mt-1 px-3 py-2 bg-background border border-border rounded-lg text-sm text-text-primary" value={form.subtitle} onChange={(e) => setForm({ ...form, subtitle: e.target.value })} />
-                  </div>
-                  <div className="col-span-2">
-                    <label className="text-xs text-text-muted">Description</label>
-                    <textarea className="w-full mt-1 px-3 py-2 bg-background border border-border rounded-lg text-sm text-text-primary" rows={2} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
-                  </div>
-                  <div className="col-span-2">
-                    <label className="text-xs text-text-muted">Banner Text (shown on PNG banner for non-subscribers)</label>
-                    <input className="w-full mt-1 px-3 py-2 bg-background border border-border rounded-lg text-sm text-text-primary" value={form.bannerText} onChange={(e) => setForm({ ...form, bannerText: e.target.value })} placeholder="e.g. Get Premium at just" />
-                  </div>
+
+                  {/* Field 1: Message */}
                   <div>
-                    <label className="text-xs text-text-muted">Original Price (₹)</label>
-                    <input type="number" className="w-full mt-1 px-3 py-2 bg-background border border-border rounded-lg text-sm text-text-primary" value={form.originalPrice} onChange={(e) => setForm({ ...form, originalPrice: +e.target.value })} />
+                    <label className="text-sm font-semibold text-gold">📝 Banner Message</label>
+                    <p className="text-xs text-text-muted mb-1">Text shown above the price on the banner</p>
+                    <input
+                      className="w-full mt-1 px-3 py-2 bg-background border border-border rounded-lg text-sm text-text-primary"
+                      value={form.bannerText}
+                      onChange={(e) => setForm({ ...form, bannerText: e.target.value, title: e.target.value || 'Offer' })}
+                      placeholder="e.g. Subscribe to Velora Premium Only"
+                    />
                   </div>
+
+                  {/* Field 2: Amount */}
                   <div>
-                    <label className="text-xs text-text-muted">Discount Price (₹)</label>
-                    <input type="number" className="w-full mt-1 px-3 py-2 bg-background border border-border rounded-lg text-sm text-text-primary" value={form.discountPrice} onChange={(e) => setForm({ ...form, discountPrice: +e.target.value })} />
+                    <label className="text-sm font-semibold text-gold">💰 Price (₹)</label>
+                    <p className="text-xs text-text-muted mb-1">Amount shown on banner in gold</p>
+                    <input
+                      type="number"
+                      className="w-full mt-1 px-3 py-2 bg-background border border-border rounded-lg text-sm text-text-primary"
+                      value={form.discountPrice}
+                      onChange={(e) => setForm({ ...form, discountPrice: +e.target.value, originalPrice: +e.target.value })}
+                    />
                   </div>
-                  <div className="col-span-2 bg-gold/10 rounded-lg p-3">
-                    <span className="text-gold font-bold text-lg">
-                      {calcDiscount(form.originalPrice, form.discountPrice)}% OFF
-                    </span>
-                    <span className="text-text-muted text-sm ml-3">
-                      ₹{form.originalPrice} → ₹{form.discountPrice}
-                    </span>
-                  </div>
+
+                  {/* Field 3: Duration */}
                   <div>
-                    <label className="text-xs text-text-muted">Badge Text</label>
-                    <input className="w-full mt-1 px-3 py-2 bg-background border border-border rounded-lg text-sm text-text-primary" value={form.badgeText} onChange={(e) => setForm({ ...form, badgeText: e.target.value })} placeholder="e.g. LIMITED OFFER" />
-                  </div>
-                  <div>
-                    <label className="text-xs text-text-muted">Plan ID</label>
-                    <select className="w-full mt-1 px-3 py-2 bg-background border border-border rounded-lg text-sm text-text-primary" value={form.planId} onChange={(e) => setForm({ ...form, planId: e.target.value })}>
-                      <option value="1m">1 Month</option>
-                      <option value="3m">3 Months</option>
-                      <option value="6m">6 Months</option>
-                      <option value="12m">12 Months</option>
+                    <label className="text-sm font-semibold text-gold">📅 Duration</label>
+                    <p className="text-xs text-text-muted mb-1">Shown after the price</p>
+                    <select
+                      className="w-full mt-1 px-3 py-2 bg-background border border-border rounded-lg text-sm text-text-primary"
+                      value={form.durationMonths}
+                      onChange={(e) => {
+                        const m = +e.target.value;
+                        const planId = m === 1 ? '1m' : m === 3 ? '3m' : m === 6 ? '6m' : '12m';
+                        setForm({ ...form, durationMonths: m, planId });
+                      }}
+                    >
+                      <option value={1}>/ month</option>
+                      <option value={3}>/ 3 months</option>
+                      <option value={6}>/ 6 months</option>
+                      <option value={12}>/ year</option>
                     </select>
-                  </div>
-                  <div>
-                    <label className="text-xs text-text-muted">Duration (months)</label>
-                    <input type="number" className="w-full mt-1 px-3 py-2 bg-background border border-border rounded-lg text-sm text-text-primary" value={form.durationMonths} onChange={(e) => setForm({ ...form, durationMonths: +e.target.value })} />
-                  </div>
-                  <div>
-                    <label className="text-xs text-text-muted">Target Users</label>
-                    <select className="w-full mt-1 px-3 py-2 bg-background border border-border rounded-lg text-sm text-text-primary" value={form.targetUserType} onChange={(e) => setForm({ ...form, targetUserType: e.target.value })}>
-                      <option value="non_premium">Non-Premium Users</option>
-                      <option value="premium">Premium Users</option>
-                      <option value="all">All Users</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="text-xs text-text-muted">Offer Type</label>
-                    <select className="w-full mt-1 px-3 py-2 bg-background border border-border rounded-lg text-sm text-text-primary" value={form.offerType} onChange={(e) => setForm({ ...form, offerType: e.target.value })}>
-                      <option value="subscription">Subscription</option>
-                      <option value="renewal">Renewal</option>
-                      <option value="upgrade">Upgrade</option>
-                      <option value="retention">Retention</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="text-xs text-text-muted">Display Order</label>
-                    <input type="number" className="w-full mt-1 px-3 py-2 bg-background border border-border rounded-lg text-sm text-text-primary" value={form.order} onChange={(e) => setForm({ ...form, order: +e.target.value })} />
-                  </div>
-                  <div>
-                    <label className="text-xs text-text-muted">Start Date</label>
-                    <input type="date" className="w-full mt-1 px-3 py-2 bg-background border border-border rounded-lg text-sm text-text-primary" value={form.startDate} onChange={(e) => setForm({ ...form, startDate: e.target.value })} />
-                  </div>
-                  <div>
-                    <label className="text-xs text-text-muted">End Date</label>
-                    <input type="date" className="w-full mt-1 px-3 py-2 bg-background border border-border rounded-lg text-sm text-text-primary" value={form.endDate} onChange={(e) => setForm({ ...form, endDate: e.target.value })} />
-                  </div>
-                  <div className="flex items-center gap-4">
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input type="checkbox" checked={form.isVisible} onChange={(e) => setForm({ ...form, isVisible: e.target.checked })} className="accent-gold" />
-                      <span className="text-sm text-text-primary">Visible</span>
-                    </label>
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input type="checkbox" checked={form.showAsPopup} onChange={(e) => setForm({ ...form, showAsPopup: e.target.checked })} className="accent-gold" />
-                      <span className="text-sm text-text-primary">Show as Popup</span>
-                    </label>
                   </div>
                 </div>
                 <div className="flex gap-3 mt-6">
-                  <button onClick={handleSave} disabled={saving || !form.title} className="px-6 py-2 bg-gold text-black font-semibold rounded-lg hover:bg-gold/90 transition disabled:opacity-50">
+                  <button onClick={handleSave} disabled={saving} className="px-6 py-2 bg-gold text-black font-semibold rounded-lg hover:bg-gold/90 transition disabled:opacity-50">
                     {saving ? 'Saving...' : editId ? 'Update' : 'Create'}
                   </button>
                   <button onClick={() => setShowForm(false)} className="px-6 py-2 bg-surface-light text-text-secondary rounded-lg hover:bg-border transition">
