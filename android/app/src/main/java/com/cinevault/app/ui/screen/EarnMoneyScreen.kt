@@ -330,9 +330,9 @@ fun EarnMoneyScreen(
                         modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        // App logo (actual launcher icon)
+                        // App logo (foreground vector drawable)
                         Image(
-                            painter = painterResource(R.mipmap.ic_launcher_round),
+                            painter = painterResource(R.drawable.ic_launcher_foreground),
                             contentDescription = "App Logo",
                             modifier = Modifier
                                 .size(40.dp)
