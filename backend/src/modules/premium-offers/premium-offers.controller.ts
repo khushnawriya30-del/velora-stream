@@ -42,6 +42,13 @@ export class PremiumOffersController {
     return this.service.createOffer(dto);
   }
 
+  // ── Admin: Invite Settings (must be BEFORE admin/:id to avoid route conflict) ──
+  @AdminGuard()
+  @Put('admin/invite-settings')
+  async updateInviteSettings(@Body() dto: UpdateInviteSettingsDto) {
+    return this.service.updateInviteSettings(dto);
+  }
+
   @AdminGuard()
   @Put('admin/:id')
   async updateOffer(@Param('id') id: string, @Body() dto: UpdatePremiumOfferDto) {
@@ -53,12 +60,5 @@ export class PremiumOffersController {
   async deleteOffer(@Param('id') id: string) {
     await this.service.deleteOffer(id);
     return { message: 'Offer deleted' };
-  }
-
-  // ── Admin: Invite Settings ──
-  @AdminGuard()
-  @Put('admin/invite-settings')
-  async updateInviteSettings(@Body() dto: UpdateInviteSettingsDto) {
-    return this.service.updateInviteSettings(dto);
   }
 }
