@@ -103,7 +103,7 @@ export class RazorpayService {
     const orderPayload = {
       amount: amountInPaise,
       currency: 'INR',
-      receipt: `rcpt_${userId}_${Date.now()}`,
+      receipt: `rz_${userId.slice(-8)}_${Date.now()}`,
       notes: {
         userId,
         planId,
