@@ -267,6 +267,13 @@ interface CineVaultApi {
     @GET("premium-plans")
     suspend fun getPremiumPlans(): Response<List<PremiumPlanDto>>
 
+    // Razorpay Payment
+    @POST("razorpay/create-order")
+    suspend fun createRazorpayOrder(@Body request: RazorpayCreateOrderRequest): Response<RazorpayCreateOrderResponse>
+
+    @POST("razorpay/verify-payment")
+    suspend fun verifyRazorpayPayment(@Body request: RazorpayVerifyRequest): Response<RazorpayVerifyResponse>
+
     // UPI Payment
     @POST("upi-payment/create-order")
     suspend fun createUpiOrder(@Body request: CreateOrderRequest): Response<CreateOrderResponse>

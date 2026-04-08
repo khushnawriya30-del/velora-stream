@@ -143,6 +143,9 @@ dependencies {
     // DataStore (Preferences)
     implementation("androidx.datastore:datastore-preferences:1.0.0")
 
+    // Razorpay Payment SDK
+    implementation("com.razorpay:checkout:1.6.40")
+
     // Serialization
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.2")
 

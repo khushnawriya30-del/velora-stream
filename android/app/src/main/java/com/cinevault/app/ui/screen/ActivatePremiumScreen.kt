@@ -1,8 +1,8 @@
 package com.cinevault.app.ui.screen
 
+import android.app.Activity
 import android.content.Intent
 import android.net.Uri
-import android.os.Build
 import android.widget.Toast
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
@@ -45,9 +45,13 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.cinevault.app.MainActivity
 import com.cinevault.app.R
+import com.cinevault.app.RazorpayPaymentResult
 import com.cinevault.app.data.model.PremiumPlanDto
 import com.cinevault.app.ui.viewmodel.PremiumViewModel
+import com.razorpay.Checkout
+import org.json.JSONObject
 
 // Dark Luxury Theme
 private val BgPrimary = Color(0xFF121212)
@@ -85,8 +89,11 @@ fun ActivatePremiumScreen(
     var codeInput by remember { mutableStateOf("") }
     var showPaymentProcessing by remember { mutableStateOf(false) }
     var showPaymentResult by remember { mutableStateOf(false) }
+    // Razorpay result tracking for dialog
+    var razorpayPaymentFailed by remember { mutableStateOf(false) }
+    var razorpayFailMessage by remember { mutableStateOf<String?>(null) }
 
-    // Lifecycle: refresh premium status when app resumes (after browser payment)
+    // Lifecycle: refresh premium status when app resumes
     val lifecycleOwner = androidx.compose.ui.platform.LocalLifecycleOwner.current
     DisposableEffect(lifecycleOwner) {
         val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
@@ -98,16 +105,69 @@ fun ActivatePremiumScreen(
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
-    // When payment URL is ready, open browser
-    LaunchedEffect(uiState.paymentUrl) {
-        val url = uiState.paymentUrl ?: return@LaunchedEffect
+    // ── Razorpay: Open checkout when order is ready ──
+    val activity = context as? Activity
+    LaunchedEffect(uiState.razorpayOrder) {
+        val order = uiState.razorpayOrder ?: return@LaunchedEffect
+        if (activity == null) return@LaunchedEffect
         try {
-            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
-            context.startActivity(intent)
+            val checkout = Checkout()
+            checkout.setKeyID(order.keyId)
+            val options = JSONObject().apply {
+                put("name", "Velora Premium")
+                put("description", order.planName)
+                put("order_id", order.orderId)
+                put("amount", order.amount) // in paise
+                put("currency", order.currency)
+                put("theme", JSONObject().put("color", "#D4AF37"))
+                put("prefill", JSONObject().apply {
+                    put("email", uiState.userName ?: "")
+                })
+            }
+            checkout.open(activity, options)
         } catch (e: Exception) {
-            Toast.makeText(context, "Could not open payment page", Toast.LENGTH_LONG).show()
+            Toast.makeText(context, "Error opening payment: ${e.message}", Toast.LENGTH_LONG).show()
         }
-        viewModel.clearPaymentState()
+    }
+
+    // ── Razorpay: Listen for payment result from Activity ──
+    LaunchedEffect(Unit) {
+        val mainActivity = activity as? MainActivity ?: return@LaunchedEffect
+        mainActivity.razorpayResult.collect { result ->
+            when (result) {
+                is RazorpayPaymentResult.Success -> {
+                    showPaymentProcessing = true
+                    razorpayPaymentFailed = false
+                    viewModel.verifyRazorpayPayment(
+                        paymentId = result.paymentId,
+                        orderId = result.orderId,
+                        signature = result.signature,
+                    )
+                }
+                is RazorpayPaymentResult.Error -> {
+                    razorpayPaymentFailed = true
+                    razorpayFailMessage = result.message
+                    showPaymentResult = true
+                }
+            }
+        }
+    }
+
+    // ── Razorpay verify result ──
+    LaunchedEffect(uiState.razorpaySuccess) {
+        if (uiState.razorpaySuccess) {
+            showPaymentProcessing = false
+            razorpayPaymentFailed = false
+            showPaymentResult = true
+        }
+    }
+    LaunchedEffect(uiState.razorpayFailed) {
+        if (uiState.razorpayFailed) {
+            showPaymentProcessing = false
+            razorpayPaymentFailed = true
+            razorpayFailMessage = uiState.razorpayMessage
+            showPaymentResult = true
+        }
     }
 
     LaunchedEffect(plans) {
@@ -118,20 +178,6 @@ fun ActivatePremiumScreen(
     LaunchedEffect(uiState.isPremium) {
         if (uiState.isPremium && uiState.plan != null) {
             Toast.makeText(context, "Premium Activated! \uD83C\uDF89", Toast.LENGTH_LONG).show()
-        }
-    }
-
-    // Payment verification result
-    LaunchedEffect(uiState.paymentVerified) {
-        if (uiState.paymentVerified) {
-            showPaymentProcessing = false
-            showPaymentResult = true
-        }
-    }
-    LaunchedEffect(uiState.paymentFailed) {
-        if (uiState.paymentFailed) {
-            showPaymentProcessing = false
-            showPaymentResult = true
         }
     }
 
@@ -157,8 +203,8 @@ fun ActivatePremiumScreen(
         animationSpec = tween(200), label = "price",
     )
 
-    // Payment Processing Dialog (spinner)
-    if (showPaymentProcessing && uiState.isVerifyingPayment) {
+    // Payment Processing Dialog (spinner) - Razorpay verification
+    if (showPaymentProcessing && uiState.isVerifyingRazorpay) {
         AlertDialog(
             onDismissRequest = { },
             containerColor = CardBg,
@@ -187,12 +233,14 @@ fun ActivatePremiumScreen(
         )
     }
 
-    // Payment Result Dialog
+    // Payment Result Dialog - Razorpay
     if (showPaymentResult) {
-        val isSuccess = uiState.paymentVerified
+        val isSuccess = uiState.razorpaySuccess && !razorpayPaymentFailed
         AlertDialog(
             onDismissRequest = {
                 showPaymentResult = false
+                razorpayPaymentFailed = false
+                razorpayFailMessage = null
                 viewModel.clearPaymentState()
             },
             containerColor = CardBg,
@@ -218,15 +266,15 @@ fun ActivatePremiumScreen(
                             modifier = Modifier.size(48.dp),
                         )
                         Text(
-                            uiState.verifyMessage ?: "Premium activated successfully!",
+                            uiState.razorpayMessage ?: "Premium activated successfully!",
                             fontSize = 14.sp,
                             color = White87,
                             textAlign = TextAlign.Center,
                         )
-                        val resp = uiState.verifyResponse
+                        val resp = uiState.razorpayVerifyResponse
                         if (resp?.daysRemaining != null) {
                             Text(
-                                "Plan: ${resp.plan ?: ""} - ${resp.daysRemaining} days",
+                                "Plan: ${resp.premiumPlan ?: ""} - ${resp.daysRemaining} days",
                                 fontSize = 13.sp,
                                 color = GoldSoft,
                                 textAlign = TextAlign.Center,
@@ -239,7 +287,8 @@ fun ActivatePremiumScreen(
                             textAlign = TextAlign.Center,
                         )
                         Text(
-                            uiState.verifyMessage
+                            razorpayFailMessage
+                                ?: uiState.razorpayMessage
                                 ?: "Payment could not be verified. Please try again.",
                             fontSize = 14.sp,
                             color = White60,
@@ -252,6 +301,8 @@ fun ActivatePremiumScreen(
                 Button(
                     onClick = {
                         showPaymentResult = false
+                        razorpayPaymentFailed = false
+                        razorpayFailMessage = null
                         viewModel.clearPaymentState()
                         if (isSuccess) onBack()
                     },
@@ -585,10 +636,10 @@ fun ActivatePremiumScreen(
             BottomPayBar(
                 selectedPlan = selectedPlan,
                 animatedPrice = animatedPrice,
-                isLoading = uiState.isCreatingOrder,
+                isLoading = uiState.isCreatingRazorpayOrder,
                 onPayClick = {
-                    if (selectedPlan != null && !uiState.isCreatingOrder) {
-                        viewModel.createPaymentSession(selectedPlan.planId)
+                    if (selectedPlan != null && !uiState.isCreatingRazorpayOrder) {
+                        viewModel.createRazorpayOrder(selectedPlan.planId)
                     }
                 },
             )

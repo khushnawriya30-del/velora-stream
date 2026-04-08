@@ -187,4 +187,58 @@ class PremiumRepository @Inject constructor(
             Result.Error(e.message ?: "Network error")
         }
     }
+
+    // ── Razorpay ──
+
+    suspend fun createRazorpayOrder(planId: String): Result<RazorpayCreateOrderResponse> {
+        return try {
+            val response = api.createRazorpayOrder(RazorpayCreateOrderRequest(planId))
+            if (response.isSuccessful) {
+                Result.Success(response.body()!!)
+            } else {
+                val errorBody = response.errorBody()?.string()
+                val message = try {
+                    com.google.gson.Gson().fromJson(errorBody, MessageResponse::class.java).message
+                } catch (_: Exception) {
+                    "Failed to create Razorpay order"
+                }
+                Result.Error(message)
+            }
+        } catch (e: Exception) {
+            Result.Error(e.message ?: "Network error")
+        }
+    }
+
+    suspend fun verifyRazorpayPayment(
+        paymentId: String,
+        orderId: String,
+        signature: String,
+    ): Result<RazorpayVerifyResponse> {
+        return try {
+            val response = api.verifyRazorpayPayment(
+                RazorpayVerifyRequest(paymentId, orderId, signature)
+            )
+            if (response.isSuccessful) {
+                val result = response.body()!!
+                if (result.success && result.premiumPlan != null) {
+                    sessionManager.savePremiumStatus(
+                        isPremium = true,
+                        plan = result.premiumPlan,
+                        expiresAt = result.premiumExpiresAt,
+                    )
+                }
+                Result.Success(result)
+            } else {
+                val errorBody = response.errorBody()?.string()
+                val message = try {
+                    com.google.gson.Gson().fromJson(errorBody, MessageResponse::class.java).message
+                } catch (_: Exception) {
+                    "Payment verification failed"
+                }
+                Result.Error(message)
+            }
+        } catch (e: Exception) {
+            Result.Error(e.message ?: "Network error")
+        }
+    }
 }

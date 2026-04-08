@@ -398,6 +398,30 @@ data class PremiumPlanDto(
     val isActive: Boolean = true,
 )
 
+// Razorpay Payment
+data class RazorpayCreateOrderRequest(val planId: String)
+data class RazorpayCreateOrderResponse(
+    val orderId: String,
+    val amount: Int, // in paise
+    val currency: String,
+    val keyId: String,
+    val planName: String,
+    val plan: String,
+)
+data class RazorpayVerifyRequest(
+    val razorpay_payment_id: String,
+    val razorpay_order_id: String,
+    val razorpay_signature: String,
+)
+data class RazorpayVerifyResponse(
+    val success: Boolean,
+    val message: String?,
+    val premiumPlan: String?,
+    val premiumExpiresAt: String?,
+    val daysRemaining: Int?,
+    val alreadyActivated: Boolean? = null,
+)
+
 // UPI Payment
 data class CreateOrderRequest(val planId: String, val deviceInfo: String? = null)
 data class CreateOrderResponse(

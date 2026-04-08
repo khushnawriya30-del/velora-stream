@@ -33,6 +33,7 @@ import { UpiPaymentModule } from './modules/upi-payment/upi-payment.module';
 import { WalletModule } from './modules/wallet/wallet.module';
 import { ReferralModule } from './modules/referral/referral.module';
 import { WithdrawalModule } from './modules/withdrawal/withdrawal.module';
+import { RazorpayModule } from './modules/razorpay/razorpay.module';
 
 @Module({
   imports: [
@@ -87,6 +88,7 @@ import { WithdrawalModule } from './modules/withdrawal/withdrawal.module';
     WalletModule,
     ReferralModule,
     WithdrawalModule,
+    RazorpayModule,
   ],
 })
 export class AppModule {}

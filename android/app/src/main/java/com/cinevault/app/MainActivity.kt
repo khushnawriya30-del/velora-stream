@@ -18,18 +18,50 @@ import com.cinevault.app.ui.components.UpdateDialog
 import com.cinevault.app.ui.navigation.CineVaultNavHost
 import com.cinevault.app.ui.theme.CineVaultTheme
 import com.cinevault.app.ui.viewmodel.AppViewModel
+import com.razorpay.PaymentData
+import com.razorpay.PaymentResultWithDataListener
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
+
+/**
+ * Razorpay payment result sealed class
+ */
+sealed class RazorpayPaymentResult {
+    data class Success(val paymentId: String, val orderId: String, val signature: String) : RazorpayPaymentResult()
+    data class Error(val code: Int, val message: String) : RazorpayPaymentResult()
+}
 
 @AndroidEntryPoint
-class MainActivity : ComponentActivity() {
+class MainActivity : ComponentActivity(), PaymentResultWithDataListener {
 
     private val _pendingAuthUri = MutableStateFlow<Uri?>(null)
     val pendingAuthUri: StateFlow<Uri?> = _pendingAuthUri
 
+    private val _razorpayResult = MutableSharedFlow<RazorpayPaymentResult>(extraBufferCapacity = 1)
+    val razorpayResult: SharedFlow<RazorpayPaymentResult> = _razorpayResult.asSharedFlow()
+
     fun clearPendingAuthUri() {
         _pendingAuthUri.value = null
+    }
+
+    override fun onPaymentSuccess(razorpayPaymentID: String?, data: PaymentData?) {
+        Log.d("Razorpay", "Payment success: id=$razorpayPaymentID, order=${data?.orderId}, sig=${data?.signature}")
+        if (razorpayPaymentID != null && data?.orderId != null && data.signature != null) {
+            _razorpayResult.tryEmit(
+                RazorpayPaymentResult.Success(razorpayPaymentID, data.orderId, data.signature)
+            )
+        }
+    }
+
+    override fun onPaymentError(code: Int, response: String?, data: PaymentData?) {
+        Log.e("Razorpay", "Payment error: code=$code, response=$response")
+        _razorpayResult.tryEmit(
+            RazorpayPaymentResult.Error(code, response ?: "Payment cancelled or failed")
+        )
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {

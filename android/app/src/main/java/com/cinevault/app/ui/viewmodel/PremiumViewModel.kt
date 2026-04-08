@@ -7,6 +7,8 @@ import com.cinevault.app.data.local.SessionManager
 import com.cinevault.app.data.model.CreateOrderResponse
 import com.cinevault.app.data.model.OrderStatusResponse
 import com.cinevault.app.data.model.PremiumPlanDto
+import com.cinevault.app.data.model.RazorpayCreateOrderResponse
+import com.cinevault.app.data.model.RazorpayVerifyResponse
 import com.cinevault.app.data.model.Result
 import com.cinevault.app.data.model.VerifyPaymentResponse
 import com.cinevault.app.data.repository.PremiumRepository
@@ -40,6 +42,14 @@ data class PremiumUiState(
     // Orders
     val myOrders: List<OrderStatusResponse> = emptyList(),
     val isLoadingOrders: Boolean = false,
+    // Razorpay
+    val razorpayOrder: RazorpayCreateOrderResponse? = null,
+    val isCreatingRazorpayOrder: Boolean = false,
+    val isVerifyingRazorpay: Boolean = false,
+    val razorpaySuccess: Boolean = false,
+    val razorpayFailed: Boolean = false,
+    val razorpayMessage: String? = null,
+    val razorpayVerifyResponse: RazorpayVerifyResponse? = null,
 )
 
 @HiltViewModel
@@ -234,7 +244,79 @@ class PremiumViewModel @Inject constructor(
                 paymentFailed = false,
                 verifyMessage = null,
                 verifyResponse = null,
+                razorpayOrder = null,
+                razorpaySuccess = false,
+                razorpayFailed = false,
+                razorpayMessage = null,
+                razorpayVerifyResponse = null,
             )
+        }
+    }
+
+    // ── Razorpay ──
+
+    fun createRazorpayOrder(planId: String) {
+        viewModelScope.launch {
+            _uiState.update {
+                it.copy(
+                    isCreatingRazorpayOrder = true,
+                    error = null,
+                    razorpayOrder = null,
+                    razorpaySuccess = false,
+                    razorpayFailed = false,
+                )
+            }
+            when (val result = premiumRepository.createRazorpayOrder(planId)) {
+                is Result.Success -> {
+                    _uiState.update {
+                        it.copy(isCreatingRazorpayOrder = false, razorpayOrder = result.data)
+                    }
+                }
+                is Result.Error -> {
+                    _uiState.update {
+                        it.copy(isCreatingRazorpayOrder = false, error = result.message)
+                    }
+                }
+                is Result.Loading -> {}
+            }
+        }
+    }
+
+    fun verifyRazorpayPayment(paymentId: String, orderId: String, signature: String) {
+        viewModelScope.launch {
+            _uiState.update {
+                it.copy(
+                    isVerifyingRazorpay = true,
+                    razorpaySuccess = false,
+                    razorpayFailed = false,
+                    razorpayMessage = null,
+                    error = null,
+                )
+            }
+            when (val result = premiumRepository.verifyRazorpayPayment(paymentId, orderId, signature)) {
+                is Result.Success -> {
+                    _uiState.update {
+                        it.copy(
+                            isVerifyingRazorpay = false,
+                            razorpaySuccess = true,
+                            razorpayMessage = result.data.message,
+                            razorpayVerifyResponse = result.data,
+                            isPremium = result.data.premiumPlan != null,
+                        )
+                    }
+                    refreshStatus()
+                }
+                is Result.Error -> {
+                    _uiState.update {
+                        it.copy(
+                            isVerifyingRazorpay = false,
+                            razorpayFailed = true,
+                            razorpayMessage = result.message,
+                        )
+                    }
+                }
+                is Result.Loading -> {}
+            }
         }
     }
 }

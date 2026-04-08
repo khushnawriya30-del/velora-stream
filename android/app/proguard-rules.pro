@@ -1,5 +1,11 @@
 # ===== CineVault / VELORA ProGuard Rules =====
 
+# --- Razorpay SDK ---
+-keepclassmembers class * implements android.os.Parcelable { static ** CREATOR; }
+-keep class com.razorpay.** { *; }
+-dontwarn com.razorpay.**
+-keepattributes *Annotation*
+
 # --- Keep ALL app classes (data models, API, repositories, DI, etc.) ---
 -keep class com.cinevault.app.** { *; }
 -keepclassmembers class com.cinevault.app.** { *; }
