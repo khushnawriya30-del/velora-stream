@@ -81,9 +81,6 @@ export default function PremiumOffersPage() {
     Promise.all([fetchOffers(), fetchInvite()]).finally(() => setLoading(false));
   }, [fetchOffers, fetchInvite]);
 
-  const calcDiscount = (orig: number, disc: number) =>
-    orig > 0 ? Math.round(((orig - disc) / orig) * 100) : 0;
-
   const handleSave = async () => {
     setSaving(true);
     try {
