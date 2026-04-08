@@ -7,6 +7,7 @@ import com.cinevault.app.data.local.SessionManager
 import com.cinevault.app.data.model.CreateOrderResponse
 import com.cinevault.app.data.model.OrderStatusResponse
 import com.cinevault.app.data.model.PremiumPlanDto
+import com.cinevault.app.data.model.PremiumOfferDto
 import com.cinevault.app.data.model.RazorpayCreateOrderResponse
 import com.cinevault.app.data.model.RazorpayVerifyResponse
 import com.cinevault.app.data.model.Result
@@ -50,6 +51,9 @@ data class PremiumUiState(
     val razorpayFailed: Boolean = false,
     val razorpayMessage: String? = null,
     val razorpayVerifyResponse: RazorpayVerifyResponse? = null,
+    // Premium Offers
+    val offers: List<PremiumOfferDto> = emptyList(),
+    val popupOffers: List<PremiumOfferDto> = emptyList(),
 )
 
 @HiltViewModel
@@ -79,6 +83,23 @@ class PremiumViewModel @Inject constructor(
         }
         refreshStatus()
         fetchPlans()
+        fetchOffers()
+    }
+
+    fun fetchOffers() {
+        viewModelScope.launch {
+            val isPremium = _uiState.value.isPremium
+            when (val result = premiumRepository.getPremiumOffers(isPremium)) {
+                is Result.Success -> _uiState.update { it.copy(offers = result.data) }
+                is Result.Error -> {}
+                is Result.Loading -> {}
+            }
+            when (val result = premiumRepository.getPopupOffers(isPremium)) {
+                is Result.Success -> _uiState.update { it.copy(popupOffers = result.data) }
+                is Result.Error -> {}
+                is Result.Loading -> {}
+            }
+        }
     }
 
     fun fetchPlans() {

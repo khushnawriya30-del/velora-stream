@@ -20,6 +20,7 @@ import {
   Trophy,
   Settings,
   Crown,
+  Gift,
   Bot,
 } from 'lucide-react';
 import { useState } from 'react';
@@ -43,6 +44,7 @@ const navItems = [
   { to: '/storage', icon: Cloud, label: 'Storage CDN' },
   { to: '/ranking', icon: Trophy, label: 'Ranking' },
   { to: '/premium', icon: Crown, label: 'Premium' },
+  { to: '/premium-offers', icon: Gift, label: 'Premium Offers' },
   { to: '/telegram-payments', icon: Bot, label: 'Telegram Bot' },
   { to: '/settings', icon: Settings, label: 'Settings' },
 ];

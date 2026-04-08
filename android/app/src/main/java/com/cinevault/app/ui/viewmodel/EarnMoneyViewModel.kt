@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.cinevault.app.data.local.SessionManager
 import com.cinevault.app.data.model.*
 import com.cinevault.app.data.remote.CineVaultApi
+import com.cinevault.app.data.repository.PremiumRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -31,12 +32,15 @@ data class EarnMoneyUiState(
     val withdrawSuccess: Boolean = false,
     val withdrawError: String? = null,
     val isWithdrawing: Boolean = false,
+    val rewardPerInvite: Int = 1,
+    val inviteSettings: InviteSettingsDto? = null,
 )
 
 @HiltViewModel
 class EarnMoneyViewModel @Inject constructor(
     private val api: CineVaultApi,
     private val sessionManager: SessionManager,
+    private val premiumRepository: PremiumRepository,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(EarnMoneyUiState())
@@ -57,6 +61,20 @@ class EarnMoneyViewModel @Inject constructor(
                 val remaining = (60 - elapsedDays).coerceIn(0, 60)
 
                 _uiState.value = _uiState.value.copy(daysRemaining = remaining)
+
+                // Load invite settings from backend
+                try {
+                    when (val settingsResult = premiumRepository.getInviteSettings()) {
+                        is Result.Success -> {
+                            val s = settingsResult.data
+                            _uiState.value = _uiState.value.copy(
+                                inviteSettings = s,
+                                rewardPerInvite = s.rewardPerInvite,
+                            )
+                        }
+                        else -> {}
+                    }
+                } catch (_: Exception) {}
 
                 // Load wallet balance
                 val walletResp = api.getWalletBalance()

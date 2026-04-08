@@ -34,6 +34,7 @@ import { WalletModule } from './modules/wallet/wallet.module';
 import { ReferralModule } from './modules/referral/referral.module';
 import { WithdrawalModule } from './modules/withdrawal/withdrawal.module';
 import { RazorpayModule } from './modules/razorpay/razorpay.module';
+import { PremiumOffersModule } from './modules/premium-offers/premium-offers.module';
 
 @Module({
   imports: [
@@ -89,6 +90,7 @@ import { RazorpayModule } from './modules/razorpay/razorpay.module';
     ReferralModule,
     WithdrawalModule,
     RazorpayModule,
+    PremiumOffersModule,
   ],
 })
 export class AppModule {}

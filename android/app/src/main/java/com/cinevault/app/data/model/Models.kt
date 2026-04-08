@@ -526,3 +526,31 @@ data class WithdrawalHistoryItem(
     val status: String,
     val createdAt: String,
 )
+
+// ── Premium Offers ──
+data class PremiumOfferDto(
+    @SerializedName("_id") val id: String,
+    val title: String,
+    val subtitle: String? = null,
+    val description: String? = null,
+    val originalPrice: Int,
+    val discountPrice: Int,
+    val discountPercent: Int,
+    val badgeText: String? = null,
+    val planId: String = "1m",
+    val durationMonths: Int = 1,
+    val targetUserType: String = "non_premium",
+    val offerType: String = "subscription",
+    val isVisible: Boolean = true,
+    val showAsPopup: Boolean = false,
+    val order: Int = 0,
+)
+
+// ── Invite Settings ──
+data class InviteSettingsDto(
+    val targetAmount: Int = 100,
+    val defaultBalance: Int = 80,
+    val rewardPerInvite: Int = 1,
+    val earnWindowDays: Int = 60,
+    val isActive: Boolean = true,
+)

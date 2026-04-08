@@ -317,4 +317,15 @@ interface CineVaultApi {
 
     @GET("withdraw/history")
     suspend fun getWithdrawalHistory(): Response<List<WithdrawalHistoryItem>>
+
+    // ── Premium Offers ──
+    @GET("premium-offers")
+    suspend fun getPremiumOffers(@Query("isPremium") isPremium: Boolean = false): Response<List<PremiumOfferDto>>
+
+    @GET("premium-offers/popup")
+    suspend fun getPopupOffers(@Query("isPremium") isPremium: Boolean = false): Response<List<PremiumOfferDto>>
+
+    // ── Invite Settings ──
+    @GET("premium-offers/invite-settings")
+    suspend fun getInviteSettings(): Response<InviteSettingsDto>
 }

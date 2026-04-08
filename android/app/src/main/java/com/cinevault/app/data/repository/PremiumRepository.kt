@@ -241,4 +241,45 @@ class PremiumRepository @Inject constructor(
             Result.Error(e.message ?: "Network error")
         }
     }
+
+    // ── Premium Offers ──
+
+    suspend fun getPremiumOffers(isPremium: Boolean): Result<List<PremiumOfferDto>> {
+        return try {
+            val response = api.getPremiumOffers(isPremium)
+            if (response.isSuccessful) {
+                Result.Success(response.body()!!)
+            } else {
+                Result.Error("Failed to fetch offers")
+            }
+        } catch (e: Exception) {
+            Result.Error(e.message ?: "Network error")
+        }
+    }
+
+    suspend fun getPopupOffers(isPremium: Boolean): Result<List<PremiumOfferDto>> {
+        return try {
+            val response = api.getPopupOffers(isPremium)
+            if (response.isSuccessful) {
+                Result.Success(response.body()!!)
+            } else {
+                Result.Error("Failed to fetch popup offers")
+            }
+        } catch (e: Exception) {
+            Result.Error(e.message ?: "Network error")
+        }
+    }
+
+    suspend fun getInviteSettings(): Result<InviteSettingsDto> {
+        return try {
+            val response = api.getInviteSettings()
+            if (response.isSuccessful) {
+                Result.Success(response.body()!!)
+            } else {
+                Result.Error("Failed to fetch invite settings")
+            }
+        } catch (e: Exception) {
+            Result.Error(e.message ?: "Network error")
+        }
+    }
 }

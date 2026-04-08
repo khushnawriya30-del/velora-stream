@@ -21,6 +21,7 @@ import UpcomingPage from './pages/UpcomingPage';
 import RankingPage from './pages/RankingPage';
 import SettingsPage from './pages/SettingsPage';
 import PremiumPage from './pages/PremiumPage';
+import PremiumOffersPage from './pages/PremiumOffersPage';
 import TelegramPaymentsPage from './pages/TelegramPaymentsPage';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -61,6 +62,7 @@ export default function App() {
         <Route path="ranking" element={<RankingPage />} />
         <Route path="settings" element={<SettingsPage />} />
         <Route path="premium" element={<PremiumPage />} />
+        <Route path="premium-offers" element={<PremiumOffersPage />} />
         <Route path="telegram-payments" element={<TelegramPaymentsPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />

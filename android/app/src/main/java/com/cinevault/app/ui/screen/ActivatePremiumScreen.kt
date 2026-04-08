@@ -49,6 +49,7 @@ import com.cinevault.app.MainActivity
 import com.cinevault.app.R
 import com.cinevault.app.RazorpayPaymentResult
 import com.cinevault.app.data.model.PremiumPlanDto
+import com.cinevault.app.data.model.PremiumOfferDto
 import com.cinevault.app.ui.viewmodel.PremiumViewModel
 import com.razorpay.Checkout
 import org.json.JSONObject
@@ -545,6 +546,28 @@ fun ActivatePremiumScreen(
 
                 Spacer(Modifier.height(14.dp))
 
+                // ── Dynamic Offer Banner (from Admin Panel) ──
+                val activeOffers = uiState.offers
+                if (activeOffers.isNotEmpty()) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp),
+                        verticalArrangement = Arrangement.spacedBy(10.dp),
+                    ) {
+                        activeOffers.forEach { offer ->
+                            OfferBanner(
+                                offer = offer,
+                                onSelect = {
+                                    // Auto-select the plan matching this offer
+                                    selectedPlanId = offer.planId
+                                },
+                            )
+                        }
+                    }
+                    Spacer(Modifier.height(14.dp))
+                }
+
                 // Plan Cards (2x2 Grid)
                 val planList = plans.take(4)
                 Column(
@@ -642,6 +665,108 @@ fun ActivatePremiumScreen(
                         viewModel.createRazorpayOrder(selectedPlan.planId)
                     }
                 },
+            )
+        }
+    }
+}
+
+// ── Offer Banner (dynamic from Admin Panel) ──
+@Composable
+private fun OfferBanner(offer: PremiumOfferDto, onSelect: () -> Unit) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(14.dp))
+            .border(
+                1.5.dp,
+                Brush.linearGradient(listOf(Gold.copy(alpha = 0.6f), GoldDark.copy(alpha = 0.3f))),
+                RoundedCornerShape(14.dp),
+            )
+            .background(
+                Brush.verticalGradient(
+                    listOf(Color(0xFF2A2518), Color(0xFF1E1C16))
+                ),
+            )
+            .clickable(onClick = onSelect)
+            .padding(14.dp),
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        offer.title,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = White87,
+                    )
+                    if (offer.badgeText?.isNotBlank() == true) {
+                        Spacer(Modifier.width(8.dp))
+                        Box(
+                            modifier = Modifier
+                                .background(
+                                    Brush.horizontalGradient(listOf(Color(0xFFFF6B35), Color(0xFFFF4500))),
+                                    RoundedCornerShape(4.dp),
+                                )
+                                .padding(horizontal = 6.dp, vertical = 2.dp),
+                        ) {
+                            Text(
+                                offer.badgeText ?: "",
+                                fontSize = 8.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White,
+                            )
+                        }
+                    }
+                }
+                if (offer.description?.isNotBlank() == true) {
+                    Spacer(Modifier.height(2.dp))
+                    Text(
+                        offer.description ?: "",
+                        fontSize = 11.sp,
+                        color = White60,
+                        maxLines = 2,
+                    )
+                }
+                Spacer(Modifier.height(6.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        "₹${offer.originalPrice}",
+                        fontSize = 13.sp,
+                        color = White40,
+                        textDecoration = TextDecoration.LineThrough,
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        "₹${offer.discountPrice}",
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = Gold,
+                    )
+                    if (offer.discountPercent > 0) {
+                        Spacer(Modifier.width(8.dp))
+                        Box(
+                            modifier = Modifier
+                                .background(GreenBadge.copy(alpha = 0.2f), RoundedCornerShape(4.dp))
+                                .padding(horizontal = 6.dp, vertical = 2.dp),
+                        ) {
+                            Text(
+                                "${offer.discountPercent}% OFF",
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = GreenBadge,
+                            )
+                        }
+                    }
+                }
+            }
+            Icon(
+                Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                contentDescription = null,
+                tint = Gold,
+                modifier = Modifier.size(24.dp),
             )
         }
     }

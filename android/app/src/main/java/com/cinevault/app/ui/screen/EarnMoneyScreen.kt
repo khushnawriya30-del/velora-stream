@@ -3,6 +3,7 @@ package com.cinevault.app.ui.screen
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.animation.core.*
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
@@ -111,8 +112,9 @@ fun EarnMoneyScreen(
         label = "invGlow",
     )
 
-    // ── Progress calculations ──
-    val threshold = state.withdrawThreshold
+    // ── Progress calculations (dynamic from invite settings) ──
+    val invSettings = state.inviteSettings
+    val threshold = invSettings?.targetAmount ?: state.withdrawThreshold
     val balance = state.balance
     val amountLeft = (threshold - balance).coerceAtLeast(0)
     val progressFraction = (balance.toFloat() / threshold.toFloat()).coerceIn(0f, 1f)
@@ -328,72 +330,120 @@ fun EarnMoneyScreen(
 
                     Spacer(Modifier.height(16.dp))
 
-                    // ── Progress Bar with Levels ──
+                    // ── Gold Progress Bar with Treasure Box ──
                     val levels = listOf("Lv.1", "Lv.2", "Lv.3", "Lv.4")
-                    Box(modifier = Modifier.fillMaxWidth().height(50.dp)) {
+                    val animatedProgress = animateFloatAsState(
+                        targetValue = progressFraction,
+                        animationSpec = tween(1200, easing = FastOutSlowInEasing),
+                        label = "progressAnim",
+                    )
+                    // Treasure box pulse animation
+                    val treasurePulse = rememberInfiniteTransition(label = "treasure")
+                    val treasureScale by treasurePulse.animateFloat(
+                        initialValue = 1f, targetValue = 1.15f,
+                        animationSpec = infiniteRepeatable(
+                            tween(1500, easing = FastOutSlowInEasing), RepeatMode.Reverse,
+                        ),
+                        label = "tScale",
+                    )
+                    val treasureGlow by treasurePulse.animateFloat(
+                        initialValue = 0.7f, targetValue = 1f,
+                        animationSpec = infiniteRepeatable(
+                            tween(1500, easing = FastOutSlowInEasing), RepeatMode.Reverse,
+                        ),
+                        label = "tGlow",
+                    )
+
+                    Box(modifier = Modifier.fillMaxWidth().height(60.dp)) {
                         // Track background
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(8.dp)
+                                .height(12.dp)
                                 .align(Alignment.Center)
-                                .background(Color(0xFF2A3B5C), RoundedCornerShape(4.dp)),
+                                .clip(RoundedCornerShape(6.dp))
+                                .background(Color(0xFF2A3040)),
                         )
-                        // Green progress fill
+                        // Gold gradient progress fill
                         Box(
                             modifier = Modifier
-                                .fillMaxWidth(progressFraction)
-                                .height(8.dp)
+                                .fillMaxWidth(animatedProgress.value)
+                                .height(12.dp)
                                 .align(Alignment.CenterStart)
                                 .background(
                                     Brush.horizontalGradient(
-                                        listOf(GreenProgress, Color(0xFF66BB6A))
+                                        listOf(GoldAmber, GoldYellow, Color(0xFFFFA000))
                                     ),
-                                    RoundedCornerShape(4.dp),
+                                    RoundedCornerShape(6.dp),
                                 ),
                         )
-                        // Percentage chip on green bar
-                        if (progressFraction > 0.08f) {
+                        // Progress percentage on bar
+                        if (animatedProgress.value > 0.08f) {
                             Box(
                                 modifier = Modifier
                                     .align(Alignment.CenterStart)
-                                    .padding(start = 4.dp)
+                                    .padding(start = 8.dp)
                                     .background(
-                                        GreenProgress,
+                                        Color(0xAAB8860B),
                                         RoundedCornerShape(8.dp),
                                     )
                                     .padding(horizontal = 6.dp, vertical = 1.dp),
                             ) {
                                 Text(
-                                    "${(progressFraction * 100).toInt()}%",
+                                    "${(animatedProgress.value * 100).toInt()}%",
                                     fontSize = 8.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = Color.White,
                                 )
                             }
                         }
+                        // Balance / target text below bar
+                        Text(
+                            "₹${balance} / ₹${threshold}",
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = GoldYellow,
+                            modifier = Modifier.align(Alignment.BottomCenter),
+                        )
+                        // Treasure box at progress end
+                        Box(
+                            modifier = Modifier
+                                .align(Alignment.CenterEnd)
+                                .graphicsLayer {
+                                    scaleX = treasureScale
+                                    scaleY = treasureScale
+                                    alpha = treasureGlow
+                                },
+                        ) {
+                            // Treasure box emoji/icon
+                            Text(
+                                "🎁",
+                                fontSize = 26.sp,
+                            )
+                        }
                         // Level markers
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .align(Alignment.BottomCenter),
+                                .align(Alignment.TopCenter),
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
                             levels.forEachIndexed { index, level ->
                                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                    Text(
-                                        level,
-                                        fontSize = 9.sp,
-                                        color = Color.White.copy(alpha = 0.7f),
-                                    )
                                     Image(
                                         painter = painterResource(R.drawable.ic_earn_coin),
                                         contentDescription = level,
                                         modifier = Modifier.size(
-                                            if (index == 3) 22.dp else 18.dp,
+                                            if (index == 3) 22.dp else 16.dp,
                                         ),
                                         contentScale = ContentScale.Fit,
+                                    )
+                                    Text(
+                                        level,
+                                        fontSize = 8.sp,
+                                        color = GoldYellow.copy(alpha = 0.8f),
+                                        fontWeight = FontWeight.Bold,
                                     )
                                 }
                             }
@@ -739,7 +789,7 @@ fun EarnMoneyScreen(
 
             // ── Rules Section (toggleable) ──
             if (showRules) {
-                RulesSection()
+                RulesSection(inviteSettings = state.inviteSettings)
                 Spacer(Modifier.height(16.dp))
             }
 
@@ -995,7 +1045,7 @@ private fun EarnerItem(name: String, amount: String) {
 // Rules Section
 // ═══════════════════════════════════════════
 @Composable
-private fun RulesSection() {
+private fun RulesSection(inviteSettings: com.cinevault.app.data.model.InviteSettingsDto? = null) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -1017,13 +1067,13 @@ private fun RulesSection() {
             )
             Spacer(Modifier.height(12.dp))
             val rules = listOf(
-                "Minimum withdrawal ₹100 / न्यूनतम निकासी ₹100",
-                "₹1 per referral / हर रेफरल पर ₹1",
+                "Minimum withdrawal ₹${inviteSettings?.targetAmount ?: 100} / न्यूनतम निकासी ₹${inviteSettings?.targetAmount ?: 100}",
+                "₹${inviteSettings?.rewardPerInvite ?: 1} per referral / हर रेफरल पर ₹${inviteSettings?.rewardPerInvite ?: 1}",
                 "Only verified users counted / केवल सत्यापित उपयोगकर्ता",
                 "No fake invites allowed / नकली आमंत्रण की अनुमति नहीं",
                 "Self-referral not allowed / स्वयं रेफरल की अनुमति नहीं",
                 "Withdrawal via UPI only / केवल UPI से निकासी",
-                "60-day earn window / 60 दिन की कमाई अवधि",
+                "${inviteSettings?.earnWindowDays ?: 60}-day earn window / ${inviteSettings?.earnWindowDays ?: 60} दिन की कमाई अवधि",
             )
             rules.forEach { rule ->
                 Row(modifier = Modifier.padding(vertical = 3.dp)) {
