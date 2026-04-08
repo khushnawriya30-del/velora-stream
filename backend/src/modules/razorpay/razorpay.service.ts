@@ -254,9 +254,9 @@ export class RazorpayService {
   }
 
   /**
-   * Webhook handler: payment.captured event for double-verification
+   * Webhook handler: payment.captured, order.paid, payment.failed events
    */
-  async handleWebhook(body: any, signature: string) {
+  async handleWebhook(rawBody: string, parsedBody: any, signature: string) {
     const webhookSecret = this.configService.get<string>(
       'RAZORPAY_WEBHOOK_SECRET',
       '',
@@ -267,10 +267,10 @@ export class RazorpayService {
       return { status: 'ignored' };
     }
 
-    // Verify webhook signature
+    // Verify webhook signature using raw body string
     const expectedSignature = crypto
       .createHmac('sha256', webhookSecret)
-      .update(JSON.stringify(body))
+      .update(rawBody)
       .digest('hex');
 
     if (expectedSignature !== signature) {
@@ -278,12 +278,45 @@ export class RazorpayService {
       throw new BadRequestException('Invalid webhook signature');
     }
 
-    const event = body.event;
-    const paymentEntity = body.payload?.payment?.entity;
+    const event = parsedBody.event;
+    this.logger.log(`Webhook received: ${event}`);
 
-    if (event === 'payment.captured' && paymentEntity) {
-      const razorpayOrderId = paymentEntity.order_id;
-      const razorpayPaymentId = paymentEntity.id;
+    // Handle payment.failed
+    if (event === 'payment.failed') {
+      const paymentEntity = parsedBody.payload?.payment?.entity;
+      if (paymentEntity?.order_id) {
+        await this.razorpayPaymentModel.updateOne(
+          { orderId: paymentEntity.order_id },
+          {
+            status: RazorpayPaymentStatus.FAILED,
+            failedAt: new Date(),
+            failureReason:
+              paymentEntity.error_description || 'Payment failed via webhook',
+          },
+        );
+        this.logger.log(
+          `Webhook: Payment failed for order=${paymentEntity.order_id}`,
+        );
+      }
+      return { status: 'payment_failed_recorded' };
+    }
+
+    // Handle payment.captured and order.paid
+    const paymentEntity =
+      event === 'order.paid'
+        ? parsedBody.payload?.order?.entity
+        : parsedBody.payload?.payment?.entity;
+
+    if (
+      (event === 'payment.captured' || event === 'order.paid') &&
+      paymentEntity
+    ) {
+      const razorpayOrderId =
+        event === 'order.paid' ? paymentEntity.id : paymentEntity.order_id;
+      const razorpayPaymentId =
+        event === 'order.paid'
+          ? parsedBody.payload?.payment?.entity?.id
+          : paymentEntity.id;
 
       const payment = await this.razorpayPaymentModel.findOne({
         orderId: razorpayOrderId,

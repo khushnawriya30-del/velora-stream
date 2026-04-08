@@ -3,6 +3,7 @@ import {
   Post,
   Get,
   Body,
+  Req,
   Headers,
   UseGuards,
   HttpCode,
@@ -52,10 +53,15 @@ export class RazorpayController {
   @Post('webhook')
   @HttpCode(200)
   async webhook(
+    @Req() req: any,
     @Body() body: any,
     @Headers('x-razorpay-signature') signature: string,
   ) {
-    return this.razorpayService.handleWebhook(body, signature);
+    // Use raw body for signature verification (JSON.stringify may differ)
+    const rawBody = req.rawBody
+      ? req.rawBody.toString('utf8')
+      : JSON.stringify(body);
+    return this.razorpayService.handleWebhook(rawBody, body, signature);
   }
 
   /**
