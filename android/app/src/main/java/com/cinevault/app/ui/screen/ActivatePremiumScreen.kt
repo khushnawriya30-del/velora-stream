@@ -67,10 +67,10 @@ private val White40 = Color.White.copy(alpha = 0.40f)
 private val GreenBadge = Color(0xFF22C55E)
 
 private val FALLBACK_PLANS = listOf(
-    PremiumPlanDto("f1", "1m", "1 Month", 1, 1, 182, 10, null, 0, true),
-    PremiumPlanDto("f2", "3m", "3 Months", 3, 1, 543, 15, "Most popular", 1, true),
-    PremiumPlanDto("f3", "6m", "6 Months", 6, 1, 1038, 20, null, 2, true),
-    PremiumPlanDto("f4", "12m", "12 Months", 12, 1, 2042, 25, "Best Value", 3, true),
+    PremiumPlanDto("f1", "1m", "1 Month", 1, 1, 182, 1, null, 0, true),
+    PremiumPlanDto("f2", "3m", "3 Months", 3, 1, 543, 1, "Most popular", 1, true),
+    PremiumPlanDto("f3", "6m", "6 Months", 6, 1, 1038, 1, null, 2, true),
+    PremiumPlanDto("f4", "12m", "12 Months", 12, 1, 2042, 1, "Best Value", 3, true),
 )
 
 @Composable

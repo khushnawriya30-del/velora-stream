@@ -91,8 +91,8 @@ export class RazorpayService {
     if (dbPlan) {
       amountInPaise = dbPlan.price * 100; // DB stores in rupees
     } else {
-      // Fallback: ₹10 for testing
-      amountInPaise = 1000;
+      // Fallback: ₹1 for testing
+      amountInPaise = 100;
     }
 
     // Create Razorpay order via API
