@@ -12,6 +12,10 @@ export class CreatePremiumOfferDto {
   @IsString()
   description?: string;
 
+  @IsOptional()
+  @IsString()
+  bannerText?: string;
+
   @IsNumber()
   originalPrice: number;
 

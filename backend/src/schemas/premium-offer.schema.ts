@@ -14,6 +14,9 @@ export class PremiumOffer {
   @Prop({ default: '' })
   description: string;
 
+  @Prop({ default: '' })
+  bannerText: string;
+
   @Prop({ required: true })
   originalPrice: number;
 

@@ -33,7 +33,6 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
@@ -334,10 +333,6 @@ private fun MeProfileChip(profile: ProfileDto, isActive: Boolean, onClick: () ->
 // ── Premium Subscription Card (Dynamic – offer from Admin Panel) ──
 // ══════════════════════════════════════════════════════════════════════
 
-private val GoldPrem = Color(0xFFD4AF37)
-private val GoldDarkPrem = Color(0xFFC9A227)
-private val GoldSoftPrem = Color(0xFFE6C55A)
-
 @Composable
 private fun MePremiumSection(
     isPremium: Boolean,
@@ -418,187 +413,48 @@ private fun DynamicPremiumSubscribeCard(
     offer: PremiumOfferDto?,
     onClick: () -> Unit,
 ) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(
-                Brush.verticalGradient(
-                    listOf(Color(0xFF1A1A2E), Color(0xFF16213E), Color(0xFF1A1A2E))
-                ),
-                RoundedCornerShape(16.dp),
-            )
-            .border(
-                width = 1.dp,
-                brush = Brush.linearGradient(listOf(GoldPrem.copy(alpha = 0.3f), GoldPrem.copy(alpha = 0.1f))),
-                shape = RoundedCornerShape(16.dp),
-            ),
-    ) {
-        // Subtle V watermark in background
-        Text(
-            "V",
-            modifier = Modifier
-                .align(Alignment.CenterEnd)
-                .padding(end = 20.dp)
-                .graphicsLayer { alpha = 0.05f },
-            fontSize = 120.sp,
-            fontWeight = FontWeight.Black,
-            color = Color.White,
+    // ── PNG-based banner: use the provided premium_card_subscribe_1.png ──
+    Box(modifier = Modifier.fillMaxWidth()) {
+        // Full-width PNG banner as background
+        Image(
+            painter = painterResource(R.drawable.premium_card_subscribe_1),
+            contentDescription = "Premium Banner",
+            modifier = Modifier.fillMaxWidth(),
+            contentScale = ContentScale.FillWidth,
         )
-
+        // Dynamic text overlay in the upper-left empty area of the PNG
         Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
+                .align(Alignment.TopStart)
+                .fillMaxWidth(0.55f)
+                .padding(start = 18.dp, top = 14.dp),
+            verticalArrangement = Arrangement.spacedBy(3.dp),
         ) {
-            // Top row: offer info + subscribe button
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.Top,
-            ) {
-                // Left side: offer text
-                Column(modifier = Modifier.weight(1f)) {
-                    if (offer != null && offer.badgeText?.isNotBlank() == true) {
-                        Box(
-                            modifier = Modifier
-                                .background(
-                                    Brush.horizontalGradient(listOf(Color(0xFFFF6B35), Color(0xFFFF4500))),
-                                    RoundedCornerShape(4.dp),
-                                )
-                                .padding(horizontal = 8.dp, vertical = 2.dp),
-                        ) {
-                            Text(
-                                offer.badgeText ?: "",
-                                fontSize = 9.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color.White,
-                            )
-                        }
-                        Spacer(Modifier.height(6.dp))
-                    }
-
-                    if (offer != null) {
-                        Text(
-                            offer.title,
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.White,
-                            maxLines = 1,
-                        )
-                        if (offer.subtitle?.isNotBlank() == true) {
-                            Text(
-                                offer.subtitle ?: "",
-                                fontSize = 11.sp,
-                                color = Color.White.copy(alpha = 0.6f),
-                                maxLines = 1,
-                            )
-                        }
-                        Spacer(Modifier.height(4.dp))
-                        // Price row
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(
-                                "₹${offer.originalPrice}",
-                                fontSize = 12.sp,
-                                color = Color.White.copy(alpha = 0.5f),
-                                textDecoration = TextDecoration.LineThrough,
-                            )
-                            Spacer(Modifier.width(6.dp))
-                            Text(
-                                "₹${offer.discountPrice}",
-                                fontSize = 18.sp,
-                                fontWeight = FontWeight.ExtraBold,
-                                color = GoldPrem,
-                            )
-                            if (offer.discountPercent > 0) {
-                                Spacer(Modifier.width(6.dp))
-                                Box(
-                                    modifier = Modifier
-                                        .background(Color(0xFF22C55E).copy(alpha = 0.2f), RoundedCornerShape(4.dp))
-                                        .padding(horizontal = 5.dp, vertical = 1.dp),
-                                ) {
-                                    Text(
-                                        "${offer.discountPercent}% OFF",
-                                        fontSize = 9.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = Color(0xFF22C55E),
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-
-                // Subscribe button
-                Box(
-                    modifier = Modifier
-                        .background(
-                            Brush.horizontalGradient(listOf(GoldDarkPrem, GoldPrem, GoldSoftPrem)),
-                            RoundedCornerShape(20.dp),
-                        )
-                        .clickable(onClick = onClick)
-                        .padding(horizontal = 16.dp, vertical = 8.dp),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text("👑", fontSize = 12.sp)
-                        Spacer(Modifier.width(4.dp))
-                        Text(
-                            "Subscribe",
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color(0xFF1A1A1A),
-                        )
-                    }
-                }
+            if (offer?.bannerText?.isNotBlank() == true) {
+                Text(
+                    text = offer.bannerText,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = Color.White.copy(alpha = 0.88f),
+                    lineHeight = 14.sp,
+                    maxLines = 2,
+                )
             }
-
-            Spacer(Modifier.height(16.dp))
-
-            // Bottom features row (matching the provided design)
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(
-                        Color.White.copy(alpha = 0.06f),
-                        RoundedCornerShape(12.dp),
-                    )
-                    .padding(vertical = 12.dp, horizontal = 8.dp),
-                horizontalArrangement = Arrangement.SpaceEvenly,
-            ) {
-                PremiumFeatureItem(
-                    icon = R.drawable.ic_prem_unlimited,
-                    label = "Unlimited\nDownloads",
+            if (offer != null) {
+                Text(
+                    text = "₹${offer.discountPrice}",
+                    fontSize = 22.sp,
+                    fontWeight = FontWeight.Black,
+                    color = Color(0xFFF3E5AB),
+                    lineHeight = 26.sp,
                 )
-                PremiumFeatureItem(
-                    icon = R.drawable.ic_prem_first,
-                    label = "Premium\nFirst",
-                )
-                PremiumFeatureItem(
-                    icon = R.drawable.ic_prem_no_ads,
-                    label = "Ad -\nFree",
+                Text(
+                    text = if (offer.durationMonths == 1) "per month" else "for ${offer.durationMonths} months",
+                    fontSize = 10.sp,
+                    color = Color(0xFFF3E5AB).copy(alpha = 0.7f),
                 )
             }
         }
-    }
-}
-
-@Composable
-private fun PremiumFeatureItem(icon: Int, label: String) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        Image(
-            painter = painterResource(icon),
-            contentDescription = label,
-            modifier = Modifier.size(28.dp),
-            contentScale = ContentScale.Fit,
-        )
-        Spacer(Modifier.width(6.dp))
-        Text(
-            label,
-            fontSize = 11.sp,
-            fontWeight = FontWeight.SemiBold,
-            color = GoldPrem,
-            lineHeight = 14.sp,
-        )
     }
 }
 

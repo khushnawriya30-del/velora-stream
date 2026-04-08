@@ -6,6 +6,7 @@ interface PremiumOffer {
   title: string;
   subtitle: string;
   description: string;
+  bannerText: string;
   originalPrice: number;
   discountPrice: number;
   discountPercent: number;
@@ -35,6 +36,7 @@ const emptyOffer = {
   title: '',
   subtitle: '',
   description: '',
+  bannerText: '',
   originalPrice: 159,
   discountPrice: 99,
   badgeText: '',
@@ -51,6 +53,7 @@ const emptyOffer = {
 
 export default function PremiumOffersPage() {
   const [tab, setTab] = useState<'offers' | 'invite'>('offers');
+  const [userTypeFilter, setUserTypeFilter] = useState<'non_premium' | 'premium'>('non_premium');
   const [offers, setOffers] = useState<PremiumOffer[]>([]);
   const [inviteSettings, setInviteSettings] = useState<InviteSettings | null>(null);
   const [loading, setLoading] = useState(true);
@@ -109,10 +112,12 @@ export default function PremiumOffersPage() {
   };
 
   const handleEdit = (o: PremiumOffer) => {
+    setUserTypeFilter(o.targetUserType === 'premium' ? 'premium' : 'non_premium');
     setForm({
       title: o.title,
       subtitle: o.subtitle,
       description: o.description,
+      bannerText: o.bannerText || '',
       originalPrice: o.originalPrice,
       discountPrice: o.discountPrice,
       badgeText: o.badgeText,
@@ -175,11 +180,33 @@ export default function PremiumOffersPage() {
       {/* ═══ OFFERS TAB ═══ */}
       {tab === 'offers' && (
         <div className="space-y-4">
+          {/* Sub-tabs: Non-Subscriber / Subscriber */}
+          <div className="flex gap-2">
+            <button
+              onClick={() => setUserTypeFilter('non_premium')}
+              className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors ${userTypeFilter === 'non_premium' ? 'bg-gold/20 text-gold border border-gold/40' : 'bg-surface text-text-secondary hover:bg-surface-light'}`}
+            >
+              🔓 Non-Subscriber Offers
+            </button>
+            <button
+              onClick={() => setUserTypeFilter('premium')}
+              className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors ${userTypeFilter === 'premium' ? 'bg-gold/20 text-gold border border-gold/40' : 'bg-surface text-text-secondary hover:bg-surface-light'}`}
+            >
+              👑 Subscriber Offers
+            </button>
+          </div>
+
+          <div className="text-xs text-text-muted bg-surface/50 rounded-lg px-3 py-2">
+            {userTypeFilter === 'non_premium'
+              ? '📋 These offers appear on the PNG banner in Me section for non-subscribers. Set Banner Text + price to display dynamically.'
+              : '📋 These offers appear for existing subscribers (renewal / upgrade offers).'}
+          </div>
+
           <button
-            onClick={() => { setForm(emptyOffer); setEditId(null); setShowForm(true); }}
+            onClick={() => { setForm({ ...emptyOffer, targetUserType: userTypeFilter }); setEditId(null); setShowForm(true); }}
             className="px-4 py-2 bg-gold text-black font-semibold rounded-lg hover:bg-gold/90 transition"
           >
-            + Create Offer
+            + Create {userTypeFilter === 'non_premium' ? 'Non-Subscriber' : 'Subscriber'} Offer
           </button>
 
           {/* Form Modal */}
@@ -199,6 +226,10 @@ export default function PremiumOffersPage() {
                   <div className="col-span-2">
                     <label className="text-xs text-text-muted">Description</label>
                     <textarea className="w-full mt-1 px-3 py-2 bg-background border border-border rounded-lg text-sm text-text-primary" rows={2} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
+                  </div>
+                  <div className="col-span-2">
+                    <label className="text-xs text-text-muted">Banner Text (shown on PNG banner for non-subscribers)</label>
+                    <input className="w-full mt-1 px-3 py-2 bg-background border border-border rounded-lg text-sm text-text-primary" value={form.bannerText} onChange={(e) => setForm({ ...form, bannerText: e.target.value })} placeholder="e.g. Get Premium at just" />
                   </div>
                   <div>
                     <label className="text-xs text-text-muted">Original Price (₹)</label>
@@ -286,11 +317,11 @@ export default function PremiumOffersPage() {
           )}
 
           {/* Offers List */}
-          {offers.length === 0 ? (
-            <div className="text-center py-12 text-text-muted">No offers created yet</div>
+          {offers.filter(o => o.targetUserType === userTypeFilter || o.targetUserType === 'all').length === 0 ? (
+            <div className="text-center py-12 text-text-muted">No {userTypeFilter === 'non_premium' ? 'non-subscriber' : 'subscriber'} offers created yet</div>
           ) : (
             <div className="grid gap-4">
-              {offers.map((o) => (
+              {offers.filter(o => o.targetUserType === userTypeFilter || o.targetUserType === 'all').map((o) => (
                 <div key={o._id} className="bg-surface rounded-xl p-5 border border-border">
                   <div className="flex items-start justify-between">
                     <div className="flex-1">

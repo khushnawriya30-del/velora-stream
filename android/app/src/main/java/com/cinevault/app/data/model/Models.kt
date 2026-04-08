@@ -533,6 +533,7 @@ data class PremiumOfferDto(
     val title: String,
     val subtitle: String? = null,
     val description: String? = null,
+    val bannerText: String? = null,
     val originalPrice: Int,
     val discountPrice: Int,
     val discountPercent: Int,
