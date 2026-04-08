@@ -433,7 +433,7 @@ private fun DynamicPremiumSubscribeCard(
             if (offer?.bannerText?.isNotBlank() == true) {
                 Text(
                     text = offer.bannerText,
-                    fontSize = 14.sp,
+                    fontSize = 15.sp,
                     fontWeight = FontWeight.SemiBold,
                     color = Color.White.copy(alpha = 0.90f),
                     lineHeight = 18.sp,
