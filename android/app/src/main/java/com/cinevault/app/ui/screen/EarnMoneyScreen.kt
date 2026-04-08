@@ -16,8 +16,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.draw.paint
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
@@ -38,8 +37,6 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.cinevault.app.R
 import com.cinevault.app.ui.viewmodel.EarnMoneyViewModel
 import kotlinx.coroutines.delay
-import kotlin.math.sin
-import kotlin.random.Random
 
 // ── Color Palette ──
 private val DarkBlueBg = Color(0xFF0D1B3E)
@@ -52,17 +49,6 @@ private val OrangeBright = Color(0xFFFF9800)
 private val OrangeDeep = Color(0xFFEF6C00)
 private val RedOrange = Color(0xFFE53935)
 private val GreenProgress = Color(0xFF4CAF50)
-
-// ── Animated gold coin particles (simulated falling coins background) ──
-private data class CoinParticle(val xFraction: Float, val yOffset: Float, val size: Float, val alpha: Float)
-private val coinParticles = listOf(
-    CoinParticle(0.05f, 0.02f, 14f, 0.9f), CoinParticle(0.12f, 0.06f, 10f, 0.7f),
-    CoinParticle(0.08f, 0.10f, 12f, 0.8f), CoinParticle(0.88f, 0.01f, 13f, 0.85f),
-    CoinParticle(0.92f, 0.05f, 11f, 0.75f), CoinParticle(0.85f, 0.09f, 15f, 0.9f),
-    CoinParticle(0.78f, 0.13f, 9f, 0.6f), CoinParticle(0.15f, 0.14f, 8f, 0.5f),
-    CoinParticle(0.95f, 0.12f, 10f, 0.7f), CoinParticle(0.03f, 0.15f, 11f, 0.55f),
-    CoinParticle(0.82f, 0.17f, 12f, 0.65f),
-)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -125,14 +111,6 @@ fun EarnMoneyScreen(
         label = "invGlow",
     )
 
-    // ── Floating coin particles animation ──
-    val particleAnim = rememberInfiniteTransition(label = "particles")
-    val particleOffset by particleAnim.animateFloat(
-        initialValue = 0f, targetValue = 1f,
-        animationSpec = infiniteRepeatable(tween(4000, easing = LinearEasing), RepeatMode.Restart),
-        label = "particleY",
-    )
-
     // ── Progress calculations ──
     val threshold = state.withdrawThreshold
     val balance = state.balance
@@ -142,38 +120,19 @@ fun EarnMoneyScreen(
     // ═══════════════════════════════════════════
     // Main Scaffold with fixed bottom bar
     // ═══════════════════════════════════════════
-    Box(modifier = Modifier.fillMaxSize()) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .paint(
+                painter = painterResource(R.drawable.earn_bg),
+                contentScale = ContentScale.Crop,
+            ),
+    ) {
         // ── Scrollable content ──
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(bottom = 100.dp) // space for fixed bottom bar
-                .drawBehind {
-                    // Dark blue gradient background (matching falling coins reference)
-                    drawRect(
-                        brush = Brush.radialGradient(
-                            colors = listOf(DarkBlueCenter, DarkBlueBg),
-                            center = Offset(size.width * 0.5f, size.height * 0.15f),
-                            radius = size.width * 1.2f,
-                        )
-                    )
-                    // Draw golden coin particles at top corners
-                    val goldColor = Color(0xFFFFCC00)
-                    coinParticles.forEach { p ->
-                        val yDrift = (sin((particleOffset + p.yOffset) * Math.PI * 2).toFloat()) * 12f
-                        drawCircle(
-                            color = goldColor.copy(alpha = p.alpha * 0.8f),
-                            radius = p.size,
-                            center = Offset(size.width * p.xFraction, size.height * p.yOffset * 2f + yDrift),
-                        )
-                        // blur glow
-                        drawCircle(
-                            color = goldColor.copy(alpha = p.alpha * 0.3f),
-                            radius = p.size * 2.5f,
-                            center = Offset(size.width * p.xFraction, size.height * p.yOffset * 2f + yDrift),
-                        )
-                    }
-                }
                 .verticalScroll(rememberScrollState())
                 .statusBarsPadding(),
         ) {
