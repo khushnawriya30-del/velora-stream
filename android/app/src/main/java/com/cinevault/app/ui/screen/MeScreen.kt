@@ -433,10 +433,10 @@ private fun DynamicPremiumSubscribeCard(
             if (offer?.bannerText?.isNotBlank() == true) {
                 Text(
                     text = offer.bannerText,
-                    fontSize = 14.sp,
+                    fontSize = 17.sp,
                     fontWeight = FontWeight.SemiBold,
                     color = Color.White.copy(alpha = 0.90f),
-                    lineHeight = 18.sp,
+                    lineHeight = 21.sp,
                     maxLines = 2,
                 )
             }
@@ -459,9 +459,9 @@ private fun DynamicPremiumSubscribeCard(
                     Spacer(Modifier.width(6.dp))
                     Text(
                         text = durationLabel,
-                        fontSize = 16.sp,
+                        fontSize = 19.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFFF3E5AB),
+                        color = Color.White,
                         modifier = Modifier.padding(bottom = 6.dp),
                     )
                 }
