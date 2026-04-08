@@ -16,6 +16,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
@@ -36,9 +38,12 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.cinevault.app.R
 import com.cinevault.app.ui.viewmodel.EarnMoneyViewModel
 import kotlinx.coroutines.delay
+import kotlin.math.sin
+import kotlin.random.Random
 
 // ── Color Palette ──
 private val DarkBlueBg = Color(0xFF0D1B3E)
+private val DarkBlueCenter = Color(0xFF162D5A)
 private val CardBlue = Color(0xFF1B2B55)
 private val CardBlueLighter = Color(0xFF283D6A)
 private val GoldYellow = Color(0xFFFFD700)
@@ -47,6 +52,17 @@ private val OrangeBright = Color(0xFFFF9800)
 private val OrangeDeep = Color(0xFFEF6C00)
 private val RedOrange = Color(0xFFE53935)
 private val GreenProgress = Color(0xFF4CAF50)
+
+// ── Animated gold coin particles (simulated falling coins background) ──
+private data class CoinParticle(val xFraction: Float, val yOffset: Float, val size: Float, val alpha: Float)
+private val coinParticles = listOf(
+    CoinParticle(0.05f, 0.02f, 14f, 0.9f), CoinParticle(0.12f, 0.06f, 10f, 0.7f),
+    CoinParticle(0.08f, 0.10f, 12f, 0.8f), CoinParticle(0.88f, 0.01f, 13f, 0.85f),
+    CoinParticle(0.92f, 0.05f, 11f, 0.75f), CoinParticle(0.85f, 0.09f, 15f, 0.9f),
+    CoinParticle(0.78f, 0.13f, 9f, 0.6f), CoinParticle(0.15f, 0.14f, 8f, 0.5f),
+    CoinParticle(0.95f, 0.12f, 10f, 0.7f), CoinParticle(0.03f, 0.15f, 11f, 0.55f),
+    CoinParticle(0.82f, 0.17f, 12f, 0.65f),
+)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -109,509 +125,744 @@ fun EarnMoneyScreen(
         label = "invGlow",
     )
 
+    // ── Floating coin particles animation ──
+    val particleAnim = rememberInfiniteTransition(label = "particles")
+    val particleOffset by particleAnim.animateFloat(
+        initialValue = 0f, targetValue = 1f,
+        animationSpec = infiniteRepeatable(tween(4000, easing = LinearEasing), RepeatMode.Restart),
+        label = "particleY",
+    )
+
     // ── Progress calculations ──
     val threshold = state.withdrawThreshold
     val balance = state.balance
     val amountLeft = (threshold - balance).coerceAtLeast(0)
     val progressFraction = (balance.toFloat() / threshold.toFloat()).coerceIn(0f, 1f)
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(DarkBlueBg)
-            .verticalScroll(rememberScrollState())
-            .statusBarsPadding(),
-    ) {
-        // ═══════════════════════════════════════════
-        // SECTION 1 — HEADER
-        // ═══════════════════════════════════════════
-        Row(
+    // ═══════════════════════════════════════════
+    // Main Scaffold with fixed bottom bar
+    // ═══════════════════════════════════════════
+    Box(modifier = Modifier.fillMaxSize()) {
+        // ── Scrollable content ──
+        Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 8.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            IconButton(onClick = onBack) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = Color.White)
-            }
-            Spacer(Modifier.weight(1f))
-            TextButton(onClick = { showRules = !showRules }) {
-                Text("Rules", color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.Medium)
-            }
-        }
-
-        // Title
-        Text(
-            buildAnnotatedString {
-                append("Earn ")
-                withStyle(SpanStyle(color = GoldYellow, fontWeight = FontWeight.ExtraBold)) {
-                    append("Cash")
-                }
-                append(" By Inviting")
-            },
-            modifier = Modifier.padding(horizontal = 20.dp),
-            fontSize = 22.sp,
-            fontWeight = FontWeight.Bold,
-            color = Color.White,
-        )
-        Spacer(Modifier.height(16.dp))
-
-        // ═══════════════════════════════════════════
-        // SECTION 2 — BALANCE CARD
-        // ═══════════════════════════════════════════
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp)
-                .border(
-                    width = 1.5.dp,
-                    brush = Brush.linearGradient(listOf(GoldYellow.copy(alpha = 0.5f), GoldAmber.copy(alpha = 0.3f))),
-                    shape = RoundedCornerShape(12.dp),
-                )
-                .background(CardBlue, RoundedCornerShape(12.dp))
-                .padding(16.dp),
-        ) {
-            Column {
-                // My Balance label with coin
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Image(
-                        painter = painterResource(R.drawable.ic_earn_coin),
-                        contentDescription = "Coin",
-                        modifier = Modifier
-                            .size(28.dp)
-                            .graphicsLayer {
-                                rotationY = coinRotation
-                                cameraDistance = 12f * density
-                            },
-                        contentScale = ContentScale.Fit,
+                .fillMaxSize()
+                .padding(bottom = 100.dp) // space for fixed bottom bar
+                .drawBehind {
+                    // Dark blue gradient background (matching falling coins reference)
+                    drawRect(
+                        brush = Brush.radialGradient(
+                            colors = listOf(DarkBlueCenter, DarkBlueBg),
+                            center = Offset(size.width * 0.5f, size.height * 0.15f),
+                            radius = size.width * 1.2f,
+                        )
                     )
-                    Spacer(Modifier.width(8.dp))
-                    Text("My Balance", fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = GoldYellow)
+                    // Draw golden coin particles at top corners
+                    val goldColor = Color(0xFFFFCC00)
+                    coinParticles.forEach { p ->
+                        val yDrift = (sin((particleOffset + p.yOffset) * Math.PI * 2).toFloat()) * 12f
+                        drawCircle(
+                            color = goldColor.copy(alpha = p.alpha * 0.8f),
+                            radius = p.size,
+                            center = Offset(size.width * p.xFraction, size.height * p.yOffset * 2f + yDrift),
+                        )
+                        // blur glow
+                        drawCircle(
+                            color = goldColor.copy(alpha = p.alpha * 0.3f),
+                            radius = p.size * 2.5f,
+                            center = Offset(size.width * p.xFraction, size.height * p.yOffset * 2f + yDrift),
+                        )
+                    }
                 }
-                Spacer(Modifier.height(8.dp))
+                .verticalScroll(rememberScrollState())
+                .statusBarsPadding(),
+        ) {
+            // ═══════════════════════════════════════════
+            // SECTION 1 — HEADER
+            // ═══════════════════════════════════════════
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 8.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                IconButton(onClick = onBack) {
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = Color.White)
+                }
+                Spacer(Modifier.weight(1f))
+                TextButton(onClick = { showRules = !showRules }) {
+                    Text("Rules", color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.Medium)
+                }
+            }
 
-                // Balance amount
-                Text(
-                    "₹${animatedBalance}.00",
-                    fontSize = 36.sp,
-                    fontWeight = FontWeight.Black,
-                    color = Color.White,
-                )
-                Spacer(Modifier.height(14.dp))
+            // Title
+            Text(
+                buildAnnotatedString {
+                    append("Earn ")
+                    withStyle(SpanStyle(color = GoldYellow, fontWeight = FontWeight.ExtraBold)) {
+                        append("Cash")
+                    }
+                    append(" By Inviting")
+                },
+                modifier = Modifier.padding(horizontal = 20.dp),
+                fontSize = 22.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color.White,
+            )
+            Spacer(Modifier.height(16.dp))
 
-                // Withdraw button with breathing animation
+            // ═══════════════════════════════════════════
+            // SECTION 2 — BALANCE CARD (Left: balance, Right: empty for video)
+            // ═══════════════════════════════════════════
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp),
+            ) {
+                // Left side — My Balance card
                 Box(
                     modifier = Modifier
-                        .graphicsLayer {
-                            scaleX = wdScale
-                            scaleY = wdScale
-                            alpha = wdGlow
-                        }
+                        .weight(0.55f)
                         .border(
-                            width = 2.dp,
-                            brush = Brush.verticalGradient(listOf(Color(0xFFFFE082), Color(0xFFFFC107))),
-                            shape = RoundedCornerShape(24.dp),
-                        )
-                        .background(
-                            Brush.verticalGradient(listOf(Color(0xFFFFCC80), Color(0xFFFFB74D), Color(0xFFFF9800))),
-                            RoundedCornerShape(24.dp),
-                        )
-                        .clickable { showWithdrawDialog = true }
-                        .padding(horizontal = 24.dp, vertical = 10.dp),
-                ) {
-                    Text(
-                        "Withdraw",
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFF3E2723),
-                    )
-                }
-            }
-        }
-
-        Spacer(Modifier.height(16.dp))
-
-        // ═══════════════════════════════════════════
-        // SECTION 3 — SHARE APP CARD
-        // ═══════════════════════════════════════════
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp)
-                .border(
-                    width = 1.5.dp,
-                    brush = Brush.linearGradient(listOf(GoldAmber.copy(alpha = 0.6f), OrangeBright.copy(alpha = 0.4f))),
-                    shape = RoundedCornerShape(12.dp),
-                )
-                .background(CardBlue, RoundedCornerShape(12.dp))
-                .padding(16.dp),
-        ) {
-            Column {
-                // Share APP header row
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    // App icon placeholder
-                    Box(
-                        modifier = Modifier
-                            .size(40.dp)
-                            .clip(RoundedCornerShape(10.dp))
-                            .background(
-                                Brush.linearGradient(listOf(Color(0xFF5C2D91), Color(0xFFD81B60))),
-                                RoundedCornerShape(10.dp),
+                            width = 1.5.dp,
+                            brush = Brush.linearGradient(
+                                listOf(GoldYellow.copy(alpha = 0.5f), GoldAmber.copy(alpha = 0.3f))
                             ),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Text("V", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color.White)
-                    }
-                    Spacer(Modifier.width(10.dp))
-                    Text("Share APP", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Color.White)
-                    Spacer(Modifier.weight(1f))
-                    // Invitation Stats button
-                    Box(
-                        modifier = Modifier
-                            .border(1.dp, Color.White.copy(alpha = 0.4f), RoundedCornerShape(20.dp))
-                            .clickable { /* stats */ }
-                            .padding(horizontal = 14.dp, vertical = 6.dp),
-                    ) {
-                        Text("Invitation Stats", fontSize = 12.sp, color = Color.White, fontWeight = FontWeight.Medium)
+                            shape = RoundedCornerShape(12.dp),
+                        )
+                        .background(CardBlue, RoundedCornerShape(12.dp))
+                        .padding(14.dp),
+                ) {
+                    Column {
+                        // Coin + My Balance
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Image(
+                                painter = painterResource(R.drawable.ic_earn_coin),
+                                contentDescription = "Coin",
+                                modifier = Modifier
+                                    .size(24.dp)
+                                    .graphicsLayer {
+                                        rotationY = coinRotation
+                                        cameraDistance = 12f * density
+                                    },
+                                contentScale = ContentScale.Fit,
+                            )
+                            Spacer(Modifier.width(6.dp))
+                            Text("My Balance", fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = GoldYellow)
+                        }
+                        Spacer(Modifier.height(6.dp))
+
+                        // Balance
+                        Text(
+                            "₹${animatedBalance}.00",
+                            fontSize = 30.sp,
+                            fontWeight = FontWeight.Black,
+                            color = Color.White,
+                        )
+                        Spacer(Modifier.height(10.dp))
+
+                        // Withdraw button
+                        Box(
+                            modifier = Modifier
+                                .graphicsLayer {
+                                    scaleX = wdScale
+                                    scaleY = wdScale
+                                    alpha = wdGlow
+                                }
+                                .border(
+                                    width = 2.dp,
+                                    brush = Brush.verticalGradient(
+                                        listOf(Color(0xFFFFE082), Color(0xFFFFC107))
+                                    ),
+                                    shape = RoundedCornerShape(20.dp),
+                                )
+                                .background(
+                                    Brush.verticalGradient(
+                                        listOf(
+                                            Color(0xFFFFCC80),
+                                            Color(0xFFFFB74D),
+                                            Color(0xFFFF9800),
+                                        )
+                                    ),
+                                    RoundedCornerShape(20.dp),
+                                )
+                                .clickable { showWithdrawDialog = true }
+                                .padding(horizontal = 20.dp, vertical = 8.dp),
+                        ) {
+                            Text(
+                                "Withdraw",
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF3E2723),
+                            )
+                        }
                     }
                 }
 
-                Spacer(Modifier.height(16.dp))
+                Spacer(Modifier.width(12.dp))
 
-                // ── Progress Bar with Levels ──
-                val levels = listOf("Lv.1", "Lv.2", "Lv.3", "Lv.4")
-                Box(modifier = Modifier.fillMaxWidth()) {
-                    // Track background
+                // Right side — Empty space for video (clean, no placeholder)
+                Spacer(modifier = Modifier.weight(0.45f))
+            }
+
+            Spacer(Modifier.height(16.dp))
+
+            // ═══════════════════════════════════════════
+            // SECTION 3 — SHARE APP CARD
+            // ═══════════════════════════════════════════
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp)
+                    .border(
+                        width = 1.5.dp,
+                        brush = Brush.linearGradient(
+                            listOf(GoldAmber.copy(alpha = 0.6f), OrangeBright.copy(alpha = 0.4f))
+                        ),
+                        shape = RoundedCornerShape(12.dp),
+                    )
+                    .background(CardBlue, RoundedCornerShape(12.dp))
+                    .padding(16.dp),
+            ) {
+                Column {
+                    // Share APP header row
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        // App logo (actual launcher icon)
+                        Image(
+                            painter = painterResource(R.mipmap.ic_launcher_round),
+                            contentDescription = "App Logo",
+                            modifier = Modifier
+                                .size(40.dp)
+                                .clip(RoundedCornerShape(10.dp)),
+                            contentScale = ContentScale.Crop,
+                        )
+                        Spacer(Modifier.width(10.dp))
+                        Text(
+                            "Share APP",
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White,
+                        )
+                        Spacer(Modifier.weight(1f))
+                        // Invitation Stats button
+                        Box(
+                            modifier = Modifier
+                                .border(
+                                    1.dp,
+                                    Color.White.copy(alpha = 0.4f),
+                                    RoundedCornerShape(20.dp),
+                                )
+                                .clickable { /* stats */ }
+                                .padding(horizontal = 14.dp, vertical = 6.dp),
+                        ) {
+                            Text(
+                                "Invitation Stats",
+                                fontSize = 12.sp,
+                                color = Color.White,
+                                fontWeight = FontWeight.Medium,
+                            )
+                        }
+                    }
+
+                    Spacer(Modifier.height(16.dp))
+
+                    // ── Progress Bar with Levels ──
+                    val levels = listOf("Lv.1", "Lv.2", "Lv.3", "Lv.4")
+                    Box(modifier = Modifier.fillMaxWidth().height(50.dp)) {
+                        // Track background
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(8.dp)
+                                .align(Alignment.Center)
+                                .background(Color(0xFF2A3B5C), RoundedCornerShape(4.dp)),
+                        )
+                        // Green progress fill
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth(progressFraction)
+                                .height(8.dp)
+                                .align(Alignment.CenterStart)
+                                .background(
+                                    Brush.horizontalGradient(
+                                        listOf(GreenProgress, Color(0xFF66BB6A))
+                                    ),
+                                    RoundedCornerShape(4.dp),
+                                ),
+                        )
+                        // Percentage chip on green bar
+                        if (progressFraction > 0.08f) {
+                            Box(
+                                modifier = Modifier
+                                    .align(Alignment.CenterStart)
+                                    .padding(start = 4.dp)
+                                    .background(
+                                        GreenProgress,
+                                        RoundedCornerShape(8.dp),
+                                    )
+                                    .padding(horizontal = 6.dp, vertical = 1.dp),
+                            ) {
+                                Text(
+                                    "${(progressFraction * 100).toInt()}%",
+                                    fontSize = 8.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color.White,
+                                )
+                            }
+                        }
+                        // Level markers
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .align(Alignment.BottomCenter),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            levels.forEachIndexed { index, level ->
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Text(
+                                        level,
+                                        fontSize = 9.sp,
+                                        color = Color.White.copy(alpha = 0.7f),
+                                    )
+                                    Image(
+                                        painter = painterResource(R.drawable.ic_earn_coin),
+                                        contentDescription = level,
+                                        modifier = Modifier.size(
+                                            if (index == 3) 22.dp else 18.dp,
+                                        ),
+                                        contentScale = ContentScale.Fit,
+                                    )
+                                }
+                            }
+                        }
+                    }
+
+                    Spacer(Modifier.height(12.dp))
+
+                    // Progress text
+                    Text(
+                        buildAnnotatedString {
+                            append("Only ")
+                            withStyle(
+                                SpanStyle(
+                                    color = GoldYellow,
+                                    fontWeight = FontWeight.ExtraBold,
+                                )
+                            ) {
+                                append("₹${amountLeft}.00")
+                            }
+                            append(" left to withdraw ")
+                            withStyle(
+                                SpanStyle(
+                                    color = GoldYellow,
+                                    fontWeight = FontWeight.ExtraBold,
+                                )
+                            ) {
+                                append("₹${threshold}.00")
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        textAlign = TextAlign.Center,
+                        fontSize = 14.sp,
+                        color = Color.White,
+                    )
+
+                    Spacer(Modifier.height(14.dp))
+
+                    // ═══════════════════════════════════════════
+                    // SECTION 4 — INVITE BUTTON
+                    // ═══════════════════════════════════════════
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(8.dp)
-                            .align(Alignment.Center)
-                            .background(Color(0xFF2A3B5C), RoundedCornerShape(4.dp)),
-                    )
-                    // Green progress fill
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth(progressFraction)
-                            .height(8.dp)
-                            .align(Alignment.CenterStart)
+                            .graphicsLayer {
+                                scaleX = invScale
+                                scaleY = invScale
+                                alpha = invGlow
+                            }
+                            .border(
+                                width = 2.dp,
+                                brush = Brush.verticalGradient(
+                                    listOf(Color(0xFFFFE082), Color(0xFFFF5722))
+                                ),
+                                shape = RoundedCornerShape(10.dp),
+                            )
                             .background(
-                                Brush.horizontalGradient(listOf(GreenProgress, Color(0xFF66BB6A))),
-                                RoundedCornerShape(4.dp),
-                            ),
-                    )
-                    // Progress percentage text inside green bar
-                    if (progressFraction > 0.1f) {
+                                Brush.verticalGradient(
+                                    listOf(
+                                        Color(0xFFFFB74D),
+                                        OrangeBright,
+                                        OrangeDeep,
+                                        RedOrange,
+                                    )
+                                ),
+                                RoundedCornerShape(10.dp),
+                            )
+                            .clickable {
+                                val shareText =
+                                    "Join Velora App & Earn Cash! 🎬💰\n\nUse my referral code: ${state.referralCode}\n\nDownload Now: https://velora-stream.web.app"
+                                val intent = Intent(Intent.ACTION_SEND).apply {
+                                    type = "text/plain"
+                                    putExtra(Intent.EXTRA_TEXT, shareText)
+                                }
+                                context.startActivity(
+                                    Intent.createChooser(intent, "Share Velora")
+                                )
+                            }
+                            .padding(vertical = 14.dp),
+                        contentAlignment = Alignment.Center,
+                    ) {
                         Text(
-                            "${(progressFraction * 100).toInt()}%",
-                            modifier = Modifier
-                                .align(Alignment.CenterStart)
-                                .padding(start = 6.dp),
-                            fontSize = 7.sp,
+                            "+ Invite new users to earn cash",
+                            fontSize = 16.sp,
                             fontWeight = FontWeight.Bold,
                             color = Color.White,
                         )
                     }
-                    // Level markers
+
+                    Spacer(Modifier.height(14.dp))
+
+                    // ═══════════════════════════════════════════
+                    // SECTION 5 — DYNAMIC TIMER
+                    // ═══════════════════════════════════════════
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
+                        horizontalArrangement = Arrangement.Center,
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        levels.forEachIndexed { index, level ->
-                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                Text(level, fontSize = 10.sp, color = Color.White.copy(alpha = 0.7f))
-                                Spacer(Modifier.height(2.dp))
-                                // Coin marker at each level
-                                Image(
-                                    painter = painterResource(R.drawable.ic_earn_coin),
-                                    contentDescription = level,
-                                    modifier = Modifier.size(if (index == 3) 24.dp else 20.dp),
-                                    contentScale = ContentScale.Fit,
+                        Text(
+                            "End in ",
+                            fontSize = 14.sp,
+                            color = Color.White.copy(alpha = 0.8f),
+                        )
+                        Box(
+                            modifier = Modifier
+                                .background(
+                                    Color.White.copy(alpha = 0.15f),
+                                    RoundedCornerShape(4.dp),
+                                )
+                                .padding(horizontal = 8.dp, vertical = 2.dp),
+                        ) {
+                            Text(
+                                "${state.daysRemaining}",
+                                fontSize = 15.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White,
+                            )
+                        }
+                        Text(
+                            " Days",
+                            fontSize = 14.sp,
+                            color = Color.White.copy(alpha = 0.8f),
+                        )
+                    }
+
+                    Spacer(Modifier.height(10.dp))
+
+                    // Qualification text
+                    Text(
+                        "To qualify: Only new, active users of the app qualify for referral rewards.",
+                        modifier = Modifier.fillMaxWidth(),
+                        textAlign = TextAlign.Center,
+                        fontSize = 11.sp,
+                        color = Color.White.copy(alpha = 0.5f),
+                        fontStyle = FontStyle.Italic,
+                    )
+                }
+            }
+
+            Spacer(Modifier.height(16.dp))
+
+            // ═══════════════════════════════════════════
+            // SECTION 6 & 7 — WITHDRAW / EARNING HISTORY
+            // ═══════════════════════════════════════════
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                // Withdraw History
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .background(
+                            Brush.verticalGradient(
+                                listOf(CardBlueLighter, CardBlue)
+                            ),
+                            RoundedCornerShape(12.dp),
+                        )
+                        .clickable { /* navigate to withdraw history */ }
+                        .padding(horizontal = 16.dp, vertical = 18.dp),
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            "Withdraw History",
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = Color.White,
+                        )
+                        Spacer(Modifier.weight(1f))
+                        Icon(
+                            Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                            "Go",
+                            tint = Color.White.copy(alpha = 0.7f),
+                            modifier = Modifier.size(20.dp),
+                        )
+                    }
+                }
+                // Earning History
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .background(
+                            Brush.verticalGradient(
+                                listOf(CardBlueLighter, CardBlue)
+                            ),
+                            RoundedCornerShape(12.dp),
+                        )
+                        .clickable { /* navigate to earning history */ }
+                        .padding(horizontal = 16.dp, vertical = 18.dp),
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            "Earning History",
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = Color.White,
+                        )
+                        Spacer(Modifier.weight(1f))
+                        Icon(
+                            Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                            "Go",
+                            tint = Color.White.copy(alpha = 0.7f),
+                            modifier = Modifier.size(20.dp),
+                        )
+                    }
+                }
+            }
+
+            Spacer(Modifier.height(20.dp))
+
+            // ═══════════════════════════════════════════
+            // SECTION 8 — HOW MUCH OTHERS EARNED (styled as reference PNG)
+            // ═══════════════════════════════════════════
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp)
+                    .background(
+                        Brush.horizontalGradient(
+                            listOf(
+                                Color(0xFFD4A574),
+                                Color(0xFFE8C88A),
+                                Color(0xFFDDB47A),
+                                Color(0xFFC9985E),
+                            )
+                        ),
+                        RoundedCornerShape(24.dp),
+                    )
+                    .padding(horizontal = 14.dp, vertical = 10.dp),
+                contentAlignment = Alignment.CenterStart,
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    // Chat bubble icon matching reference
+                    Box(
+                        modifier = Modifier.size(32.dp),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        // Back bubble
+                        Box(
+                            modifier = Modifier
+                                .size(24.dp)
+                                .offset(x = (-2).dp, y = 2.dp)
+                                .background(
+                                    Color(0xFF5B7FBF),
+                                    RoundedCornerShape(12.dp, 12.dp, 4.dp, 12.dp),
+                                ),
+                        )
+                        // Front bubble
+                        Box(
+                            modifier = Modifier
+                                .size(22.dp)
+                                .offset(x = 3.dp, y = (-2).dp)
+                                .background(
+                                    Color(0xFF4169B0),
+                                    RoundedCornerShape(11.dp, 11.dp, 11.dp, 3.dp),
+                                ),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+                                repeat(3) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(4.dp)
+                                            .background(Color.White, CircleShape),
+                                    )
+                                }
+                            }
+                        }
+                    }
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        "How much others earned?",
+                        fontSize = 17.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = Color.White,
+                        fontStyle = FontStyle.Italic,
+                    )
+                }
+            }
+
+            Spacer(Modifier.height(12.dp))
+
+            // ── Earner leaderboard ──
+            dummyEarners.forEach { (name, amount) ->
+                EarnerItem(name = name, amount = amount)
+            }
+
+            Spacer(Modifier.height(20.dp))
+
+            // ── Referral Code Section ──
+            if (state.referralCode.isNotEmpty()) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp)
+                        .background(CardBlue, RoundedCornerShape(12.dp))
+                        .border(
+                            1.dp,
+                            GoldYellow.copy(alpha = 0.3f),
+                            RoundedCornerShape(12.dp),
+                        )
+                        .padding(16.dp),
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Text(
+                            "Your Referral Code",
+                            fontSize = 14.sp,
+                            color = Color.White.copy(alpha = 0.7f),
+                        )
+                        Spacer(Modifier.height(8.dp))
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                state.referralCode,
+                                fontSize = 22.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = GoldYellow,
+                                letterSpacing = 3.sp,
+                            )
+                            Spacer(Modifier.width(12.dp))
+                            IconButton(onClick = {
+                                clipboardManager.setText(
+                                    AnnotatedString(state.referralCode)
+                                )
+                            }) {
+                                Icon(
+                                    Icons.Default.ContentCopy,
+                                    "Copy",
+                                    tint = GoldYellow,
+                                    modifier = Modifier.size(20.dp),
                                 )
                             }
                         }
                     }
                 }
+                Spacer(Modifier.height(16.dp))
+            }
 
-                Spacer(Modifier.height(14.dp))
+            // ── Rules Section (toggleable) ──
+            if (showRules) {
+                RulesSection()
+                Spacer(Modifier.height(16.dp))
+            }
 
-                // Progress text
-                Text(
-                    buildAnnotatedString {
-                        append("Only ")
-                        withStyle(SpanStyle(color = GoldYellow, fontWeight = FontWeight.ExtraBold)) {
-                            append("₹${amountLeft}.00")
-                        }
-                        append(" left to withdraw ")
-                        withStyle(SpanStyle(color = GoldYellow, fontWeight = FontWeight.ExtraBold)) {
-                            append("₹${threshold}")
-                        }
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    textAlign = TextAlign.Center,
-                    fontSize = 14.sp,
-                    color = Color.White,
-                )
+            Spacer(Modifier.height(20.dp))
+        }
 
-                Spacer(Modifier.height(14.dp))
-
-                // ═══════════════════════════════════════════
-                // SECTION 4 — INVITE BUTTON
-                // ═══════════════════════════════════════════
+        // ═══════════════════════════════════════════
+        // FIXED BOTTOM BAR — Join Channels
+        // ═══════════════════════════════════════════
+        Column(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .fillMaxWidth()
+                .background(DarkBlueBg)
+                .navigationBarsPadding()
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+        ) {
+            Text(
+                "Join channels to learn more",
+                modifier = Modifier.fillMaxWidth(),
+                textAlign = TextAlign.Center,
+                fontSize = 12.sp,
+                color = Color.White.copy(alpha = 0.6f),
+            )
+            Spacer(Modifier.height(8.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                // WhatsApp
                 Box(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .graphicsLayer {
-                            scaleX = invScale
-                            scaleY = invScale
-                            alpha = invGlow
-                        }
-                        .border(
-                            width = 2.dp,
-                            brush = Brush.verticalGradient(listOf(Color(0xFFFFE082), Color(0xFFFF5722))),
-                            shape = RoundedCornerShape(10.dp),
-                        )
-                        .background(
-                            Brush.verticalGradient(listOf(Color(0xFFFFB74D), OrangeBright, OrangeDeep, RedOrange)),
-                            RoundedCornerShape(10.dp),
-                        )
+                        .weight(1f)
+                        .background(Color(0xFF25D366), RoundedCornerShape(24.dp))
                         .clickable {
-                            val shareText =
-                                "Join Velora App & Earn Cash! 🎬💰\n\nUse my referral code: ${state.referralCode}\n\nDownload Now: https://velora-stream.web.app"
-                            val intent = Intent(Intent.ACTION_SEND).apply {
-                                type = "text/plain"
-                                putExtra(Intent.EXTRA_TEXT, shareText)
-                            }
-                            context.startActivity(Intent.createChooser(intent, "Share Velora"))
+                            context.startActivity(
+                                Intent(
+                                    Intent.ACTION_VIEW,
+                                    Uri.parse("https://whatsapp.com"),
+                                )
+                            )
                         }
-                        .padding(vertical = 14.dp),
+                        .padding(vertical = 12.dp),
                     contentAlignment = Alignment.Center,
                 ) {
-                    Text(
-                        "+ Invite new users to earn cash",
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White,
-                    )
-                }
-
-                Spacer(Modifier.height(14.dp))
-
-                // ═══════════════════════════════════════════
-                // SECTION 5 — TIMER
-                // ═══════════════════════════════════════════
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.Center,
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Text("End in ", fontSize = 14.sp, color = Color.White.copy(alpha = 0.8f))
-                    Box(
-                        modifier = Modifier
-                            .background(Color.White.copy(alpha = 0.15f), RoundedCornerShape(4.dp))
-                            .padding(horizontal = 8.dp, vertical = 2.dp),
-                    ) {
-                        Text("56", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = Color.White)
-                    }
-                    Text(" Days", fontSize = 14.sp, color = Color.White.copy(alpha = 0.8f))
-                }
-
-                Spacer(Modifier.height(10.dp))
-
-                // Qualification text
-                Text(
-                    "To qualify: Only new, active users of the app qualify for referral rewards.",
-                    modifier = Modifier.fillMaxWidth(),
-                    textAlign = TextAlign.Center,
-                    fontSize = 11.sp,
-                    color = Color.White.copy(alpha = 0.5f),
-                    fontStyle = FontStyle.Italic,
-                )
-            }
-        }
-
-        Spacer(Modifier.height(16.dp))
-
-        // ═══════════════════════════════════════════
-        // SECTION 6 & 7 — WITHDRAW / EARNING HISTORY
-        // ═══════════════════════════════════════════
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            // Withdraw History
-            Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .background(
-                        Brush.verticalGradient(listOf(CardBlueLighter, CardBlue)),
-                        RoundedCornerShape(12.dp),
-                    )
-                    .clickable { /* navigate to withdraw history */ }
-                    .padding(horizontal = 16.dp, vertical = 18.dp),
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("Withdraw History", fontSize = 13.sp, fontWeight = FontWeight.Medium, color = Color.White)
-                    Spacer(Modifier.weight(1f))
-                    Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, "Go", tint = Color.White.copy(alpha = 0.7f), modifier = Modifier.size(20.dp))
-                }
-            }
-            // Earning History
-            Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .background(
-                        Brush.verticalGradient(listOf(CardBlueLighter, CardBlue)),
-                        RoundedCornerShape(12.dp),
-                    )
-                    .clickable { /* navigate to earning history */ }
-                    .padding(horizontal = 16.dp, vertical = 18.dp),
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("Earning History", fontSize = 13.sp, fontWeight = FontWeight.Medium, color = Color.White)
-                    Spacer(Modifier.weight(1f))
-                    Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, "Go", tint = Color.White.copy(alpha = 0.7f), modifier = Modifier.size(20.dp))
-                }
-            }
-        }
-
-        Spacer(Modifier.height(20.dp))
-
-        // ═══════════════════════════════════════════
-        // SECTION 8 — HOW MUCH OTHERS EARNED
-        // ═══════════════════════════════════════════
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp)
-                .background(
-                    Brush.horizontalGradient(listOf(Color(0xFFFFCC80), GoldAmber, Color(0xFFFFB300))),
-                    RoundedCornerShape(24.dp),
-                )
-                .padding(horizontal = 16.dp, vertical = 12.dp),
-            contentAlignment = Alignment.CenterStart,
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("💬", fontSize = 24.sp)
-                Spacer(Modifier.width(8.dp))
-                Text(
-                    "How much others earned?",
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.ExtraBold,
-                    color = Color.White,
-                    fontStyle = FontStyle.Italic,
-                )
-            }
-        }
-
-        Spacer(Modifier.height(12.dp))
-
-        // ── User testimonials / leaderboard ──
-        dummyEarners.forEach { (name, amount) ->
-            EarnerItem(name = name, amount = amount)
-        }
-
-        Spacer(Modifier.height(20.dp))
-
-        // ── Referral Code Section ──
-        if (state.referralCode.isNotEmpty()) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp)
-                    .background(CardBlue, RoundedCornerShape(12.dp))
-                    .border(1.dp, GoldYellow.copy(alpha = 0.3f), RoundedCornerShape(12.dp))
-                    .padding(16.dp),
-            ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
-                    Text("Your Referral Code", fontSize = 14.sp, color = Color.White.copy(alpha = 0.7f))
-                    Spacer(Modifier.height(8.dp))
                     Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text("💬", fontSize = 16.sp)
+                        Spacer(Modifier.width(6.dp))
                         Text(
-                            state.referralCode,
-                            fontSize = 22.sp,
+                            "WhatsApp",
+                            fontSize = 14.sp,
                             fontWeight = FontWeight.Bold,
-                            color = GoldYellow,
-                            letterSpacing = 3.sp,
+                            color = Color.White,
                         )
-                        Spacer(Modifier.width(12.dp))
-                        IconButton(onClick = {
-                            clipboardManager.setText(AnnotatedString(state.referralCode))
-                        }) {
-                            Icon(Icons.Default.ContentCopy, "Copy", tint = GoldYellow, modifier = Modifier.size(20.dp))
+                    }
+                }
+                // Telegram
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .background(Color(0xFF0088CC), RoundedCornerShape(24.dp))
+                        .clickable {
+                            context.startActivity(
+                                Intent(
+                                    Intent.ACTION_VIEW,
+                                    Uri.parse("https://t.me"),
+                                )
+                            )
                         }
+                        .padding(vertical = 12.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text("✈️", fontSize = 16.sp)
+                        Spacer(Modifier.width(6.dp))
+                        Text(
+                            "Telegram",
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White,
+                        )
                     }
                 }
             }
-            Spacer(Modifier.height(16.dp))
         }
-
-        // ── Join Channels Footer ──
-        Text(
-            "Join channels to learn more",
-            modifier = Modifier.fillMaxWidth(),
-            textAlign = TextAlign.Center,
-            fontSize = 13.sp,
-            color = Color.White.copy(alpha = 0.6f),
-        )
-        Spacer(Modifier.height(10.dp))
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 24.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            // WhatsApp
-            Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .background(Color(0xFF25D366), RoundedCornerShape(24.dp))
-                    .clickable {
-                        context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://whatsapp.com")))
-                    }
-                    .padding(vertical = 12.dp),
-                contentAlignment = Alignment.Center,
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("💬", fontSize = 16.sp)
-                    Spacer(Modifier.width(6.dp))
-                    Text("WhatsApp", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color.White)
-                }
-            }
-            // Telegram
-            Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .background(Color(0xFF0088CC), RoundedCornerShape(24.dp))
-                    .clickable {
-                        context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://t.me")))
-                    }
-                    .padding(vertical = 12.dp),
-                contentAlignment = Alignment.Center,
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("✈️", fontSize = 16.sp)
-                    Spacer(Modifier.width(6.dp))
-                    Text("Telegram", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color.White)
-                }
-            }
-        }
-
-        Spacer(Modifier.height(24.dp))
-
-        // ── Rules Section (toggleable) ──
-        if (showRules) {
-            RulesSection()
-            Spacer(Modifier.height(16.dp))
-        }
-
-        Spacer(Modifier.height(80.dp))
     }
 
     // ═══════════════════════════════════════════
@@ -625,12 +876,20 @@ fun EarnMoneyScreen(
             },
             containerColor = CardBlue,
             title = {
-                Text("Withdraw Request", color = Color.White, fontWeight = FontWeight.Bold)
+                Text(
+                    "Withdraw Request",
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold,
+                )
             },
             text = {
                 Column {
                     if (state.withdrawSuccess) {
-                        Text("✅ Withdrawal request submitted successfully!", color = GreenProgress, fontSize = 15.sp)
+                        Text(
+                            "✅ Withdrawal request submitted successfully!",
+                            color = GreenProgress,
+                            fontSize = 15.sp,
+                        )
                     } else if (!state.canWithdraw) {
                         Text(
                             "You need ₹${state.amountNeeded} more to withdraw ₹${threshold}",
@@ -640,7 +899,9 @@ fun EarnMoneyScreen(
                     } else {
                         Text(
                             "Amount: ₹${threshold}",
-                            color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.SemiBold,
+                            color = Color.White,
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.SemiBold,
                         )
                         Spacer(Modifier.height(12.dp))
                         OutlinedTextField(
@@ -662,7 +923,11 @@ fun EarnMoneyScreen(
                         )
                         if (state.withdrawError != null) {
                             Spacer(Modifier.height(8.dp))
-                            Text(state.withdrawError!!, color = Color(0xFFFF5252), fontSize = 13.sp)
+                            Text(
+                                state.withdrawError!!,
+                                color = Color(0xFFFF5252),
+                                fontSize = 13.sp,
+                            )
                         }
                     }
                 }
@@ -680,14 +945,24 @@ fun EarnMoneyScreen(
                     }
                 } else if (state.canWithdraw) {
                     Button(
-                        onClick = { viewModel.requestWithdrawal(threshold, upiInput.trim()) },
+                        onClick = {
+                            viewModel.requestWithdrawal(threshold, upiInput.trim())
+                        },
                         enabled = upiInput.contains("@") && !state.isWithdrawing,
                         colors = ButtonDefaults.buttonColors(containerColor = GoldAmber),
                     ) {
                         if (state.isWithdrawing) {
-                            CircularProgressIndicator(modifier = Modifier.size(18.dp), color = Color.Black, strokeWidth = 2.dp)
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(18.dp),
+                                color = Color.Black,
+                                strokeWidth = 2.dp,
+                            )
                         } else {
-                            Text("Confirm Withdraw", color = Color.Black, fontWeight = FontWeight.Bold)
+                            Text(
+                                "Confirm Withdraw",
+                                color = Color.Black,
+                                fontWeight = FontWeight.Bold,
+                            )
                         }
                     }
                 }
@@ -734,11 +1009,26 @@ private fun EarnerItem(name: String, amount: String) {
                 .background(Color(0xFF3A4A6C)),
             contentAlignment = Alignment.Center,
         ) {
-            Text(name.first().uppercase(), fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color.White)
+            Text(
+                name.first().uppercase(),
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color.White,
+            )
         }
         Spacer(Modifier.width(10.dp))
-        Text(name, fontSize = 14.sp, color = Color.White, modifier = Modifier.weight(1f))
-        Text(amount, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = GreenProgress)
+        Text(
+            name,
+            fontSize = 14.sp,
+            color = Color.White,
+            modifier = Modifier.weight(1f),
+        )
+        Text(
+            amount,
+            fontSize = 14.sp,
+            fontWeight = FontWeight.Bold,
+            color = GreenProgress,
+        )
     }
 }
 
@@ -752,11 +1042,20 @@ private fun RulesSection() {
             .fillMaxWidth()
             .padding(horizontal = 16.dp)
             .background(CardBlue, RoundedCornerShape(12.dp))
-            .border(1.dp, GoldYellow.copy(alpha = 0.2f), RoundedCornerShape(12.dp))
+            .border(
+                1.dp,
+                GoldYellow.copy(alpha = 0.2f),
+                RoundedCornerShape(12.dp),
+            )
             .padding(16.dp),
     ) {
         Column {
-            Text("📋 Rules / नियम", fontSize = 17.sp, fontWeight = FontWeight.Bold, color = Color.White)
+            Text(
+                "📋 Rules / नियम",
+                fontSize = 17.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color.White,
+            )
             Spacer(Modifier.height(12.dp))
             val rules = listOf(
                 "Minimum withdrawal ₹100 / न्यूनतम निकासी ₹100",
@@ -769,9 +1068,19 @@ private fun RulesSection() {
             )
             rules.forEach { rule ->
                 Row(modifier = Modifier.padding(vertical = 3.dp)) {
-                    Text("•", color = GoldYellow, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                    Text(
+                        "•",
+                        color = GoldYellow,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold,
+                    )
                     Spacer(Modifier.width(8.dp))
-                    Text(rule, fontSize = 13.sp, color = Color.White.copy(alpha = 0.7f), lineHeight = 18.sp)
+                    Text(
+                        rule,
+                        fontSize = 13.sp,
+                        color = Color.White.copy(alpha = 0.7f),
+                        lineHeight = 18.sp,
+                    )
                 }
             }
         }

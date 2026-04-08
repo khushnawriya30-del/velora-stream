@@ -2,12 +2,14 @@ package com.cinevault.app.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.cinevault.app.data.local.SessionManager
 import com.cinevault.app.data.model.*
 import com.cinevault.app.data.remote.CineVaultApi
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -22,6 +24,7 @@ data class EarnMoneyUiState(
     val withdrawThreshold: Int = 100,
     val referralCode: String = "",
     val totalInvited: Int = 0,
+    val daysRemaining: Int = 60,
     val earnings: List<EarningItem> = emptyList(),
     val withdrawals: List<WithdrawalHistoryItem> = emptyList(),
     val error: String? = null,
@@ -33,6 +36,7 @@ data class EarnMoneyUiState(
 @HiltViewModel
 class EarnMoneyViewModel @Inject constructor(
     private val api: CineVaultApi,
+    private val sessionManager: SessionManager,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(EarnMoneyUiState())
@@ -46,6 +50,14 @@ class EarnMoneyViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, error = null)
             try {
+                // Initialize earn start timestamp if not set
+                sessionManager.initEarnStartTimestamp()
+                val startTs = sessionManager.earnStartTimestamp.first()
+                val elapsedDays = ((System.currentTimeMillis() - startTs) / (24 * 60 * 60 * 1000)).toInt()
+                val remaining = (60 - elapsedDays).coerceIn(0, 60)
+
+                _uiState.value = _uiState.value.copy(daysRemaining = remaining)
+
                 // Load wallet balance
                 val walletResp = api.getWalletBalance()
                 if (walletResp.isSuccessful) {

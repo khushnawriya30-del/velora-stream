@@ -45,6 +45,9 @@ class SessionManager @Inject constructor(@ApplicationContext private val context
         private val IS_PREMIUM = booleanPreferencesKey("is_premium")
         private val PREMIUM_PLAN = stringPreferencesKey("premium_plan")
         private val PREMIUM_EXPIRES_AT = stringPreferencesKey("premium_expires_at")
+
+        // Earn money countdown (millis timestamp when 60-day window started)
+        private val EARN_START_TIMESTAMP = longPreferencesKey("earn_start_timestamp")
     }
 
     val accessToken: Flow<String?> = context.dataStore.data.map { it[ACCESS_TOKEN] }
@@ -75,6 +78,8 @@ class SessionManager @Inject constructor(@ApplicationContext private val context
     val isPremium: Flow<Boolean> = context.dataStore.data.map { it[IS_PREMIUM] ?: false }
     val premiumPlan: Flow<String?> = context.dataStore.data.map { it[PREMIUM_PLAN] }
     val premiumExpiresAt: Flow<String?> = context.dataStore.data.map { it[PREMIUM_EXPIRES_AT] }
+
+    val earnStartTimestamp: Flow<Long> = context.dataStore.data.map { it[EARN_START_TIMESTAMP] ?: 0L }
 
     // Saved account flows
     val lastGoogleName: Flow<String?> = context.dataStore.data.map { it[LAST_GOOGLE_NAME] }
@@ -198,6 +203,20 @@ class SessionManager @Inject constructor(@ApplicationContext private val context
             prefs[IS_PREMIUM] = isPremium
             if (plan != null) prefs[PREMIUM_PLAN] = plan else prefs.remove(PREMIUM_PLAN)
             if (expiresAt != null) prefs[PREMIUM_EXPIRES_AT] = expiresAt else prefs.remove(PREMIUM_EXPIRES_AT)
+        }
+    }
+
+    suspend fun initEarnStartTimestamp() {
+        context.dataStore.edit { prefs ->
+            if (prefs[EARN_START_TIMESTAMP] == null || prefs[EARN_START_TIMESTAMP] == 0L) {
+                prefs[EARN_START_TIMESTAMP] = System.currentTimeMillis()
+            }
+        }
+    }
+
+    suspend fun resetEarnStartTimestamp() {
+        context.dataStore.edit { prefs ->
+            prefs[EARN_START_TIMESTAMP] = System.currentTimeMillis()
         }
     }
 
