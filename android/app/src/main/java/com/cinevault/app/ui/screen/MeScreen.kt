@@ -433,10 +433,10 @@ private fun DynamicPremiumSubscribeCard(
             if (offer?.bannerText?.isNotBlank() == true) {
                 Text(
                     text = offer.bannerText,
-                    fontSize = 17.sp,
+                    fontSize = 14.sp,
                     fontWeight = FontWeight.SemiBold,
                     color = Color.White.copy(alpha = 0.90f),
-                    lineHeight = 21.sp,
+                    lineHeight = 18.sp,
                     maxLines = 2,
                 )
             }
@@ -451,10 +451,10 @@ private fun DynamicPremiumSubscribeCard(
                 Row(verticalAlignment = Alignment.Bottom) {
                     Text(
                         text = "₹${offer.discountPrice}",
-                        fontSize = 38.sp,
+                        fontSize = 33.sp,
                         fontWeight = FontWeight.Black,
                         color = Color(0xFFF3E5AB),
-                        lineHeight = 42.sp,
+                        lineHeight = 37.sp,
                     )
                     Spacer(Modifier.width(6.dp))
                     Text(
