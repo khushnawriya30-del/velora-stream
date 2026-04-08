@@ -428,7 +428,7 @@ private fun DynamicPremiumSubscribeCard(
                 .align(Alignment.TopStart)
                 .fillMaxWidth(0.58f)
                 .padding(start = 20.dp, top = 18.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             if (offer?.bannerText?.isNotBlank() == true) {
                 Text(

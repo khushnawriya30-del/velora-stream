@@ -3,7 +3,7 @@ mongoose.connect('mongodb+srv://vishu09921202023_db_user:GYeX5ttXbU6yaFMM@cluste
   .then(async () => {
     const r = await mongoose.connection.collection('appversions').updateOne(
       {},
-      { $set: { versionCode: 34, versionName: '1.9.5', releaseNotes: 'v1.9.5: bannerText=14sp, price=33sp' } }
+      { $set: { versionCode: 35, versionName: '1.9.6', releaseNotes: 'v1.9.6: price row shifted down from banner text' } }
     );
     console.log('Updated:', JSON.stringify(r));
     process.exit(0);
