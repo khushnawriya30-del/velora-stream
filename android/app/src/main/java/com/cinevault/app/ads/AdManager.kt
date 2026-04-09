@@ -202,4 +202,72 @@ class AdManager @Inject constructor(
     }
 
     fun isAdReady(): Boolean = interstitialAd != null
+
+    /**
+     * Fully suspend version: loads (if needed), shows, and waits until ad is DISMISSED.
+     * Returns true if ad was shown and dismissed, false if load/show failed.
+     * Useful for playing multiple ads consecutively in a coroutine.
+     */
+    suspend fun showAdSuspend(activity: Activity): Boolean {
+        // Wait for ad to load if not cached
+        if (interstitialAd == null) {
+            retryCount = 0
+            isLoading = false
+            loadInterstitialAd()
+
+            val loaded = withTimeoutOrNull(AD_LOAD_TIMEOUT_MS) {
+                suspendCancellableCoroutine { cont ->
+                    val handler = android.os.Handler(android.os.Looper.getMainLooper())
+                    val checkRunnable = object : Runnable {
+                        override fun run() {
+                            if (interstitialAd != null) {
+                                if (cont.isActive) cont.resume(true)
+                            } else if (isLoading || retryCount > 0) {
+                                handler.postDelayed(this, 250)
+                            } else {
+                                if (cont.isActive) cont.resume(false)
+                            }
+                        }
+                    }
+                    handler.post(checkRunnable)
+                    cont.invokeOnCancellation { handler.removeCallbacks(checkRunnable) }
+                }
+            } ?: false
+
+            if (!loaded || interstitialAd == null) {
+                Log.w(TAG, "showAdSuspend: Timed out loading ad")
+                return false
+            }
+        }
+
+        // Show ad and suspend until dismissed
+        return suspendCancellableCoroutine { cont ->
+            val ad = interstitialAd
+            if (ad == null) {
+                if (cont.isActive) cont.resume(false)
+                return@suspendCancellableCoroutine
+            }
+            Log.d(TAG, "▶️ showAdSuspend: SHOWING ad, waiting for dismissal...")
+            ad.fullScreenContentCallback = object : FullScreenContentCallback() {
+                override fun onAdDismissedFullScreenContent() {
+                    Log.d(TAG, "✅ showAdSuspend: Ad DISMISSED")
+                    interstitialAd = null
+                    loadInterstitialAd()
+                    if (cont.isActive) cont.resume(true)
+                }
+
+                override fun onAdFailedToShowFullScreenContent(adError: AdError) {
+                    Log.e(TAG, "❌ showAdSuspend: Ad FAILED to show: ${adError.message}")
+                    interstitialAd = null
+                    loadInterstitialAd()
+                    if (cont.isActive) cont.resume(false)
+                }
+
+                override fun onAdShowedFullScreenContent() {
+                    Log.d(TAG, "✅ showAdSuspend: Ad DISPLAYED full screen")
+                }
+            }
+            ad.show(activity)
+        }
+    }
 }

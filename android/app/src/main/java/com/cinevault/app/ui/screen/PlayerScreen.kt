@@ -39,6 +39,7 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
@@ -69,7 +70,9 @@ import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
 import androidx.media3.extractor.DefaultExtractorsFactory
 import androidx.media3.ui.PlayerView
 import com.cinevault.app.ui.viewmodel.PlayerViewModel
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import java.util.Locale
 
 // ===========================================================================
@@ -428,6 +431,10 @@ fun PlayerScreen(
     /** Whether the ad was user-cancelled (via warning dialog "Close" button). */
     var adWasCancelled by remember { mutableStateOf(false) }
 
+    // Coroutine scope for skip-detection ad playback
+    val adScope = rememberCoroutineScope()
+    var skipAdJob by remember { mutableStateOf<Job?>(null) }
+
     // Pre-roll ad: show when video first becomes ready to play (Watch Now click)
     LaunchedEffect(uiState.streamingUrl, uiState.isPlaying, uiState.isPremium) {
         if (uiState.isPremium || preRollShown || adInProgress) return@LaunchedEffect
@@ -608,11 +615,37 @@ fun PlayerScreen(
                             viewModel.seekTo(target)
                             doubleTapLabel = "bk"
                         } else {
+                            val oldPos = pos
                             val target = if (dur > 0) (pos + 10_000).coerceAtMost(dur) else pos + 10_000
                             Log.d("CineVaultPlayer", "SEEK-FWD: target=$target")
                             exoPlayer.seekTo(target)
                             viewModel.seekTo(target)
                             doubleTapLabel = "fw"
+                            // Skip detection: check if any mid-roll ads were jumped over
+                            if (!uiState.isPremium && target > oldPos) {
+                                val skipped = viewModel.onSeekDetected(oldPos, target)
+                                if (skipped > 0 && !adInProgress && skipAdJob?.isActive != true) {
+                                    skipAdJob = adScope.launch {
+                                        adInProgress = true
+                                        adWasCancelled = false
+                                        exoPlayer.pause()
+                                        val act = context as? Activity
+                                        if (act != null) {
+                                            Log.d("CineVaultAds", "SKIP-ADS (double-tap): Playing $skipped ad(s)")
+                                            for (i in 1..skipped) {
+                                                adCountdown = 35
+                                                val shown = adManager.showAdSuspend(act)
+                                                viewModel.dequeueSkippedAd()
+                                                if (!shown) break
+                                                if (i < skipped) delay(500)
+                                            }
+                                        }
+                                        viewModel.clearSkippedAds()
+                                        adInProgress = false
+                                        if (!adWasCancelled) showAdCrossIcon = true
+                                    }
+                                }
+                            }
                         }
                     },
                     onLongPress = { viewModel.setSpeedOverride(true) },
@@ -1135,14 +1168,39 @@ fun PlayerScreen(
                             }
 
                             IconButton(onClick = {
-                                val pos = exoPlayer.currentPosition.coerceAtLeast(0)
+                                val oldPos = exoPlayer.currentPosition.coerceAtLeast(0)
                                 val dur = exoPlayer.duration.coerceAtLeast(0)
                                 val seekable = exoPlayer.isCurrentMediaItemSeekable
-                                val target = if (dur > 0) (pos + 10_000).coerceAtMost(dur) else pos + 10_000
-                                Log.d("CineVaultPlayer", "FWD-BTN: pos=$pos, dur=$dur, seekable=$seekable, target=$target")
+                                val target = if (dur > 0) (oldPos + 10_000).coerceAtMost(dur) else oldPos + 10_000
+                                Log.d("CineVaultPlayer", "FWD-BTN: pos=$oldPos, dur=$dur, seekable=$seekable, target=$target")
                                 exoPlayer.seekTo(target)
                                 viewModel.seekTo(target)
                                 doubleTapLabel = "fw"
+                                // Skip detection
+                                if (!uiState.isPremium && target > oldPos) {
+                                    val skipped = viewModel.onSeekDetected(oldPos, target)
+                                    if (skipped > 0 && !adInProgress && skipAdJob?.isActive != true) {
+                                        skipAdJob = adScope.launch {
+                                            adInProgress = true
+                                            adWasCancelled = false
+                                            exoPlayer.pause()
+                                            val act = context as? Activity
+                                            if (act != null) {
+                                                Log.d("CineVaultAds", "SKIP-ADS (fwd-btn): Playing $skipped ad(s)")
+                                                for (i in 1..skipped) {
+                                                    adCountdown = 35
+                                                    val shown = adManager.showAdSuspend(act)
+                                                    viewModel.dequeueSkippedAd()
+                                                    if (!shown) break
+                                                    if (i < skipped) delay(500)
+                                                }
+                                            }
+                                            viewModel.clearSkippedAds()
+                                            adInProgress = false
+                                            if (!adWasCancelled) showAdCrossIcon = true
+                                        }
+                                    }
+                                }
                             }) {
                                 Icon(Icons.Filled.Forward10, contentDescription = "Forward 10s", tint = Color.White, modifier = Modifier.size(42.dp))
                             }
@@ -1161,14 +1219,41 @@ fun PlayerScreen(
                                 currentPosition = uiState.currentPosition,
                                 totalDuration = uiState.totalDuration,
                                 bufferedPosition = bufferedPosition,
+                                adMarkers = if (!uiState.isPremium) uiState.adMarkerFractions else emptyList(),
                                 onSeek = { fraction ->
                                     val dur = uiState.totalDuration
                                     if (dur > 0) {
+                                        val oldPos = exoPlayer.currentPosition.coerceAtLeast(0)
                                         val seekPos = (fraction * dur).toLong()
                                         val seekable = exoPlayer.isCurrentMediaItemSeekable
-                                        Log.d("CineVaultPlayer", "PROGRESS-BAR: fraction=$fraction, dur=$dur, seekPos=$seekPos, seekable=$seekable, curPos=${exoPlayer.currentPosition}")
+                                        Log.d("CineVaultPlayer", "PROGRESS-BAR: fraction=$fraction, dur=$dur, seekPos=$seekPos, seekable=$seekable, curPos=$oldPos")
                                         exoPlayer.seekTo(seekPos)
                                         viewModel.seekTo(seekPos)
+                                        // Skip detection: if user seeks forward past ad positions
+                                        if (!uiState.isPremium && seekPos > oldPos) {
+                                            val skipped = viewModel.onSeekDetected(oldPos, seekPos)
+                                            if (skipped > 0 && !adInProgress && skipAdJob?.isActive != true) {
+                                                skipAdJob = adScope.launch {
+                                                    adInProgress = true
+                                                    adWasCancelled = false
+                                                    exoPlayer.pause()
+                                                    val act = context as? Activity
+                                                    if (act != null) {
+                                                        Log.d("CineVaultAds", "SKIP-ADS (progress-bar): Playing $skipped ad(s)")
+                                                        for (i in 1..skipped) {
+                                                            adCountdown = 35
+                                                            val shown = adManager.showAdSuspend(act)
+                                                            viewModel.dequeueSkippedAd()
+                                                            if (!shown) break
+                                                            if (i < skipped) delay(500)
+                                                        }
+                                                    }
+                                                    viewModel.clearSkippedAds()
+                                                    adInProgress = false
+                                                    if (!adWasCancelled) showAdCrossIcon = true
+                                                }
+                                            }
+                                        }
                                     }
                                 },
                             )
@@ -1605,7 +1690,7 @@ private fun ObsidianSeekBubble(symbol: String, label: String) {
 
 // -- Progress Bar --
 @Composable
-private fun ObsidianProgressBar(currentPosition: Long, totalDuration: Long, bufferedPosition: Long, onSeek: (Float) -> Unit) {
+private fun ObsidianProgressBar(currentPosition: Long, totalDuration: Long, bufferedPosition: Long, adMarkers: List<Float> = emptyList(), onSeek: (Float) -> Unit) {
     val playedFraction = if (totalDuration > 0) (currentPosition.toFloat() / totalDuration).coerceIn(0f, 1f) else 0f
     val bufferedFraction = if (totalDuration > 0) (bufferedPosition.toFloat() / totalDuration).coerceIn(0f, 1f) else 0f
     var isDragging by remember { mutableStateOf(false) }
@@ -1647,6 +1732,20 @@ private fun ObsidianProgressBar(currentPosition: Long, totalDuration: Long, buff
         Box(modifier = Modifier.fillMaxWidth(displayFraction).height(trackH).clip(RoundedCornerShape(4.dp)).background(AccentGrad))
         // Glow
         Box(modifier = Modifier.fillMaxWidth(displayFraction).height(12.dp).clip(RoundedCornerShape(4.dp)).background(Brush.horizontalGradient(listOf(CyanAccent.copy(alpha = 0.3f), PurpleAccent.copy(alpha = 0.3f)))).graphicsLayer { alpha = 0.6f })
+        // Ad marker dots (white dots on timeline like YouTube/MX Player)
+        if (adMarkers.isNotEmpty()) {
+            Canvas(modifier = Modifier.fillMaxWidth().height(trackH)) {
+                val dotRadius = 4.dp.toPx()
+                adMarkers.forEach { fraction ->
+                    val x = fraction * size.width
+                    drawCircle(
+                        color = Color.White,
+                        radius = dotRadius,
+                        center = Offset(x, size.height / 2),
+                    )
+                }
+            }
+        }
         // Thumb
         Box(modifier = Modifier.fillMaxWidth(displayFraction).wrapContentWidth(Alignment.End)) {
             Box(modifier = Modifier.size(if (isDragging) 18.dp else 14.dp).clip(CircleShape).background(Color.White))

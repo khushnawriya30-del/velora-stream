@@ -49,6 +49,10 @@ data class PlayerUiState(
     val isPreRollPending: Boolean = true,
     /** True when user resumes video after pausing / returning — triggers pre-roll again. */
     val isResumeAdPending: Boolean = false,
+    /** Number of skipped mid-roll ads that must be shown consecutively. */
+    val pendingSkippedAds: Int = 0,
+    /** Mid-roll ad marker positions as fractions (0..1) for timeline UI. */
+    val adMarkerFractions: List<Float> = emptyList(),
 )
 
 @HiltViewModel
@@ -628,7 +632,13 @@ class PlayerViewModel @Inject constructor(
         if (adSchedule != null || durationMs <= 0) return
         adSchedule = SmartAdScheduler.calculateSchedule(durationMs, isEpisode)
         triggeredAdTimesMs.clear()
-        Log.d("CineVaultAds", "Ad schedule: preRoll=${adSchedule?.preRoll}, midRolls=${adSchedule?.midRollTimesMs}, total=${adSchedule?.totalAds}")
+        // Expose ad marker positions as fractions for timeline UI
+        val markers = adSchedule?.midRollTimesMs
+            ?.map { it.toFloat() / durationMs }
+            ?.filter { it in 0f..1f }
+            ?: emptyList()
+        _uiState.update { it.copy(adMarkerFractions = markers) }
+        Log.d("CineVaultAds", "Ad schedule: preRoll=${adSchedule?.preRoll}, midRolls=${adSchedule?.midRollTimesMs}, markers=${markers.size}, total=${adSchedule?.totalAds}")
     }
 
     /**
@@ -669,11 +679,47 @@ class PlayerViewModel @Inject constructor(
         _uiState.update { it.copy(isResumeAdPending = false) }
     }
 
+    /**
+     * Detect mid-roll ads that were skipped when the user seeks forward.
+     * Marks them as triggered and queues them for mandatory consecutive playback.
+     * Returns the number of skipped ads detected.
+     */
+    fun onSeekDetected(fromMs: Long, toMs: Long): Int {
+        if (_uiState.value.isPremium) return 0
+        val schedule = adSchedule ?: return 0
+        if (toMs <= fromMs) return 0 // backward seek — no skip penalty
+
+        val skipped = schedule.midRollTimesMs.filter { adTime ->
+            adTime > fromMs && adTime <= toMs && adTime !in triggeredAdTimesMs
+        }
+
+        if (skipped.isNotEmpty()) {
+            triggeredAdTimesMs.addAll(skipped)
+            val current = _uiState.value.pendingSkippedAds
+            _uiState.update { it.copy(pendingSkippedAds = current + skipped.size) }
+            Log.d("CineVaultAds", "Skip detected: ${skipped.size} ads skipped (from ${fromMs / 1000}s → ${toMs / 1000}s)")
+        }
+        return skipped.size
+    }
+
+    /** Decrement pending skipped ads counter by one (after showing one ad). */
+    fun dequeueSkippedAd() {
+        val current = _uiState.value.pendingSkippedAds
+        if (current > 0) {
+            _uiState.update { it.copy(pendingSkippedAds = current - 1) }
+        }
+    }
+
+    /** Clear all pending skipped ads (after finishing the ad queue). */
+    fun clearSkippedAds() {
+        _uiState.update { it.copy(pendingSkippedAds = 0) }
+    }
+
     /** Reset ad schedule for new episode playback. */
     private fun resetAdSchedule() {
         adSchedule = null
         triggeredAdTimesMs.clear()
-        _uiState.update { it.copy(isPreRollPending = true, shouldShowAd = false) }
+        _uiState.update { it.copy(isPreRollPending = true, shouldShowAd = false, pendingSkippedAds = 0, adMarkerFractions = emptyList()) }
     }
 
     fun toggleFullscreen() {
