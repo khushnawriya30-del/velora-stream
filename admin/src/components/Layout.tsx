@@ -22,6 +22,7 @@ import {
   Crown,
   Gift,
   Bot,
+  UserPlus,
 } from 'lucide-react';
 import { useState } from 'react';
 import { useAuthStore } from '../store/auth';
@@ -46,6 +47,7 @@ const navItems = [
   { to: '/premium', icon: Crown, label: 'Premium' },
   { to: '/premium-offers', icon: Gift, label: 'Premium Offers' },
   { to: '/telegram-payments', icon: Bot, label: 'Telegram Bot' },
+  { to: '/referrals', icon: UserPlus, label: 'Referrals' },
   { to: '/settings', icon: Settings, label: 'Settings' },
 ];
 

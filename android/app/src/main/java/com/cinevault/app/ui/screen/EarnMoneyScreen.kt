@@ -513,7 +513,7 @@ fun EarnMoneyScreen(
                             )
                             .clickable {
                                 val shareText =
-                                    "Join Velora App & Earn Cash! 🎬💰\n\nUse my referral code: ${state.referralCode}\n\nDownload Now: https://velora-stream.web.app"
+                                    "Join Velora App & Earn Cash! 🎬💰\n\nUse my referral code: ${state.referralCode}\n\nDownload Now: https://velora-stream-alpha.vercel.app?ref=${state.referralCode}"
                                 val intent = Intent(Intent.ACTION_SEND).apply {
                                     type = "text/plain"
                                     putExtra(Intent.EXTRA_TEXT, shareText)

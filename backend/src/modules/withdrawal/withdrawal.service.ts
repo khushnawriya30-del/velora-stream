@@ -1,8 +1,9 @@
 import { Injectable, Logger, BadRequestException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
-import { Withdrawal, WithdrawalDocument } from '../../schemas/withdrawal.schema';
+import { Withdrawal, WithdrawalDocument, WithdrawalStatus } from '../../schemas/withdrawal.schema';
 import { WalletService } from '../wallet/wallet.service';
+import { User, UserDocument } from '../../schemas/user.schema';
 
 @Injectable()
 export class WithdrawalService {
@@ -10,6 +11,7 @@ export class WithdrawalService {
 
   constructor(
     @InjectModel(Withdrawal.name) private withdrawalModel: Model<WithdrawalDocument>,
+    @InjectModel(User.name) private userModel: Model<UserDocument>,
     private readonly walletService: WalletService,
   ) {}
 
@@ -73,5 +75,78 @@ export class WithdrawalService {
       status: w.status,
       createdAt: (w as any).createdAt,
     }));
+  }
+
+  // ── Admin Methods ──
+
+  /** Admin: get all withdrawals, paginated, filterable by status */
+  async getAdminAll(page: number, limit: number, status?: string) {
+    const skip = (page - 1) * limit;
+    const filter: any = {};
+    if (status && ['pending', 'approved', 'rejected'].includes(status)) {
+      filter.status = status;
+    }
+
+    const [withdrawals, total, pendingCount, approvedTotal, rejectedTotal] = await Promise.all([
+      this.withdrawalModel.find(filter).sort({ createdAt: -1 }).skip(skip).limit(limit).lean(),
+      this.withdrawalModel.countDocuments(filter),
+      this.withdrawalModel.countDocuments({ status: 'pending' }),
+      this.withdrawalModel.aggregate([{ $match: { status: 'approved' } }, { $group: { _id: null, total: { $sum: '$amount' } } }]),
+      this.withdrawalModel.countDocuments({ status: 'rejected' }),
+    ]);
+
+    // Populate user info
+    const userIds = [...new Set(withdrawals.map((w) => w.userId.toString()))];
+    const users = await this.userModel
+      .find({ _id: { $in: userIds } })
+      .select('name email')
+      .lean();
+    const userMap = new Map(users.map((u) => [u._id.toString(), u]));
+
+    return {
+      items: withdrawals.map((w) => {
+        const user = userMap.get(w.userId.toString());
+        return {
+          _id: w._id,
+          userName: user?.name || 'Unknown',
+          userEmail: user?.email || '',
+          amount: w.amount,
+          upiId: w.upiId,
+          status: w.status,
+          rejectionReason: w.rejectionReason,
+          createdAt: (w as any).createdAt,
+        };
+      }),
+      total,
+      page,
+      pages: Math.ceil(total / limit),
+      overview: {
+        pending: pendingCount,
+        totalApproved: approvedTotal[0]?.total || 0,
+        totalRejected: rejectedTotal,
+      },
+    };
+  }
+
+  /** Admin: approve or reject a withdrawal */
+  async updateStatus(id: string, status: WithdrawalStatus.APPROVED | WithdrawalStatus.REJECTED, reason?: string) {
+    const withdrawal = await this.withdrawalModel.findById(id);
+    if (!withdrawal) throw new BadRequestException('Withdrawal not found');
+    if (withdrawal.status !== WithdrawalStatus.PENDING) {
+      throw new BadRequestException(`Withdrawal already ${withdrawal.status}`);
+    }
+
+    withdrawal.status = status;
+    if (status === WithdrawalStatus.REJECTED) {
+      withdrawal.rejectionReason = reason || 'Rejected by admin';
+      // Refund balance
+      await this.walletService.addEarnings(withdrawal.userId.toString(), withdrawal.amount);
+      this.logger.log(`Withdrawal ${id} rejected, ₹${withdrawal.amount} refunded`);
+    } else {
+      this.logger.log(`Withdrawal ${id} approved, ₹${withdrawal.amount} to ${withdrawal.upiId}`);
+    }
+    await withdrawal.save();
+
+    return { id: withdrawal._id, status: withdrawal.status };
   }
 }
