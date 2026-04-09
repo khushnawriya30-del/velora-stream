@@ -92,14 +92,18 @@ class EarnMoneyViewModel @Inject constructor(
                 }
 
                 // Load referral stats
-                val refResp = api.getReferralStats()
-                if (refResp.isSuccessful) {
-                    val r = refResp.body()!!
-                    _uiState.value = _uiState.value.copy(
-                        referralCode = r.referralCode,
-                        totalInvited = r.totalInvited,
-                    )
-                }
+                try {
+                    val refResp = api.getReferralStats()
+                    if (refResp.isSuccessful) {
+                        val r = refResp.body()
+                        if (r != null && r.referralCode.isNotEmpty()) {
+                            _uiState.value = _uiState.value.copy(
+                                referralCode = r.referralCode,
+                                totalInvited = r.totalInvited,
+                            )
+                        }
+                    }
+                } catch (_: Exception) {}
 
                 // Load earnings history
                 val earningsResp = api.getReferralEarnings()
