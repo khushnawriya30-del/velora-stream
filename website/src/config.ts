@@ -18,8 +18,8 @@ export const APP_CONFIG = {
   },
 
   fallback: {
-    version: '1.7.5',
-    downloadUrl: 'https://github.com/khushnawriya30-del/velora-stream/releases/download/v1.7.5/VELORA-v1.7.5.apk',
+    version: '2.0.1',
+    downloadUrl: 'https://github.com/khushnawriya30-del/velora-stream/releases/download/v2.0.1/Velora-v2.0.1.apk',
   },
 
   screenshots: [

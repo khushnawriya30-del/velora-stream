@@ -9,6 +9,7 @@ import Pricing from './sections/Pricing';
 import TrustSection from './sections/TrustSection';
 import FAQ from './sections/FAQ';
 import Contact from './sections/Contact';
+import Download from './sections/Download';
 import Footer from './sections/Footer';
 import Terms from './sections/Terms';
 import RefundPolicy from './sections/RefundPolicy';
@@ -46,6 +47,7 @@ export default function App() {
         <About />
         <Pricing />
         <TrustSection />
+        <Download />
         <FAQ />
         <Contact />
         <Footer />

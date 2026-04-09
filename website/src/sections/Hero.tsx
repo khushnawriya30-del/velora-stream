@@ -83,10 +83,11 @@ export default function Hero() {
             Get Premium Access
           </a>
           <a
-            href="#features"
-            className="px-10 py-4 border border-white/10 text-white font-medium rounded-full text-base hover:bg-white/5 hover:border-white/20 transition-all"
+            href="#download"
+            className="px-10 py-4 border border-white/10 text-white font-medium rounded-full text-base hover:bg-white/5 hover:border-white/20 transition-all flex items-center gap-2"
           >
-            Explore Features
+            <Zap className="w-5 h-5" />
+            Download APK
           </a>
         </motion.div>
 
