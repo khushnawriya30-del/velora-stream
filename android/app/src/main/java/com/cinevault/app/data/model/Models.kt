@@ -4,7 +4,7 @@ import com.google.gson.annotations.SerializedName
 
 // Auth
 data class LoginRequest(val email: String, val password: String)
-data class RegisterRequest(val name: String, val email: String, val password: String)
+data class RegisterRequest(val name: String, val email: String, val password: String, val referralCode: String? = null)
 data class AuthResponse(
     val accessToken: String,
     val refreshToken: String?,
@@ -17,16 +17,16 @@ data class RefreshResponse(
 data class ForgotPasswordRequest(val email: String)
 data class ResetPasswordRequest(val token: String, val password: String)
 data class MessageResponse(val message: String, val devOtp: String? = null)
-data class GoogleTokenRequest(val idToken: String)
+data class GoogleTokenRequest(val idToken: String, val referralCode: String? = null)
 
 // Phone OTP Auth
 data class SendPhoneOtpRequest(val phone: String)
-data class VerifyPhoneOtpRequest(val phone: String, val otp: String)
-data class FirebasePhoneRequest(val idToken: String)
+data class VerifyPhoneOtpRequest(val phone: String, val otp: String, val referralCode: String? = null)
+data class FirebasePhoneRequest(val idToken: String, val referralCode: String? = null)
 
 // Email OTP Auth
 data class SendEmailOtpRequest(val email: String)
-data class VerifyEmailOtpRequest(val email: String, val otp: String)
+data class VerifyEmailOtpRequest(val email: String, val otp: String, val referralCode: String? = null)
 
 // App Version (for auto-update)
 data class AppVersionResponse(

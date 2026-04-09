@@ -48,6 +48,9 @@ class SessionManager @Inject constructor(@ApplicationContext private val context
 
         // Earn money countdown (millis timestamp when 60-day window started)
         private val EARN_START_TIMESTAMP = longPreferencesKey("earn_start_timestamp")
+
+        // Pending referral code (from deep link or website)
+        private val PENDING_REFERRAL_CODE = stringPreferencesKey("pending_referral_code")
     }
 
     val accessToken: Flow<String?> = context.dataStore.data.map { it[ACCESS_TOKEN] }
@@ -80,6 +83,8 @@ class SessionManager @Inject constructor(@ApplicationContext private val context
     val premiumExpiresAt: Flow<String?> = context.dataStore.data.map { it[PREMIUM_EXPIRES_AT] }
 
     val earnStartTimestamp: Flow<Long> = context.dataStore.data.map { it[EARN_START_TIMESTAMP] ?: 0L }
+
+    val pendingReferralCode: Flow<String?> = context.dataStore.data.map { it[PENDING_REFERRAL_CODE] }
 
     // Saved account flows
     val lastGoogleName: Flow<String?> = context.dataStore.data.map { it[LAST_GOOGLE_NAME] }
@@ -148,6 +153,7 @@ class SessionManager @Inject constructor(@ApplicationContext private val context
             val pName = prefs[LAST_PHONE_NAME]
             val pNumber = prefs[LAST_PHONE_NUMBER]
             val provider = prefs[LAST_AUTH_PROVIDER]
+            val pendingRef = prefs[PENDING_REFERRAL_CODE]
 
             prefs.clear()
 
@@ -158,6 +164,7 @@ class SessionManager @Inject constructor(@ApplicationContext private val context
             pName?.let { prefs[LAST_PHONE_NAME] = it }
             pNumber?.let { prefs[LAST_PHONE_NUMBER] = it }
             provider?.let { prefs[LAST_AUTH_PROVIDER] = it }
+            pendingRef?.let { prefs[PENDING_REFERRAL_CODE] = it }
         }
     }
 
@@ -217,6 +224,18 @@ class SessionManager @Inject constructor(@ApplicationContext private val context
     suspend fun resetEarnStartTimestamp() {
         context.dataStore.edit { prefs ->
             prefs[EARN_START_TIMESTAMP] = System.currentTimeMillis()
+        }
+    }
+
+    suspend fun savePendingReferralCode(code: String) {
+        context.dataStore.edit { prefs ->
+            prefs[PENDING_REFERRAL_CODE] = code
+        }
+    }
+
+    suspend fun clearPendingReferralCode() {
+        context.dataStore.edit { prefs ->
+            prefs.remove(PENDING_REFERRAL_CODE)
         }
     }
 

@@ -15,12 +15,17 @@ android {
         applicationId = "com.cinevault.app"
         minSdk = 26
         targetSdk = 34
-        versionCode = 42
-        versionName = "2.0.4"
+        versionCode = 43
+        versionName = "2.0.5"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         vectorDrawables {
             useSupportLibrary = true
+        }
+
+        // Only include ARM ABIs — exclude x86/x86_64 (emulator-only, reduces APK size)
+        ndk {
+            abiFilters += listOf("arm64-v8a", "armeabi-v7a")
         }
 
         buildConfigField("String", "BASE_URL", "\"https://velora-backend-fopqpbthva-el.a.run.app/api/v1/\"")

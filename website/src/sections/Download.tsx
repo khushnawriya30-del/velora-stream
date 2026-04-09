@@ -1,15 +1,24 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Download as DownloadIcon, ChevronDown, Clock, ExternalLink } from 'lucide-react';
+import { Download as DownloadIcon, ChevronDown, Clock, ExternalLink, Copy, Check } from 'lucide-react';
 import { useGitHubRelease } from '../hooks/useGitHubRelease';
 import { APP_CONFIG } from '../config';
 
-export default function Download() {
+export default function Download({ referralCode }: { referralCode?: string | null }) {
   const { latest, releases, loading } = useGitHubRelease();
   const [showHistory, setShowHistory] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   const version = latest?.version || APP_CONFIG.fallback.version;
   const downloadUrl = latest?.downloadUrl || APP_CONFIG.fallback.downloadUrl;
+
+  const handleCopy = () => {
+    if (referralCode) {
+      navigator.clipboard.writeText(referralCode);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
 
   return (
     <section id="download" className="relative py-28 px-6">
@@ -32,6 +41,35 @@ export default function Download() {
             Download the latest version and get started.
           </p>
         </motion.div>
+
+        {/* Referral Code Banner */}
+        {referralCode && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.4 }}
+            className="mb-8 mx-auto max-w-md"
+          >
+            <div className="bg-gradient-to-r from-gold/10 via-gold/15 to-gold/10 border border-gold/30 rounded-2xl p-5">
+              <p className="text-gold text-sm font-medium mb-2">You were invited! Enter this code when you sign up:</p>
+              <div className="flex items-center justify-center gap-3">
+                <span className="text-2xl font-bold text-white tracking-[6px] font-mono">{referralCode}</span>
+                <button
+                  onClick={handleCopy}
+                  className="p-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors"
+                  title="Copy code"
+                >
+                  {copied ? (
+                    <Check className="w-4 h-4 text-green-400" />
+                  ) : (
+                    <Copy className="w-4 h-4 text-gray-300" />
+                  )}
+                </button>
+              </div>
+              <p className="text-gray-400 text-xs mt-2">Paste this referral code during registration in the app</p>
+            </div>
+          </motion.div>
+        )}
 
         {/* Download Button */}
         <motion.div

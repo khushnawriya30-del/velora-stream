@@ -50,6 +50,7 @@ fun RegisterScreen(
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
+    var referralCode by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
 
     // Google Sign-In via Chrome Custom Tab
@@ -165,12 +166,26 @@ fun RegisterScreen(
                         visualTransformation = PasswordVisualTransformation(),
                         keyboardOptions = KeyboardOptions(
                             keyboardType = KeyboardType.Password,
+                            imeAction = ImeAction.Next,
+                        ),
+                        keyboardActions = KeyboardActions(
+                            onNext = { focusManager.moveFocus(FocusDirection.Down) }
+                        ),
+                    )
+
+                    Spacer(Modifier.height(14.dp))
+
+                    CineVaultTextField(
+                        value = referralCode,
+                        onValueChange = { referralCode = it.uppercase().take(20) },
+                        label = "Referral Code (Optional)",
+                        keyboardOptions = KeyboardOptions(
                             imeAction = ImeAction.Done,
                         ),
                         keyboardActions = KeyboardActions(
                             onDone = {
                                 focusManager.clearFocus()
-                                viewModel.register(name, email, password, confirmPassword)
+                                viewModel.register(name, email, password, confirmPassword, referralCode.takeIf { it.isNotBlank() })
                             }
                         ),
                     )
@@ -188,7 +203,7 @@ fun RegisterScreen(
 
                     GoldButton(
                         text = "Create Account",
-                        onClick = { viewModel.register(name, email, password, confirmPassword) },
+                        onClick = { viewModel.register(name, email, password, confirmPassword, referralCode.takeIf { it.isNotBlank() }) },
                         isLoading = uiState.isLoading,
                     )
                 }

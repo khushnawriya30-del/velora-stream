@@ -65,7 +65,7 @@ class AuthViewModel @Inject constructor(
         }
     }
 
-    fun register(name: String, email: String, password: String, confirmPassword: String) {
+    fun register(name: String, email: String, password: String, confirmPassword: String, referralCode: String? = null) {
         if (name.isBlank() || email.isBlank() || password.isBlank()) {
             _uiState.update { it.copy(error = "Please fill in all fields") }
             return
@@ -84,7 +84,7 @@ class AuthViewModel @Inject constructor(
         }
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null) }
-            when (val result = authRepository.register(name, email, password)) {
+            when (val result = authRepository.register(name, email, password, referralCode)) {
                 is Result.Success -> _uiState.update { it.copy(isLoading = false, registerSuccess = true) }
                 is Result.Error -> _uiState.update { it.copy(isLoading = false, error = result.message) }
                 is Result.Loading -> {}

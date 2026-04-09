@@ -66,10 +66,10 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Login with Google ID token (Android/iOS) — user must be already registered' })
   async googleMobile(
-    @Body() body: { idToken: string },
+    @Body() body: { idToken: string; referralCode?: string },
     @Res({ passthrough: true }) res: Response,
   ) {
-    const result = await this.authService.googleVerifyIdToken(body.idToken);
+    const result = await this.authService.googleVerifyIdToken(body.idToken, body.referralCode);
     this.setRefreshTokenCookie(res, result.refreshToken);
     return { accessToken: result.accessToken, refreshToken: result.refreshToken, user: result.user };
   }
@@ -78,10 +78,10 @@ export class AuthController {
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Sign up with Google ID token (Android/iOS) — creates new account' })
   async googleMobileSignup(
-    @Body() body: { idToken: string },
+    @Body() body: { idToken: string; referralCode?: string },
     @Res({ passthrough: true }) res: Response,
   ) {
-    const result = await this.authService.googleSignup(body.idToken);
+    const result = await this.authService.googleSignup(body.idToken, body.referralCode);
     this.setRefreshTokenCookie(res, result.refreshToken);
     return { accessToken: result.accessToken, refreshToken: result.refreshToken, user: result.user };
   }
@@ -90,10 +90,10 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Login with Google access token (web flow)' })
   async googleWebLogin(
-    @Body() body: { accessToken: string },
+    @Body() body: { accessToken: string; referralCode?: string },
     @Res({ passthrough: true }) res: Response,
   ) {
-    const result = await this.authService.googleVerifyAccessToken(body.accessToken);
+    const result = await this.authService.googleVerifyAccessToken(body.accessToken, body.referralCode);
     this.setRefreshTokenCookie(res, result.refreshToken);
     return { accessToken: result.accessToken, refreshToken: result.refreshToken, user: result.user };
   }
@@ -102,10 +102,10 @@ export class AuthController {
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Sign up with Google access token (web flow)' })
   async googleWebSignup(
-    @Body() body: { accessToken: string },
+    @Body() body: { accessToken: string; referralCode?: string },
     @Res({ passthrough: true }) res: Response,
   ) {
-    const result = await this.authService.googleVerifyAccessToken(body.accessToken);
+    const result = await this.authService.googleVerifyAccessToken(body.accessToken, body.referralCode);
     this.setRefreshTokenCookie(res, result.refreshToken);
     return { accessToken: result.accessToken, refreshToken: result.refreshToken, user: result.user };
   }
@@ -166,10 +166,10 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Verify email OTP and login/register' })
   async verifyEmailOtp(
-    @Body() body: { email: string; otp: string },
+    @Body() body: { email: string; otp: string; referralCode?: string },
     @Res({ passthrough: true }) res: Response,
   ) {
-    const result = await this.authService.verifyEmailLoginOtp(body.email, body.otp);
+    const result = await this.authService.verifyEmailLoginOtp(body.email, body.otp, body.referralCode);
     this.setRefreshTokenCookie(res, result.refreshToken);
     return { accessToken: result.accessToken, refreshToken: result.refreshToken, user: result.user };
   }
@@ -187,10 +187,10 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Verify OTP and login/register with phone number' })
   async verifyPhoneOtp(
-    @Body() body: { phone: string; otp: string },
+    @Body() body: { phone: string; otp: string; referralCode?: string },
     @Res({ passthrough: true }) res: Response,
   ) {
-    const result = await this.authService.verifyPhoneOtp(body.phone, body.otp);
+    const result = await this.authService.verifyPhoneOtp(body.phone, body.otp, body.referralCode);
     this.setRefreshTokenCookie(res, result.refreshToken);
     return { accessToken: result.accessToken, refreshToken: result.refreshToken, user: result.user };
   }
@@ -199,10 +199,10 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Verify Firebase phone auth token and login/register' })
   async firebasePhoneVerify(
-    @Body() body: { idToken: string },
+    @Body() body: { idToken: string; referralCode?: string },
     @Res({ passthrough: true }) res: Response,
   ) {
-    const result = await this.authService.verifyFirebasePhoneToken(body.idToken);
+    const result = await this.authService.verifyFirebasePhoneToken(body.idToken, body.referralCode);
     this.setRefreshTokenCookie(res, result.refreshToken);
     return { accessToken: result.accessToken, refreshToken: result.refreshToken, user: result.user };
   }

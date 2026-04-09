@@ -14,6 +14,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.lifecycleScope
+import com.cinevault.app.data.local.SessionManager
 import com.cinevault.app.ui.components.UpdateDialog
 import com.cinevault.app.ui.navigation.CineVaultNavHost
 import com.cinevault.app.ui.theme.CineVaultTheme
@@ -26,6 +28,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.launch
+import javax.inject.Inject
 
 /**
  * Razorpay payment result sealed class
@@ -37,6 +41,8 @@ sealed class RazorpayPaymentResult {
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity(), PaymentResultWithDataListener {
+
+    @Inject lateinit var sessionManager: SessionManager
 
     private val _pendingAuthUri = MutableStateFlow<Uri?>(null)
     val pendingAuthUri: StateFlow<Uri?> = _pendingAuthUri
@@ -99,9 +105,22 @@ class MainActivity : ComponentActivity(), PaymentResultWithDataListener {
 
     private fun handleAuthIntent(intent: Intent?) {
         val uri = intent?.data ?: return
-        if (uri.scheme == "velora" && uri.host == "auth-callback") {
-            Log.d("MainActivity", "Received auth callback: $uri")
-            _pendingAuthUri.value = uri
+        if (uri.scheme == "velora") {
+            when (uri.host) {
+                "auth-callback" -> {
+                    Log.d("MainActivity", "Received auth callback: $uri")
+                    _pendingAuthUri.value = uri
+                }
+                "referral" -> {
+                    val code = uri.getQueryParameter("code")
+                    if (!code.isNullOrBlank()) {
+                        Log.d("MainActivity", "Received referral code from deep link: $code")
+                        lifecycleScope.launch {
+                            sessionManager.savePendingReferralCode(code)
+                        }
+                    }
+                }
+            }
         }
     }
 }

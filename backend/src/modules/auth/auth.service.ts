@@ -17,6 +17,7 @@ import { randomBytes } from 'crypto';
 import { User, UserDocument, AuthProvider } from '../../schemas/user.schema';
 import { PhoneOtp, PhoneOtpDocument } from '../../schemas/phone-otp.schema';
 import { EmailOtp, EmailOtpDocument } from '../../schemas/email-otp.schema';
+import { ReferralService } from '../referral/referral.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 export class AuthService implements OnModuleInit {
@@ -28,6 +29,7 @@ export class AuthService implements OnModuleInit {
     @InjectModel(EmailOtp.name) private emailOtpModel: Model<EmailOtpDocument>,
     private jwtService: JwtService,
     private configService: ConfigService,
+    private readonly referralService: ReferralService,
   ) {}
 
   async onModuleInit() {
@@ -109,6 +111,16 @@ export class AuthService implements OnModuleInit {
       password: hashedPassword,
       authProvider: AuthProvider.LOCAL,
     });
+
+    // Apply referral if code was provided
+    if (dto.referralCode) {
+      try {
+        await this.referralService.applyReferral(user._id.toString(), dto.referralCode);
+        this.logger.log(`Referral applied during registration: ${dto.referralCode} → ${user._id}`);
+      } catch (e) {
+        this.logger.warn(`Referral apply failed during registration: ${e.message}`);
+      }
+    }
 
     const tokens = await this.generateTokens(user);
     return {
@@ -339,7 +351,7 @@ export class AuthService implements OnModuleInit {
    * Google Login (mobile) — find-or-create a Google account.
    * Never links to an existing email/local account.
    */
-  async googleVerifyIdToken(idToken: string): Promise<{ accessToken: string; refreshToken: string; user: any }> {
+  async googleVerifyIdToken(idToken: string, referralCode?: string): Promise<{ accessToken: string; refreshToken: string; user: any }> {
     const { uid, email, name, picture } = await this.verifyGoogleToken(idToken);
     if (!email) throw new BadRequestException('Google account has no email');
 
@@ -350,7 +362,9 @@ export class AuthService implements OnModuleInit {
       user = await this.userModel.findOne({ email: email.toLowerCase(), authProvider: AuthProvider.GOOGLE });
     }
 
+    let isNewUser = false;
     if (!user) {
+      isNewUser = true;
       // Auto-create a new Google account (completely separate from any email/local account)
       user = await this.userModel.create({
         name: name ?? email.split('@')[0],
@@ -373,6 +387,16 @@ export class AuthService implements OnModuleInit {
     user.lastActiveAt = new Date();
     await user.save();
 
+    // Apply referral for new users
+    if (isNewUser && referralCode) {
+      try {
+        await this.referralService.applyReferral(user._id.toString(), referralCode);
+        this.logger.log(`Referral applied during Google auth: ${referralCode} → ${user._id}`);
+      } catch (e) {
+        this.logger.warn(`Referral apply failed during Google auth: ${e.message}`);
+      }
+    }
+
     const tokens = await this.generateTokens(user);
     return { ...tokens, user: this.sanitizeUser(user) };
   }
@@ -380,15 +404,15 @@ export class AuthService implements OnModuleInit {
   /**
    * Google Sign-Up (mobile) — same find-or-create flow as login.
    */
-  async googleSignup(idToken: string): Promise<{ accessToken: string; refreshToken: string; user: any }> {
-    return this.googleVerifyIdToken(idToken);
+  async googleSignup(idToken: string, referralCode?: string): Promise<{ accessToken: string; refreshToken: string; user: any }> {
+    return this.googleVerifyIdToken(idToken, referralCode);
   }
 
   /**
    * Google Login/Signup via access token (web flow).
    * Verifies the access token against Google's userinfo endpoint server-side.
    */
-  async googleVerifyAccessToken(accessToken: string): Promise<{ accessToken: string; refreshToken: string; user: any }> {
+  async googleVerifyAccessToken(accessToken: string, referralCode?: string): Promise<{ accessToken: string; refreshToken: string; user: any }> {
     let userInfo: any;
     try {
       const response = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
@@ -414,7 +438,9 @@ export class AuthService implements OnModuleInit {
       user = await this.userModel.findOne({ email: email.toLowerCase(), authProvider: AuthProvider.GOOGLE });
     }
 
+    let isNewUser = false;
     if (!user) {
+      isNewUser = true;
       user = await this.userModel.create({
         name,
         email: email.toLowerCase(),
@@ -434,6 +460,16 @@ export class AuthService implements OnModuleInit {
 
     user.lastActiveAt = new Date();
     await user.save();
+
+    // Apply referral for new users
+    if (isNewUser && referralCode) {
+      try {
+        await this.referralService.applyReferral(user._id.toString(), referralCode);
+        this.logger.log(`Referral applied during Google web auth: ${referralCode} → ${user._id}`);
+      } catch (e) {
+        this.logger.warn(`Referral apply failed during Google web auth: ${e.message}`);
+      }
+    }
 
     const tokens = await this.generateTokens(user);
     return { ...tokens, user: this.sanitizeUser(user) };
@@ -472,6 +508,7 @@ export class AuthService implements OnModuleInit {
    */
   async verifyFirebasePhoneToken(
     idToken: string,
+    referralCode?: string,
   ): Promise<{ accessToken: string; refreshToken: string; user: any }> {
     const firebaseApiKey = this.configService.get<string>('FIREBASE_WEB_API_KEY') ?? 'AIzaSyCYm3w06LQbfFGqCiGYSBYfbExNokEIJaw';
 
@@ -501,7 +538,9 @@ export class AuthService implements OnModuleInit {
 
     // Find or create user
     let user = await this.userModel.findOne({ phone });
+    let isNewUser = false;
     if (!user) {
+      isNewUser = true;
       const lastFour = phone.slice(-4);
       const numericPhone = phone.replace('+', '');
       const generatedEmail = `ph${numericPhone}@cinevault.app`;
@@ -520,6 +559,16 @@ export class AuthService implements OnModuleInit {
 
     user.lastActiveAt = new Date();
     await user.save();
+
+    // Apply referral for new users
+    if (isNewUser && referralCode) {
+      try {
+        await this.referralService.applyReferral(user._id.toString(), referralCode);
+        this.logger.log(`Referral applied during Firebase phone auth: ${referralCode} → ${user._id}`);
+      } catch (e) {
+        this.logger.warn(`Referral apply failed during Firebase phone auth: ${e.message}`);
+      }
+    }
 
     const tokens = await this.generateTokens(user);
     return { ...tokens, user: this.sanitizeUser(user) };
@@ -563,6 +612,7 @@ export class AuthService implements OnModuleInit {
   async verifyPhoneOtp(
     phone: string,
     otp: string,
+    referralCode?: string,
   ): Promise<{ accessToken: string; refreshToken: string; user: any }> {
     const cleaned = phone.replace(/\s/g, '');
     if (!/^\+91[6-9]\d{9}$/.test(cleaned)) {
@@ -588,7 +638,9 @@ export class AuthService implements OnModuleInit {
 
     // Find or create user
     let user = await this.userModel.findOne({ phone: cleaned });
+    let isNewUser = false;
     if (!user) {
+      isNewUser = true;
       const lastFour = cleaned.slice(-4);
       const numericPhone = cleaned.replace('+', ''); // e.g. 919876543210
       const generatedEmail = `ph${numericPhone}@cinevault.app`;
@@ -607,6 +659,16 @@ export class AuthService implements OnModuleInit {
 
     user.lastActiveAt = new Date();
     await user.save();
+
+    // Apply referral for new users
+    if (isNewUser && referralCode) {
+      try {
+        await this.referralService.applyReferral(user._id.toString(), referralCode);
+        this.logger.log(`Referral applied during phone OTP auth: ${referralCode} → ${user._id}`);
+      } catch (e) {
+        this.logger.warn(`Referral apply failed during phone OTP auth: ${e.message}`);
+      }
+    }
 
     const tokens = await this.generateTokens(user);
     return { ...tokens, user: this.sanitizeUser(user) };
@@ -716,6 +778,7 @@ export class AuthService implements OnModuleInit {
   async verifyEmailLoginOtp(
     email: string,
     otp: string,
+    referralCode?: string,
   ): Promise<{ accessToken: string; refreshToken: string; user: any }> {
     const normalizedEmail = email.toLowerCase().trim();
 
@@ -742,7 +805,9 @@ export class AuthService implements OnModuleInit {
       authProvider: { $in: [AuthProvider.LOCAL, null] },
     });
 
+    let isNewUser = false;
     if (!user) {
+      isNewUser = true;
       user = await this.userModel.create({
         name: normalizedEmail.split('@')[0],
         email: normalizedEmail,
@@ -761,6 +826,16 @@ export class AuthService implements OnModuleInit {
 
     user.lastActiveAt = new Date();
     await user.save();
+
+    // Apply referral for new users
+    if (isNewUser && referralCode) {
+      try {
+        await this.referralService.applyReferral(user._id.toString(), referralCode);
+        this.logger.log(`Referral applied during email OTP auth: ${referralCode} → ${user._id}`);
+      } catch (e) {
+        this.logger.warn(`Referral apply failed during email OTP auth: ${e.message}`);
+      }
+    }
 
     const tokens = await this.generateTokens(user);
     return { ...tokens, user: this.sanitizeUser(user) };

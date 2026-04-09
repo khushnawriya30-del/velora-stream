@@ -17,6 +17,7 @@ import PrivacyPolicy from './sections/PrivacyPolicy';
 
 export default function App() {
   const [page, setPage] = useState(window.location.pathname);
+  const [referralCode, setReferralCode] = useState<string | null>(null);
 
   useEffect(() => {
     const onPop = () => setPage(window.location.pathname);
@@ -30,6 +31,7 @@ export default function App() {
     const refCode = params.get('ref');
     if (refCode) {
       localStorage.setItem('velora_ref_code', refCode);
+      setReferralCode(refCode);
       // Clean URL without reload
       const url = new URL(window.location.href);
       url.searchParams.delete('ref');
@@ -38,6 +40,10 @@ export default function App() {
       setTimeout(() => {
         document.getElementById('download')?.scrollIntoView({ behavior: 'smooth' });
       }, 500);
+    } else {
+      // Check localStorage for previously saved code
+      const saved = localStorage.getItem('velora_ref_code');
+      if (saved) setReferralCode(saved);
     }
   }, []);
 
@@ -64,7 +70,7 @@ export default function App() {
         <About />
         <Pricing />
         <TrustSection />
-        <Download />
+        <Download referralCode={referralCode} />
         <FAQ />
         <Contact />
         <Footer />

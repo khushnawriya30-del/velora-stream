@@ -3,6 +3,7 @@ package com.cinevault.app.data.repository
 import com.cinevault.app.data.local.SessionManager
 import com.cinevault.app.data.model.*
 import com.cinevault.app.data.remote.CineVaultApi
+import kotlinx.coroutines.flow.first
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -11,6 +12,13 @@ class AuthRepository @Inject constructor(
     private val api: CineVaultApi,
     private val sessionManager: SessionManager,
 ) {
+    /** Consume the pending referral code (returns it once, then clears) */
+    private suspend fun consumePendingReferralCode(): String? {
+        val code = sessionManager.pendingReferralCode.first()
+        if (code != null) sessionManager.clearPendingReferralCode()
+        return code
+    }
+
     suspend fun login(email: String, password: String): Result<UserDto> {
         return try {
             val response = api.login(LoginRequest(email, password))
@@ -35,9 +43,10 @@ class AuthRepository @Inject constructor(
         }
     }
 
-    suspend fun register(name: String, email: String, password: String): Result<UserDto> {
+    suspend fun register(name: String, email: String, password: String, referralCode: String? = null): Result<UserDto> {
         return try {
-            val response = api.register(RegisterRequest(name, email, password))
+            val code = referralCode ?: consumePendingReferralCode()
+            val response = api.register(RegisterRequest(name, email, password, code))
             if (response.isSuccessful && response.body() != null) {
                 val body = response.body()!!
                 sessionManager.saveSession(
@@ -108,7 +117,8 @@ class AuthRepository @Inject constructor(
 
     suspend fun googleLogin(idToken: String): Result<UserDto> {
         return try {
-            val response = api.googleMobileLogin(GoogleTokenRequest(idToken))
+            val code = consumePendingReferralCode()
+            val response = api.googleMobileLogin(GoogleTokenRequest(idToken, code))
             if (response.isSuccessful && response.body() != null) {
                 val body = response.body()!!
                 sessionManager.saveSession(
@@ -133,7 +143,8 @@ class AuthRepository @Inject constructor(
 
     suspend fun googleSignup(idToken: String): Result<UserDto> {
         return try {
-            val response = api.googleMobileSignup(GoogleTokenRequest(idToken))
+            val code = consumePendingReferralCode()
+            val response = api.googleMobileSignup(GoogleTokenRequest(idToken, code))
             if (response.isSuccessful && response.body() != null) {
                 val body = response.body()!!
                 sessionManager.saveSession(
@@ -171,7 +182,8 @@ class AuthRepository @Inject constructor(
 
     suspend fun verifyPhoneOtp(phone: String, otp: String): Result<UserDto> {
         return try {
-            val response = api.verifyPhoneOtp(VerifyPhoneOtpRequest(phone, otp))
+            val code = consumePendingReferralCode()
+            val response = api.verifyPhoneOtp(VerifyPhoneOtpRequest(phone, otp, code))
             if (response.isSuccessful && response.body() != null) {
                 val body = response.body()!!
                 sessionManager.saveSession(
@@ -195,7 +207,8 @@ class AuthRepository @Inject constructor(
 
     suspend fun firebasePhoneVerify(idToken: String): Result<UserDto> {
         return try {
-            val response = api.firebasePhoneVerify(FirebasePhoneRequest(idToken))
+            val code = consumePendingReferralCode()
+            val response = api.firebasePhoneVerify(FirebasePhoneRequest(idToken, code))
             if (response.isSuccessful && response.body() != null) {
                 val body = response.body()!!
                 sessionManager.saveSession(
@@ -239,7 +252,8 @@ class AuthRepository @Inject constructor(
 
     suspend fun verifyEmailOtp(email: String, otp: String): Result<UserDto> {
         return try {
-            val response = api.verifyEmailOtp(VerifyEmailOtpRequest(email, otp))
+            val code = consumePendingReferralCode()
+            val response = api.verifyEmailOtp(VerifyEmailOtpRequest(email, otp, code))
             if (response.isSuccessful && response.body() != null) {
                 val body = response.body()!!
                 sessionManager.saveSession(
