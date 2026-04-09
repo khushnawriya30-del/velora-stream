@@ -33,6 +33,13 @@ export class R2StorageController {
     return this.r2.getUploadConfig();
   }
 
+  // Get all R2 source URLs currently in use by movies/episodes
+  // GET /r2/used-sources
+  @Get('used-sources')
+  async getUsedSources() {
+    return this.r2.getUsedR2Sources();
+  }
+
   // Browse R2 bucket folders/files
   // GET /r2/browse?path=series/breaking-bad/
   @Get('browse')

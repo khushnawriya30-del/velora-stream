@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Film, Plus, ChevronDown, ChevronRight, Trash2, Pencil, Upload, X, Layers, FolderInput, Loader2, Check, AlertTriangle, Cloud, RefreshCw, Zap, Download, GripVertical } from 'lucide-react';
+import { Film, Plus, ChevronDown, ChevronRight, Trash2, Pencil, Upload, X, Layers, FolderInput, Loader2, Check, AlertTriangle, Cloud, RefreshCw, Zap, Download, GripVertical, CheckCircle2 } from 'lucide-react';
 import { useState, useMemo, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../lib/api';
@@ -1412,6 +1412,32 @@ function R2ImportModal({
     },
   });
 
+  // Fetch all R2 URLs currently in use
+  const { data: usedSources } = useQuery({
+    queryKey: ['r2-used-sources'],
+    queryFn: async () => {
+      const { data } = await api.get('/r2/used-sources');
+      return data as { movieUrls: Record<string, string>; episodeUrls: Record<string, string> };
+    },
+    staleTime: 30_000,
+  });
+
+  // Helpers for checking used folders/files (both movie and episode URLs)
+  const allUsedUrls = useMemo(() => ({ ...(usedSources?.movieUrls || {}), ...(usedSources?.episodeUrls || {}) }), [usedSources]);
+  const isFolderUsed = useCallback((folderPath: string) => {
+    const prefix = folderPath.endsWith('/') ? folderPath : folderPath + '/';
+    return Object.keys(allUsedUrls).some((url) => url.includes('/' + prefix) || url.includes(encodeURIComponent(prefix)));
+  }, [allUsedUrls]);
+  const getFolderUsedBy = useCallback((folderPath: string) => {
+    const prefix = folderPath.endsWith('/') ? folderPath : folderPath + '/';
+    for (const [url, title] of Object.entries(allUsedUrls)) {
+      if (url.includes('/' + prefix) || url.includes(encodeURIComponent(prefix))) return title;
+    }
+    return '';
+  }, [allUsedUrls]);
+  const isFileUsed = useCallback((url: string) => url in allUsedUrls, [allUsedUrls]);
+  const getFileUsedBy = useCallback((url: string) => allUsedUrls[url] || '', [allUsedUrls]);
+
   // Preview mutation
   const previewMutation = useMutation({
     mutationFn: async () => {
@@ -1435,6 +1461,7 @@ function R2ImportModal({
       toast.success(`Imported ${data.totalImported} episodes across ${data.seasons.length} season(s)`);
       queryClient.invalidateQueries({ queryKey: ['seasons'] });
       queryClient.invalidateQueries({ queryKey: ['series-list'] });
+      queryClient.invalidateQueries({ queryKey: ['r2-used-sources'] });
     },
     onError: (err: any) => toast.error(err.response?.data?.message || 'Import failed'),
   });
@@ -1509,18 +1536,26 @@ function R2ImportModal({
             <div className="flex items-center gap-2 text-sm text-text-muted py-4 justify-center"><Loader2 size={14} className="animate-spin" /> Browsing R2...</div>
           ) : (
             <div className="bg-surface-light border border-border rounded-lg max-h-48 overflow-y-auto">
-              {browseData?.folders.map((folder) => (
+              {browseData?.folders.map((folder) => {
+                const folderAdded = isFolderUsed(folder.path);
+                const addedTo = getFolderUsedBy(folder.path);
+                return (
                 <div key={folder.path} className="flex items-center gap-2 px-3 py-2 hover:bg-surface transition-colors border-b border-border/50 last:border-0">
                   <button
                     onClick={() => { setCurrentPath(folder.path); setPreviewData(null); }}
-                    className="flex items-center gap-2 flex-1 text-left text-sm"
+                    className="flex items-center gap-2 flex-1 text-left text-sm min-w-0"
                   >
-                    <FolderInput size={14} className="text-orange-400" />
-                    <span className="text-text-primary">{folder.name}/</span>
+                    <FolderInput size={14} className={folderAdded ? 'text-green-400 flex-shrink-0' : 'text-orange-400 flex-shrink-0'} />
+                    <span className="text-text-primary truncate">{folder.name}/</span>
+                    {folderAdded && (
+                      <span className="flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full bg-green-500/15 text-green-400 font-medium flex-shrink-0 max-w-[140px] truncate" title={addedTo ? `Added to: ${addedTo}` : 'Already added'}>
+                        <CheckCircle2 size={10} className="flex-shrink-0" /> {addedTo || 'Added'}
+                      </span>
+                    )}
                   </button>
                   <button
                     onClick={() => { setSelectedFolder(folder.path); setPreviewData(null); }}
-                    className={`text-xs px-2 py-1 rounded font-medium transition-colors ${
+                    className={`text-xs px-2 py-1 rounded font-medium transition-colors flex-shrink-0 ${
                       selectedFolder === folder.path
                         ? 'bg-orange-500 text-white'
                         : 'bg-orange-500/10 text-orange-400 hover:bg-orange-500/20'
@@ -1529,14 +1564,27 @@ function R2ImportModal({
                     {selectedFolder === folder.path ? '✓ Selected' : 'Select'}
                   </button>
                 </div>
-              ))}
-              {browseData?.files.map((file) => (
-                <div key={file.path} className="flex items-center gap-2 px-3 py-2 text-sm text-text-muted border-b border-border/50 last:border-0">
-                  <Film size={14} />
+                );
+              })}
+              {browseData?.files.map((file) => {
+                const fileAdded = isFileUsed(file.url);
+                const addedTo = getFileUsedBy(file.url);
+                return (
+                <div key={file.path} className={`flex items-center gap-2 px-3 py-2 text-sm border-b border-border/50 last:border-0 ${fileAdded ? 'text-text-muted' : 'text-text-muted'}`}>
+                  {fileAdded
+                    ? <CheckCircle2 size={14} className="text-green-400 flex-shrink-0" />
+                    : <Film size={14} className="flex-shrink-0" />
+                  }
                   <span className="flex-1 truncate">{file.name}</span>
-                  <span className="text-xs">{formatSize(file.size)}</span>
+                  {fileAdded && (
+                    <span className="flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full bg-green-500/15 text-green-400 font-medium flex-shrink-0 max-w-[120px] truncate" title={addedTo ? `Added to: ${addedTo}` : 'Already added'}>
+                      <CheckCircle2 size={10} className="flex-shrink-0" /> {addedTo || 'Added'}
+                    </span>
+                  )}
+                  <span className="text-xs flex-shrink-0">{formatSize(file.size)}</span>
                 </div>
-              ))}
+                );
+              })}
               {(!browseData?.folders.length && !browseData?.files.length) && (
                 <p className="text-sm text-text-muted text-center py-4">Empty folder</p>
               )}

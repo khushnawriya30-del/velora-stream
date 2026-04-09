@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Plus, X, Cloud, Loader2, Check, Download, ChevronDown, FolderInput, Film, Layers, Search, Trash2, RefreshCw, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, Plus, X, Cloud, Loader2, Check, Download, ChevronDown, FolderInput, Film, Layers, Search, Trash2, RefreshCw, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import clsx from 'clsx';
 import api from '../lib/api';
 import type { Movie, CastMember, StreamingSource } from '../types';
@@ -368,6 +368,7 @@ function R2MovieImportSection({ movieId, onImported, currentSources, uploadSourc
       setShowConfirmRemove(false);
       setIsReplacing(false);
       queryClient.invalidateQueries({ queryKey: ['movie', movieId] });
+      queryClient.invalidateQueries({ queryKey: ['r2-used-sources'] });
       if (onCleared) onCleared();
     },
     onError: (err: any) => toast.error(err.response?.data?.message || 'Failed to remove sources'),
@@ -392,6 +393,25 @@ function R2MovieImportSection({ movieId, onImported, currentSources, uploadSourc
       };
     },
   });
+
+  // Fetch all R2 URLs currently in use
+  const { data: usedSources } = useQuery({
+    queryKey: ['r2-used-sources'],
+    queryFn: async () => {
+      const { data } = await api.get('/r2/used-sources');
+      return data as { movieUrls: Record<string, string>; episodeUrls: Record<string, string> };
+    },
+    staleTime: 30_000,
+  });
+
+  // Build a set of used file URLs and helper for folder matching
+  const usedMovieUrls = useMemo(() => usedSources?.movieUrls || {}, [usedSources]);
+  const isFileUsed = useCallback((url: string) => url in usedMovieUrls, [usedMovieUrls]);
+  const getFileUsedBy = useCallback((url: string) => usedMovieUrls[url] || '', [usedMovieUrls]);
+  const isFolderUsed = useCallback((folderPath: string) => {
+    const prefix = folderPath.endsWith('/') ? folderPath : folderPath + '/';
+    return Object.keys(usedMovieUrls).some((url) => url.includes('/' + prefix) || url.includes(encodeURIComponent(prefix)));
+  }, [usedMovieUrls]);
 
   // Filtered & sorted folders and files based on search
   const filteredFolders = useMemo(() => {
@@ -488,6 +508,7 @@ function R2MovieImportSection({ movieId, onImported, currentSources, uploadSourc
     onSuccess: (data) => {
       toast.success(`Imported ${data.sources.length} source(s) for "${data.movieTitle}"`);
       queryClient.invalidateQueries({ queryKey: ['movie', movieId] });
+      queryClient.invalidateQueries({ queryKey: ['r2-used-sources'] });
       if (onImported) onImported(data.sources);
     },
     onError: (err: any) => toast.error(err.response?.data?.message || 'Import failed'),
@@ -625,15 +646,22 @@ function R2MovieImportSection({ movieId, onImported, currentSources, uploadSourc
       ) : (
         <div className="bg-surface-light border border-border rounded-lg max-h-64 overflow-y-auto">
           {/* Folders — click name to navigate in, click Select to choose folder */}
-          {filteredFolders.map((folder) => (
+          {filteredFolders.map((folder) => {
+            const folderAdded = isFolderUsed(folder.path);
+            return (
             <div key={folder.path} className={`flex items-center gap-2 px-3 py-2 hover:bg-surface transition-colors border-b border-border/50 last:border-0 ${selectedFolder === folder.path ? 'bg-orange-500/10' : ''}`}>
               <button
                 type="button"
                 onClick={() => navigateToFolder(folder.path)}
                 className="flex items-center gap-2 flex-1 text-left text-sm min-w-0"
               >
-                <FolderInput size={14} className="text-orange-400 flex-shrink-0" />
+                <FolderInput size={14} className={folderAdded ? 'text-green-400 flex-shrink-0' : 'text-orange-400 flex-shrink-0'} />
                 <span className="text-text-primary truncate">{highlightMatch(folder.name)}/</span>
+                {folderAdded && (
+                  <span className="flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full bg-green-500/15 text-green-400 font-medium flex-shrink-0">
+                    <CheckCircle2 size={10} /> Added
+                  </span>
+                )}
               </button>
               <button
                 type="button"
@@ -647,23 +675,45 @@ function R2MovieImportSection({ movieId, onImported, currentSources, uploadSourc
                 {selectedFolder === folder.path ? '✓ Selected' : 'Select'}
               </button>
             </div>
-          ))}
+            );
+          })}
 
           {/* Files — click to select individual file */}
-          {filteredFiles.map((file) => (
+          {filteredFiles.map((file) => {
+            const fileAdded = isFileUsed(file.url);
+            const addedTo = getFileUsedBy(file.url);
+            return (
             <div
               key={file.path}
-              className={`flex items-center gap-2 px-3 py-2 hover:bg-surface transition-colors border-b border-border/50 last:border-0 cursor-pointer ${selectedFile?.path === file.path ? 'bg-orange-500/10' : ''}`}
-              onClick={() => selectFile({ path: file.path, url: file.url })}
+              className={`flex items-center gap-2 px-3 py-2 transition-colors border-b border-border/50 last:border-0 ${
+                fileAdded
+                  ? 'opacity-60 cursor-not-allowed'
+                  : `hover:bg-surface cursor-pointer ${selectedFile?.path === file.path ? 'bg-orange-500/10' : ''}`
+              }`}
+              onClick={() => { if (!fileAdded) selectFile({ path: file.path, url: file.url }); }}
             >
-              <Film size={14} className={selectedFile?.path === file.path ? 'text-orange-400' : 'text-text-muted'} />
-              <span className="flex-1 truncate text-sm">{highlightMatch(file.name)}</span>
+              {fileAdded
+                ? <CheckCircle2 size={14} className="text-green-400 flex-shrink-0" />
+                : <Film size={14} className={selectedFile?.path === file.path ? 'text-orange-400' : 'text-text-muted'} />
+              }
+              <span className={`flex-1 truncate text-sm ${fileAdded ? 'text-text-muted' : ''}`}>{highlightMatch(file.name)}</span>
+              {fileAdded && addedTo && (
+                <span className="flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full bg-green-500/15 text-green-400 font-medium flex-shrink-0 max-w-[140px] truncate" title={`Added to: ${addedTo}`}>
+                  <CheckCircle2 size={10} className="flex-shrink-0" /> {addedTo}
+                </span>
+              )}
+              {fileAdded && !addedTo && (
+                <span className="flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full bg-green-500/15 text-green-400 font-medium flex-shrink-0">
+                  <CheckCircle2 size={10} /> Added
+                </span>
+              )}
               <span className="text-xs text-text-muted flex-shrink-0">{formatSize(file.size)}</span>
-              {selectedFile?.path === file.path && (
+              {!fileAdded && selectedFile?.path === file.path && (
                 <span className="text-xs px-2 py-0.5 rounded bg-orange-500 text-white font-medium flex-shrink-0">✓</span>
               )}
             </div>
-          ))}
+            );
+          })}
 
           {/* Empty / no results */}
           {(!filteredFolders.length && !filteredFiles.length) && (

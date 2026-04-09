@@ -351,6 +351,66 @@ export class R2StorageService {
     return { movieTitle: movie.title, cleared: true };
   }
 
+  // ── Get all R2 source URLs currently in use (movies + episodes) ──
+  async getUsedR2Sources(): Promise<{
+    movieUrls: Record<string, string>;
+    episodeUrls: Record<string, string>;
+  }> {
+    const movieUrls: Record<string, string> = {};
+    const episodeUrls: Record<string, string> = {};
+
+    // Movies with uploadSource 'r2'
+    const movies = await this.movieModel
+      .find(
+        { uploadSource: 'r2', 'streamingSources.0': { $exists: true } },
+        { title: 1, streamingSources: 1 },
+      )
+      .lean();
+
+    for (const movie of movies) {
+      for (const src of movie.streamingSources || []) {
+        if (src.url) movieUrls[src.url] = movie.title;
+      }
+    }
+
+    // Episodes with R2-based streaming source URLs
+    const r2Base = (this.publicUrl || this.workerUrl || '').replace(/\/$/, '');
+    if (r2Base) {
+      const episodes = await this.episodeModel
+        .find(
+          { 'streamingSources.url': { $regex: `^${r2Base.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}` } },
+          { streamingSources: 1, seasonId: 1 },
+        )
+        .lean();
+
+      if (episodes.length > 0) {
+        const seasonIds = [...new Set(episodes.map((e) => e.seasonId.toString()))];
+        const seasons = await this.seasonModel
+          .find({ _id: { $in: seasonIds } }, { seriesId: 1 })
+          .lean();
+        const seasonToSeries = new Map(seasons.map((s) => [s._id.toString(), s.seriesId.toString()]));
+
+        const seriesIds = [...new Set([...seasonToSeries.values()])];
+        const seriesDocs = await this.movieModel
+          .find({ _id: { $in: seriesIds } }, { title: 1 })
+          .lean();
+        const seriesTitleMap = new Map(seriesDocs.map((s) => [s._id.toString(), s.title]));
+
+        for (const ep of episodes) {
+          const seriesId = seasonToSeries.get(ep.seasonId.toString());
+          const title = seriesId ? seriesTitleMap.get(seriesId) || '' : '';
+          for (const src of ep.streamingSources || []) {
+            if (src.url && src.url.startsWith(r2Base)) {
+              episodeUrls[src.url] = title;
+            }
+          }
+        }
+      }
+    }
+
+    return { movieUrls, episodeUrls };
+  }
+
   // ── Helper: Detect quality from filename ──
   private detectQualityFromFilename(filename: string): string {
     const lower = filename.toLowerCase();
