@@ -23,18 +23,25 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.core.content.FileProvider
 import com.cinevault.app.data.model.AppVersionResponse
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.File
+import java.net.HttpURLConnection
+import java.net.URL
 
 @Composable
 fun UpdateDialog(info: AppVersionResponse, onDismiss: () -> Unit, onInstallClicked: (versionCode: Int) -> Unit = {}) {
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
     var downloadId by remember { mutableLongStateOf(-1L) }
     var progress by remember { mutableFloatStateOf(0f) }
     var isDownloadComplete by remember { mutableStateOf(false) }
     var downloadedFile by remember { mutableStateOf<File?>(null) }
     var downloadError by remember { mutableStateOf<String?>(null) }
+    var isResolving by remember { mutableStateOf(false) }
 
     val isDownloading = downloadId != -1L && !isDownloadComplete && downloadError == null
 
@@ -44,27 +51,55 @@ fun UpdateDialog(info: AppVersionResponse, onDismiss: () -> Unit, onInstallClick
         label = "progress"
     )
 
-    // Resolve the final APK download URL (follow redirects) before handing to DownloadManager
+    /** Follow redirects to get the final direct download URL (GitHub 302 → CDN). */
+    suspend fun resolveRedirects(url: String): String = withContext(Dispatchers.IO) {
+        try {
+            val conn = URL(url).openConnection() as HttpURLConnection
+            conn.instanceFollowRedirects = false
+            conn.requestMethod = "HEAD"
+            conn.connectTimeout = 10_000
+            conn.readTimeout = 10_000
+            conn.connect()
+            val code = conn.responseCode
+            val location = conn.getHeaderField("Location")
+            conn.disconnect()
+            if (code in 301..303 && !location.isNullOrBlank()) location else url
+        } catch (_: Exception) {
+            url // fallback to original URL
+        }
+    }
+
     fun startDownload() {
         downloadError = null
         progress = 0f
         isDownloadComplete = false
-        val fileName = "velora-${info.versionName}.apk"
-        val file = File(
-            context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS),
-            fileName
-        )
-        if (file.exists()) file.delete()
-        downloadedFile = file
-        val request = DownloadManager.Request(Uri.parse(info.apkUrl))
-            .setTitle("VELORA Update")
-            .setDescription("Downloading v${info.versionName}")
-            .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
-            .setDestinationUri(Uri.fromFile(file))
-            .setAllowedOverMetered(true)
-            .setAllowedOverRoaming(true)
-        val dm = context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
-        downloadId = dm.enqueue(request)
+        isResolving = true
+
+        scope.launch {
+            // Resolve GitHub redirect to get the direct CDN URL
+            val directUrl = resolveRedirects(info.apkUrl)
+
+            val fileName = "velora-${info.versionName}.apk"
+            val file = File(
+                context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS),
+                fileName
+            )
+            if (file.exists()) file.delete()
+            downloadedFile = file
+
+            val request = DownloadManager.Request(Uri.parse(directUrl))
+                .setTitle("VELORA Update")
+                .setDescription("Downloading v${info.versionName}")
+                .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
+                .setDestinationUri(Uri.fromFile(file))
+                .setAllowedOverMetered(true)
+                .setAllowedOverRoaming(true)
+                .setMimeType("application/vnd.android.package-archive")
+
+            val dm = context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
+            isResolving = false
+            downloadId = dm.enqueue(request)
+        }
     }
 
     if (isDownloading) {
@@ -83,8 +118,9 @@ fun UpdateDialog(info: AppVersionResponse, onDismiss: () -> Unit, onInstallClick
                     val status = cursor.getInt(
                         cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_STATUS)
                     )
-                    if (bytesTotal > 0) {
-                        progress = bytesDownloaded.toFloat() / bytesTotal.toFloat()
+                    when {
+                        bytesTotal > 0 -> progress = bytesDownloaded.toFloat() / bytesTotal.toFloat()
+                        bytesDownloaded > 0 -> progress = -1f // indeterminate but downloading
                     }
                     when (status) {
                         DownloadManager.STATUS_SUCCESSFUL -> {
@@ -188,16 +224,38 @@ fun UpdateDialog(info: AppVersionResponse, onDismiss: () -> Unit, onInstallClick
                             }
                         }
                     }
-                    isDownloading -> {
-                        LinearProgressIndicator(
-                            progress = { animatedProgress },
-                            modifier = Modifier.fillMaxWidth().height(8.dp),
+                    isResolving -> {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(28.dp),
                             color = Color(0xFFE50914),
-                            trackColor = Color(0xFF333333),
+                            strokeWidth = 3.dp,
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
-                            text = "Downloading... ${(animatedProgress * 100).toInt()}%",
+                            text = "Preparing download...",
+                            color = Color(0xFFB0B0B0),
+                            fontSize = 13.sp
+                        )
+                    }
+                    isDownloading -> {
+                        if (progress < 0f) {
+                            // Indeterminate: downloading but total size unknown
+                            LinearProgressIndicator(
+                                modifier = Modifier.fillMaxWidth().height(8.dp),
+                                color = Color(0xFFE50914),
+                                trackColor = Color(0xFF333333),
+                            )
+                        } else {
+                            LinearProgressIndicator(
+                                progress = { animatedProgress },
+                                modifier = Modifier.fillMaxWidth().height(8.dp),
+                                color = Color(0xFFE50914),
+                                trackColor = Color(0xFF333333),
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = if (progress < 0f) "Downloading..." else "Downloading... ${(animatedProgress * 100).toInt()}%",
                             color = Color(0xFFB0B0B0),
                             fontSize = 13.sp
                         )
