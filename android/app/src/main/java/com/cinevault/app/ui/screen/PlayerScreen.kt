@@ -219,8 +219,34 @@ fun PlayerScreen(
         onDispose { exoPlayer.removeListener(listener) }
     }
 
-    // System back
+    // -- Smart Ad System for non-premium users --
+    val adManager = viewModel.adManager
+    var preRollShown by remember { mutableStateOf(false) }
+    var adInProgress by remember { mutableStateOf(false) }
+    /** True after ad finishes — show cross icon overlay before starting video. */
+    var showAdCrossIcon by remember { mutableStateOf(false) }
+    /** True when user tried to close ad during countdown — show warning popup. */
+    var showAdWarningDialog by remember { mutableStateOf(false) }
+    /** Countdown seconds remaining (30–40s). */
+    var adCountdown by remember { mutableIntStateOf(0) }
+    /** Whether the ad was user-cancelled (via warning dialog "Close" button). */
+    var adWasCancelled by remember { mutableStateOf(false) }
+
+    // Coroutine scope for skip-detection ad playback
+    val adScope = rememberCoroutineScope()
+    var skipAdJob by remember { mutableStateOf<Job?>(null) }
+
+    // System back — blocked during ad playback
     BackHandler {
+        if (adInProgress) {
+            // Show warning dialog instead of allowing exit during ad
+            showAdWarningDialog = true
+            return@BackHandler
+        }
+        if (showAdCrossIcon) {
+            // Must tap cross icon, don't allow back to bypass
+            return@BackHandler
+        }
         viewModel.saveExplicitProgress(exoPlayer.currentPosition, exoPlayer.duration.coerceAtLeast(0))
         onBack()
     }
@@ -418,23 +444,6 @@ fun PlayerScreen(
         }
     }
 
-    // -- Smart Ad System for non-premium users --
-    val adManager = viewModel.adManager
-    var preRollShown by remember { mutableStateOf(false) }
-    var adInProgress by remember { mutableStateOf(false) }
-    /** True after ad finishes — show cross icon overlay before starting video. */
-    var showAdCrossIcon by remember { mutableStateOf(false) }
-    /** True when user tried to close ad during countdown — show warning popup. */
-    var showAdWarningDialog by remember { mutableStateOf(false) }
-    /** Countdown seconds remaining (30–40s). */
-    var adCountdown by remember { mutableIntStateOf(0) }
-    /** Whether the ad was user-cancelled (via warning dialog "Close" button). */
-    var adWasCancelled by remember { mutableStateOf(false) }
-
-    // Coroutine scope for skip-detection ad playback
-    val adScope = rememberCoroutineScope()
-    var skipAdJob by remember { mutableStateOf<Job?>(null) }
-
     // Pre-roll ad: show when video first becomes ready to play (Watch Now click)
     LaunchedEffect(uiState.streamingUrl, uiState.isPlaying, uiState.isPremium) {
         if (uiState.isPremium || preRollShown || adInProgress) return@LaunchedEffect
@@ -448,13 +457,19 @@ fun PlayerScreen(
             adCountdown = 35
             val act = context as? Activity
             if (act != null) {
-                // Use showAdWithWait — waits up to 10s for ad to load if not cached
-                adManager.showAdWithWait(act) {
-                    Log.d("CineVaultAds", "PRE-ROLL: Ad finished/dismissed")
-                    adInProgress = false
-                    if (!adWasCancelled) {
-                        showAdCrossIcon = true
-                    }
+                val shown = adManager.showAdSuspend(act)
+                if (!shown) {
+                    // Retry once if first attempt failed
+                    Log.w("CineVaultAds", "PRE-ROLL: First attempt failed, retrying...")
+                    delay(2000)
+                    adManager.loadInterstitialAd()
+                    delay(5000)
+                    adManager.showAdSuspend(act)
+                }
+                Log.d("CineVaultAds", "PRE-ROLL: Ad finished/dismissed")
+                adInProgress = false
+                if (!adWasCancelled) {
+                    showAdCrossIcon = true
                 }
             } else {
                 Log.w("CineVaultAds", "PRE-ROLL: No Activity context — skipping ad")
@@ -476,13 +491,20 @@ fun PlayerScreen(
             adCountdown = 35
             val act = context as? Activity
             if (act != null) {
-                adManager.showAdWithWait(act) {
-                    Log.d("CineVaultAds", "RESUME-AD: Ad finished/dismissed")
-                    adInProgress = false
-                    viewModel.clearResumeAd()
-                    if (!adWasCancelled) {
-                        showAdCrossIcon = true
-                    }
+                val shown = adManager.showAdSuspend(act)
+                if (!shown) {
+                    // Retry once if first attempt failed
+                    Log.w("CineVaultAds", "RESUME-AD: First attempt failed, retrying...")
+                    delay(2000)
+                    adManager.loadInterstitialAd()
+                    delay(5000)
+                    adManager.showAdSuspend(act)
+                }
+                Log.d("CineVaultAds", "RESUME-AD: Ad finished/dismissed")
+                adInProgress = false
+                viewModel.clearResumeAd()
+                if (!adWasCancelled) {
+                    showAdCrossIcon = true
                 }
             } else {
                 adInProgress = false
@@ -530,26 +552,37 @@ fun PlayerScreen(
             val pos = exoPlayer.currentPosition
             if (dur > 0) {
                 viewModel.initAdSchedule(dur)
-                if (!adInProgress && !showAdCrossIcon && viewModel.checkMidRollAd(pos)) {
-                    adInProgress = true
-                    adWasCancelled = false
-                    exoPlayer.pause()
-                    Log.d("CineVaultAds", "MID-ROLL: Triggered at ${pos / 60000}min, pausing video...")
-                    adCountdown = 35
-                    val act = context as? Activity
-                    if (act != null) {
-                        adManager.showAdWithWait(act) {
-                            Log.d("CineVaultAds", "MID-ROLL: Ad finished/dismissed")
-                            adInProgress = false
-                            viewModel.onAdDismissed()
-                            if (!adWasCancelled) {
-                                showAdCrossIcon = true
+                if (!adInProgress && !showAdCrossIcon) {
+                    val adsToShow = viewModel.checkMidRollAd(pos)
+                    if (adsToShow > 0) {
+                        adInProgress = true
+                        adWasCancelled = false
+                        exoPlayer.pause()
+                        Log.d("CineVaultAds", "MID-ROLL: $adsToShow ad(s) to show at ${pos / 60000}min, pausing video...")
+                        val act = context as? Activity
+                        if (act != null) {
+                            for (i in 1..adsToShow) {
+                                adCountdown = 35
+                                Log.d("CineVaultAds", "MID-ROLL: Playing ad $i of $adsToShow")
+                                val shown = adManager.showAdSuspend(act)
+                                viewModel.dequeueSkippedAd()
+                                if (!shown) {
+                                    Log.w("CineVaultAds", "MID-ROLL: Ad $i failed to show, retrying...")
+                                    // Wait and try once more
+                                    delay(2000)
+                                    adManager.loadInterstitialAd()
+                                    delay(5000)
+                                    val retry = adManager.showAdSuspend(act)
+                                    viewModel.dequeueSkippedAd()
+                                    if (!retry) Log.w("CineVaultAds", "MID-ROLL: Ad $i retry also failed")
+                                }
+                                if (i < adsToShow) delay(500)
                             }
                         }
-                    } else {
-                        adInProgress = false
+                        viewModel.clearSkippedAds()
                         viewModel.onAdDismissed()
-                        exoPlayer.play()
+                        adInProgress = false
+                        if (!adWasCancelled) showAdCrossIcon = true
                     }
                 }
             }

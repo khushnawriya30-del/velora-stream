@@ -88,6 +88,8 @@ class PlayerViewModel @Inject constructor(
     /** Smart Ad Scheduling state */
     private var adSchedule: SmartAdScheduler.AdSchedule? = null
     private val triggeredAdTimesMs = mutableSetOf<Long>()
+    /** Tracks last position seen by mid-roll checker — used to detect skips in the polling loop. */
+    private var lastCheckedPositionMs: Long = 0L
 
     init {
         adManager.initialize()
@@ -642,23 +644,25 @@ class PlayerViewModel @Inject constructor(
     }
 
     /**
-     * Check if the current position has crossed a mid-roll ad time.
-     * Returns true (and sets shouldShowAd) if an ad should be triggered.
+     * Check if the current position has crossed any mid-roll ad time(s).
+     * Returns the number of untriggered ads that should be shown NOW.
+     * All ads at or before [positionMs] that haven't fired yet are captured.
      */
-    fun checkMidRollAd(positionMs: Long): Boolean {
-        if (_uiState.value.isPremium || _uiState.value.shouldShowAd) return false
-        val schedule = adSchedule ?: return false
+    fun checkMidRollAd(positionMs: Long): Int {
+        if (_uiState.value.isPremium || _uiState.value.shouldShowAd) return 0
+        val schedule = adSchedule ?: return 0
 
-        for (adTimeMs in schedule.midRollTimesMs) {
-            // Trigger within a 3-second window to avoid missing it
-            if (adTimeMs !in triggeredAdTimesMs && positionMs >= adTimeMs && positionMs < adTimeMs + 3000) {
-                triggeredAdTimesMs.add(adTimeMs)
-                Log.d("CineVaultAds", "Mid-roll ad triggered at ${positionMs / 60000}min (scheduled ${adTimeMs / 60000}min)")
-                _uiState.update { it.copy(shouldShowAd = true) }
-                return true
-            }
+        val untriggered = schedule.midRollTimesMs.filter { adTimeMs ->
+            adTimeMs !in triggeredAdTimesMs && positionMs >= adTimeMs
         }
-        return false
+
+        if (untriggered.isNotEmpty()) {
+            triggeredAdTimesMs.addAll(untriggered)
+            Log.d("CineVaultAds", "Mid-roll: ${untriggered.size} ad(s) triggered at pos=${positionMs / 1000}s (ads at ${untriggered.map { it / 1000 }}s)")
+            _uiState.update { it.copy(shouldShowAd = true, pendingSkippedAds = it.pendingSkippedAds + untriggered.size) }
+        }
+        lastCheckedPositionMs = positionMs
+        return untriggered.size
     }
 
     fun markPreRollDone() {
@@ -719,6 +723,7 @@ class PlayerViewModel @Inject constructor(
     private fun resetAdSchedule() {
         adSchedule = null
         triggeredAdTimesMs.clear()
+        lastCheckedPositionMs = 0L
         _uiState.update { it.copy(isPreRollPending = true, shouldShowAd = false, pendingSkippedAds = 0, adMarkerFractions = emptyList()) }
     }
 
