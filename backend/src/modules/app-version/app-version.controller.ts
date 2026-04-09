@@ -1,5 +1,6 @@
-import { Controller, Get, Put, Body, UseGuards } from '@nestjs/common';
+import { Controller, Get, Put, Body, Res, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
+import { Response } from 'express';
 import { AppVersionService } from './app-version.service';
 import { AppVersion } from './app-version.schema';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -12,6 +13,19 @@ export class AppVersionController {
   @Get()
   getLatest(): Promise<AppVersion> {
     return this.service.getLatest();
+  }
+
+  /**
+   * Redirect endpoint — resolves GitHub Releases 302 → direct CDN URL.
+   * DownloadManager on many Android devices chokes on GitHub's redirect chain
+   * (long SAS query strings, missing Content-Length). This endpoint does a HEAD
+   * request server-side, follows the redirect, and returns a clean 302 to the
+   * final CDN URL that DownloadManager can handle.
+   */
+  @Get('download')
+  async download(@Res() res: Response) {
+    const resolved = await this.service.resolveDownloadUrl();
+    res.redirect(302, resolved);
   }
 
   @UseGuards(AuthGuard('jwt'), RolesGuard)
