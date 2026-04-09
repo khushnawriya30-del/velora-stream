@@ -267,6 +267,25 @@ class AuthViewModel @Inject constructor(
     fun resetState() {
         _uiState.update { AuthUiState() }
     }
+
+    // Referral prompt
+    val referralPromptShown: Flow<Boolean> = sessionManager.referralPromptShown
+
+    fun applyReferralCode(code: String, onResult: (Boolean, String) -> Unit) {
+        viewModelScope.launch {
+            when (val result = authRepository.applyReferralCode(code)) {
+                is Result.Success -> onResult(true, result.data ?: "Referral applied!")
+                is Result.Error -> onResult(false, result.message)
+                is Result.Loading -> {}
+            }
+        }
+    }
+
+    fun markReferralPromptShown() {
+        viewModelScope.launch {
+            sessionManager.setReferralPromptShown()
+        }
+    }
 }
 
 /** Minimal user model for parsing the web auth callback JSON */

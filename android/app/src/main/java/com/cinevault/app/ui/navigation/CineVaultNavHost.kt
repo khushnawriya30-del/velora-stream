@@ -430,6 +430,10 @@ fun CineVaultNavHost(navController: NavHostController = rememberNavController())
     var pendingAuthAction by remember { mutableStateOf<(() -> Unit)?>(null) }
     var hasShownAutoPopup by remember { mutableStateOf(false) }
 
+    // Referral prompt state
+    var showReferralPrompt by remember { mutableStateOf(false) }
+    val referralPromptShown by authViewModel.referralPromptShown.collectAsState(initial = true)
+
     // Handle Google web auth callback deep link (velora://auth-callback)
     val context = androidx.compose.ui.platform.LocalContext.current
     val activity = context as? com.cinevault.app.MainActivity
@@ -464,6 +468,14 @@ fun CineVaultNavHost(navController: NavHostController = rememberNavController())
     // Reset auto-popup flag when user logs in and out again
     LaunchedEffect(isLoggedIn) {
         if (isLoggedIn == true) hasShownAutoPopup = false
+    }
+
+    // Show referral prompt after first login if no referral was applied via deep link
+    LaunchedEffect(isLoggedIn, currentRoute, referralPromptShown) {
+        if (isLoggedIn == true && currentRoute == Screen.Home.route && !referralPromptShown) {
+            kotlinx.coroutines.delay(1500) // Let home screen load first
+            showReferralPrompt = true
+        }
     }
 
     // Auth gate: wraps an action, shows login if needed
@@ -832,4 +844,136 @@ fun CineVaultNavHost(navController: NavHostController = rememberNavController())
             },
         )
     }
+
+    // Referral code prompt dialog
+    if (showReferralPrompt) {
+        ReferralCodeDialog(
+            onApply = { code ->
+                authViewModel.applyReferralCode(code) { success, message ->
+                    if (success) {
+                        showReferralPrompt = false
+                    }
+                    // On error (e.g., invalid code), keep dialog open so user can retry
+                }
+            },
+            onSkip = {
+                authViewModel.markReferralPromptShown()
+                showReferralPrompt = false
+            },
+            onDismiss = {
+                authViewModel.markReferralPromptShown()
+                showReferralPrompt = false
+            },
+        )
+    }
+}
+
+@Composable
+private fun ReferralCodeDialog(
+    onApply: (String) -> Unit,
+    onSkip: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    var code by remember { mutableStateOf("") }
+    var isLoading by remember { mutableStateOf(false) }
+    var errorMsg by remember { mutableStateOf<String?>(null) }
+    var successMsg by remember { mutableStateOf<String?>(null) }
+
+    val authViewModel: AuthViewModel = hiltViewModel()
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = Color(0xFF1A1A1A),
+        shape = RoundedCornerShape(20.dp),
+        title = {
+            Text(
+                "Got a Referral Code?",
+                color = Color(0xFFD4AF37),
+                fontWeight = FontWeight.Bold,
+                fontSize = 18.sp,
+            )
+        },
+        text = {
+            Column {
+                Text(
+                    "Enter a referral code to earn rewards for both you and your friend!",
+                    color = Color(0xFFAAAAAA),
+                    fontSize = 14.sp,
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+                OutlinedTextField(
+                    value = code,
+                    onValueChange = {
+                        code = it.uppercase().take(20)
+                        errorMsg = null
+                        successMsg = null
+                    },
+                    placeholder = { Text("e.g. CYE4WLT6", color = Color(0xFF555555)) },
+                    singleLine = true,
+                    enabled = !isLoading && successMsg == null,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = Color(0xFFD4AF37),
+                        unfocusedBorderColor = Color(0xFF333333),
+                        cursorColor = Color(0xFFD4AF37),
+                        focusedTextColor = Color.White,
+                        unfocusedTextColor = Color.White,
+                    ),
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                if (errorMsg != null) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(errorMsg!!, color = Color(0xFFFF5555), fontSize = 12.sp)
+                }
+                if (successMsg != null) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(successMsg!!, color = Color(0xFF4CAF50), fontSize = 12.sp)
+                }
+            }
+        },
+        confirmButton = {
+            if (successMsg != null) {
+                TextButton(onClick = onDismiss) {
+                    Text("Done", color = Color(0xFFD4AF37), fontWeight = FontWeight.Bold)
+                }
+            } else {
+                TextButton(
+                    onClick = {
+                        if (code.isBlank()) {
+                            errorMsg = "Please enter a referral code"
+                            return@TextButton
+                        }
+                        isLoading = true
+                        errorMsg = null
+                        authViewModel.applyReferralCode(code) { success, message ->
+                            isLoading = false
+                            if (success) {
+                                successMsg = "Referral applied successfully! 🎉"
+                            } else {
+                                errorMsg = message
+                            }
+                        }
+                    },
+                    enabled = !isLoading,
+                ) {
+                    if (isLoading) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(16.dp),
+                            color = Color(0xFFD4AF37),
+                            strokeWidth = 2.dp,
+                        )
+                    } else {
+                        Text("Apply", color = Color(0xFFD4AF37), fontWeight = FontWeight.Bold)
+                    }
+                }
+            }
+        },
+        dismissButton = {
+            if (successMsg == null) {
+                TextButton(onClick = onSkip) {
+                    Text("Skip", color = Color(0xFF888888))
+                }
+            }
+        },
+    )
 }

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Download as DownloadIcon, ChevronDown, Clock, ExternalLink, Copy, Check } from 'lucide-react';
+import { Download as DownloadIcon, ChevronDown, Clock, ExternalLink, Copy, Check, Smartphone } from 'lucide-react';
 import { useGitHubRelease } from '../hooks/useGitHubRelease';
 import { APP_CONFIG } from '../config';
 
@@ -8,6 +8,7 @@ export default function Download({ referralCode }: { referralCode?: string | nul
   const { latest, releases, loading } = useGitHubRelease();
   const [showHistory, setShowHistory] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [hasDownloaded, setHasDownloaded] = useState(false);
 
   const version = latest?.version || APP_CONFIG.fallback.version;
   const downloadUrl = latest?.downloadUrl || APP_CONFIG.fallback.downloadUrl;
@@ -17,6 +18,12 @@ export default function Download({ referralCode }: { referralCode?: string | nul
       navigator.clipboard.writeText(referralCode);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  const handleDownloadClick = () => {
+    if (referralCode) {
+      setHasDownloaded(true);
     }
   };
 
@@ -71,23 +78,72 @@ export default function Download({ referralCode }: { referralCode?: string | nul
           </motion.div>
         )}
 
-        {/* Download Button */}
+        {/* Step 1: Download Button */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6, delay: 0.1 }}
         >
+          {referralCode && (
+            <p className="text-gray-400 text-sm mb-3 font-medium">Step 1: Download the App</p>
+          )}
           <a
             href={downloadUrl || '#'}
             target="_blank"
             rel="noopener noreferrer"
+            onClick={handleDownloadClick}
             className="group inline-flex items-center gap-3 px-10 py-4 bg-gradient-to-r from-gold via-gold to-gold-dark text-black font-bold rounded-2xl text-lg hover:opacity-90 transition-all shadow-2xl shadow-gold/25 hover:shadow-gold/40 hover:scale-[1.02] active:scale-[0.98]"
           >
             <DownloadIcon className="w-5 h-5 group-hover:animate-bounce" />
             Download APK v{version}
           </a>
         </motion.div>
+
+        {/* Step 2: Open App with Referral (shown after download click when referral code exists) */}
+        <AnimatePresence>
+          {referralCode && hasDownloaded && (
+            <motion.div
+              initial={{ opacity: 0, y: 20, height: 0 }}
+              animate={{ opacity: 1, y: 0, height: 'auto' }}
+              exit={{ opacity: 0, y: -10, height: 0 }}
+              transition={{ duration: 0.5 }}
+              className="mt-6"
+            >
+              <div className="bg-gradient-to-r from-green-500/10 via-emerald-500/15 to-green-500/10 border border-green-500/30 rounded-2xl p-5 max-w-md mx-auto">
+                <p className="text-green-400 text-sm font-medium mb-3">Step 2: After installing, tap below to activate your referral</p>
+                <a
+                  href={`velora://referral?code=${referralCode}`}
+                  className="group inline-flex items-center gap-3 px-8 py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white font-bold rounded-xl text-base hover:opacity-90 transition-all shadow-lg hover:scale-[1.02] active:scale-[0.98]"
+                >
+                  <Smartphone className="w-5 h-5" />
+                  Open App with Referral
+                </a>
+                <p className="text-gray-500 text-xs mt-3">This will open Velora and automatically apply the referral code</p>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Always show "Open App" deep link when referral code exists (even before download) */}
+        {referralCode && !hasDownloaded && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.2 }}
+            className="mt-4"
+          >
+            <p className="text-gray-500 text-xs mb-2">Already installed?</p>
+            <a
+              href={`velora://referral?code=${referralCode}`}
+              className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl border border-green-500/30 bg-green-500/10 hover:bg-green-500/20 transition-all text-sm text-green-400 font-medium"
+            >
+              <Smartphone className="w-4 h-4" />
+              Open App with Referral Code
+            </a>
+          </motion.div>
+        )}
 
         {/* Version History Toggle */}
         <motion.div

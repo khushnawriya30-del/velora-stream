@@ -15,8 +15,26 @@ class AuthRepository @Inject constructor(
     /** Consume the pending referral code (returns it once, then clears) */
     private suspend fun consumePendingReferralCode(): String? {
         val code = sessionManager.pendingReferralCode.first()
-        if (code != null) sessionManager.clearPendingReferralCode()
+        if (code != null) {
+            sessionManager.clearPendingReferralCode()
+            sessionManager.setReferralPromptShown() // Don't show dialog if deep link was used
+        }
         return code
+    }
+
+    /** Apply referral code post-login via dedicated endpoint */
+    suspend fun applyReferralCode(code: String): Result<String> {
+        return try {
+            val response = api.applyReferral(mapOf("referralCode" to code))
+            if (response.isSuccessful) {
+                sessionManager.setReferralPromptShown()
+                Result.Success(response.body()?.message ?: "Referral applied successfully")
+            } else {
+                Result.Error(parseErrorMessage(response), response.code())
+            }
+        } catch (e: Exception) {
+            Result.Error(e.localizedMessage ?: "Failed to apply referral")
+        }
     }
 
     suspend fun login(email: String, password: String): Result<UserDto> {

@@ -51,6 +51,9 @@ class SessionManager @Inject constructor(@ApplicationContext private val context
 
         // Pending referral code (from deep link or website)
         private val PENDING_REFERRAL_CODE = stringPreferencesKey("pending_referral_code")
+
+        // Whether we've already shown the referral code prompt after first login
+        private val REFERRAL_PROMPT_SHOWN = booleanPreferencesKey("referral_prompt_shown")
     }
 
     val accessToken: Flow<String?> = context.dataStore.data.map { it[ACCESS_TOKEN] }
@@ -85,6 +88,8 @@ class SessionManager @Inject constructor(@ApplicationContext private val context
     val earnStartTimestamp: Flow<Long> = context.dataStore.data.map { it[EARN_START_TIMESTAMP] ?: 0L }
 
     val pendingReferralCode: Flow<String?> = context.dataStore.data.map { it[PENDING_REFERRAL_CODE] }
+
+    val referralPromptShown: Flow<Boolean> = context.dataStore.data.map { it[REFERRAL_PROMPT_SHOWN] ?: false }
 
     // Saved account flows
     val lastGoogleName: Flow<String?> = context.dataStore.data.map { it[LAST_GOOGLE_NAME] }
@@ -236,6 +241,12 @@ class SessionManager @Inject constructor(@ApplicationContext private val context
     suspend fun clearPendingReferralCode() {
         context.dataStore.edit { prefs ->
             prefs.remove(PENDING_REFERRAL_CODE)
+        }
+    }
+
+    suspend fun setReferralPromptShown() {
+        context.dataStore.edit { prefs ->
+            prefs[REFERRAL_PROMPT_SHOWN] = true
         }
     }
 
