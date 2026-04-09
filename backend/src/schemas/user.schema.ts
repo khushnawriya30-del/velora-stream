@@ -1,5 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
+import { randomBytes } from 'crypto';
 
 export type UserDocument = User & Document;
 
@@ -111,3 +112,17 @@ export const UserSchema = SchemaFactory.createForClass(User);
 UserSchema.index({ email: 1, authProvider: 1 }, { unique: true });
 UserSchema.index({ googleId: 1 }, { sparse: true });
 UserSchema.index({ role: 1 });
+
+/** Auto-generate unique referral code on first save if missing */
+UserSchema.pre('save', function (next) {
+  if (!this.referralCode) {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    const bytes = randomBytes(8);
+    let code = '';
+    for (let i = 0; i < 8; i++) {
+      code += chars[bytes[i] % chars.length];
+    }
+    this.referralCode = code;
+  }
+  next();
+});

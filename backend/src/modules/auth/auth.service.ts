@@ -13,6 +13,7 @@ import { Model } from 'mongoose';
 import * as bcrypt from 'bcryptjs';
 import * as nodemailer from 'nodemailer';
 import { v4 as uuidv4 } from 'uuid';
+import { randomBytes } from 'crypto';
 import { User, UserDocument, AuthProvider } from '../../schemas/user.schema';
 import { PhoneOtp, PhoneOtpDocument } from '../../schemas/phone-otp.schema';
 import { EmailOtp, EmailOtpDocument } from '../../schemas/email-otp.schema';
@@ -61,6 +62,37 @@ export class AuthService implements OnModuleInit {
     );
     if (migratedNull.modifiedCount > 0) {
       this.logger.log(`Migrated ${migratedNull.modifiedCount} null-provider users to authProvider=local`);
+    }
+
+    // Backfill referral codes for existing users without one
+    const usersWithoutCode = await this.userModel.find({
+      $or: [
+        { referralCode: { $exists: false } },
+        { referralCode: null },
+        { referralCode: '' },
+      ],
+    });
+    if (usersWithoutCode.length > 0) {
+      const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+      for (const user of usersWithoutCode) {
+        for (let attempt = 0; attempt < 5; attempt++) {
+          const bytes = randomBytes(8);
+          let code = '';
+          for (let i = 0; i < 8; i++) {
+            code += chars[bytes[i] % chars.length];
+          }
+          try {
+            await this.userModel.findByIdAndUpdate(user._id, {
+              $set: { referralCode: code },
+            });
+            this.logger.log(`Backfilled referral code for user ${user._id}`);
+            break;
+          } catch (e) {
+            if (e?.code === 11000 && attempt < 4) continue;
+            this.logger.warn(`Failed to backfill referral code for user ${user._id}: ${e.message}`);
+          }
+        }
+      }
     }
   }
 

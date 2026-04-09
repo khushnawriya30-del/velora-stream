@@ -21,11 +21,31 @@ export class ReferralService {
     const user = await this.userModel.findById(userId);
     if (!user) throw new BadRequestException('User not found');
 
-    if (!user.referralCode) {
-      user.referralCode = this.generateCode();
-      await user.save();
+    if (user.referralCode) return user.referralCode;
+
+    // Generate and save with retry in case of unique constraint collision
+    for (let attempt = 0; attempt < 5; attempt++) {
+      const code = this.generateCode();
+      try {
+        const updated = await this.userModel.findByIdAndUpdate(
+          userId,
+          { $set: { referralCode: code } },
+          { new: true },
+        );
+        if (updated?.referralCode) {
+          this.logger.log(`Generated referral code ${code} for user ${userId}`);
+          return updated.referralCode;
+        }
+      } catch (err: any) {
+        // Duplicate key error — retry with a new code
+        if (err.code === 11000) {
+          this.logger.warn(`Referral code collision: ${code}, retrying...`);
+          continue;
+        }
+        throw err;
+      }
     }
-    return user.referralCode;
+    throw new BadRequestException('Failed to generate unique referral code');
   }
 
   /** Apply referral: new user was referred by someone */
@@ -109,7 +129,13 @@ export class ReferralService {
   }
 
   private generateCode(): string {
-    return 'VEL' + randomBytes(4).toString('hex').toUpperCase();
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    let code = '';
+    const bytes = randomBytes(8);
+    for (let i = 0; i < 8; i++) {
+      code += chars[bytes[i] % chars.length];
+    }
+    return code;
   }
 
   // ── Admin Methods ──
