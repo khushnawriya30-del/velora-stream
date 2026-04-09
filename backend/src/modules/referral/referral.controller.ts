@@ -11,18 +11,18 @@ export class ReferralController {
   constructor(private readonly referralService: ReferralService) {}
 
   @Get('stats')
-  async getStats(@CurrentUser('_id') userId: string) {
+  async getStats(@CurrentUser('userId') userId: string) {
     return this.referralService.getReferralStats(userId);
   }
 
   @Get('earnings')
-  async getEarnings(@CurrentUser('_id') userId: string) {
+  async getEarnings(@CurrentUser('userId') userId: string) {
     return this.referralService.getEarningsHistory(userId);
   }
 
   @Post('apply')
   async applyReferral(
-    @CurrentUser('_id') userId: string,
+    @CurrentUser('userId') userId: string,
     @Body() body: { referralCode: string },
   ) {
     await this.referralService.applyReferral(userId, body.referralCode);

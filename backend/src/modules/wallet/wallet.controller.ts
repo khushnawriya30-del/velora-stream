@@ -9,7 +9,7 @@ export class WalletController {
   constructor(private readonly walletService: WalletService) {}
 
   @Get('balance')
-  async getBalance(@CurrentUser('_id') userId: string) {
+  async getBalance(@CurrentUser('userId') userId: string) {
     return this.walletService.getBalance(userId);
   }
 }

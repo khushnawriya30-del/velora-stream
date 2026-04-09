@@ -13,14 +13,14 @@ export class WithdrawalController {
 
   @Post()
   async requestWithdrawal(
-    @CurrentUser('_id') userId: string,
+    @CurrentUser('userId') userId: string,
     @Body() body: { amount: number; upiId: string },
   ) {
     return this.withdrawalService.requestWithdrawal(userId, body.amount, body.upiId);
   }
 
   @Get('history')
-  async getHistory(@CurrentUser('_id') userId: string) {
+  async getHistory(@CurrentUser('userId') userId: string) {
     return this.withdrawalService.getHistory(userId);
   }
 
