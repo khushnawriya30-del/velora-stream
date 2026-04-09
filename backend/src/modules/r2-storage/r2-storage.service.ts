@@ -258,6 +258,81 @@ export class R2StorageService {
     return { seasons: results, totalImported };
   }
 
+  // ── Preview movie files from R2 folder ──
+  async previewMovieStructure(moviePath: string): Promise<{
+    movieFolder: string;
+    files: { name: string; key: string; size: number; url: string }[];
+    totalFiles: number;
+  }> {
+    const prefix = moviePath.endsWith('/') ? moviePath : moviePath + '/';
+    const allFiles = await this.listAllFiles(prefix);
+
+    if (allFiles.length === 0) {
+      throw new Error(`No video files found in ${prefix}`);
+    }
+
+    const files = allFiles.map((f) => ({
+      name: f.key.replace(prefix, ''),
+      key: f.key,
+      size: f.size,
+      url: this.getPublicUrl(f.key),
+    }));
+
+    return { movieFolder: prefix, files, totalFiles: files.length };
+  }
+
+  // ── Import movie from R2 — set streaming sources from R2 video files ──
+  async importMovieFromR2(
+    movieId: string,
+    moviePath: string,
+  ): Promise<{
+    movieTitle: string;
+    sources: { label: string; url: string; quality: string }[];
+    uploadSource: string;
+  }> {
+    const movie = await this.movieModel.findById(movieId);
+    if (!movie) throw new Error('Movie not found');
+
+    const prefix = moviePath.endsWith('/') ? moviePath : moviePath + '/';
+    const allFiles = await this.listAllFiles(prefix);
+
+    if (allFiles.length === 0) {
+      throw new Error(`No video files found in ${prefix}`);
+    }
+
+    // Build streaming sources from video files
+    const sources = allFiles.map((f) => {
+      const filename = f.key.replace(prefix, '');
+      const quality = this.detectQualityFromFilename(filename);
+      return {
+        label: quality === 'original' ? 'Direct' : quality,
+        url: this.getPublicUrl(f.key),
+        quality,
+        priority: 0,
+      };
+    });
+
+    // Update movie with R2 streaming sources
+    await this.movieModel.findByIdAndUpdate(movieId, {
+      streamingSources: sources,
+      uploadSource: 'r2',
+    });
+
+    this.logger.log(`[R2 Movie Import] ${movie.title}: ${sources.length} source(s) imported from R2`);
+    return { movieTitle: movie.title, sources, uploadSource: 'r2' };
+  }
+
+  // ── Helper: Detect quality from filename ──
+  private detectQualityFromFilename(filename: string): string {
+    const lower = filename.toLowerCase();
+    if (lower.includes('4k') || lower.includes('2160p')) return '4k';
+    if (lower.includes('1080p') || lower.includes('fhd')) return '1080p';
+    if (lower.includes('720p') || lower.includes('hd')) return '720p';
+    if (lower.includes('480p')) return '480p';
+    if (lower.includes('360p')) return '360p';
+    return 'original';
+  }
+
   // ── Helper: Parse R2 path to extract season/episode ──
   private parseR2Path(relativePath: string): { seasonNum: number; episodeNum: number; title: string } {
     const parts = relativePath.split('/').filter(Boolean);

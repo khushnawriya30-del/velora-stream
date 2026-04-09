@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Plus, X, Cloud, Loader2, Check, Download } from 'lucide-react';
+import { ArrowLeft, Plus, X, Cloud, Loader2, Check, Download, ChevronDown, FolderInput, Film, Layers } from 'lucide-react';
 import clsx from 'clsx';
 import api from '../lib/api';
 import type { Movie, CastMember, StreamingSource } from '../types';
@@ -340,6 +340,197 @@ function BunnyCollectionImportSection({ movieId, movieTitle, onImported }: { mov
   );
 }
 
+// ── R2 Movie Import Section (Browse R2 → Import movie video files) ──
+function R2MovieImportSection({ movieId, onImported }: { movieId: string; onImported?: (sources: any[]) => void }) {
+  const queryClient = useQueryClient();
+  const [currentPath, setCurrentPath] = useState('');
+  const [selectedFolder, setSelectedFolder] = useState('');
+  const [previewData, setPreviewData] = useState<{
+    movieFolder: string;
+    files: { name: string; key: string; size: number; url: string }[];
+    totalFiles: number;
+  } | null>(null);
+
+  const { data: browseData, isLoading: browsing } = useQuery({
+    queryKey: ['r2-browse-movie', currentPath],
+    queryFn: async () => {
+      const { data } = await api.get(`/r2/browse?path=${encodeURIComponent(currentPath)}`);
+      return data as {
+        currentPath: string;
+        folders: { name: string; path: string }[];
+        files: { name: string; path: string; size: number; url: string }[];
+      };
+    },
+  });
+
+  const previewMutation = useMutation({
+    mutationFn: async () => {
+      const { data } = await api.get(`/r2/preview-movie?path=${encodeURIComponent(selectedFolder)}`);
+      return data;
+    },
+    onSuccess: (data) => {
+      setPreviewData(data);
+      toast.success(`Found ${data.totalFiles} video file(s)`);
+    },
+    onError: (err: any) => toast.error(err.response?.data?.message || 'Failed to preview folder'),
+  });
+
+  const importMutation = useMutation({
+    mutationFn: async () => {
+      const { data } = await api.post(`/r2/import-movie/${movieId}`, { path: selectedFolder });
+      return data as { movieTitle: string; sources: any[]; uploadSource: string };
+    },
+    onSuccess: (data) => {
+      toast.success(`Imported ${data.sources.length} source(s) for "${data.movieTitle}"`);
+      queryClient.invalidateQueries({ queryKey: ['movie', movieId] });
+      if (onImported) onImported(data.sources);
+    },
+    onError: (err: any) => toast.error(err.response?.data?.message || 'Import failed'),
+  });
+
+  const formatSize = (bytes: number) => {
+    if (!bytes) return '—';
+    if (bytes >= 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024 * 1024)).toFixed(1)} GB`;
+    return `${(bytes / (1024 * 1024)).toFixed(0)} MB`;
+  };
+
+  const pathParts = currentPath.split('/').filter(Boolean);
+
+  return (
+    <div className="space-y-4">
+      <div className="p-3 rounded-lg bg-orange-500/10 border border-orange-500/20 text-xs text-orange-300 space-y-1">
+        <p className="font-semibold">☁️ Import Movie from Cloudflare R2</p>
+        <p>Browse your R2 bucket, select the movie folder, preview files, and import as streaming sources.</p>
+      </div>
+
+      {/* Breadcrumb */}
+      <div className="flex items-center gap-1 text-xs flex-wrap">
+        <button
+          type="button"
+          onClick={() => { setCurrentPath(''); setSelectedFolder(''); setPreviewData(null); }}
+          className="text-orange-400 hover:text-orange-300 font-medium"
+        >
+          🪣 Root
+        </button>
+        {pathParts.map((part, i) => (
+          <span key={i} className="flex items-center gap-1">
+            <span className="text-text-muted">/</span>
+            <button
+              type="button"
+              onClick={() => { setCurrentPath(pathParts.slice(0, i + 1).join('/') + '/'); setPreviewData(null); }}
+              className="text-orange-400 hover:text-orange-300"
+            >
+              {part}
+            </button>
+          </span>
+        ))}
+      </div>
+
+      {/* Folder/File browser */}
+      {browsing ? (
+        <div className="flex items-center gap-2 text-sm text-text-muted py-4 justify-center"><Loader2 size={14} className="animate-spin" /> Browsing R2...</div>
+      ) : (
+        <div className="bg-surface-light border border-border rounded-lg max-h-48 overflow-y-auto">
+          {browseData?.folders.map((folder) => (
+            <div key={folder.path} className="flex items-center gap-2 px-3 py-2 hover:bg-surface transition-colors border-b border-border/50 last:border-0">
+              <button
+                type="button"
+                onClick={() => { setCurrentPath(folder.path); setPreviewData(null); }}
+                className="flex items-center gap-2 flex-1 text-left text-sm"
+              >
+                <FolderInput size={14} className="text-orange-400" />
+                <span className="text-text-primary">{folder.name}/</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => { setSelectedFolder(folder.path); setPreviewData(null); }}
+                className={`text-xs px-2 py-1 rounded font-medium transition-colors ${
+                  selectedFolder === folder.path
+                    ? 'bg-orange-500 text-white'
+                    : 'bg-orange-500/10 text-orange-400 hover:bg-orange-500/20'
+                }`}
+              >
+                {selectedFolder === folder.path ? '✓ Selected' : 'Select'}
+              </button>
+            </div>
+          ))}
+          {browseData?.files.map((file) => (
+            <div key={file.path} className="flex items-center gap-2 px-3 py-2 text-sm text-text-muted border-b border-border/50 last:border-0">
+              <Film size={14} />
+              <span className="flex-1 truncate">{file.name}</span>
+              <span className="text-xs">{formatSize(file.size)}</span>
+            </div>
+          ))}
+          {(!browseData?.folders.length && !browseData?.files.length) && (
+            <p className="text-sm text-text-muted text-center py-4">Empty folder</p>
+          )}
+        </div>
+      )}
+
+      {selectedFolder && (
+        <div className="flex items-center gap-2 text-xs text-orange-400">
+          <Check size={12} />
+          Selected: <code className="bg-surface px-1 rounded">{selectedFolder}</code>
+        </div>
+      )}
+
+      {/* Preview */}
+      {selectedFolder && (
+        <button
+          type="button"
+          onClick={() => previewMutation.mutate()}
+          disabled={previewMutation.isPending}
+          className="flex items-center gap-2 bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-lg text-sm font-medium disabled:opacity-50 w-full justify-center"
+        >
+          {previewMutation.isPending ? <Loader2 size={14} className="animate-spin" /> : <Layers size={14} />}
+          Preview Video Files
+        </button>
+      )}
+
+      {/* Preview Results */}
+      {previewData && previewData.files.length > 0 && (
+        <div className="space-y-3">
+          <div className="flex items-center gap-2 text-sm font-medium text-green-400">
+            <Check size={16} />
+            Found {previewData.totalFiles} video file(s)
+          </div>
+          <div className="space-y-1 bg-surface-light border border-border rounded-lg p-3 max-h-40 overflow-y-auto">
+            {previewData.files.map((file) => (
+              <div key={file.key} className="flex items-center gap-3 text-xs text-text-secondary">
+                <Film size={12} className="text-orange-400" />
+                <span className="flex-1 truncate">{file.name}</span>
+                <span className="text-text-muted">{formatSize(file.size)}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Import */}
+      {previewData && previewData.files.length > 0 && (
+        <button
+          type="button"
+          onClick={() => importMutation.mutate()}
+          disabled={importMutation.isPending}
+          className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2.5 rounded-xl text-sm font-semibold disabled:opacity-50 w-full justify-center"
+        >
+          {importMutation.isPending ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
+          {importMutation.isPending ? 'Importing...' : `Import ${previewData.totalFiles} File(s) as Streaming Sources`}
+        </button>
+      )}
+
+      {importMutation.isSuccess && importMutation.data && (
+        <div className="bg-surface-light border border-green-500/30 rounded-xl p-4">
+          <div className="flex items-center gap-2 text-green-400 font-medium text-sm">
+            <Check size={16} />
+            Successfully imported {importMutation.data.sources.length} source(s) for &quot;{importMutation.data.movieTitle}&quot;
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function MovieFormPage() {
   const { id } = useParams();
   const isEdit = Boolean(id);
@@ -386,9 +577,13 @@ export default function MovieFormPage() {
     isPremium: false,
     freeEpisodeCount: 0,
     platformOrigin: '',
+    ottPlatforms: [] as string[],
+    uploadSource: 'bunny',
     imdbId: '',
     tmdbId: '',
   });
+
+  const [ottDropdownOpen, setOttDropdownOpen] = useState(false);
 
   const [durationHours, setDurationHours] = useState(0);
   const [durationMinutes, setDurationMinutes] = useState(0);
@@ -449,6 +644,8 @@ export default function MovieFormPage() {
         isPremium: movie.isPremium ?? false,
         freeEpisodeCount: movie.freeEpisodeCount ?? 0,
         platformOrigin: movie.platformOrigin ?? '',
+        ottPlatforms: (movie as any).ottPlatforms ?? [],
+        uploadSource: (movie as any).uploadSource ?? 'bunny',
         imdbId: movie.imdbId ?? '',
         tmdbId: movie.tmdbId ?? '',
       });
@@ -784,6 +981,62 @@ export default function MovieFormPage() {
                 className="w-full bg-surface-light border border-border rounded-xl px-4 py-2.5 text-text-primary focus:outline-none focus:border-gold"
               />
             </div>
+          </div>
+
+          {/* OTT Platforms Multi-Select */}
+          <div>
+            <label className="block text-sm text-text-secondary mb-1">OTT Platforms</label>
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setOttDropdownOpen(!ottDropdownOpen)}
+                className="w-full bg-surface-light border border-border rounded-xl px-4 py-2.5 text-left text-text-primary focus:outline-none focus:border-gold flex items-center justify-between"
+              >
+                <span className={form.ottPlatforms.length === 0 ? 'text-text-muted' : ''}>
+                  {form.ottPlatforms.length === 0 ? 'Select OTT platforms...' : form.ottPlatforms.join(', ')}
+                </span>
+                <ChevronDown size={16} className={`text-text-muted transition-transform ${ottDropdownOpen ? 'rotate-180' : ''}`} />
+              </button>
+              {ottDropdownOpen && (
+                <div className="absolute z-20 mt-1 w-full bg-surface border border-border rounded-xl shadow-xl max-h-60 overflow-y-auto">
+                  {['Netflix', 'Amazon Prime Video', 'Disney+ Hotstar', 'JioCinema', 'SonyLIV', 'Zee5', 'Apple TV+', 'Hulu', 'HBO Max', 'Paramount+', 'Peacock', 'MX Player', 'Voot', 'ALTBalaji', 'Aha', 'Hoichoi', 'Lionsgate Play', 'Original'].map((platform) => {
+                    const isSelected = form.ottPlatforms.includes(platform);
+                    return (
+                      <button
+                        key={platform}
+                        type="button"
+                        onClick={() => {
+                          setForm((prev) => ({
+                            ...prev,
+                            ottPlatforms: isSelected
+                              ? prev.ottPlatforms.filter((p) => p !== platform)
+                              : [...prev.ottPlatforms, platform],
+                          }));
+                        }}
+                        className={`w-full text-left px-4 py-2.5 text-sm hover:bg-surface-light transition-colors flex items-center gap-2 ${isSelected ? 'text-gold' : 'text-text-primary'}`}
+                      >
+                        <div className={`w-4 h-4 rounded border flex items-center justify-center flex-shrink-0 ${isSelected ? 'bg-gold border-gold' : 'border-border'}`}>
+                          {isSelected && <Check size={12} className="text-background" />}
+                        </div>
+                        {platform}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+            {form.ottPlatforms.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 mt-2">
+                {form.ottPlatforms.map((platform) => (
+                  <span key={platform} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-gold/10 text-gold text-xs font-medium">
+                    {platform}
+                    <button type="button" onClick={() => setForm((prev) => ({ ...prev, ottPlatforms: prev.ottPlatforms.filter((p) => p !== platform) }))} className="hover:text-gold-light">
+                      <X size={12} />
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
         </section>
 
@@ -1153,10 +1406,41 @@ export default function MovieFormPage() {
                 setForm((prev) => ({
                   ...prev,
                   streamingSources: sources.map((s: any) => ({ quality: s.quality || 'auto', url: s.url, label: s.label || '' })),
+                  uploadSource: 'bunny',
                 }));
               }}
             />
           </section>
+        )}
+
+        {/* Import from Cloudflare R2 */}
+        {isEdit && id && (
+          <section className="bg-surface border border-orange-500/20 rounded-xl p-6 space-y-4">
+            <h2 className="text-lg font-medium flex items-center gap-2"><Cloud size={20} className="text-orange-400" /> Import from Cloudflare R2</h2>
+            <p className="text-sm text-text-secondary">
+              Browse your R2 bucket and link video files for this movie. Works alongside existing Bunny.net content.
+            </p>
+            <R2MovieImportSection
+              movieId={id}
+              onImported={(sources) => {
+                setForm((prev) => ({
+                  ...prev,
+                  streamingSources: sources.map((s: any) => ({ quality: s.quality || 'original', url: s.url, label: s.label || 'Direct' })),
+                  uploadSource: 'r2',
+                }));
+              }}
+            />
+          </section>
+        )}
+
+        {/* Upload Source indicator */}
+        {isEdit && (
+          <div className="flex items-center gap-3 px-4 py-3 bg-surface border border-border rounded-xl">
+            <span className="text-sm text-text-secondary">Upload Source:</span>
+            <span className={`px-3 py-1 rounded-lg text-xs font-semibold ${form.uploadSource === 'r2' ? 'bg-orange-500/20 text-orange-400' : 'bg-purple-500/20 text-purple-400'}`}>
+              {form.uploadSource === 'r2' ? '☁️ Cloudflare R2' : '🐰 Bunny.net'}
+            </span>
+          </div>
         )}
 
         {/* Submit */}

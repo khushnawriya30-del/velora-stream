@@ -68,4 +68,8 @@ export class CreateMovieDto {
   @ApiPropertyOptional() @IsString() @IsOptional() rankingLabel?: string;
   @ApiPropertyOptional() @IsNumber() @IsOptional() starRating?: number;
   @ApiPropertyOptional() @IsString() @IsOptional() videoQuality?: string;
+  @ApiPropertyOptional() @IsBoolean() @IsOptional() isPremium?: boolean;
+  @ApiPropertyOptional() @IsNumber() @IsOptional() freeEpisodeCount?: number;
+  @ApiPropertyOptional({ type: [String] }) @IsArray() @IsString({ each: true }) @IsOptional() ottPlatforms?: string[];
+  @ApiPropertyOptional() @IsString() @IsOptional() uploadSource?: string;
 }

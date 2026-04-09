@@ -36,6 +36,8 @@ export interface Movie {
   hlsStatus?: string;
   isPremium?: boolean;
   freeEpisodeCount?: number;
+  ottPlatforms?: string[];
+  uploadSource?: string;
   createdAt: string;
   updatedAt: string;
 }

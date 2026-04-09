@@ -179,6 +179,12 @@ export class Movie {
 
   @Prop({ default: 0 })
   freeEpisodeCount: number; // For series: first N episodes free, rest premium
+
+  @Prop([String])
+  ottPlatforms: string[]; // OTT platforms: Netflix, Amazon Prime, etc.
+
+  @Prop({ default: 'bunny' })
+  uploadSource: string; // 'bunny' or 'r2'
 }
 
 export const MovieSchema = SchemaFactory.createForClass(Movie);
