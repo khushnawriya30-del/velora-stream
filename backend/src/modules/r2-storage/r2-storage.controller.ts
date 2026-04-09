@@ -81,13 +81,13 @@ export class R2StorageController {
   }
 
   // Import movie from R2 — set streaming sources from R2 video files
-  // POST /r2/import-movie/:movieId { path: "movies/inception/" }
+  // POST /r2/import-movie/:movieId { path: "movies/inception/", singleFile?: "movies/inception/movie.mp4" }
   @Post('import-movie/:movieId')
   async importMovie(
     @Param('movieId') movieId: string,
-    @Body() body: { path: string },
+    @Body() body: { path: string; singleFile?: string },
   ) {
-    return this.r2.importMovieFromR2(movieId, body.path);
+    return this.r2.importMovieFromR2(movieId, body.path, body.singleFile);
   }
 
   // Preview movie files from R2 folder

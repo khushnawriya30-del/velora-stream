@@ -1,7 +1,7 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Plus, X, Cloud, Loader2, Check, Download, ChevronDown, FolderInput, Film, Layers } from 'lucide-react';
+import { ArrowLeft, Plus, X, Cloud, Loader2, Check, Download, ChevronDown, FolderInput, Film, Layers, Search } from 'lucide-react';
 import clsx from 'clsx';
 import api from '../lib/api';
 import type { Movie, CastMember, StreamingSource } from '../types';
@@ -345,11 +345,16 @@ function R2MovieImportSection({ movieId, onImported }: { movieId: string; onImpo
   const queryClient = useQueryClient();
   const [currentPath, setCurrentPath] = useState('');
   const [selectedFolder, setSelectedFolder] = useState('');
+  const [selectedFile, setSelectedFile] = useState<{ path: string; url: string } | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
   const [previewData, setPreviewData] = useState<{
     movieFolder: string;
     files: { name: string; key: string; size: number; url: string }[];
     totalFiles: number;
   } | null>(null);
+
+  // Reset search when navigating to a new folder
+  useEffect(() => { setSearchQuery(''); }, [currentPath]);
 
   const { data: browseData, isLoading: browsing } = useQuery({
     queryKey: ['r2-browse-movie', currentPath],
@@ -363,8 +368,78 @@ function R2MovieImportSection({ movieId, onImported }: { movieId: string; onImpo
     },
   });
 
+  // Filtered & sorted folders and files based on search
+  const filteredFolders = useMemo(() => {
+    if (!browseData?.folders) return [];
+    if (!searchQuery.trim()) return browseData.folders;
+    const q = searchQuery.toLowerCase();
+    return [...browseData.folders]
+      .filter((f) => f.name.toLowerCase().includes(q))
+      .sort((a, b) => {
+        const aIdx = a.name.toLowerCase().indexOf(q);
+        const bIdx = b.name.toLowerCase().indexOf(q);
+        return aIdx - bIdx;
+      });
+  }, [browseData?.folders, searchQuery]);
+
+  const filteredFiles = useMemo(() => {
+    if (!browseData?.files) return [];
+    if (!searchQuery.trim()) return browseData.files;
+    const q = searchQuery.toLowerCase();
+    return [...browseData.files]
+      .filter((f) => f.name.toLowerCase().includes(q))
+      .sort((a, b) => {
+        const aIdx = a.name.toLowerCase().indexOf(q);
+        const bIdx = b.name.toLowerCase().indexOf(q);
+        return aIdx - bIdx;
+      });
+  }, [browseData?.files, searchQuery]);
+
+  // Highlight matched text
+  const highlightMatch = (text: string) => {
+    if (!searchQuery.trim()) return text;
+    const q = searchQuery.trim();
+    const idx = text.toLowerCase().indexOf(q.toLowerCase());
+    if (idx === -1) return text;
+    return (
+      <>
+        {text.slice(0, idx)}
+        <span className="bg-orange-500/40 text-white rounded px-0.5">{text.slice(idx, idx + q.length)}</span>
+        {text.slice(idx + q.length)}
+      </>
+    );
+  };
+
+  const navigateToFolder = (path: string) => {
+    setCurrentPath(path);
+    setSelectedFolder('');
+    setSelectedFile(null);
+    setPreviewData(null);
+  };
+
+  const selectFolder = (path: string) => {
+    setSelectedFolder(path);
+    setSelectedFile(null);
+    setPreviewData(null);
+  };
+
+  const selectFile = (file: { path: string; url: string }) => {
+    setSelectedFile(file);
+    setSelectedFolder('');
+    setPreviewData(null);
+  };
+
   const previewMutation = useMutation({
     mutationFn: async () => {
+      if (selectedFile) {
+        // Single file selected — create preview from it directly
+        const name = selectedFile.path.split('/').pop() || selectedFile.path;
+        return {
+          movieFolder: currentPath,
+          files: [{ name, key: selectedFile.path, size: 0, url: selectedFile.url }],
+          totalFiles: 1,
+        };
+      }
       const { data } = await api.get(`/r2/preview-movie?path=${encodeURIComponent(selectedFolder)}`);
       return data;
     },
@@ -377,6 +452,11 @@ function R2MovieImportSection({ movieId, onImported }: { movieId: string; onImpo
 
   const importMutation = useMutation({
     mutationFn: async () => {
+      if (selectedFile) {
+        // Single file — directly update movie streaming sources
+        const { data } = await api.post(`/r2/import-movie/${movieId}`, { path: currentPath, singleFile: selectedFile.path });
+        return data as { movieTitle: string; sources: any[]; uploadSource: string };
+      }
       const { data } = await api.post(`/r2/import-movie/${movieId}`, { path: selectedFolder });
       return data as { movieTitle: string; sources: any[]; uploadSource: string };
     },
@@ -395,19 +475,20 @@ function R2MovieImportSection({ movieId, onImported }: { movieId: string; onImpo
   };
 
   const pathParts = currentPath.split('/').filter(Boolean);
+  const hasSelection = selectedFolder || selectedFile;
 
   return (
     <div className="space-y-4">
       <div className="p-3 rounded-lg bg-orange-500/10 border border-orange-500/20 text-xs text-orange-300 space-y-1">
         <p className="font-semibold">☁️ Import Movie from Cloudflare R2</p>
-        <p>Browse your R2 bucket, select the movie folder, preview files, and import as streaming sources.</p>
+        <p>Browse your R2 bucket, navigate into folders, select a movie folder or file, preview, and import.</p>
       </div>
 
-      {/* Breadcrumb */}
+      {/* Breadcrumb Navigation */}
       <div className="flex items-center gap-1 text-xs flex-wrap">
         <button
           type="button"
-          onClick={() => { setCurrentPath(''); setSelectedFolder(''); setPreviewData(null); }}
+          onClick={() => navigateToFolder('')}
           className="text-orange-400 hover:text-orange-300 font-medium"
         >
           🪣 Root
@@ -417,7 +498,7 @@ function R2MovieImportSection({ movieId, onImported }: { movieId: string; onImpo
             <span className="text-text-muted">/</span>
             <button
               type="button"
-              onClick={() => { setCurrentPath(pathParts.slice(0, i + 1).join('/') + '/'); setPreviewData(null); }}
+              onClick={() => navigateToFolder(pathParts.slice(0, i + 1).join('/') + '/')}
               className="text-orange-400 hover:text-orange-300"
             >
               {part}
@@ -426,25 +507,47 @@ function R2MovieImportSection({ movieId, onImported }: { movieId: string; onImpo
         ))}
       </div>
 
-      {/* Folder/File browser */}
+      {/* Search Bar */}
+      <div className="relative">
+        <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
+        <input
+          type="text"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder={`Search in ${pathParts.length > 0 ? pathParts[pathParts.length - 1] : 'root'}...`}
+          className="w-full bg-surface-light border border-border rounded-lg pl-9 pr-8 py-2 text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:border-orange-400 transition-colors"
+        />
+        {searchQuery && (
+          <button
+            type="button"
+            onClick={() => setSearchQuery('')}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-primary"
+          >
+            <X size={14} />
+          </button>
+        )}
+      </div>
+
+      {/* Folder/File Browser */}
       {browsing ? (
         <div className="flex items-center gap-2 text-sm text-text-muted py-4 justify-center"><Loader2 size={14} className="animate-spin" /> Browsing R2...</div>
       ) : (
-        <div className="bg-surface-light border border-border rounded-lg max-h-48 overflow-y-auto">
-          {browseData?.folders.map((folder) => (
-            <div key={folder.path} className="flex items-center gap-2 px-3 py-2 hover:bg-surface transition-colors border-b border-border/50 last:border-0">
+        <div className="bg-surface-light border border-border rounded-lg max-h-64 overflow-y-auto">
+          {/* Folders — click name to navigate in, click Select to choose folder */}
+          {filteredFolders.map((folder) => (
+            <div key={folder.path} className={`flex items-center gap-2 px-3 py-2 hover:bg-surface transition-colors border-b border-border/50 last:border-0 ${selectedFolder === folder.path ? 'bg-orange-500/10' : ''}`}>
               <button
                 type="button"
-                onClick={() => { setCurrentPath(folder.path); setPreviewData(null); }}
-                className="flex items-center gap-2 flex-1 text-left text-sm"
+                onClick={() => navigateToFolder(folder.path)}
+                className="flex items-center gap-2 flex-1 text-left text-sm min-w-0"
               >
-                <FolderInput size={14} className="text-orange-400" />
-                <span className="text-text-primary">{folder.name}/</span>
+                <FolderInput size={14} className="text-orange-400 flex-shrink-0" />
+                <span className="text-text-primary truncate">{highlightMatch(folder.name)}/</span>
               </button>
               <button
                 type="button"
-                onClick={() => { setSelectedFolder(folder.path); setPreviewData(null); }}
-                className={`text-xs px-2 py-1 rounded font-medium transition-colors ${
+                onClick={() => selectFolder(folder.path)}
+                className={`text-xs px-2 py-1 rounded font-medium transition-colors flex-shrink-0 ${
                   selectedFolder === folder.path
                     ? 'bg-orange-500 text-white'
                     : 'bg-orange-500/10 text-orange-400 hover:bg-orange-500/20'
@@ -454,28 +557,49 @@ function R2MovieImportSection({ movieId, onImported }: { movieId: string; onImpo
               </button>
             </div>
           ))}
-          {browseData?.files.map((file) => (
-            <div key={file.path} className="flex items-center gap-2 px-3 py-2 text-sm text-text-muted border-b border-border/50 last:border-0">
-              <Film size={14} />
-              <span className="flex-1 truncate">{file.name}</span>
-              <span className="text-xs">{formatSize(file.size)}</span>
+
+          {/* Files — click to select individual file */}
+          {filteredFiles.map((file) => (
+            <div
+              key={file.path}
+              className={`flex items-center gap-2 px-3 py-2 hover:bg-surface transition-colors border-b border-border/50 last:border-0 cursor-pointer ${selectedFile?.path === file.path ? 'bg-orange-500/10' : ''}`}
+              onClick={() => selectFile({ path: file.path, url: file.url })}
+            >
+              <Film size={14} className={selectedFile?.path === file.path ? 'text-orange-400' : 'text-text-muted'} />
+              <span className="flex-1 truncate text-sm">{highlightMatch(file.name)}</span>
+              <span className="text-xs text-text-muted flex-shrink-0">{formatSize(file.size)}</span>
+              {selectedFile?.path === file.path && (
+                <span className="text-xs px-2 py-0.5 rounded bg-orange-500 text-white font-medium flex-shrink-0">✓</span>
+              )}
             </div>
           ))}
-          {(!browseData?.folders.length && !browseData?.files.length) && (
-            <p className="text-sm text-text-muted text-center py-4">Empty folder</p>
+
+          {/* Empty / no results */}
+          {(!filteredFolders.length && !filteredFiles.length) && (
+            <p className="text-sm text-text-muted text-center py-4">
+              {searchQuery ? `No results for "${searchQuery}"` : 'Empty folder'}
+            </p>
+          )}
+
+          {/* Search result count */}
+          {searchQuery && (filteredFolders.length > 0 || filteredFiles.length > 0) && (
+            <div className="px-3 py-1.5 text-[11px] text-text-muted bg-surface border-t border-border/50">
+              {filteredFolders.length + filteredFiles.length} result(s) for &quot;{searchQuery}&quot;
+            </div>
           )}
         </div>
       )}
 
-      {selectedFolder && (
+      {/* Selection indicator */}
+      {hasSelection && (
         <div className="flex items-center gap-2 text-xs text-orange-400">
           <Check size={12} />
-          Selected: <code className="bg-surface px-1 rounded">{selectedFolder}</code>
+          Selected: <code className="bg-surface px-1 rounded">{selectedFolder || selectedFile?.path}</code>
         </div>
       )}
 
       {/* Preview */}
-      {selectedFolder && (
+      {hasSelection && (
         <button
           type="button"
           onClick={() => previewMutation.mutate()}
@@ -483,7 +607,7 @@ function R2MovieImportSection({ movieId, onImported }: { movieId: string; onImpo
           className="flex items-center gap-2 bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-lg text-sm font-medium disabled:opacity-50 w-full justify-center"
         >
           {previewMutation.isPending ? <Loader2 size={14} className="animate-spin" /> : <Layers size={14} />}
-          Preview Video Files
+          {selectedFile ? 'Preview Selected File' : 'Preview Video Files'}
         </button>
       )}
 

@@ -285,6 +285,7 @@ export class R2StorageService {
   async importMovieFromR2(
     movieId: string,
     moviePath: string,
+    singleFile?: string,
   ): Promise<{
     movieTitle: string;
     sources: { label: string; url: string; quality: string }[];
@@ -293,24 +294,38 @@ export class R2StorageService {
     const movie = await this.movieModel.findById(movieId);
     if (!movie) throw new Error('Movie not found');
 
-    const prefix = moviePath.endsWith('/') ? moviePath : moviePath + '/';
-    const allFiles = await this.listAllFiles(prefix);
+    let sources: { label: string; url: string; quality: string; priority: number }[];
 
-    if (allFiles.length === 0) {
-      throw new Error(`No video files found in ${prefix}`);
-    }
-
-    // Build streaming sources from video files
-    const sources = allFiles.map((f) => {
-      const filename = f.key.replace(prefix, '');
+    if (singleFile) {
+      // Single file import — use provided file path directly
+      const filename = singleFile.split('/').pop() || singleFile;
       const quality = this.detectQualityFromFilename(filename);
-      return {
+      sources = [{
         label: quality === 'original' ? 'Direct' : quality,
-        url: this.getPublicUrl(f.key),
+        url: this.getPublicUrl(singleFile),
         quality,
         priority: 0,
-      };
-    });
+      }];
+    } else {
+      // Folder import — scan all files in folder
+      const prefix = moviePath.endsWith('/') ? moviePath : moviePath + '/';
+      const allFiles = await this.listAllFiles(prefix);
+
+      if (allFiles.length === 0) {
+        throw new Error(`No video files found in ${prefix}`);
+      }
+
+      sources = allFiles.map((f) => {
+        const filename = f.key.replace(prefix, '');
+        const quality = this.detectQualityFromFilename(filename);
+        return {
+          label: quality === 'original' ? 'Direct' : quality,
+          url: this.getPublicUrl(f.key),
+          quality,
+          priority: 0,
+        };
+      });
+    }
 
     // Update movie with R2 streaming sources
     await this.movieModel.findByIdAndUpdate(movieId, {
