@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Plus, X, Cloud, Loader2, Check, Download, ChevronDown, FolderInput, Film, Layers, Search } from 'lucide-react';
+import { ArrowLeft, Plus, X, Cloud, Loader2, Check, Download, ChevronDown, FolderInput, Film, Layers, Search, Trash2, RefreshCw, AlertTriangle } from 'lucide-react';
 import clsx from 'clsx';
 import api from '../lib/api';
 import type { Movie, CastMember, StreamingSource } from '../types';
@@ -341,12 +341,37 @@ function BunnyCollectionImportSection({ movieId, movieTitle, onImported }: { mov
 }
 
 // ── R2 Movie Import Section (Browse R2 → Import movie video files) ──
-function R2MovieImportSection({ movieId, onImported }: { movieId: string; onImported?: (sources: any[]) => void }) {
+function R2MovieImportSection({ movieId, onImported, currentSources, uploadSource, onCleared }: {
+  movieId: string;
+  onImported?: (sources: any[]) => void;
+  currentSources?: StreamingSource[];
+  uploadSource?: string;
+  onCleared?: () => void;
+}) {
   const queryClient = useQueryClient();
   const [currentPath, setCurrentPath] = useState('');
   const [selectedFolder, setSelectedFolder] = useState('');
   const [selectedFile, setSelectedFile] = useState<{ path: string; url: string } | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [showConfirmRemove, setShowConfirmRemove] = useState(false);
+  const [isReplacing, setIsReplacing] = useState(false);
+
+  const hasR2Sources = uploadSource === 'r2' && currentSources && currentSources.length > 0;
+
+  const removeMutation = useMutation({
+    mutationFn: async () => {
+      const { data } = await api.delete(`/r2/clear-movie/${movieId}`);
+      return data as { movieTitle: string; cleared: boolean };
+    },
+    onSuccess: (data) => {
+      toast.success(`Removed R2 sources from "${data.movieTitle}"`);
+      setShowConfirmRemove(false);
+      setIsReplacing(false);
+      queryClient.invalidateQueries({ queryKey: ['movie', movieId] });
+      if (onCleared) onCleared();
+    },
+    onError: (err: any) => toast.error(err.response?.data?.message || 'Failed to remove sources'),
+  });
   const [previewData, setPreviewData] = useState<{
     movieFolder: string;
     files: { name: string; key: string; size: number; url: string }[];
@@ -479,6 +504,72 @@ function R2MovieImportSection({ movieId, onImported }: { movieId: string; onImpo
 
   return (
     <div className="space-y-4">
+      {/* Confirmation Dialog */}
+      {showConfirmRemove && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="bg-surface border border-border rounded-2xl p-6 max-w-md w-full mx-4 space-y-4 shadow-2xl">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-red-500/10 rounded-lg"><AlertTriangle size={20} className="text-red-400" /></div>
+              <h3 className="font-semibold text-lg">Remove R2 Sources?</h3>
+            </div>
+            <p className="text-sm text-text-secondary">
+              Are you sure you want to remove all streaming sources from this movie? This will clear the R2 linked video files. The files will remain in R2 but the movie will have no streaming sources.
+            </p>
+            <div className="flex items-center gap-3 justify-end">
+              <button type="button" onClick={() => setShowConfirmRemove(false)} className="px-4 py-2 text-sm rounded-lg border border-border text-text-secondary hover:bg-surface-light transition-colors">Cancel</button>
+              <button type="button" onClick={() => removeMutation.mutate()} disabled={removeMutation.isPending} className="flex items-center gap-2 px-4 py-2 text-sm rounded-lg bg-red-600 hover:bg-red-700 text-white font-medium disabled:opacity-50 transition-colors">
+                {removeMutation.isPending ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
+                Remove
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Current R2 Sources Panel */}
+      {hasR2Sources && !isReplacing && (
+        <div className="bg-surface-light border border-orange-500/20 rounded-xl p-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 text-sm font-medium text-orange-400">
+              <Cloud size={16} />
+              Current R2 Sources ({currentSources.length})
+            </div>
+          </div>
+          <div className="space-y-1.5">
+            {currentSources.map((src, idx) => (
+              <div key={idx} className="flex items-center gap-3 text-xs bg-surface rounded-lg px-3 py-2">
+                <Film size={12} className="text-orange-400 flex-shrink-0" />
+                <span className="font-medium text-text-primary">{src.label || src.quality}</span>
+                <span className="flex-1 truncate text-text-muted">{src.url}</span>
+                <span className="px-1.5 py-0.5 rounded bg-orange-500/10 text-orange-400 text-[10px] font-semibold">{src.quality}</span>
+              </div>
+            ))}
+          </div>
+          <div className="flex items-center gap-2 pt-1">
+            <button type="button" onClick={() => setShowConfirmRemove(true)} className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 font-medium transition-colors">
+              <Trash2 size={12} /> Remove
+            </button>
+            <button type="button" onClick={() => setIsReplacing(true)} className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg bg-orange-500/10 text-orange-400 hover:bg-orange-500/20 font-medium transition-colors">
+              <RefreshCw size={12} /> Replace
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Replace mode banner */}
+      {isReplacing && (
+        <div className="flex items-center justify-between p-3 rounded-lg bg-orange-500/10 border border-orange-500/30">
+          <div className="flex items-center gap-2 text-xs text-orange-300">
+            <RefreshCw size={14} />
+            <span className="font-semibold">Replacing R2 sources — select a new movie file or folder below</span>
+          </div>
+          <button type="button" onClick={() => setIsReplacing(false)} className="text-xs text-text-muted hover:text-text-primary"><X size={14} /></button>
+        </div>
+      )}
+
+      {/* Show browser when no R2 sources, or when replacing */}
+      {(!hasR2Sources || isReplacing) && (
+      <>
       <div className="p-3 rounded-lg bg-orange-500/10 border border-orange-500/20 text-xs text-orange-300 space-y-1">
         <p className="font-semibold">☁️ Import Movie from Cloudflare R2</p>
         <p>Browse your R2 bucket, navigate into folders, select a movie folder or file, preview, and import.</p>
@@ -650,6 +741,8 @@ function R2MovieImportSection({ movieId, onImported }: { movieId: string; onImpo
             Successfully imported {importMutation.data.sources.length} source(s) for &quot;{importMutation.data.movieTitle}&quot;
           </div>
         </div>
+      )}
+      </>
       )}
     </div>
   );
@@ -1546,12 +1639,17 @@ export default function MovieFormPage() {
             </p>
             <R2MovieImportSection
               movieId={id}
+              currentSources={form.streamingSources}
+              uploadSource={form.uploadSource}
               onImported={(sources) => {
                 setForm((prev) => ({
                   ...prev,
                   streamingSources: sources.map((s: any) => ({ quality: s.quality || 'original', url: s.url, label: s.label || 'Direct' })),
                   uploadSource: 'r2',
                 }));
+              }}
+              onCleared={() => {
+                setForm((prev) => ({ ...prev, streamingSources: [], uploadSource: '' }));
               }}
             />
           </section>

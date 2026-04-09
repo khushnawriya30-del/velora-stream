@@ -90,6 +90,13 @@ export class R2StorageController {
     return this.r2.importMovieFromR2(movieId, body.path, body.singleFile);
   }
 
+  // Clear movie R2 streaming sources
+  // DELETE /r2/clear-movie/:movieId
+  @Delete('clear-movie/:movieId')
+  async clearMovieSources(@Param('movieId') movieId: string) {
+    return this.r2.clearMovieSources(movieId);
+  }
+
   // Preview movie files from R2 folder
   // GET /r2/preview-movie?path=movies/inception/
   @Get('preview-movie')

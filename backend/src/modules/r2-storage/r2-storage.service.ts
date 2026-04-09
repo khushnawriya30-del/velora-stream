@@ -337,6 +337,20 @@ export class R2StorageService {
     return { movieTitle: movie.title, sources, uploadSource: 'r2' };
   }
 
+  // ── Clear movie R2 streaming sources ──
+  async clearMovieSources(movieId: string): Promise<{ movieTitle: string; cleared: boolean }> {
+    const movie = await this.movieModel.findById(movieId);
+    if (!movie) throw new Error('Movie not found');
+
+    await this.movieModel.findByIdAndUpdate(movieId, {
+      streamingSources: [],
+      uploadSource: '',
+    });
+
+    this.logger.log(`[R2 Clear] ${movie.title}: streaming sources cleared`);
+    return { movieTitle: movie.title, cleared: true };
+  }
+
   // ── Helper: Detect quality from filename ──
   private detectQualityFromFilename(filename: string): string {
     const lower = filename.toLowerCase();
