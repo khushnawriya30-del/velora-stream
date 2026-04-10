@@ -75,8 +75,8 @@ async function bootstrap() {
 
   // Root health-check handler (outside global prefix for App Runner)
   const httpAdapter = app.getHttpAdapter();
-  httpAdapter.get('/', (_req, res) => {
-    res.json({ status: 'ok', service: 'velora-api' });
+  httpAdapter.get('/', (_req: any, res: any) => {
+    res.status(200).json({ status: 'ok', service: 'velora-api' });
   });
 
   const port = configService.get<number>('PORT', 3000);
