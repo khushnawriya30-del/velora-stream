@@ -1,6 +1,5 @@
 package com.cinevault.app.ui.screen
 
-import android.app.Activity
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -15,9 +14,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
-import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
@@ -31,12 +28,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.cinevault.app.ui.components.GoldButton
 import com.cinevault.app.ui.theme.CineVaultTheme
 import com.cinevault.app.ui.viewmodel.AuthViewModel
-import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.auth.PhoneAuthCredential
-import com.google.firebase.auth.PhoneAuthOptions
-import com.google.firebase.auth.PhoneAuthProvider
 import kotlinx.coroutines.delay
-import java.util.concurrent.TimeUnit
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -47,16 +39,11 @@ fun PhoneAuthScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val focusManager = LocalFocusManager.current
-    val context = LocalContext.current
-    val activity = context as Activity
-    val firebaseAuth = remember { FirebaseAuth.getInstance() }
 
     var phoneNumber by remember { mutableStateOf("") }
     var otpValue by remember { mutableStateOf("") }
     var countdownSeconds by remember { mutableIntStateOf(0) }
     var otpSent by remember { mutableStateOf(false) }
-    var verificationId by remember { mutableStateOf<String?>(null) }
-    var resendToken by remember { mutableStateOf<PhoneAuthProvider.ForceResendingToken?>(null) }
     var error by remember { mutableStateOf<String?>(null) }
     var isLoading by remember { mutableStateOf(false) }
 
@@ -68,6 +55,15 @@ fun PhoneAuthScreen(
         }
     }
 
+    // Backend OTP sent successfully
+    LaunchedEffect(uiState.phoneOtpSent) {
+        if (uiState.phoneOtpSent) {
+            otpSent = true
+            isLoading = false
+            viewModel.resetPhoneOtpSent()
+        }
+    }
+
     // Propagate ViewModel errors
     LaunchedEffect(uiState.error) {
         if (uiState.error != null) {
@@ -76,53 +72,10 @@ fun PhoneAuthScreen(
         }
     }
 
-    fun sendOtp(forceResend: Boolean = false) {
-        val fullPhone = "+91$phoneNumber"
+    fun sendOtp() {
         isLoading = true
         error = null
-
-        val callbacks = object : PhoneAuthProvider.OnVerificationStateChangedCallbacks() {
-            override fun onVerificationCompleted(credential: PhoneAuthCredential) {
-                // Auto-retrieval or instant verification — sign in immediately
-                isLoading = true
-                firebaseAuth.signInWithCredential(credential)
-                    .addOnSuccessListener { result ->
-                        result.user?.getIdToken(false)?.addOnSuccessListener { tokenResult ->
-                            val idToken = tokenResult.token ?: return@addOnSuccessListener
-                            viewModel.firebasePhoneVerify(idToken)
-                        }
-                    }
-                    .addOnFailureListener { e ->
-                        error = e.localizedMessage ?: "Auto-verification failed"
-                        isLoading = false
-                    }
-            }
-
-            override fun onVerificationFailed(e: com.google.firebase.FirebaseException) {
-                error = e.localizedMessage ?: "Verification failed"
-                isLoading = false
-            }
-
-            override fun onCodeSent(vId: String, token: PhoneAuthProvider.ForceResendingToken) {
-                verificationId = vId
-                resendToken = token
-                otpSent = true
-                isLoading = false
-                // Start 60-second countdown
-            }
-        }
-
-        val optionsBuilder = PhoneAuthOptions.newBuilder(firebaseAuth)
-            .setPhoneNumber(fullPhone)
-            .setTimeout(60L, TimeUnit.SECONDS)
-            .setActivity(activity)
-            .setCallbacks(callbacks)
-
-        if (forceResend && resendToken != null) {
-            optionsBuilder.setForceResendingToken(resendToken!!)
-        }
-
-        PhoneAuthProvider.verifyPhoneNumber(optionsBuilder.build())
+        viewModel.sendPhoneOtp(phoneNumber)
     }
 
     // Countdown timer
@@ -196,7 +149,7 @@ fun PhoneAuthScreen(
             Spacer(Modifier.height(8.dp))
             Text(
                 if (!otpSent)
-                    AnnotatedString("We'll send a 6-digit OTP via SMS to your mobile number")
+                    buildAnnotatedString { append("We'll send a 6-digit OTP via SMS to your mobile number") }
                 else
                     buildAnnotatedString {
                         append("OTP sent to +91 ")
@@ -331,20 +284,9 @@ fun PhoneAuthScreen(
                                 onDone = {
                                     focusManager.clearFocus()
                                     if (otpValue.length == 6) {
-                                        val credential = PhoneAuthProvider.getCredential(verificationId!!, otpValue)
                                         isLoading = true
                                         error = null
-                                        firebaseAuth.signInWithCredential(credential)
-                                            .addOnSuccessListener { result ->
-                                                result.user?.getIdToken(false)?.addOnSuccessListener { tokenResult ->
-                                                    val idToken = tokenResult.token ?: return@addOnSuccessListener
-                                                    viewModel.firebasePhoneVerify(idToken)
-                                                }
-                                            }
-                                            .addOnFailureListener { e ->
-                                                error = e.localizedMessage ?: "Invalid OTP"
-                                                isLoading = false
-                                            }
+                                        viewModel.verifyPhoneOtp(phoneNumber, otpValue)
                                     }
                                 },
                             ),
@@ -385,8 +327,8 @@ fun PhoneAuthScreen(
                                 TextButton(
                                     onClick = {
                                         otpValue = ""
-                                        otpSent = false
-                                        sendOtp(forceResend = true)
+                                        error = null
+                                        sendOtp()
                                     },
                                     enabled = !isLoading,
                                 ) {
@@ -414,21 +356,9 @@ fun PhoneAuthScreen(
                             text = "Verify & Continue",
                             onClick = {
                                 focusManager.clearFocus()
-                                val vId = verificationId ?: return@GoldButton
-                                val credential = PhoneAuthProvider.getCredential(vId, otpValue)
                                 isLoading = true
                                 error = null
-                                firebaseAuth.signInWithCredential(credential)
-                                    .addOnSuccessListener { result ->
-                                        result.user?.getIdToken(false)?.addOnSuccessListener { tokenResult ->
-                                            val idToken = tokenResult.token ?: return@addOnSuccessListener
-                                            viewModel.firebasePhoneVerify(idToken)
-                                        }
-                                    }
-                                    .addOnFailureListener { e ->
-                                        error = e.localizedMessage ?: "Invalid OTP"
-                                        isLoading = false
-                                    }
+                                viewModel.verifyPhoneOtp(phoneNumber, otpValue)
                             },
                             isLoading = isLoading || uiState.isLoading,
                             enabled = otpValue.length == 6,
@@ -458,7 +388,7 @@ fun PhoneAuthScreen(
             Spacer(Modifier.height(32.dp))
 
             Text(
-                "Only Indian mobile numbers (+91) supported.\nOTP sent via SMS by Firebase.",
+                "Only Indian mobile numbers (+91) supported.\nOTP sent via SMS.",
                 style = CineVaultTheme.typography.label.copy(fontSize = 12.sp),
                 color = CineVaultTheme.colors.textSecondary.copy(alpha = 0.6f),
                 textAlign = TextAlign.Center,
