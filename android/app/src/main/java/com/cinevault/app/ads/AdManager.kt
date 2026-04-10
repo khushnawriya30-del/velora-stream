@@ -62,7 +62,8 @@ class AdManager @Inject constructor(
         if (isLoading || interstitialAd != null) {
             Log.d(TAG, "loadInterstitialAd: skip (isLoading=$isLoading, adCached=${interstitialAd != null})")
             return
-        }        doLoadAd()
+        }
+        doLoadAd()
     }
 
     /**
@@ -75,7 +76,8 @@ class AdManager @Inject constructor(
         doLoadAd()
     }
 
-    private fun doLoadAd() {        if (!isNetworkAvailable()) {
+    private fun doLoadAd() {
+        if (!isNetworkAvailable()) {
             Log.w(TAG, "loadInterstitialAd: No internet — scheduling retry in ${RETRY_DELAY_MS}ms")
             android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({ loadInterstitialAd() }, RETRY_DELAY_MS)
             return
