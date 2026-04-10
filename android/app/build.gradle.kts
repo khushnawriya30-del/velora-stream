@@ -15,8 +15,8 @@ android {
         applicationId = "com.cinevault.app"
         minSdk = 26
         targetSdk = 34
-        versionCode = 57
-        versionName = "2.1.9"
+        versionCode = 58
+        versionName = "2.2.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         vectorDrawables {
@@ -28,7 +28,7 @@ android {
             abiFilters += listOf("arm64-v8a", "armeabi-v7a")
         }
 
-        buildConfigField("String", "BASE_URL", "\"https://wxte3hgv2e.ap-south-1.awsapprunner.com/api/v1/\"")
+        buildConfigField("String", "BASE_URL", "\"https://p2zb77xpuy.ap-south-1.awsapprunner.com/api/v1/\"")
         buildConfigField("String", "DRIVE_WORKER_URL", "\"https://drive-index.velora-stream.workers.dev\"")
     }
 
@@ -46,7 +46,7 @@ android {
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
-            buildConfigField("String", "BASE_URL", "\"https://wxte3hgv2e.ap-south-1.awsapprunner.com/api/v1/\"")
+            buildConfigField("String", "BASE_URL", "\"https://p2zb77xpuy.ap-south-1.awsapprunner.com/api/v1/\"")
             buildConfigField("String", "DRIVE_WORKER_URL", "\"https://drive-index.velora-stream.workers.dev\"")
             signingConfig = signingConfigs.getByName("release")
         }

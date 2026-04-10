@@ -49,7 +49,7 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
 
   // Cloud Run base URL
   private readonly baseUrl =
-    process.env.BASE_URL || 'https://wxte3hgv2e.ap-south-1.awsapprunner.com';
+    process.env.BASE_URL || 'https://p2zb77xpuy.ap-south-1.awsapprunner.com';
 
   constructor(
     @InjectModel(TelegramPayment.name)

@@ -33,7 +33,7 @@ export class AppVersionService {
     const apiPrefix = this.configService.get<string>('API_PREFIX', 'api/v1');
     const backendUrl = this.configService.get<string>(
       'BACKEND_URL',
-      'https://wxte3hgv2e.ap-south-1.awsapprunner.com',
+      'https://p2zb77xpuy.ap-south-1.awsapprunner.com',
     );
     doc.apkUrl = `${backendUrl}/${apiPrefix}/app-version/download`;
     return doc;

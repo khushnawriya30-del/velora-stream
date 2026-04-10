@@ -33,7 +33,7 @@ export default function App() {
       localStorage.setItem('velora_ref_code', refCode);
       setReferralCode(refCode);
       // Track the visit on backend for IP-based referral matching
-      fetch('https://wxte3hgv2e.ap-south-1.awsapprunner.com/api/v1/referral/track-visit', {
+      fetch('https://p2zb77xpuy.ap-south-1.awsapprunner.com/api/v1/referral/track-visit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ referralCode: refCode }),

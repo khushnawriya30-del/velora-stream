@@ -1,1 +1,1 @@
-https://wxte3hgv2e.ap-south-1.awsapprunner.com/api/v1
+https://p2zb77xpuy.ap-south-1.awsapprunner.com/api/v1
