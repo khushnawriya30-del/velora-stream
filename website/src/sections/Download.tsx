@@ -1,25 +1,55 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Download as DownloadIcon, ChevronDown, Clock, ExternalLink, Copy, Check, Smartphone } from 'lucide-react';
+import { Download as DownloadIcon, ChevronDown, Clock, ExternalLink, Smartphone, CheckCircle } from 'lucide-react';
 import { useGitHubRelease } from '../hooks/useGitHubRelease';
 import { APP_CONFIG } from '../config';
 
 export default function Download({ referralCode }: { referralCode?: string | null }) {
   const { latest, releases, loading } = useGitHubRelease();
   const [showHistory, setShowHistory] = useState(false);
-  const [copied, setCopied] = useState(false);
   const [hasDownloaded, setHasDownloaded] = useState(false);
 
   const version = latest?.version || APP_CONFIG.fallback.version;
   const downloadUrl = latest?.downloadUrl || APP_CONFIG.fallback.downloadUrl;
 
-  const handleCopy = () => {
-    if (referralCode) {
-      navigator.clipboard.writeText(referralCode);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+  // Build Android intent deep link (more reliable than custom scheme on Android)
+  const deepLinkUrl = referralCode
+    ? `intent://referral?code=${referralCode}#Intent;scheme=velora;package=com.cinevault.app;end`
+    : null;
+
+  // Fallback custom scheme link
+  const customSchemeUrl = referralCode ? `velora://referral?code=${referralCode}` : null;
+
+  const tryOpenApp = useCallback(() => {
+    if (!referralCode) return;
+    // Try intent link first (works better on Android), fallback to custom scheme
+    if (/android/i.test(navigator.userAgent) && deepLinkUrl) {
+      window.location.href = deepLinkUrl;
+    } else if (customSchemeUrl) {
+      window.location.href = customSchemeUrl;
     }
-  };
+  }, [referralCode, deepLinkUrl, customSchemeUrl]);
+
+  // After download, auto-try to open app when user returns to the page
+  useEffect(() => {
+    if (!hasDownloaded || !referralCode) return;
+
+    // Try once after a short delay (in case app was already installed)
+    const timer = setTimeout(() => tryOpenApp(), 3000);
+
+    // Also try when page becomes visible again (user installed app & came back to browser)
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        setTimeout(() => tryOpenApp(), 500);
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+
+    return () => {
+      clearTimeout(timer);
+      document.removeEventListener('visibilitychange', handleVisibility);
+    };
+  }, [hasDownloaded, referralCode, tryOpenApp]);
 
   const handleDownloadClick = () => {
     if (referralCode) {
@@ -49,7 +79,7 @@ export default function Download({ referralCode }: { referralCode?: string | nul
           </p>
         </motion.div>
 
-        {/* Referral Code Banner */}
+        {/* Referral Active Banner */}
         {referralCode && (
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
@@ -57,37 +87,22 @@ export default function Download({ referralCode }: { referralCode?: string | nul
             transition={{ duration: 0.4 }}
             className="mb-8 mx-auto max-w-md"
           >
-            <div className="bg-gradient-to-r from-gold/10 via-gold/15 to-gold/10 border border-gold/30 rounded-2xl p-5">
-              <p className="text-gold text-sm font-medium mb-2">You were invited! Enter this code when you sign up:</p>
-              <div className="flex items-center justify-center gap-3">
-                <span className="text-2xl font-bold text-white tracking-[6px] font-mono">{referralCode}</span>
-                <button
-                  onClick={handleCopy}
-                  className="p-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors"
-                  title="Copy code"
-                >
-                  {copied ? (
-                    <Check className="w-4 h-4 text-green-400" />
-                  ) : (
-                    <Copy className="w-4 h-4 text-gray-300" />
-                  )}
-                </button>
+            <div className="bg-gradient-to-r from-green-500/10 via-emerald-500/15 to-green-500/10 border border-green-500/30 rounded-2xl p-4">
+              <div className="flex items-center justify-center gap-2 text-green-400">
+                <CheckCircle className="w-5 h-5" />
+                <p className="text-sm font-medium">Referral link detected! Your referral will be applied automatically.</p>
               </div>
-              <p className="text-gray-400 text-xs mt-2">Paste this referral code during registration in the app</p>
             </div>
           </motion.div>
         )}
 
-        {/* Step 1: Download Button */}
+        {/* Download Button */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6, delay: 0.1 }}
         >
-          {referralCode && (
-            <p className="text-gray-400 text-sm mb-3 font-medium">Step 1: Download the App</p>
-          )}
           <a
             href={downloadUrl || '#'}
             target="_blank"
@@ -100,7 +115,7 @@ export default function Download({ referralCode }: { referralCode?: string | nul
           </a>
         </motion.div>
 
-        {/* Step 2: Open App with Referral (shown after download click when referral code exists) */}
+        {/* Post-download: Open App button (auto-redirect also happening in background) */}
         <AnimatePresence>
           {referralCode && hasDownloaded && (
             <motion.div
@@ -110,22 +125,23 @@ export default function Download({ referralCode }: { referralCode?: string | nul
               transition={{ duration: 0.5 }}
               className="mt-6"
             >
-              <div className="bg-gradient-to-r from-green-500/10 via-emerald-500/15 to-green-500/10 border border-green-500/30 rounded-2xl p-5 max-w-md mx-auto">
-                <p className="text-green-400 text-sm font-medium mb-3">Step 2: After installing, tap below to activate your referral</p>
+              <div className="bg-white/5 border border-white/10 rounded-2xl p-5 max-w-md mx-auto">
+                <p className="text-gray-400 text-sm mb-3">After installing, tap to open the app:</p>
                 <a
-                  href={`velora://referral?code=${referralCode}`}
+                  href={customSchemeUrl || '#'}
+                  onClick={(e) => { e.preventDefault(); tryOpenApp(); }}
                   className="group inline-flex items-center gap-3 px-8 py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white font-bold rounded-xl text-base hover:opacity-90 transition-all shadow-lg hover:scale-[1.02] active:scale-[0.98]"
                 >
                   <Smartphone className="w-5 h-5" />
-                  Open App with Referral
+                  Open Velora
                 </a>
-                <p className="text-gray-500 text-xs mt-3">This will open Velora and automatically apply the referral code</p>
+                <p className="text-gray-500 text-xs mt-3">Referral will be applied automatically when you sign up</p>
               </div>
             </motion.div>
           )}
         </AnimatePresence>
 
-        {/* Always show "Open App" deep link when referral code exists (even before download) */}
+        {/* Already installed shortcut */}
         {referralCode && !hasDownloaded && (
           <motion.div
             initial={{ opacity: 0 }}
@@ -134,13 +150,13 @@ export default function Download({ referralCode }: { referralCode?: string | nul
             transition={{ delay: 0.2 }}
             className="mt-4"
           >
-            <p className="text-gray-500 text-xs mb-2">Already installed?</p>
             <a
-              href={`velora://referral?code=${referralCode}`}
-              className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl border border-green-500/30 bg-green-500/10 hover:bg-green-500/20 transition-all text-sm text-green-400 font-medium"
+              href={customSchemeUrl || '#'}
+              onClick={(e) => { e.preventDefault(); tryOpenApp(); }}
+              className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-green-400 transition-colors"
             >
               <Smartphone className="w-4 h-4" />
-              Open App with Referral Code
+              Already installed? Open app
             </a>
           </motion.div>
         )}
