@@ -32,6 +32,12 @@ export default function App() {
     if (refCode) {
       localStorage.setItem('velora_ref_code', refCode);
       setReferralCode(refCode);
+      // Track the visit on backend for IP-based referral matching
+      fetch('https://velora-backend-fopqpbthva-el.a.run.app/api/v1/referral/track-visit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ referralCode: refCode }),
+      }).catch(() => {}); // Fire and forget
       // Clean URL without reload
       const url = new URL(window.location.href);
       url.searchParams.delete('ref');

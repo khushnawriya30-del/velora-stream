@@ -3,6 +3,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Referral, ReferralDocument } from '../../schemas/referral.schema';
 import { User, UserDocument } from '../../schemas/user.schema';
+import { PendingReferralVisit, PendingReferralVisitDocument } from '../../schemas/pending-referral-visit.schema';
 import { WalletService } from '../wallet/wallet.service';
 import { randomBytes } from 'crypto';
 
@@ -13,6 +14,7 @@ export class ReferralService {
   constructor(
     @InjectModel(Referral.name) private referralModel: Model<ReferralDocument>,
     @InjectModel(User.name) private userModel: Model<UserDocument>,
+    @InjectModel(PendingReferralVisit.name) private pendingVisitModel: Model<PendingReferralVisitDocument>,
     private readonly walletService: WalletService,
   ) {}
 
@@ -250,5 +252,43 @@ export class ReferralService {
         };
       }),
     };
+  }
+
+  // ── IP-based Referral Tracking ──
+
+  /** Track a website visit with referral code (called from website) */
+  async trackVisit(referralCode: string, ipAddress: string, userAgent?: string): Promise<void> {
+    // Validate the referral code exists
+    const referrer = await this.userModel.findOne({ referralCode });
+    if (!referrer) {
+      this.logger.warn(`Track visit: invalid referral code ${referralCode}`);
+      return; // Silently ignore invalid codes
+    }
+
+    // Upsert: update existing record for this IP or create new one
+    await this.pendingVisitModel.findOneAndUpdate(
+      { ipAddress },
+      { referralCode, ipAddress, userAgent, createdAt: new Date() },
+      { upsert: true, new: true },
+    );
+
+    this.logger.log(`Tracked referral visit: code=${referralCode}, ip=${ipAddress}`);
+  }
+
+  /** Find pending referral by IP (used during registration as fallback) */
+  async findReferralCodeByIp(ipAddress: string): Promise<string | undefined> {
+    const visit = await this.pendingVisitModel
+      .findOne({ ipAddress })
+      .sort({ createdAt: -1 })
+      .lean();
+
+    if (visit) {
+      this.logger.log(`Found pending referral by IP: code=${visit.referralCode}, ip=${ipAddress}`);
+      // Clean up after use
+      await this.pendingVisitModel.deleteMany({ ipAddress });
+      return visit.referralCode;
+    }
+
+    return undefined;
   }
 }
