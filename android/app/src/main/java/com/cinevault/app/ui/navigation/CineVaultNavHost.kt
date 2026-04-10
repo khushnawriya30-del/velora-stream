@@ -446,6 +446,8 @@ fun CineVaultNavHost(navController: NavHostController = rememberNavController())
     LaunchedEffect(isLoggedIn) {
         if (isLoggedIn == true && !hasCheckedClipboardReferral) {
             hasCheckedClipboardReferral = true
+            // Small delay to ensure auth token is fully persisted and available to interceptor
+            kotlinx.coroutines.delay(1500)
             authViewModel.checkAndApplyClipboardReferral(context)
         }
     }

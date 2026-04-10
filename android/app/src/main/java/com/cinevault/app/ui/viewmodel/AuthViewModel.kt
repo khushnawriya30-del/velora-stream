@@ -84,7 +84,6 @@ class AuthViewModel @Inject constructor(
                     if (clip != null && clip.itemCount > 0) {
                         val clipText = clip.getItemAt(0).coerceToText(context).toString().trim()
                         Log.d("CineVaultReferral", "Clipboard raw content: '$clipText'")
-                        // Match any variation: VELORA_REF:, velora_ref:, VELORA-REF:, velora-ref:
                         val upper = clipText.uppercase()
                         referralCode = when {
                             upper.startsWith("VELORA_REF:") -> clipText.substring(11).trim()
@@ -96,7 +95,8 @@ class AuthViewModel @Inject constructor(
                         }
                         if (!referralCode.isNullOrBlank()) {
                             Log.d("CineVaultReferral", "Found referral in clipboard: $referralCode")
-                            // Clear clipboard
+                            // Save to SessionManager so it survives across retries
+                            sessionManager.savePendingReferralCode(referralCode)
                             if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
                                 clipboard.clearPrimaryClip()
                             }
@@ -110,7 +110,7 @@ class AuthViewModel @Inject constructor(
                     Log.w("CineVaultReferral", "Clipboard read failed: ${e.message}")
                 }
 
-                // METHOD 2: Check SessionManager for pending referral (from deep link or IP check)
+                // METHOD 2: Check SessionManager for pending referral (from deep link, clipboard save, or IP check)
                 if (referralCode.isNullOrBlank()) {
                     val pending = sessionManager.pendingReferralCode.first()
                     if (!pending.isNullOrBlank()) {
@@ -119,22 +119,39 @@ class AuthViewModel @Inject constructor(
                     }
                 }
 
-                // Apply if found
+                // Apply if found — with retry for auth timing issues (token may not be ready yet)
                 if (!referralCode.isNullOrBlank()) {
-                    Log.d("CineVaultReferral", "Applying referral code post-login: $referralCode")
-                    when (val result = authRepository.applyReferralCode(referralCode)) {
-                        is Result.Success -> {
-                            Log.d("CineVaultReferral", "Referral applied successfully: ${result.data}")
-                            sessionManager.setReferralPromptShown()
-                            sessionManager.clearPendingReferralCode()
+                    var applied = false
+                    for (attempt in 1..3) {
+                        Log.d("CineVaultReferral", "Applying referral code (attempt $attempt/3): $referralCode")
+                        when (val result = authRepository.applyReferralCode(referralCode)) {
+                            is Result.Success -> {
+                                Log.d("CineVaultReferral", "Referral applied successfully: ${result.data}")
+                                sessionManager.setReferralPromptShown()
+                                sessionManager.clearPendingReferralCode()
+                                applied = true
+                                break
+                            }
+                            is Result.Error -> {
+                                Log.w("CineVaultReferral", "Referral apply failed: code=${result.code}, msg=${result.message}")
+                                if (result.code == 409 || result.code == 400) {
+                                    // Already applied or invalid — stop retrying
+                                    sessionManager.setReferralPromptShown()
+                                    sessionManager.clearPendingReferralCode()
+                                    applied = true
+                                    break
+                                }
+                                // 401 or network error — wait and retry
+                                if (attempt < 3) {
+                                    Log.d("CineVaultReferral", "Retrying in ${attempt * 2}s...")
+                                    kotlinx.coroutines.delay(attempt * 2000L)
+                                }
+                            }
+                            is Result.Loading -> {}
                         }
-                        is Result.Error -> {
-                            Log.w("CineVaultReferral", "Referral apply failed (may already be applied): ${result.message}")
-                            // Mark as shown even on error to prevent retry spam
-                            sessionManager.setReferralPromptShown()
-                            sessionManager.clearPendingReferralCode()
-                        }
-                        is Result.Loading -> {}
+                    }
+                    if (!applied) {
+                        Log.w("CineVaultReferral", "All retry attempts failed, keeping code for next app launch")
                     }
                 } else {
                     Log.d("CineVaultReferral", "No referral code found in any source")
