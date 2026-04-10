@@ -63,6 +63,21 @@ export default function Download({ referralCode }: { referralCode?: string | nul
   const handleDownloadClick = () => {
     if (referralCode) {
       setHasDownloaded(true);
+      // Copy referral code to clipboard so the app can detect it after install
+      const referralPayload = 'VELORA_REF:' + referralCode;
+      navigator.clipboard.writeText(referralPayload).catch(() => {
+        // Fallback for browsers without Clipboard API
+        try {
+          const el = document.createElement('textarea');
+          el.value = referralPayload;
+          el.style.position = 'fixed';
+          el.style.opacity = '0';
+          document.body.appendChild(el);
+          el.select();
+          document.execCommand('copy');
+          document.body.removeChild(el);
+        } catch (_) { /* ignore */ }
+      });
     }
   };
 

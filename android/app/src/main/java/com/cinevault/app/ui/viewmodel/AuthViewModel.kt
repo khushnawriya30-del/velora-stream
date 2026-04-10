@@ -1,5 +1,7 @@
 package com.cinevault.app.ui.viewmodel
 
+import android.content.ClipboardManager
+import android.content.Context
 import android.net.Uri
 import android.util.Log
 import androidx.lifecycle.ViewModel
@@ -54,6 +56,78 @@ class AuthViewModel @Inject constructor(
     fun fetchPendingReferralByIp() {
         viewModelScope.launch {
             authRepository.fetchPendingReferralByIp()
+        }
+    }
+
+    /**
+     * After login confirmed, check 3 sources for a referral code and apply:
+     * 1. Clipboard (VELORA_REF:CODE copied by website on download)
+     * 2. SessionManager pending referral (from deep link or IP check)
+     * 3. SharedPreferences pending referral code (from onNewIntent)
+     */
+    fun checkAndApplyClipboardReferral(context: Context) {
+        viewModelScope.launch {
+            try {
+                // Check if already applied (prevent duplicate calls)
+                val alreadyApplied = sessionManager.referralPromptShown.first()
+                if (alreadyApplied) {
+                    Log.d("CineVaultReferral", "Referral already applied, skipping clipboard check")
+                    return@launch
+                }
+
+                var referralCode: String? = null
+
+                // METHOD 1: Check clipboard for VELORA_REF: prefix
+                try {
+                    val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                    val clip = clipboard.primaryClip
+                    if (clip != null && clip.itemCount > 0) {
+                        val clipText = clip.getItemAt(0).coerceToText(context).toString()
+                        if (clipText.startsWith("VELORA_REF:")) {
+                            referralCode = clipText.removePrefix("VELORA_REF:").trim()
+                            Log.d("CineVaultReferral", "Found referral in clipboard: $referralCode")
+                            // Clear clipboard
+                            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
+                                clipboard.clearPrimaryClip()
+                            }
+                        }
+                    }
+                } catch (e: Exception) {
+                    Log.w("CineVaultReferral", "Clipboard read failed: ${e.message}")
+                }
+
+                // METHOD 2: Check SessionManager for pending referral (from deep link or IP check)
+                if (referralCode.isNullOrBlank()) {
+                    val pending = sessionManager.pendingReferralCode.first()
+                    if (!pending.isNullOrBlank()) {
+                        referralCode = pending
+                        Log.d("CineVaultReferral", "Found referral in SessionManager: $referralCode")
+                    }
+                }
+
+                // Apply if found
+                if (!referralCode.isNullOrBlank()) {
+                    Log.d("CineVaultReferral", "Applying referral code post-login: $referralCode")
+                    when (val result = authRepository.applyReferralCode(referralCode)) {
+                        is Result.Success -> {
+                            Log.d("CineVaultReferral", "Referral applied successfully: ${result.data}")
+                            sessionManager.setReferralPromptShown()
+                            sessionManager.clearPendingReferralCode()
+                        }
+                        is Result.Error -> {
+                            Log.w("CineVaultReferral", "Referral apply failed (may already be applied): ${result.message}")
+                            // Mark as shown even on error to prevent retry spam
+                            sessionManager.setReferralPromptShown()
+                            sessionManager.clearPendingReferralCode()
+                        }
+                        is Result.Loading -> {}
+                    }
+                } else {
+                    Log.d("CineVaultReferral", "No referral code found in any source")
+                }
+            } catch (e: Exception) {
+                Log.e("CineVaultReferral", "checkAndApplyClipboardReferral error: ${e.message}")
+            }
         }
     }
 

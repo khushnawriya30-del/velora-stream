@@ -440,6 +440,16 @@ fun CineVaultNavHost(navController: NavHostController = rememberNavController())
     // Handle Google web auth callback deep link (velora://auth-callback)
     val context = androidx.compose.ui.platform.LocalContext.current
     val activity = context as? com.cinevault.app.MainActivity
+
+    // After login confirmed, check clipboard & pending referral and apply
+    var hasCheckedClipboardReferral by remember { mutableStateOf(false) }
+    LaunchedEffect(isLoggedIn) {
+        if (isLoggedIn == true && !hasCheckedClipboardReferral) {
+            hasCheckedClipboardReferral = true
+            authViewModel.checkAndApplyClipboardReferral(context)
+        }
+    }
+
     val pendingAuthUri by (activity?.pendingAuthUri ?: kotlinx.coroutines.flow.MutableStateFlow(null)).collectAsState()
     LaunchedEffect(pendingAuthUri) {
         pendingAuthUri?.let { uri ->
