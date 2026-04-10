@@ -5,7 +5,6 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.cinevault.app.ads.AdManager
-import com.cinevault.app.ads.SmartAdScheduler
 import com.cinevault.app.data.local.SessionManager
 import com.cinevault.app.data.model.*
 import com.cinevault.app.data.repository.ContentRepository
@@ -45,14 +44,7 @@ data class PlayerUiState(
     val isSpeedOverride: Boolean = false,
     val isPremium: Boolean = false,
     val isQualitySwitching: Boolean = false,
-    val shouldShowAd: Boolean = false,
     val isPreRollPending: Boolean = true,
-    /** True when user resumes video after pausing / returning — triggers pre-roll again. */
-    val isResumeAdPending: Boolean = false,
-    /** Number of skipped mid-roll ads that must be shown consecutively. */
-    val pendingSkippedAds: Int = 0,
-    /** Mid-roll ad marker positions as fractions (0..1) for timeline UI. */
-    val adMarkerFractions: List<Float> = emptyList(),
 )
 
 @HiltViewModel
@@ -84,12 +76,6 @@ class PlayerViewModel @Inject constructor(
 
     /** Scope that survives ViewModel destruction — ensures save HTTP calls complete. */
     private val saveScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-
-    /** Smart Ad Scheduling state */
-    private var adSchedule: SmartAdScheduler.AdSchedule? = null
-    private val triggeredAdTimesMs = mutableSetOf<Long>()
-    /** Tracks last position seen by mid-roll checker — used to detect skips in the polling loop. */
-    private var lastCheckedPositionMs: Long = 0L
 
     init {
         adManager.initialize()
@@ -624,107 +610,15 @@ class PlayerViewModel @Inject constructor(
         _uiState.update { it.copy(isSpeedOverride = active) }
     }
 
-    // ── Smart Ad System ──────────────────────────────────────────────────────
-
-    /**
-     * Called when total duration becomes known. Computes the ad schedule
-     * once (movie vs episode logic handled by SmartAdScheduler).
-     */
-    fun initAdSchedule(durationMs: Long) {
-        if (adSchedule != null || durationMs <= 0) return
-        adSchedule = SmartAdScheduler.calculateSchedule(durationMs, isEpisode)
-        triggeredAdTimesMs.clear()
-        // Expose ad marker positions as fractions for timeline UI
-        val markers = adSchedule?.midRollTimesMs
-            ?.map { it.toFloat() / durationMs }
-            ?.filter { it in 0f..1f }
-            ?: emptyList()
-        _uiState.update { it.copy(adMarkerFractions = markers) }
-        Log.d("CineVaultAds", "Ad schedule: preRoll=${adSchedule?.preRoll}, midRolls=${adSchedule?.midRollTimesMs}, markers=${markers.size}, total=${adSchedule?.totalAds}")
-    }
-
-    /**
-     * Check if the current position has crossed any mid-roll ad time(s).
-     * Returns the number of untriggered ads that should be shown NOW.
-     * All ads at or before [positionMs] that haven't fired yet are captured.
-     */
-    fun checkMidRollAd(positionMs: Long): Int {
-        if (_uiState.value.isPremium || _uiState.value.shouldShowAd) return 0
-        val schedule = adSchedule ?: return 0
-
-        val untriggered = schedule.midRollTimesMs.filter { adTimeMs ->
-            adTimeMs !in triggeredAdTimesMs && positionMs >= adTimeMs
-        }
-
-        if (untriggered.isNotEmpty()) {
-            triggeredAdTimesMs.addAll(untriggered)
-            Log.d("CineVaultAds", "Mid-roll: ${untriggered.size} ad(s) triggered at pos=${positionMs / 1000}s (ads at ${untriggered.map { it / 1000 }}s)")
-            _uiState.update { it.copy(shouldShowAd = true, pendingSkippedAds = it.pendingSkippedAds + untriggered.size) }
-        }
-        lastCheckedPositionMs = positionMs
-        return untriggered.size
-    }
+    // ── Ad System (pre-roll only, mid-roll removed) ────────────────────────
 
     fun markPreRollDone() {
-        _uiState.update { it.copy(isPreRollPending = false, isResumeAdPending = false) }
+        _uiState.update { it.copy(isPreRollPending = false) }
     }
 
-    fun onAdDismissed() {
-        _uiState.update { it.copy(shouldShowAd = false, isResumeAdPending = false) }
-    }
-
-    /** Mark that the user returned to player (app foreground / resume) so a resume ad will fire. */
-    fun markResumeAdPending() {
-        if (_uiState.value.isPremium) return
-        _uiState.update { it.copy(isResumeAdPending = true) }
-    }
-
-    fun clearResumeAd() {
-        _uiState.update { it.copy(isResumeAdPending = false) }
-    }
-
-    /**
-     * Detect mid-roll ads that were skipped when the user seeks forward.
-     * Marks them as triggered and queues them for mandatory consecutive playback.
-     * Returns the number of skipped ads detected.
-     */
-    fun onSeekDetected(fromMs: Long, toMs: Long): Int {
-        if (_uiState.value.isPremium) return 0
-        val schedule = adSchedule ?: return 0
-        if (toMs <= fromMs) return 0 // backward seek — no skip penalty
-
-        val skipped = schedule.midRollTimesMs.filter { adTime ->
-            adTime > fromMs && adTime <= toMs && adTime !in triggeredAdTimesMs
-        }
-
-        if (skipped.isNotEmpty()) {
-            triggeredAdTimesMs.addAll(skipped)
-            val current = _uiState.value.pendingSkippedAds
-            _uiState.update { it.copy(pendingSkippedAds = current + skipped.size) }
-            Log.d("CineVaultAds", "Skip detected: ${skipped.size} ads skipped (from ${fromMs / 1000}s → ${toMs / 1000}s)")
-        }
-        return skipped.size
-    }
-
-    /** Decrement pending skipped ads counter by one (after showing one ad). */
-    fun dequeueSkippedAd() {
-        val current = _uiState.value.pendingSkippedAds
-        if (current > 0) {
-            _uiState.update { it.copy(pendingSkippedAds = current - 1) }
-        }
-    }
-
-    /** Clear all pending skipped ads (after finishing the ad queue). */
-    fun clearSkippedAds() {
-        _uiState.update { it.copy(pendingSkippedAds = 0) }
-    }
-
-    /** Reset ad schedule for new episode playback. */
+    /** Reset ad state for new episode playback. */
     private fun resetAdSchedule() {
-        adSchedule = null
-        triggeredAdTimesMs.clear()
-        lastCheckedPositionMs = 0L
-        _uiState.update { it.copy(isPreRollPending = true, shouldShowAd = false, pendingSkippedAds = 0, adMarkerFractions = emptyList()) }
+        _uiState.update { it.copy(isPreRollPending = true) }
     }
 
     fun toggleFullscreen() {

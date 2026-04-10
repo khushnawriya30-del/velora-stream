@@ -225,26 +225,14 @@ fun PlayerScreen(
     var adInProgress by remember { mutableStateOf(false) }
     /** True after ad finishes — show cross icon overlay before starting video. */
     var showAdCrossIcon by remember { mutableStateOf(false) }
-    /** True when user tried to close ad during countdown — show warning popup. */
-    var showAdWarningDialog by remember { mutableStateOf(false) }
-    /** Countdown seconds remaining (30–40s). */
-    var adCountdown by remember { mutableIntStateOf(0) }
-    /** Whether the ad was user-cancelled (via warning dialog "Close" button). */
-    var adWasCancelled by remember { mutableStateOf(false) }
 
-    // Coroutine scope for skip-detection ad playback
-    val adScope = rememberCoroutineScope()
-    var skipAdJob by remember { mutableStateOf<Job?>(null) }
-
-    // System back — blocked during ad playback
+    // System back — normal behavior
     BackHandler {
-        if (adInProgress) {
-            // Show warning dialog instead of allowing exit during ad
-            showAdWarningDialog = true
-            return@BackHandler
-        }
         if (showAdCrossIcon) {
-            // Must tap cross icon, don't allow back to bypass
+            // Dismiss cross icon and start playing
+            showAdCrossIcon = false
+            viewModel.markPreRollDone()
+            exoPlayer.play()
             return@BackHandler
         }
         viewModel.saveExplicitProgress(exoPlayer.currentPosition, exoPlayer.duration.coerceAtLeast(0))
@@ -450,11 +438,9 @@ fun PlayerScreen(
         if (uiState.streamingUrl != null && uiState.isPlaying && uiState.isPreRollPending) {
             preRollShown = true
             adInProgress = true
-            adWasCancelled = false
             exoPlayer.pause()
             Log.d("CineVaultAds", "PRE-ROLL: Video paused, waiting for ad...")
 
-            adCountdown = 35
             val act = context as? Activity
             if (act != null) {
                 val shown = adManager.showAdSuspend(act)
@@ -468,9 +454,7 @@ fun PlayerScreen(
                 }
                 Log.d("CineVaultAds", "PRE-ROLL: Ad finished/dismissed")
                 adInProgress = false
-                if (!adWasCancelled) {
-                    showAdCrossIcon = true
-                }
+                showAdCrossIcon = true
             } else {
                 Log.w("CineVaultAds", "PRE-ROLL: No Activity context — skipping ad")
                 adInProgress = false
@@ -480,114 +464,11 @@ fun PlayerScreen(
         }
     }
 
-    // Resume ad: when user comes back to player after leaving
-    LaunchedEffect(uiState.isResumeAdPending, uiState.isPremium) {
-        if (uiState.isPremium || !uiState.isResumeAdPending || adInProgress) return@LaunchedEffect
-        if (uiState.streamingUrl != null && !uiState.isPreRollPending) {
-            adInProgress = true
-            adWasCancelled = false
-            exoPlayer.pause()
-            Log.d("CineVaultAds", "RESUME-AD: Video paused, waiting for ad...")
-            adCountdown = 35
-            val act = context as? Activity
-            if (act != null) {
-                val shown = adManager.showAdSuspend(act)
-                if (!shown) {
-                    // Retry once if first attempt failed
-                    Log.w("CineVaultAds", "RESUME-AD: First attempt failed, retrying...")
-                    delay(2000)
-                    adManager.loadInterstitialAd()
-                    delay(5000)
-                    adManager.showAdSuspend(act)
-                }
-                Log.d("CineVaultAds", "RESUME-AD: Ad finished/dismissed")
-                adInProgress = false
-                viewModel.clearResumeAd()
-                if (!adWasCancelled) {
-                    showAdCrossIcon = true
-                }
-            } else {
-                adInProgress = false
-                viewModel.clearResumeAd()
-                exoPlayer.play()
-            }
-        }
-    }
+    // Resume ad removed — no ad on app resume
 
-    // Countdown timer for ad (ticks every second)
-    LaunchedEffect(adInProgress) {
-        if (!adInProgress) return@LaunchedEffect
-        while (adCountdown > 0) {
-            delay(1000)
-            adCountdown = (adCountdown - 1).coerceAtLeast(0)
-        }
-    }
+    // Resume ad detection removed — no ad on app resume
 
-    // Detect app resume (ON_RESUME after ON_PAUSE) to trigger resume ad for non-premium
-    val resumeLifecycleOwner = LocalLifecycleOwner.current
-    DisposableEffect(resumeLifecycleOwner) {
-        var wasPaused = false
-        val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_PAUSE) {
-                wasPaused = true
-            }
-            if (event == Lifecycle.Event.ON_RESUME && wasPaused) {
-                wasPaused = false
-                // Only trigger resume ad if pre-roll already done (not the first load)
-                if (!uiState.isPreRollPending && !uiState.isPremium) {
-                    viewModel.markResumeAdPending()
-                }
-            }
-        }
-        resumeLifecycleOwner.lifecycle.addObserver(observer)
-        onDispose { resumeLifecycleOwner.lifecycle.removeObserver(observer) }
-    }
-
-    // Mid-roll ad checker: runs every second while playing (non-premium only)
-    LaunchedEffect(uiState.isPlaying, uiState.isPremium) {
-        if (uiState.isPremium || !uiState.isPlaying) return@LaunchedEffect
-        while (true) {
-            delay(1000)
-            val dur = exoPlayer.duration.coerceAtLeast(0)
-            val pos = exoPlayer.currentPosition
-            if (dur > 0) {
-                viewModel.initAdSchedule(dur)
-                if (!adInProgress && !showAdCrossIcon) {
-                    val adsToShow = viewModel.checkMidRollAd(pos)
-                    if (adsToShow > 0) {
-                        adInProgress = true
-                        adWasCancelled = false
-                        exoPlayer.pause()
-                        Log.d("CineVaultAds", "MID-ROLL: $adsToShow ad(s) to show at ${pos / 60000}min, pausing video...")
-                        val act = context as? Activity
-                        if (act != null) {
-                            for (i in 1..adsToShow) {
-                                adCountdown = 35
-                                Log.d("CineVaultAds", "MID-ROLL: Playing ad $i of $adsToShow")
-                                val shown = adManager.showAdSuspend(act)
-                                viewModel.dequeueSkippedAd()
-                                if (!shown) {
-                                    Log.w("CineVaultAds", "MID-ROLL: Ad $i failed to show, retrying...")
-                                    // Wait and try once more
-                                    delay(2000)
-                                    adManager.loadInterstitialAd()
-                                    delay(5000)
-                                    val retry = adManager.showAdSuspend(act)
-                                    viewModel.dequeueSkippedAd()
-                                    if (!retry) Log.w("CineVaultAds", "MID-ROLL: Ad $i retry also failed")
-                                }
-                                if (i < adsToShow) delay(500)
-                            }
-                        }
-                        viewModel.clearSkippedAds()
-                        viewModel.onAdDismissed()
-                        adInProgress = false
-                        if (!adWasCancelled) showAdCrossIcon = true
-                    }
-                }
-            }
-        }
-    }
+    // Mid-roll ads removed — will be replaced with custom video ads later
 
     // -- Toast --
     var toastMessage by remember { mutableStateOf<String?>(null) }
@@ -654,31 +535,6 @@ fun PlayerScreen(
                             exoPlayer.seekTo(target)
                             viewModel.seekTo(target)
                             doubleTapLabel = "fw"
-                            // Skip detection: check if any mid-roll ads were jumped over
-                            if (!uiState.isPremium && target > oldPos) {
-                                val skipped = viewModel.onSeekDetected(oldPos, target)
-                                if (skipped > 0 && !adInProgress && skipAdJob?.isActive != true) {
-                                    skipAdJob = adScope.launch {
-                                        adInProgress = true
-                                        adWasCancelled = false
-                                        exoPlayer.pause()
-                                        val act = context as? Activity
-                                        if (act != null) {
-                                            Log.d("CineVaultAds", "SKIP-ADS (double-tap): Playing $skipped ad(s)")
-                                            for (i in 1..skipped) {
-                                                adCountdown = 35
-                                                val shown = adManager.showAdSuspend(act)
-                                                viewModel.dequeueSkippedAd()
-                                                if (!shown) break
-                                                if (i < skipped) delay(500)
-                                            }
-                                        }
-                                        viewModel.clearSkippedAds()
-                                        adInProgress = false
-                                        if (!adWasCancelled) showAdCrossIcon = true
-                                    }
-                                }
-                            }
                         }
                     },
                     onLongPress = { viewModel.setSpeedOverride(true) },
@@ -942,98 +798,6 @@ fun PlayerScreen(
             }
 
             // ============================================================
-            // AD WARNING DIALOG — shown when user tries to close ad
-            // ============================================================
-            if (showAdWarningDialog) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(Color.Black.copy(alpha = 0.75f))
-                        .zIndex(100f),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Surface(
-                        shape = RoundedCornerShape(20.dp),
-                        color = Color(0xFF1E1E1E),
-                        border = BorderStroke(1.dp, GoldAccent.copy(alpha = 0.4f)),
-                        modifier = Modifier
-                            .widthIn(max = 380.dp)
-                            .padding(horizontal = 32.dp),
-                    ) {
-                        Column(
-                            modifier = Modifier.padding(24.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                        ) {
-                            Text(
-                                "You can't watch movies if you close advertisements",
-                                color = Color.White,
-                                fontSize = 16.sp,
-                                fontWeight = FontWeight.Bold,
-                                textAlign = TextAlign.Center,
-                                lineHeight = 22.sp,
-                            )
-                            Spacer(Modifier.height(12.dp))
-                            Text(
-                                "But you can subscribe ",
-                                color = Color.White.copy(alpha = 0.8f),
-                                fontSize = 14.sp,
-                                textAlign = TextAlign.Center,
-                            )
-                            Text(
-                                "Subscribe Premium",
-                                color = GoldAccent,
-                                fontSize = 15.sp,
-                                fontWeight = FontWeight.Bold,
-                                textAlign = TextAlign.Center,
-                                modifier = Modifier
-                                    .clickable {
-                                        showAdWarningDialog = false
-                                        adWasCancelled = true
-                                        adInProgress = false
-                                        viewModel.markPreRollDone()
-                                        onNavigateToPremium()
-                                    }
-                                    .padding(vertical = 4.dp),
-                            )
-                            Spacer(Modifier.height(20.dp))
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                            ) {
-                                // Close button — stop ad, return to Watch Now screen
-                                OutlinedButton(
-                                    onClick = {
-                                        showAdWarningDialog = false
-                                        adWasCancelled = true
-                                        adInProgress = false
-                                        viewModel.markPreRollDone()
-                                        onBack()
-                                    },
-                                    modifier = Modifier.weight(1f),
-                                    shape = RoundedCornerShape(12.dp),
-                                    border = BorderStroke(1.dp, Color.White.copy(alpha = 0.3f)),
-                                ) {
-                                    Text("Close", color = Color.White, fontSize = 14.sp)
-                                }
-                                // Keep Play Ad — resume ad, restart timer
-                                Button(
-                                    onClick = {
-                                        showAdWarningDialog = false
-                                        adCountdown = 35 // Restart timer — user must complete ad
-                                    },
-                                    modifier = Modifier.weight(1f),
-                                    shape = RoundedCornerShape(12.dp),
-                                    colors = ButtonDefaults.buttonColors(containerColor = GoldAccent),
-                                ) {
-                                    Text("Keep Play Ad", color = Color.Black, fontSize = 14.sp, fontWeight = FontWeight.Bold)
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            // ============================================================
             // CONTROLS OVERLAY
             // ============================================================
             if (!isLocked) {
@@ -1209,31 +973,6 @@ fun PlayerScreen(
                                 exoPlayer.seekTo(target)
                                 viewModel.seekTo(target)
                                 doubleTapLabel = "fw"
-                                // Skip detection
-                                if (!uiState.isPremium && target > oldPos) {
-                                    val skipped = viewModel.onSeekDetected(oldPos, target)
-                                    if (skipped > 0 && !adInProgress && skipAdJob?.isActive != true) {
-                                        skipAdJob = adScope.launch {
-                                            adInProgress = true
-                                            adWasCancelled = false
-                                            exoPlayer.pause()
-                                            val act = context as? Activity
-                                            if (act != null) {
-                                                Log.d("CineVaultAds", "SKIP-ADS (fwd-btn): Playing $skipped ad(s)")
-                                                for (i in 1..skipped) {
-                                                    adCountdown = 35
-                                                    val shown = adManager.showAdSuspend(act)
-                                                    viewModel.dequeueSkippedAd()
-                                                    if (!shown) break
-                                                    if (i < skipped) delay(500)
-                                                }
-                                            }
-                                            viewModel.clearSkippedAds()
-                                            adInProgress = false
-                                            if (!adWasCancelled) showAdCrossIcon = true
-                                        }
-                                    }
-                                }
                             }) {
                                 Icon(Icons.Filled.Forward10, contentDescription = "Forward 10s", tint = Color.White, modifier = Modifier.size(42.dp))
                             }
@@ -1252,7 +991,7 @@ fun PlayerScreen(
                                 currentPosition = uiState.currentPosition,
                                 totalDuration = uiState.totalDuration,
                                 bufferedPosition = bufferedPosition,
-                                adMarkers = if (!uiState.isPremium) uiState.adMarkerFractions else emptyList(),
+                                adMarkers = emptyList(),
                                 onSeek = { fraction ->
                                     val dur = uiState.totalDuration
                                     if (dur > 0) {
@@ -1262,31 +1001,6 @@ fun PlayerScreen(
                                         Log.d("CineVaultPlayer", "PROGRESS-BAR: fraction=$fraction, dur=$dur, seekPos=$seekPos, seekable=$seekable, curPos=$oldPos")
                                         exoPlayer.seekTo(seekPos)
                                         viewModel.seekTo(seekPos)
-                                        // Skip detection: if user seeks forward past ad positions
-                                        if (!uiState.isPremium && seekPos > oldPos) {
-                                            val skipped = viewModel.onSeekDetected(oldPos, seekPos)
-                                            if (skipped > 0 && !adInProgress && skipAdJob?.isActive != true) {
-                                                skipAdJob = adScope.launch {
-                                                    adInProgress = true
-                                                    adWasCancelled = false
-                                                    exoPlayer.pause()
-                                                    val act = context as? Activity
-                                                    if (act != null) {
-                                                        Log.d("CineVaultAds", "SKIP-ADS (progress-bar): Playing $skipped ad(s)")
-                                                        for (i in 1..skipped) {
-                                                            adCountdown = 35
-                                                            val shown = adManager.showAdSuspend(act)
-                                                            viewModel.dequeueSkippedAd()
-                                                            if (!shown) break
-                                                            if (i < skipped) delay(500)
-                                                        }
-                                                    }
-                                                    viewModel.clearSkippedAds()
-                                                    adInProgress = false
-                                                    if (!adWasCancelled) showAdCrossIcon = true
-                                                }
-                                            }
-                                        }
                                     }
                                 },
                             )
