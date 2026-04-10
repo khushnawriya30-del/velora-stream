@@ -1,5 +1,6 @@
 package com.cinevault.app.data.repository
 
+import android.util.Log
 import com.cinevault.app.data.local.SessionManager
 import com.cinevault.app.data.model.*
 import com.cinevault.app.data.remote.CineVaultApi
@@ -17,9 +18,37 @@ class AuthRepository @Inject constructor(
         val code = sessionManager.pendingReferralCode.first()
         if (code != null) {
             sessionManager.clearPendingReferralCode()
-            sessionManager.setReferralPromptShown() // Don't show dialog if deep link was used
+            sessionManager.setReferralPromptShown()
         }
         return code
+    }
+
+    /**
+     * Check if the backend has a pending referral for this device's IP.
+     * Called on app startup before user registers — saves the code to SessionManager.
+     */
+    suspend fun fetchPendingReferralByIp() {
+        try {
+            val existing = sessionManager.pendingReferralCode.first()
+            if (!existing.isNullOrBlank()) {
+                Log.d("CineVaultReferral", "Already have pending referral code: $existing")
+                return
+            }
+            val response = api.checkPendingReferral()
+            if (response.isSuccessful) {
+                val code = response.body()?.referralCode
+                if (!code.isNullOrBlank()) {
+                    Log.d("CineVaultReferral", "Found pending referral by IP: $code")
+                    sessionManager.savePendingReferralCode(code)
+                } else {
+                    Log.d("CineVaultReferral", "No pending referral for this IP")
+                }
+            } else {
+                Log.w("CineVaultReferral", "check-pending failed: ${response.code()}")
+            }
+        } catch (e: Exception) {
+            Log.w("CineVaultReferral", "fetchPendingReferralByIp error: ${e.message}")
+        }
     }
 
     /** Apply referral code post-login via dedicated endpoint */

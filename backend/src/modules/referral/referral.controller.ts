@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Query, Param, UseGuards, Req } from '@nestjs/common';
+import { Controller, Get, Post, Body, Query, Param, UseGuards, Req, Logger } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { Request } from 'express';
 import { ReferralService } from './referral.service';
@@ -8,18 +8,33 @@ import { Roles } from '../auth/decorators/roles.decorator';
 
 @Controller('referral')
 export class ReferralController {
+  private readonly logger = new Logger(ReferralController.name);
   constructor(private readonly referralService: ReferralService) {}
 
-  // ── Public endpoint (no auth) — called by website ──
+  private getClientIp(req: Request): string {
+    return (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim()
+      || req.socket?.remoteAddress
+      || 'unknown';
+  }
+
+  // ── Public endpoints (no auth) — called by website & app ──
 
   @Post('track-visit')
   async trackVisit(@Body() body: { referralCode: string }, @Req() req: Request) {
-    const ip = (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim()
-      || req.socket?.remoteAddress
-      || 'unknown';
+    const ip = this.getClientIp(req);
     const userAgent = req.headers['user-agent'] || '';
+    this.logger.log(`track-visit called: code=${body.referralCode}, ip=${ip}, ua=${userAgent?.substring(0, 50)}`);
     await this.referralService.trackVisit(body.referralCode, ip, userAgent);
-    return { success: true };
+    return { success: true, ip };
+  }
+
+  @Get('check-pending')
+  async checkPending(@Req() req: Request) {
+    const ip = this.getClientIp(req);
+    this.logger.log(`check-pending called: ip=${ip}`);
+    const referralCode = await this.referralService.findReferralCodeByIp(ip, false);
+    this.logger.log(`check-pending result: ip=${ip}, code=${referralCode || 'none'}`);
+    return { referralCode: referralCode || null };
   }
 
   // ── Authenticated endpoints ──

@@ -276,16 +276,18 @@ export class ReferralService {
   }
 
   /** Find pending referral by IP (used during registration as fallback) */
-  async findReferralCodeByIp(ipAddress: string): Promise<string | undefined> {
+  async findReferralCodeByIp(ipAddress: string, consume: boolean = true): Promise<string | undefined> {
     const visit = await this.pendingVisitModel
       .findOne({ ipAddress })
       .sort({ createdAt: -1 })
       .lean();
 
     if (visit) {
-      this.logger.log(`Found pending referral by IP: code=${visit.referralCode}, ip=${ipAddress}`);
-      // Clean up after use
-      await this.pendingVisitModel.deleteMany({ ipAddress });
+      this.logger.log(`Found pending referral by IP: code=${visit.referralCode}, ip=${ipAddress}, consume=${consume}`);
+      if (consume) {
+        // Clean up after use (only at registration time)
+        await this.pendingVisitModel.deleteMany({ ipAddress });
+      }
       return visit.referralCode;
     }
 

@@ -430,7 +430,12 @@ fun CineVaultNavHost(navController: NavHostController = rememberNavController())
     var pendingAuthAction by remember { mutableStateOf<(() -> Unit)?>(null) }
     var hasShownAutoPopup by remember { mutableStateOf(false) }
 
-
+    // On first launch when not logged in, check backend for pending referral by IP
+    LaunchedEffect(isLoggedIn) {
+        if (isLoggedIn == false) {
+            authViewModel.fetchPendingReferralByIp()
+        }
+    }
 
     // Handle Google web auth callback deep link (velora://auth-callback)
     val context = androidx.compose.ui.platform.LocalContext.current

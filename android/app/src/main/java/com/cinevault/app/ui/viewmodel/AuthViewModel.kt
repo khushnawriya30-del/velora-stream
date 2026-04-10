@@ -50,6 +50,13 @@ class AuthViewModel @Inject constructor(
     val lastPhoneName: Flow<String?> = sessionManager.lastPhoneName
     val lastPhoneNumber: Flow<String?> = sessionManager.lastPhoneNumber
 
+    /** Fetch pending referral by IP from backend (called on first launch) */
+    fun fetchPendingReferralByIp() {
+        viewModelScope.launch {
+            authRepository.fetchPendingReferralByIp()
+        }
+    }
+
     fun login(email: String, password: String) {
         if (email.isBlank() || password.isBlank()) {
             _uiState.update { it.copy(error = "Please fill in all fields") }

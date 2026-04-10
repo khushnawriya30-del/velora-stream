@@ -494,6 +494,10 @@ data class ReferralStatsResponse(
     val referrals: List<ReferralItem>,
 )
 
+data class CheckPendingReferralResponse(
+    val referralCode: String?,
+)
+
 data class ReferralItem(
     val id: String,
     val amount: Int,

@@ -22,9 +22,18 @@ export default function Download({ referralCode }: { referralCode?: string | nul
 
   const tryOpenApp = useCallback(() => {
     if (!referralCode) return;
-    // Try intent link first (works better on Android), fallback to custom scheme
-    if (/android/i.test(navigator.userAgent) && deepLinkUrl) {
+    
+    const isAndroid = /android/i.test(navigator.userAgent);
+    
+    if (isAndroid && deepLinkUrl) {
+      // Try intent:// first, then fallback to velora:// after a delay
       window.location.href = deepLinkUrl;
+      // If intent:// fails (some browsers don't support it), try custom scheme after 1.5s
+      setTimeout(() => {
+        if (customSchemeUrl) {
+          window.location.href = customSchemeUrl;
+        }
+      }, 1500);
     } else if (customSchemeUrl) {
       window.location.href = customSchemeUrl;
     }

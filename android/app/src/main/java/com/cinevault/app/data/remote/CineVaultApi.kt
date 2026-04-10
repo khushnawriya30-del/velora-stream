@@ -311,6 +311,9 @@ interface CineVaultApi {
     @POST("referral/apply")
     suspend fun applyReferral(@Body body: Map<String, String>): Response<MessageResponse>
 
+    @GET("referral/check-pending")
+    suspend fun checkPendingReferral(): Response<CheckPendingReferralResponse>
+
     // ── Withdrawal ──
     @POST("withdraw")
     suspend fun requestWithdrawal(@Body request: WithdrawRequest): Response<WithdrawResponse>
