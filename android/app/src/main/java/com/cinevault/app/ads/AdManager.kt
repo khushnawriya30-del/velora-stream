@@ -62,8 +62,20 @@ class AdManager @Inject constructor(
         if (isLoading || interstitialAd != null) {
             Log.d(TAG, "loadInterstitialAd: skip (isLoading=$isLoading, adCached=${interstitialAd != null})")
             return
-        }
-        if (!isNetworkAvailable()) {
+        }        doLoadAd()
+    }
+
+    /**
+     * Force-load a new ad even if one is currently loading.
+     * Used during pre-roll loop to ensure next ad is ready ASAP.
+     */
+    fun forceLoadInterstitialAd() {
+        if (interstitialAd != null) return // already cached
+        isLoading = false
+        doLoadAd()
+    }
+
+    private fun doLoadAd() {        if (!isNetworkAvailable()) {
             Log.w(TAG, "loadInterstitialAd: No internet — scheduling retry in ${RETRY_DELAY_MS}ms")
             android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({ loadInterstitialAd() }, RETRY_DELAY_MS)
             return

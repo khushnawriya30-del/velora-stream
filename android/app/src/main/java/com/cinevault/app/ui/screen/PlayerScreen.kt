@@ -432,39 +432,55 @@ fun PlayerScreen(
         }
     }
 
-    // Pre-roll ad: show ads for minimum 2 minutes before video starts
+    // Pre-roll ad: loop ads for minimum 3 minutes before video starts
     LaunchedEffect(uiState.streamingUrl, uiState.isPlaying, uiState.isPremium) {
         if (uiState.isPremium || preRollShown || adInProgress) return@LaunchedEffect
         if (uiState.streamingUrl != null && uiState.isPlaying && uiState.isPreRollPending) {
             preRollShown = true
             adInProgress = true
             exoPlayer.pause()
-            Log.d("CineVaultAds", "PRE-ROLL: Video paused, showing ads for 2 min...")
+            Log.d("CineVaultAds", "PRE-ROLL: Video paused, showing ads for 3 min...")
 
             val act = context as? Activity
             if (act != null) {
                 val startTime = System.currentTimeMillis()
-                val minDurationMs = 2 * 60 * 1000L // 2 minutes
+                val minDurationMs = 3 * 60 * 1000L // 3 minutes
                 var adCount = 0
+                var consecutiveFailures = 0
+
+                // Pre-load first ad aggressively
+                adManager.forceLoadInterstitialAd()
 
                 while (System.currentTimeMillis() - startTime < minDurationMs) {
                     adCount++
-                    Log.d("CineVaultAds", "PRE-ROLL: Showing ad #$adCount (elapsed=${(System.currentTimeMillis() - startTime) / 1000}s)")
+                    val elapsed = (System.currentTimeMillis() - startTime) / 1000
+                    Log.d("CineVaultAds", "PRE-ROLL: Showing ad #$adCount (elapsed=${elapsed}s / ${minDurationMs/1000}s)")
                     val shown = adManager.showAdSuspend(act)
-                    if (!shown) {
-                        Log.w("CineVaultAds", "PRE-ROLL: Ad #$adCount failed, reloading...")
+                    if (shown) {
+                        consecutiveFailures = 0
+                        // Immediately force-load next ad (don't wait)
+                        adManager.forceLoadInterstitialAd()
+                    } else {
+                        consecutiveFailures++
+                        Log.w("CineVaultAds", "PRE-ROLL: Ad #$adCount failed (consecutive=$consecutiveFailures)")
+                        if (consecutiveFailures >= 5) {
+                            Log.w("CineVaultAds", "PRE-ROLL: Too many failures, proceeding to video")
+                            break
+                        }
+                        // Reload and retry quickly
+                        adManager.forceLoadInterstitialAd()
                         delay(2000)
-                        adManager.loadInterstitialAd()
-                        delay(5000)
                         val retry = adManager.showAdSuspend(act)
-                        if (!retry) {
-                            Log.w("CineVaultAds", "PRE-ROLL: Ad #$adCount retry failed, waiting before next attempt...")
-                            delay(3000)
+                        if (retry) {
+                            consecutiveFailures = 0
+                            adManager.forceLoadInterstitialAd()
+                        } else {
+                            delay(1500)
+                            adManager.forceLoadInterstitialAd()
                         }
                     }
-                    // Pre-load next ad while loop continues
-                    adManager.loadInterstitialAd()
-                    delay(500) // Brief gap between ads
+                    // Minimal gap — just enough for UI to breathe
+                    delay(300)
                 }
                 Log.d("CineVaultAds", "PRE-ROLL: Done — $adCount ads shown in ${(System.currentTimeMillis() - startTime) / 1000}s")
                 adInProgress = false
