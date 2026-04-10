@@ -59,6 +59,7 @@ export class GoogleWebAuthController {
   @Post('verify')
   async verifyGoogleToken(
     @Body() body: { accessToken: string },
+    @Req() req: Request,
     @Res() res: Response,
   ) {
     try {
@@ -66,7 +67,10 @@ export class GoogleWebAuthController {
         return res.status(400).json({ message: 'Missing accessToken' });
       }
 
-      const result = await this.authService.googleVerifyAccessToken(body.accessToken);
+      const ipAddress = (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim()
+        || req.socket?.remoteAddress
+        || 'unknown';
+      const result = await this.authService.googleVerifyAccessToken(body.accessToken, undefined, ipAddress);
       this.logger.log(`Google OAuth verify success for user ${result.user?.email}`);
       return res.json(result);
     } catch (err) {
