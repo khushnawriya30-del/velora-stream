@@ -98,7 +98,7 @@ jobs:
           VERSION="${{ steps.version.outputs.VERSION }}"
           BUILD_NUM="${{ github.run_number }}"
           APK_URL="https://github.com/khushnawriya30-del/velora-stream/releases/download/v${VERSION}/VELORA-v${VERSION}.apk"
-          BACKEND_URL="https://velora-backend-fopqpbthva-el.a.run.app/api/v1"
+          BACKEND_URL="https://wxte3hgv2e.ap-south-1.awsapprunner.com/api/v1"
 
           # Determine release notes
           if [[ "${{ github.event_name }}" == "workflow_dispatch" && -n "${{ github.event.inputs.release_notes }}" ]]; then

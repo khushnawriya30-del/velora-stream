@@ -33,7 +33,7 @@ export class AppVersionService {
     const apiPrefix = this.configService.get<string>('API_PREFIX', 'api/v1');
     const backendUrl = this.configService.get<string>(
       'BACKEND_URL',
-      'https://velora-backend-761880285456.asia-south1.run.app',
+      'https://wxte3hgv2e.ap-south-1.awsapprunner.com',
     );
     doc.apkUrl = `${backendUrl}/${apiPrefix}/app-version/download`;
     return doc;

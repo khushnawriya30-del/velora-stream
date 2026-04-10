@@ -28,7 +28,7 @@ android {
             abiFilters += listOf("arm64-v8a", "armeabi-v7a")
         }
 
-        buildConfigField("String", "BASE_URL", "\"https://velora-backend-fopqpbthva-el.a.run.app/api/v1/\"")
+        buildConfigField("String", "BASE_URL", "\"https://wxte3hgv2e.ap-south-1.awsapprunner.com/api/v1/\"")
         buildConfigField("String", "DRIVE_WORKER_URL", "\"https://drive-index.velora-stream.workers.dev\"")
     }
 
@@ -46,7 +46,7 @@ android {
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
-            buildConfigField("String", "BASE_URL", "\"https://velora-backend-fopqpbthva-el.a.run.app/api/v1/\"")
+            buildConfigField("String", "BASE_URL", "\"https://wxte3hgv2e.ap-south-1.awsapprunner.com/api/v1/\"")
             buildConfigField("String", "DRIVE_WORKER_URL", "\"https://drive-index.velora-stream.workers.dev\"")
             signingConfig = signingConfigs.getByName("release")
         }

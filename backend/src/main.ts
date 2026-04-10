@@ -73,6 +73,12 @@ async function bootstrap() {
   const document = SwaggerModule.createDocument(app, swaggerConfig);
   SwaggerModule.setup('docs', app, document);
 
+  // Root health-check handler (outside global prefix for App Runner)
+  const httpAdapter = app.getHttpAdapter();
+  httpAdapter.get('/', (_req, res) => {
+    res.json({ status: 'ok', service: 'velora-api' });
+  });
+
   const port = configService.get<number>('PORT', 3000);
   await app.listen(port);
   console.log(`VELORA API running on port ${port}`);
