@@ -15,8 +15,8 @@ android {
         applicationId = "com.cinevault.app"
         minSdk = 26
         targetSdk = 34
-        versionCode = 53
-        versionName = "2.1.5"
+        versionCode = 54
+        versionName = "2.1.6"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         vectorDrawables {
