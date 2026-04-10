@@ -432,27 +432,41 @@ fun PlayerScreen(
         }
     }
 
-    // Pre-roll ad: show when video first becomes ready to play (Watch Now click)
+    // Pre-roll ad: show ads for minimum 2 minutes before video starts
     LaunchedEffect(uiState.streamingUrl, uiState.isPlaying, uiState.isPremium) {
         if (uiState.isPremium || preRollShown || adInProgress) return@LaunchedEffect
         if (uiState.streamingUrl != null && uiState.isPlaying && uiState.isPreRollPending) {
             preRollShown = true
             adInProgress = true
             exoPlayer.pause()
-            Log.d("CineVaultAds", "PRE-ROLL: Video paused, waiting for ad...")
+            Log.d("CineVaultAds", "PRE-ROLL: Video paused, showing ads for 2 min...")
 
             val act = context as? Activity
             if (act != null) {
-                val shown = adManager.showAdSuspend(act)
-                if (!shown) {
-                    // Retry once if first attempt failed
-                    Log.w("CineVaultAds", "PRE-ROLL: First attempt failed, retrying...")
-                    delay(2000)
+                val startTime = System.currentTimeMillis()
+                val minDurationMs = 2 * 60 * 1000L // 2 minutes
+                var adCount = 0
+
+                while (System.currentTimeMillis() - startTime < minDurationMs) {
+                    adCount++
+                    Log.d("CineVaultAds", "PRE-ROLL: Showing ad #$adCount (elapsed=${(System.currentTimeMillis() - startTime) / 1000}s)")
+                    val shown = adManager.showAdSuspend(act)
+                    if (!shown) {
+                        Log.w("CineVaultAds", "PRE-ROLL: Ad #$adCount failed, reloading...")
+                        delay(2000)
+                        adManager.loadInterstitialAd()
+                        delay(5000)
+                        val retry = adManager.showAdSuspend(act)
+                        if (!retry) {
+                            Log.w("CineVaultAds", "PRE-ROLL: Ad #$adCount retry failed, waiting before next attempt...")
+                            delay(3000)
+                        }
+                    }
+                    // Pre-load next ad while loop continues
                     adManager.loadInterstitialAd()
-                    delay(5000)
-                    adManager.showAdSuspend(act)
+                    delay(500) // Brief gap between ads
                 }
-                Log.d("CineVaultAds", "PRE-ROLL: Ad finished/dismissed")
+                Log.d("CineVaultAds", "PRE-ROLL: Done — $adCount ads shown in ${(System.currentTimeMillis() - startTime) / 1000}s")
                 adInProgress = false
                 showAdCrossIcon = true
             } else {
