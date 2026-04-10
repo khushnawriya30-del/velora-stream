@@ -1,5 +1,7 @@
 package com.cinevault.app
 
+import android.content.ClipboardManager
+import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
@@ -75,6 +77,7 @@ class MainActivity : ComponentActivity(), PaymentResultWithDataListener {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         handleAuthIntent(intent)
+        checkClipboardForReferral()
         setContent {
             CineVaultTheme {
                 Surface(
@@ -101,6 +104,56 @@ class MainActivity : ComponentActivity(), PaymentResultWithDataListener {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         handleAuthIntent(intent)
+    }
+
+    private fun checkClipboardForReferral() {
+        try {
+            val prefs = getSharedPreferences("velora_referral_prefs", Context.MODE_PRIVATE)
+            if (prefs.getBoolean("clipboard_checked", false)) {
+                Log.d("ReferralClipboard", "Already checked clipboard before, skipping")
+                return
+            }
+
+            val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+            if (!clipboard.hasPrimaryClip()) {
+                Log.d("ReferralClipboard", "Clipboard is empty")
+                return
+            }
+
+            val clip = clipboard.primaryClip ?: return
+            if (clip.itemCount == 0) return
+
+            val text = clip.getItemAt(0).coerceToText(this).toString().trim()
+            Log.d("ReferralClipboard", "Clipboard content: '$text'")
+
+            val upper = text.uppercase()
+            val code = when {
+                upper.startsWith("VELORA_REF:") -> text.substring(11).trim()
+                upper.startsWith("VELORA-REF:") -> text.substring(11).trim()
+                upper.startsWith("VELORA REF:") -> text.substring(11).trim()
+                upper.startsWith("VALORA_REF:") -> text.substring(11).trim()
+                upper.startsWith("VALORA-REF:") -> text.substring(11).trim()
+                else -> null
+            }
+
+            if (!code.isNullOrEmpty()) {
+                Log.d("ReferralClipboard", "Found referral code in clipboard: $code")
+                lifecycleScope.launch {
+                    sessionManager.savePendingReferralCode(code)
+                    Log.d("ReferralClipboard", "Saved referral code to sessionManager: $code")
+                }
+                prefs.edit().putBoolean("clipboard_checked", true).apply()
+                // Clear clipboard to prevent re-reading
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
+                    clipboard.clearPrimaryClip()
+                }
+            } else {
+                Log.d("ReferralClipboard", "No VELORA_REF prefix found in clipboard")
+                // Don't mark as checked if no referral found — user may copy it later
+            }
+        } catch (e: Exception) {
+            Log.e("ReferralClipboard", "Error reading clipboard: ${e.message}")
+        }
     }
 
     private fun handleAuthIntent(intent: Intent?) {
