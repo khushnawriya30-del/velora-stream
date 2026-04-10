@@ -9,6 +9,13 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { User, UserDocument } from '../../schemas/user.schema';
 import { AdminLog, AdminLogDocument } from '../../schemas/admin-log.schema';
 import { WatchProgress, WatchProgressDocument } from '../../schemas/watch-progress.schema';
+import { Wallet, WalletDocument } from '../../schemas/wallet.schema';
+import { Referral, ReferralDocument } from '../../schemas/referral.schema';
+import { Profile, ProfileDocument } from '../../schemas/profile.schema';
+import { Watchlist, WatchlistDocument } from '../../schemas/watchlist.schema';
+import { Review, ReviewDocument } from '../../schemas/review.schema';
+import { Withdrawal, WithdrawalDocument } from '../../schemas/withdrawal.schema';
+import { ContentView, ContentViewDocument } from '../../schemas/content-view.schema';
 
 @ApiTags('Admin')
 @ApiBearerAuth()
@@ -20,6 +27,13 @@ export class AdminController {
     @InjectModel(User.name) private userModel: Model<UserDocument>,
     @InjectModel(AdminLog.name) private adminLogModel: Model<AdminLogDocument>,
     @InjectModel(WatchProgress.name) private watchProgressModel: Model<WatchProgressDocument>,
+    @InjectModel(Wallet.name) private walletModel: Model<WalletDocument>,
+    @InjectModel(Referral.name) private referralModel: Model<ReferralDocument>,
+    @InjectModel(Profile.name) private profileModel: Model<ProfileDocument>,
+    @InjectModel(Watchlist.name) private watchlistModel: Model<WatchlistDocument>,
+    @InjectModel(Review.name) private reviewModel: Model<ReviewDocument>,
+    @InjectModel(Withdrawal.name) private withdrawalModel: Model<WithdrawalDocument>,
+    @InjectModel(ContentView.name) private contentViewModel: Model<ContentViewDocument>,
   ) {}
 
   @Get('users')
@@ -90,8 +104,16 @@ export class AdminController {
     const user = await this.userModel.findById(id);
     if (!user) return { message: 'User not found' };
     const userName = user.name || user.email;
+    const oid = new Types.ObjectId(id);
     await Promise.all([
-      this.watchProgressModel.deleteMany({ userId: new Types.ObjectId(id) }),
+      this.watchProgressModel.deleteMany({ userId: oid }),
+      this.walletModel.deleteMany({ userId: oid }),
+      this.referralModel.deleteMany({ $or: [{ referrerId: oid }, { newUserId: oid }] }),
+      this.profileModel.deleteMany({ userId: oid }),
+      this.watchlistModel.deleteMany({ userId: oid }),
+      this.reviewModel.deleteMany({ userId: oid }),
+      this.withdrawalModel.deleteMany({ userId: oid }),
+      this.contentViewModel.deleteMany({ userId: oid }),
       this.userModel.findByIdAndDelete(id),
     ]);
     await this.adminLogModel.create({
@@ -102,7 +124,7 @@ export class AdminController {
       resourceId: id,
       details: { userName },
     });
-    return { message: `User ${userName} deleted successfully` };
+    return { message: `User ${userName} and all related data deleted successfully` };
   }
 
   @Get('logs')
