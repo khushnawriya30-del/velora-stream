@@ -68,14 +68,8 @@ class AuthViewModel @Inject constructor(
     fun checkAndApplyClipboardReferral(context: Context) {
         viewModelScope.launch {
             try {
-                // Check if already applied (prevent duplicate calls)
-                val alreadyApplied = sessionManager.referralPromptShown.first()
-                if (alreadyApplied) {
-                    Log.d("CineVaultReferral", "Referral already applied, skipping clipboard check")
-                    return@launch
-                }
-
                 var referralCode: String? = null
+                var fromClipboard = false
 
                 // METHOD 1: Check clipboard for VELORA_REF: prefix (case-insensitive)
                 try {
@@ -95,7 +89,7 @@ class AuthViewModel @Inject constructor(
                         }
                         if (!referralCode.isNullOrBlank()) {
                             Log.d("CineVaultReferral", "Found referral in clipboard: $referralCode")
-                            // Save to SessionManager so it survives across retries
+                            fromClipboard = true
                             sessionManager.savePendingReferralCode(referralCode)
                             if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
                                 clipboard.clearPrimaryClip()
@@ -112,6 +106,12 @@ class AuthViewModel @Inject constructor(
 
                 // METHOD 2: Check SessionManager for pending referral (from deep link, clipboard save, or IP check)
                 if (referralCode.isNullOrBlank()) {
+                    // Only skip if already applied AND no fresh clipboard code
+                    val alreadyApplied = sessionManager.referralPromptShown.first()
+                    if (alreadyApplied) {
+                        Log.d("CineVaultReferral", "Referral already applied, no fresh clipboard code, skipping")
+                        return@launch
+                    }
                     val pending = sessionManager.pendingReferralCode.first()
                     if (!pending.isNullOrBlank()) {
                         referralCode = pending
@@ -121,6 +121,11 @@ class AuthViewModel @Inject constructor(
 
                 // Apply if found — with retry for auth timing issues (token may not be ready yet)
                 if (!referralCode.isNullOrBlank()) {
+                    if (fromClipboard) {
+                        // Fresh clipboard code overrides any previous state
+                        Log.d("CineVaultReferral", "Fresh clipboard code, resetting referral state")
+                        sessionManager.resetReferralPromptShown()
+                    }
                     var applied = false
                     for (attempt in 1..3) {
                         Log.d("CineVaultReferral", "Applying referral code (attempt $attempt/3): $referralCode")
@@ -135,13 +140,11 @@ class AuthViewModel @Inject constructor(
                             is Result.Error -> {
                                 Log.w("CineVaultReferral", "Referral apply failed: code=${result.code}, msg=${result.message}")
                                 if (result.code == 409 || result.code == 400) {
-                                    // Already applied or invalid — stop retrying
                                     sessionManager.setReferralPromptShown()
                                     sessionManager.clearPendingReferralCode()
                                     applied = true
                                     break
                                 }
-                                // 401 or network error — wait and retry
                                 if (attempt < 3) {
                                     Log.d("CineVaultReferral", "Retrying in ${attempt * 2}s...")
                                     kotlinx.coroutines.delay(attempt * 2000L)

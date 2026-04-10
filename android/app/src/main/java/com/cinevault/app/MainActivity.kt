@@ -108,12 +108,6 @@ class MainActivity : ComponentActivity(), PaymentResultWithDataListener {
 
     private fun checkClipboardForReferral() {
         try {
-            val prefs = getSharedPreferences("velora_referral_prefs", Context.MODE_PRIVATE)
-            if (prefs.getBoolean("clipboard_checked", false)) {
-                Log.d("ReferralClipboard", "Already checked clipboard before, skipping")
-                return
-            }
-
             val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
             if (!clipboard.hasPrimaryClip()) {
                 Log.d("ReferralClipboard", "Clipboard is empty")
@@ -140,16 +134,16 @@ class MainActivity : ComponentActivity(), PaymentResultWithDataListener {
                 Log.d("ReferralClipboard", "Found referral code in clipboard: $code")
                 lifecycleScope.launch {
                     sessionManager.savePendingReferralCode(code)
+                    // Reset referral applied flag so the new code can be applied
+                    sessionManager.resetReferralPromptShown()
                     Log.d("ReferralClipboard", "Saved referral code to sessionManager: $code")
                 }
-                prefs.edit().putBoolean("clipboard_checked", true).apply()
-                // Clear clipboard to prevent re-reading
+                // Clear clipboard so we don't re-read the same code next launch
                 if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
                     clipboard.clearPrimaryClip()
                 }
             } else {
                 Log.d("ReferralClipboard", "No VELORA_REF prefix found in clipboard")
-                // Don't mark as checked if no referral found — user may copy it later
             }
         } catch (e: Exception) {
             Log.e("ReferralClipboard", "Error reading clipboard: ${e.message}")

@@ -250,6 +250,12 @@ class SessionManager @Inject constructor(@ApplicationContext private val context
         }
     }
 
+    suspend fun resetReferralPromptShown() {
+        context.dataStore.edit { prefs ->
+            prefs[REFERRAL_PROMPT_SHOWN] = false
+        }
+    }
+
     suspend fun getAccessTokenSync(): String? {
         var token: String? = null
         context.dataStore.data.collect { token = it[ACCESS_TOKEN] }
