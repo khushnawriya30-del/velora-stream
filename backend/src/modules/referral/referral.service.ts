@@ -52,12 +52,19 @@ export class ReferralService {
 
   /** Apply referral: new user was referred by someone */
   async applyReferral(newUserId: string, referralCode: string): Promise<void> {
+    this.logger.log(`[applyReferral] Called with newUserId=${newUserId}, referralCode=${referralCode}`);
+
     // Find the referrer
     const referrer = await this.userModel.findOne({ referralCode });
-    if (!referrer) throw new BadRequestException('Invalid referral code');
+    if (!referrer) {
+      this.logger.warn(`[applyReferral] Invalid referral code: ${referralCode}`);
+      throw new BadRequestException('Invalid referral code');
+    }
+    this.logger.log(`[applyReferral] Referrer found: ${referrer.email} (${referrer._id})`);
 
     // Prevent self-referral
     if (referrer._id.toString() === newUserId) {
+      this.logger.warn(`[applyReferral] Self-referral blocked for ${newUserId}`);
       throw new BadRequestException('Cannot refer yourself');
     }
 
@@ -65,14 +72,20 @@ export class ReferralService {
     const existing = await this.referralModel.findOne({
       newUserId: new Types.ObjectId(newUserId),
     });
-    if (existing) throw new ConflictException('Referral already applied');
+    if (existing) {
+      this.logger.warn(`[applyReferral] Already referred: newUserId=${newUserId}`);
+      throw new ConflictException('Referral already applied');
+    }
 
     // Check if referrer already referred this user
     const duplicate = await this.referralModel.findOne({
       referrerId: referrer._id,
       newUserId: new Types.ObjectId(newUserId),
     });
-    if (duplicate) throw new ConflictException('Duplicate referral');
+    if (duplicate) {
+      this.logger.warn(`[applyReferral] Duplicate referral: referrer=${referrer._id}, newUser=${newUserId}`);
+      throw new ConflictException('Duplicate referral');
+    }
 
     // Create referral record
     await this.referralModel.create({
@@ -81,16 +94,18 @@ export class ReferralService {
       amount: 1,
       status: 'success',
     });
+    this.logger.log(`[applyReferral] Referral record created`);
 
     // Mark referredBy on the new user
     await this.userModel.findByIdAndUpdate(newUserId, {
       referredBy: referrer._id,
     });
+    this.logger.log(`[applyReferral] Set referredBy on new user`);
 
     // Add ₹1 to referrer's wallet
     await this.walletService.addEarnings(referrer._id.toString(), 1);
 
-    this.logger.log(`Referral applied: ${referrer._id} referred ${newUserId}, ₹1 added`);
+    this.logger.log(`[applyReferral] SUCCESS: ${referrer.email} referred ${newUserId}, ₹1 added`);
   }
 
   /** Get referral stats for a user */

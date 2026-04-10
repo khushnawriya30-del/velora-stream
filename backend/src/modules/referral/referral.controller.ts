@@ -57,8 +57,10 @@ export class ReferralController {
     @CurrentUser('userId') userId: string,
     @Body() body: { referralCode: string },
   ) {
+    this.logger.log(`POST /referral/apply called: userId=${userId}, referralCode=${body.referralCode}`);
     await this.referralService.applyReferral(userId, body.referralCode);
-    return { message: 'Referral applied successfully' };
+    this.logger.log(`POST /referral/apply success for userId=${userId}`);
+    return { success: true, message: 'Referral applied successfully' };
   }
 
   // ── Admin: Referral Dashboard ──

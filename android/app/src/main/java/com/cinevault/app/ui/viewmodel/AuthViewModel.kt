@@ -77,20 +77,34 @@ class AuthViewModel @Inject constructor(
 
                 var referralCode: String? = null
 
-                // METHOD 1: Check clipboard for VELORA_REF: prefix
+                // METHOD 1: Check clipboard for VELORA_REF: prefix (case-insensitive)
                 try {
                     val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
                     val clip = clipboard.primaryClip
                     if (clip != null && clip.itemCount > 0) {
-                        val clipText = clip.getItemAt(0).coerceToText(context).toString()
-                        if (clipText.startsWith("VELORA_REF:")) {
-                            referralCode = clipText.removePrefix("VELORA_REF:").trim()
+                        val clipText = clip.getItemAt(0).coerceToText(context).toString().trim()
+                        Log.d("CineVaultReferral", "Clipboard raw content: '$clipText'")
+                        // Match any variation: VELORA_REF:, velora_ref:, VELORA-REF:, velora-ref:
+                        val upper = clipText.uppercase()
+                        referralCode = when {
+                            upper.startsWith("VELORA_REF:") -> clipText.substring(11).trim()
+                            upper.startsWith("VELORA-REF:") -> clipText.substring(11).trim()
+                            upper.startsWith("VELORA REF:") -> clipText.substring(11).trim()
+                            upper.startsWith("VALORA_REF:") -> clipText.substring(11).trim()
+                            upper.startsWith("VALORA-REF:") -> clipText.substring(11).trim()
+                            else -> null
+                        }
+                        if (!referralCode.isNullOrBlank()) {
                             Log.d("CineVaultReferral", "Found referral in clipboard: $referralCode")
                             // Clear clipboard
                             if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
                                 clipboard.clearPrimaryClip()
                             }
+                        } else {
+                            Log.d("CineVaultReferral", "Clipboard has no referral prefix")
                         }
+                    } else {
+                        Log.d("CineVaultReferral", "Clipboard is empty")
                     }
                 } catch (e: Exception) {
                     Log.w("CineVaultReferral", "Clipboard read failed: ${e.message}")
