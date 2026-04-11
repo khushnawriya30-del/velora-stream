@@ -109,6 +109,50 @@ fun MeScreen(
             onCardClick = onNavigateToEarnMoney,
         )
 
+        // ── Premium Exclusive Section ──
+        if (uiState.premiumContent.isNotEmpty()) {
+            Spacer(Modifier.height(16.dp))
+            // Premium section header with crown badge
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp)
+                    .padding(top = 12.dp, bottom = 10.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Image(
+                    painter = painterResource(R.drawable.premium_badge_small),
+                    contentDescription = "Premium",
+                    modifier = Modifier.size(20.dp),
+                )
+                Spacer(Modifier.width(6.dp))
+                Text(
+                    text = "Premium Exclusive",
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFFFFD700),
+                    letterSpacing = 0.5.sp,
+                    modifier = Modifier.weight(1f),
+                )
+                Icon(
+                    Icons.Filled.ChevronRight,
+                    contentDescription = "View all",
+                    tint = CineVaultTheme.colors.accentGold,
+                    modifier = Modifier.size(22.dp),
+                )
+            }
+            Spacer(Modifier.height(4.dp))
+            LazyRow(
+                contentPadding = PaddingValues(horizontal = 20.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                items(uiState.premiumContent) { movie ->
+                    MeMovieCard(movie = movie, onClick = { onMovieClick(movie.id) })
+                }
+            }
+            Spacer(Modifier.height(16.dp))
+        }
+
         if (uiState.profiles.size > 1) {
             Spacer(Modifier.height(4.dp))
             Text(
@@ -289,6 +333,14 @@ private fun MeMovieCard(movie: MovieDto, onClick: () -> Unit) {
                         Text(String.format("%.1f", movie.rating), style = CineVaultTheme.typography.labelSmall.copy(fontSize = 9.sp), color = Color.White)
                     }
                 }
+            }
+            // Premium badge — top-left
+            if (movie.isPremium == true) {
+                Image(
+                    painter = painterResource(R.drawable.premium_badge_small),
+                    contentDescription = "Premium",
+                    modifier = Modifier.align(Alignment.TopStart).padding(4.dp).size(18.dp),
+                )
             }
         }
         Spacer(Modifier.height(6.dp))

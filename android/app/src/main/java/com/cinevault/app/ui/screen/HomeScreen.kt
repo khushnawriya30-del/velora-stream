@@ -1141,6 +1141,18 @@ fun PremiumMovieCard(
                     )
                 }
             }
+
+            // Premium badge — top-left
+            if (movie.isPremium == true) {
+                Image(
+                    painter = painterResource(R.drawable.premium_badge_small),
+                    contentDescription = "Premium",
+                    modifier = Modifier
+                        .align(Alignment.TopStart)
+                        .padding(4.dp)
+                        .size(22.dp),
+                )
+            }
         }
         Spacer(Modifier.height(8.dp))
         Text(

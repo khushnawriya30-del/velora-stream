@@ -25,6 +25,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.cinevault.app.data.model.MovieDto
+import com.cinevault.app.ui.components.PremiumBadgeOverlay
 import com.cinevault.app.ui.theme.CineVaultTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -169,8 +170,16 @@ private fun GridMovieCard(
                 }
             }
 
-            // Content rating — top-left, white faded
-            if (!movie.contentRating.isNullOrEmpty()) {
+            // Premium badge — top-left
+            if (movie.isPremium == true) {
+                PremiumBadgeOverlay(
+                    modifier = Modifier
+                        .align(Alignment.TopStart)
+                        .padding(4.dp),
+                    size = 20.dp
+                )
+            } else if (!movie.contentRating.isNullOrEmpty()) {
+                // Content rating — top-left, white faded (only when no premium badge)
                 Surface(
                     modifier = Modifier
                         .align(Alignment.TopStart)

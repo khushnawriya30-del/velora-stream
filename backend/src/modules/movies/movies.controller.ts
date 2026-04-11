@@ -43,6 +43,12 @@ export class MoviesController {
     return this.moviesService.getTopRated(limit);
   }
 
+  @Get('premium')
+  @ApiOperation({ summary: 'Get all premium content' })
+  async getPremium(@Query('limit') limit?: number) {
+    return this.moviesService.getPremiumContent(limit);
+  }
+
   @Get('genre/:genre')
   @ApiOperation({ summary: 'Get movies by genre' })
   async getByGenre(@Param('genre') genre: string, @Query('limit') limit?: number) {

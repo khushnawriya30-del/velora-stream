@@ -520,6 +520,16 @@ private fun SearchResultCard(
                     ),
             )
 
+            // Premium badge — top-left
+            if (movie.isPremium == true) {
+                PremiumBadgeOverlay(
+                    modifier = Modifier
+                        .align(Alignment.TopStart)
+                        .padding(4.dp),
+                    size = 18.dp,
+                )
+            }
+
             // Category tag
             Surface(
                 modifier = Modifier

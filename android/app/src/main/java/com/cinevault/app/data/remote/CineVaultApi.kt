@@ -372,4 +372,7 @@ interface CineVaultApi {
 
     @GET("search/recommended")
     suspend fun getRecommended(@Query("limit") limit: Int = 10): Response<List<MovieDto>>
+
+    @GET("movies/premium")
+    suspend fun getPremiumContent(@Query("limit") limit: Int = 30): Response<List<MovieDto>>
 }

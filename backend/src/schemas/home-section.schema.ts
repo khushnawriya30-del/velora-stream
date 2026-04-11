@@ -9,6 +9,7 @@ export enum SectionType {
   MID_BANNER = 'mid_banner', // Square banner between sections
   TRENDING = 'trending', // Top 10 with numbers
   UPCOMING = 'upcoming', // Upcoming releases grouped by date
+  PREMIUM_EXCLUSIVE = 'premium_exclusive', // Auto-populated with isPremium content
 }
 
 export enum CardSize {

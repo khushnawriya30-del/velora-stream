@@ -251,6 +251,19 @@ class ContentRepository @Inject constructor(private val api: CineVaultApi) {
         }
     }
 
+    suspend fun getPremiumContent(limit: Int = 30): Result<List<MovieDto>> {
+        return try {
+            val response = api.getPremiumContent(limit)
+            if (response.isSuccessful && response.body() != null) {
+                Result.Success(response.body()!!)
+            } else {
+                Result.Error(response.message())
+            }
+        } catch (e: Exception) {
+            Result.Error(e.localizedMessage ?: "Failed to load premium content")
+        }
+    }
+
     suspend fun getAllContent(page: Int = 1, limit: Int = 50): Result<MoviesListResponse> {
         return try {
             val response = api.getMovies(page = page, limit = limit)

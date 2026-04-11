@@ -34,7 +34,7 @@ type SectionKey = (typeof SECTIONS)[number]['key'];
 interface HomeSection {
   _id: string;
   title: string;
-  type: 'standard' | 'large_card' | 'mid_banner' | 'trending' | 'upcoming';
+  type: 'standard' | 'large_card' | 'mid_banner' | 'trending' | 'upcoming' | 'premium_exclusive';
   displayOrder: number;
   isVisible: boolean;
   isSystemManaged?: boolean;
@@ -669,6 +669,7 @@ export default function HomeSectionsPage() {
                 <option value="trending">Trending (Top 10 with Numbers)</option>
                 <option value="mid_banner">Mid Banner (Featured Section)</option>
                 <option value="upcoming">Upcoming (Date-Grouped Releases)</option>
+                <option value="premium_exclusive">Premium Exclusive (Auto-fills Premium Content)</option>
               </select>
             </div>
 

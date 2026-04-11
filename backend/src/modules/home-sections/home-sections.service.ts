@@ -89,6 +89,34 @@ const TRENDING_DEFAULTS = [
   },
 ];
 
+// ── Default "Premium Exclusive" system sections ───────────────────────────────
+const PREMIUM_EXCLUSIVE_DEFAULTS = [
+  {
+    slug: 'system-premium-exclusive-home',
+    title: 'Premium Exclusive',
+    section: TabSection.HOME,
+    contentTypes: [] as string[], // all types
+  },
+  {
+    slug: 'system-premium-exclusive-movies',
+    title: 'Premium Exclusive',
+    section: TabSection.MOVIES,
+    contentTypes: ['movie'] as string[],
+  },
+  {
+    slug: 'system-premium-exclusive-shows',
+    title: 'Premium Exclusive',
+    section: TabSection.SHOWS,
+    contentTypes: ['web_series', 'tv_show'] as string[],
+  },
+  {
+    slug: 'system-premium-exclusive-anime',
+    title: 'Premium Exclusive',
+    section: TabSection.ANIME,
+    contentTypes: ['anime'] as string[],
+  },
+];
+
 @Injectable()
 export class HomeSectionsService implements OnModuleInit {
   private readonly logger = new Logger(HomeSectionsService.name);
@@ -103,6 +131,11 @@ export class HomeSectionsService implements OnModuleInit {
     const result = await this.seedRecentlyAdded();
     if (result.created > 0) {
       this.logger.log(result.message);
+    }
+
+    const premResult = await this.seedPremiumExclusive();
+    if (premResult.created > 0) {
+      this.logger.log(premResult.message);
     }
 
     // Make all upcoming sections universal (no category filtering)
@@ -176,6 +209,56 @@ export class HomeSectionsService implements OnModuleInit {
           isPremiumOnly: !!(section as any).isPremiumOnly,
           items: movies,
         });
+        continue;
+      }
+
+      if (section.type === SectionType.PREMIUM_EXCLUSIVE) {
+        // Premium Exclusive: auto-fetch isPremium content, filtered by contentType
+        const premFilter: any = { status: ContentStatus.PUBLISHED, isPremium: true };
+        if ((section as any).contentTypes?.length > 0) {
+          premFilter.contentType = { $in: (section as any).contentTypes };
+        }
+        movies = await this.movieModel
+          .find(premFilter)
+          .sort({ createdAt: -1 })
+          .limit(section.maxItems)
+          .select('title posterUrl bannerUrl contentType contentRating genres releaseYear duration rating viewCount starRating videoQuality languages isPremium');
+
+        // Also include any manually added content that isn't already in the auto list
+        if (section.contentIds?.length > 0) {
+          const autoIds = new Set(movies.map((m) => m._id.toString()));
+          const manualMovies = await this.movieModel
+            .find({ _id: { $in: section.contentIds }, status: ContentStatus.PUBLISHED })
+            .select('title posterUrl bannerUrl contentType contentRating genres releaseYear duration rating viewCount starRating videoQuality languages isPremium');
+          for (const m of manualMovies) {
+            if (!autoIds.has(m._id.toString())) {
+              movies.push(m);
+            }
+          }
+        }
+
+        // Force isPremium on all items in premium exclusive section
+        const items = movies.map((m) => {
+          const obj = m.toObject();
+          obj.isPremium = true;
+          return obj;
+        });
+
+        if (items.length > 0) {
+          feed.push({
+            id: section._id,
+            title: section.title,
+            type: 'standard',
+            slug: section.slug,
+            cardSize: section.cardSize,
+            showViewMore: section.showViewMore,
+            viewMoreText: section.viewMoreText,
+            showTrendingNumbers: false,
+            bannerImageUrl: null,
+            isPremiumOnly: true,
+            items,
+          });
+        }
         continue;
       }
 
@@ -441,6 +524,49 @@ export class HomeSectionsService implements OnModuleInit {
         created > 0
           ? `${created} system section(s) created`
           : 'All default sections already exist',
+    };
+  }
+
+  /**
+   * Idempotently create "Premium Exclusive" system sections for each tab.
+   */
+  async seedPremiumExclusive(): Promise<{ created: number; message: string }> {
+    let created = 0;
+
+    for (const def of PREMIUM_EXCLUSIVE_DEFAULTS) {
+      const existing = await this.sectionModel.findOne({ slug: def.slug });
+      if (existing) continue;
+
+      // Insert after trending (displayOrder = 1)
+      const count = await this.sectionModel.countDocuments({ section: def.section });
+
+      await this.sectionModel.create({
+        slug: def.slug,
+        title: def.title,
+        section: def.section,
+        contentTypes: def.contentTypes,
+        type: SectionType.PREMIUM_EXCLUSIVE,
+        cardSize: CardSize.SMALL,
+        maxItems: 20,
+        isSystemManaged: true,
+        isVisible: true,
+        showViewMore: true,
+        viewMoreText: 'View All',
+        showTrendingNumbers: false,
+        isPremiumOnly: true,
+        displayOrder: 1, // right after trending
+        contentIds: [],
+      });
+
+      created++;
+    }
+
+    return {
+      created,
+      message:
+        created > 0
+          ? `${created} Premium Exclusive section(s) created`
+          : 'All Premium Exclusive sections already exist',
     };
   }
 }

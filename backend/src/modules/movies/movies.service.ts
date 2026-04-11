@@ -177,6 +177,14 @@ export class MoviesService {
       .limit(limit);
   }
 
+  async getPremiumContent(limit = 30): Promise<MovieDocument[]> {
+    return this.movieModel
+      .find({ status: ContentStatus.PUBLISHED, isPremium: true })
+      .sort({ createdAt: -1 })
+      .limit(limit)
+      .select('title posterUrl bannerUrl contentType contentRating genres releaseYear duration rating viewCount starRating videoQuality languages isPremium');
+  }
+
   async getByGenre(genre: string, limit = 20): Promise<MovieDocument[]> {
     return this.movieModel
       .find({ status: ContentStatus.PUBLISHED, genres: genre })
