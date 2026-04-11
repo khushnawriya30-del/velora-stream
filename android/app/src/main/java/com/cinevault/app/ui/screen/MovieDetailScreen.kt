@@ -63,6 +63,7 @@ fun MovieDetailScreen(
     onBack: () -> Unit,
     onPlay: (contentId: String, episodeId: String?) -> Unit,
     onRelatedClick: (String) -> Unit,
+    onNavigateToPremium: () -> Unit = {},
     viewModel: MovieDetailViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -548,8 +549,8 @@ fun MovieDetailScreen(
             Button(
                 onClick = {
                     if (isContentPremium && !isUserPremium && !isSeries) {
-                        // Premium content locked for free users (movies)
-                        android.widget.Toast.makeText(context, "Activate Premium to watch this content", android.widget.Toast.LENGTH_SHORT).show()
+                        // Premium content locked for free users (movies) — navigate to premium screen
+                        onNavigateToPremium()
                         return@Button
                     }
                     if (movie.id.isNotBlank()) {
@@ -699,7 +700,7 @@ fun MovieDetailScreen(
                     val isEpisodeLocked = isContentPremium && !isUserPremium &&
                         (episode.isPremium || (freeEpisodeCount > 0 && epIndex >= freeEpisodeCount))
                     if (isEpisodeLocked) {
-                        android.widget.Toast.makeText(context, "Activate Premium to watch this episode", android.widget.Toast.LENGTH_SHORT).show()
+                        onNavigateToPremium()
                     } else {
                         onPlay(movie.id, episode.id)
                     }

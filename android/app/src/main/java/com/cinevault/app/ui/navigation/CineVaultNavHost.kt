@@ -830,6 +830,7 @@ fun CineVaultNavHost(navController: NavHostController = rememberNavController())
                     onRelatedClick = { movieId ->
                         navController.navigate(Screen.MovieDetail.createRoute(movieId))
                     },
+                    onNavigateToPremium = { navController.navigate(Screen.ActivatePremium.route) },
                 )
             }
 

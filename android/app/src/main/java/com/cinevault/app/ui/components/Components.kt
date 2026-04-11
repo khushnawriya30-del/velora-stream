@@ -38,12 +38,25 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.Image
+import androidx.compose.ui.res.painterResource
 import coil.compose.AsyncImage
+import com.cinevault.app.R
 import com.cinevault.app.data.model.BannerDto
 import com.cinevault.app.data.model.HomeSectionDto
 import com.cinevault.app.data.model.MovieDto
 import com.cinevault.app.data.model.WatchProgressDto
 import com.cinevault.app.ui.theme.CineVaultTheme
+
+/** Small premium crown badge overlay — placed top-left on premium content cards. */
+@Composable
+fun PremiumBadgeOverlay(modifier: Modifier = Modifier, size: Dp = 22.dp) {
+    Image(
+        painter = painterResource(R.drawable.premium_badge_small),
+        contentDescription = "Premium",
+        modifier = modifier.size(size),
+    )
+}
 
 @Composable
 fun MovieCard(
@@ -148,6 +161,15 @@ fun MovieCard(
                         color = CineVaultTheme.colors.ratingGold,
                     )
                 }
+            }
+
+            // Premium badge — top-left
+            if (movie.isPremium == true) {
+                PremiumBadgeOverlay(
+                    modifier = Modifier
+                        .align(Alignment.TopStart)
+                        .padding(4.dp),
+                )
             }
         }
         Spacer(Modifier.height(6.dp))
@@ -519,6 +541,15 @@ fun SquareMovieCard(
                     )
                 }
             }
+
+            // Premium badge — top-left
+            if (movie.isPremium == true) {
+                PremiumBadgeOverlay(
+                    modifier = Modifier
+                        .align(Alignment.TopStart)
+                        .padding(4.dp),
+                )
+            }
         }
         
         Spacer(Modifier.height(6.dp))
@@ -632,6 +663,16 @@ fun LargeMovieCard(
                         color = CineVaultTheme.colors.ratingGold,
                     )
                 }
+            }
+
+            // Premium badge — top-left
+            if (movie.isPremium == true) {
+                PremiumBadgeOverlay(
+                    modifier = Modifier
+                        .align(Alignment.TopStart)
+                        .padding(6.dp),
+                    size = 26.dp,
+                )
             }
         }
         
@@ -747,6 +788,16 @@ fun TrendingMovieCard(
                             letterSpacing = 0.3.sp,
                         )
                     }
+                }
+
+                // Premium badge — top-left on poster
+                if (movie.isPremium == true) {
+                    PremiumBadgeOverlay(
+                        modifier = Modifier
+                            .align(Alignment.TopStart)
+                            .padding(4.dp),
+                        size = 20.dp,
+                    )
                 }
             }
         }

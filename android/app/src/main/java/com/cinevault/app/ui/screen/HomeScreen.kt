@@ -41,7 +41,9 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.compose.ui.res.painterResource
 import coil.compose.AsyncImage
+import com.cinevault.app.R
 import com.cinevault.app.data.model.BannerDto
 import com.cinevault.app.data.model.HomeSectionDto
 import com.cinevault.app.data.model.MovieDto
@@ -196,7 +198,8 @@ fun HomeScreen(
                                     title = section.title,
                                     onArrowClick = if (section.showViewMore) {
                                         { onSectionClick?.invoke(section) }
-                                    } else null
+                                    } else null,
+                                    isPremiumOnly = section.isPremiumOnly,
                                 )
                                 if (section.type == "trending") {
                                     LazyRow(
@@ -948,6 +951,7 @@ fun FilteredContentGrid(
 fun PremiumSectionHeader(
     title: String,
     onArrowClick: (() -> Unit)?,
+    isPremiumOnly: Boolean = false,
 ) {
     Row(
         modifier = Modifier
@@ -958,13 +962,23 @@ fun PremiumSectionHeader(
     ) {
         // Title with underline
         Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = title,
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Bold,
-                color = CineVaultTheme.colors.textPrimary,
-                letterSpacing = 0.5.sp,
-            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                if (isPremiumOnly) {
+                    Image(
+                        painter = painterResource(R.drawable.premium_badge_small),
+                        contentDescription = "Premium",
+                        modifier = Modifier.size(20.dp),
+                    )
+                    Spacer(Modifier.width(6.dp))
+                }
+                Text(
+                    text = title,
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = if (isPremiumOnly) Color(0xFFFFD700) else CineVaultTheme.colors.textPrimary,
+                    letterSpacing = 0.5.sp,
+                )
+            }
             Spacer(modifier = Modifier.height(4.dp))
             // Accent underline
             Box(

@@ -84,6 +84,7 @@ fun MeScreen(
         MePremiumHeader(
             userName = uiState.userName,
             userEmail = uiState.userEmail,
+            isPremium = premiumState.isPremium,
             onBellClick = onNavigateToNotifications,
             onSettingsClick = onNavigateToSettings,
         )
@@ -203,6 +204,7 @@ fun MeScreen(
 private fun MePremiumHeader(
     userName: String,
     userEmail: String,
+    isPremium: Boolean,
     onBellClick: () -> Unit,
     onSettingsClick: () -> Unit,
 ) {
@@ -227,13 +229,24 @@ private fun MePremiumHeader(
             }
             Spacer(Modifier.width(14.dp))
             Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = "Hello! ${userName.ifBlank { "Valued User" }}",
-                    style = CineVaultTheme.typography.sectionTitle,
-                    color = CineVaultTheme.colors.textPrimary,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = "Hello! ${userName.ifBlank { "Valued User" }}",
+                        style = CineVaultTheme.typography.sectionTitle,
+                        color = CineVaultTheme.colors.textPrimary,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f, fill = false),
+                    )
+                    if (isPremium) {
+                        Spacer(Modifier.width(6.dp))
+                        Image(
+                            painter = painterResource(R.drawable.premium_badge),
+                            contentDescription = "Premium Member",
+                            modifier = Modifier.size(24.dp),
+                        )
+                    }
+                }
                 if (userEmail.isNotBlank()) {
                     Text(text = userEmail, style = CineVaultTheme.typography.labelSmall, color = CineVaultTheme.colors.textSecondary, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
