@@ -55,6 +55,7 @@ private val GreenProgress = Color(0xFF4CAF50)
 @Composable
 fun EarnMoneyScreen(
     onBack: () -> Unit = {},
+    onNavigateToWithdrawEarning: (Int) -> Unit = {},
     viewModel: EarnMoneyViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsState()
@@ -247,7 +248,7 @@ fun EarnMoneyScreen(
                                     ),
                                     RoundedCornerShape(20.dp),
                                 )
-                                .clickable { showWithdrawDialog = true }
+                                .clickable { onNavigateToWithdrawEarning(0) }
                                 .padding(horizontal = 20.dp, vertical = 8.dp),
                         ) {
                             Text(
@@ -605,7 +606,7 @@ fun EarnMoneyScreen(
                             ),
                             RoundedCornerShape(12.dp),
                         )
-                        .clickable { /* navigate to withdraw history */ }
+                        .clickable { onNavigateToWithdrawEarning(0) }
                         .padding(horizontal = 16.dp, vertical = 18.dp),
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -634,7 +635,7 @@ fun EarnMoneyScreen(
                             ),
                             RoundedCornerShape(12.dp),
                         )
-                        .clickable { /* navigate to earning history */ }
+                        .clickable { onNavigateToWithdrawEarning(1) }
                         .padding(horizontal = 16.dp, vertical = 18.dp),
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {

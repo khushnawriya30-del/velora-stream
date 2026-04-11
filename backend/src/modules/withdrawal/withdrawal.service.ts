@@ -5,6 +5,15 @@ import { Withdrawal, WithdrawalDocument, WithdrawalStatus } from '../../schemas/
 import { WalletService } from '../wallet/wallet.service';
 import { User, UserDocument } from '../../schemas/user.schema';
 
+interface BankDetails {
+  bankName?: string;
+  accountNumber?: string;
+  ifscCode?: string;
+  accountHolderName?: string;
+  phoneNumber?: string;
+  email?: string;
+}
+
 @Injectable()
 export class WithdrawalService {
   private readonly logger = new Logger(WithdrawalService.name);
@@ -15,11 +24,8 @@ export class WithdrawalService {
     private readonly walletService: WalletService,
   ) {}
 
-  /** Request a withdrawal */
-  async requestWithdrawal(userId: string, amount: number, upiId: string) {
-    if (!upiId || !upiId.includes('@')) {
-      throw new BadRequestException('Invalid UPI ID');
-    }
+  /** Request a withdrawal with bank details */
+  async requestWithdrawal(userId: string, amount: number, upiId: string, bankDetails?: BankDetails) {
     if (amount < 100) {
       throw new BadRequestException('Minimum withdrawal is ₹100');
     }
@@ -47,15 +53,27 @@ export class WithdrawalService {
     const withdrawal = await this.withdrawalModel.create({
       userId: new Types.ObjectId(userId),
       amount,
-      upiId,
+      upiId: upiId || '',
+      bankName: bankDetails?.bankName || '',
+      accountNumber: bankDetails?.accountNumber || '',
+      ifscCode: bankDetails?.ifscCode || '',
+      accountHolderName: bankDetails?.accountHolderName || '',
+      phoneNumber: bankDetails?.phoneNumber || '',
+      email: bankDetails?.email || '',
       status: 'pending',
     });
 
-    this.logger.log(`Withdrawal request ₹${amount} by user ${userId} to ${upiId}`);
+    this.logger.log(`Withdrawal request ₹${amount} by user ${userId}`);
     return {
       id: withdrawal._id,
       amount: withdrawal.amount,
       upiId: withdrawal.upiId,
+      bankName: withdrawal.bankName,
+      accountNumber: withdrawal.accountNumber,
+      ifscCode: withdrawal.ifscCode,
+      accountHolderName: withdrawal.accountHolderName,
+      phoneNumber: withdrawal.phoneNumber,
+      email: withdrawal.email,
       status: withdrawal.status,
       createdAt: (withdrawal as any).createdAt,
     };
@@ -72,7 +90,14 @@ export class WithdrawalService {
       id: w._id,
       amount: w.amount,
       upiId: w.upiId,
+      bankName: w.bankName,
+      accountNumber: w.accountNumber,
+      ifscCode: w.ifscCode,
+      accountHolderName: w.accountHolderName,
+      phoneNumber: w.phoneNumber,
+      email: w.email,
       status: w.status,
+      rejectionReason: w.rejectionReason,
       createdAt: (w as any).createdAt,
     }));
   }
@@ -112,6 +137,12 @@ export class WithdrawalService {
           userEmail: user?.email || '',
           amount: w.amount,
           upiId: w.upiId,
+          bankName: w.bankName,
+          accountNumber: w.accountNumber,
+          ifscCode: w.ifscCode,
+          accountHolderName: w.accountHolderName,
+          phoneNumber: w.phoneNumber,
+          email: w.email,
           status: w.status,
           rejectionReason: w.rejectionReason,
           createdAt: (w as any).createdAt,
@@ -143,7 +174,7 @@ export class WithdrawalService {
       await this.walletService.addEarnings(withdrawal.userId.toString(), withdrawal.amount);
       this.logger.log(`Withdrawal ${id} rejected, ₹${withdrawal.amount} refunded`);
     } else {
-      this.logger.log(`Withdrawal ${id} approved, ₹${withdrawal.amount} to ${withdrawal.upiId}`);
+      this.logger.log(`Withdrawal ${id} approved, ₹${withdrawal.amount} to ${withdrawal.accountHolderName || withdrawal.upiId}`);
     }
     await withdrawal.save();
 

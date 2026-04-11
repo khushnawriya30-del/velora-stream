@@ -751,7 +751,20 @@ fun CineVaultNavHost(navController: NavHostController = rememberNavController())
             }
 
             composable(Screen.EarnMoney.route) {
-                EarnMoneyScreen(onBack = { navController.popBackStack() })
+                EarnMoneyScreen(
+                    onBack = { navController.popBackStack() },
+                    onNavigateToWithdrawEarning = { tab ->
+                        navController.navigate(Screen.WithdrawEarning.createRoute(tab))
+                    },
+                )
+            }
+
+            composable(Screen.WithdrawEarning.route) { backStackEntry ->
+                val tab = backStackEntry.arguments?.getString("tab")?.toIntOrNull() ?: 0
+                WithdrawEarningScreen(
+                    initialTab = tab,
+                    onBack = { navController.popBackStack() },
+                )
             }
 
             composable(Screen.Notifications.route) {

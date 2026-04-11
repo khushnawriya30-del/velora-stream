@@ -513,12 +513,27 @@ data class EarningItem(
     val createdAt: String,
 )
 
-data class WithdrawRequest(val amount: Int, val upiId: String)
+data class WithdrawRequest(
+    val amount: Int,
+    val upiId: String = "",
+    val bankName: String = "",
+    val accountNumber: String = "",
+    val ifscCode: String = "",
+    val accountHolderName: String = "",
+    val phoneNumber: String = "",
+    val email: String = "",
+)
 
 data class WithdrawResponse(
     val id: String,
     val amount: Int,
-    val upiId: String,
+    val upiId: String? = null,
+    val bankName: String? = null,
+    val accountNumber: String? = null,
+    val ifscCode: String? = null,
+    val accountHolderName: String? = null,
+    val phoneNumber: String? = null,
+    val email: String? = null,
     val status: String,
     val createdAt: String,
 )
@@ -526,8 +541,15 @@ data class WithdrawResponse(
 data class WithdrawalHistoryItem(
     val id: String,
     val amount: Int,
-    val upiId: String,
+    val upiId: String? = null,
+    val bankName: String? = null,
+    val accountNumber: String? = null,
+    val ifscCode: String? = null,
+    val accountHolderName: String? = null,
+    val phoneNumber: String? = null,
+    val email: String? = null,
     val status: String,
+    val rejectionReason: String? = null,
     val createdAt: String,
 )
 

@@ -131,7 +131,7 @@ class EarnMoneyViewModel @Inject constructor(
         }
     }
 
-    fun requestWithdrawal(amount: Int, upiId: String) {
+    fun requestWithdrawal(amount: Int, upiId: String = "", bankName: String = "", accountNumber: String = "", ifscCode: String = "", accountHolderName: String = "", phoneNumber: String = "", email: String = "") {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(
                 isWithdrawing = true,
@@ -139,7 +139,16 @@ class EarnMoneyViewModel @Inject constructor(
                 withdrawSuccess = false,
             )
             try {
-                val resp = api.requestWithdrawal(WithdrawRequest(amount, upiId))
+                val resp = api.requestWithdrawal(WithdrawRequest(
+                    amount = amount,
+                    upiId = upiId,
+                    bankName = bankName,
+                    accountNumber = accountNumber,
+                    ifscCode = ifscCode,
+                    accountHolderName = accountHolderName,
+                    phoneNumber = phoneNumber,
+                    email = email,
+                ))
                 if (resp.isSuccessful) {
                     _uiState.value = _uiState.value.copy(
                         isWithdrawing = false,

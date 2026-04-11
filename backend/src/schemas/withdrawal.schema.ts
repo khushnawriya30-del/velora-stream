@@ -17,8 +17,26 @@ export class Withdrawal {
   @Prop({ required: true })
   amount: number;
 
-  @Prop({ required: true })
+  @Prop()
   upiId: string;
+
+  @Prop()
+  bankName: string;
+
+  @Prop()
+  accountNumber: string;
+
+  @Prop()
+  ifscCode: string;
+
+  @Prop()
+  accountHolderName: string;
+
+  @Prop()
+  phoneNumber: string;
+
+  @Prop()
+  email: string;
 
   @Prop({ type: String, enum: WithdrawalStatus, default: WithdrawalStatus.PENDING })
   status: WithdrawalStatus;

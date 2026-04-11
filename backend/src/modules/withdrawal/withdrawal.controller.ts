@@ -14,9 +14,25 @@ export class WithdrawalController {
   @Post()
   async requestWithdrawal(
     @CurrentUser('userId') userId: string,
-    @Body() body: { amount: number; upiId: string },
+    @Body() body: {
+      amount: number;
+      upiId?: string;
+      bankName?: string;
+      accountNumber?: string;
+      ifscCode?: string;
+      accountHolderName?: string;
+      phoneNumber?: string;
+      email?: string;
+    },
   ) {
-    return this.withdrawalService.requestWithdrawal(userId, body.amount, body.upiId);
+    return this.withdrawalService.requestWithdrawal(userId, body.amount, body.upiId || '', {
+      bankName: body.bankName,
+      accountNumber: body.accountNumber,
+      ifscCode: body.ifscCode,
+      accountHolderName: body.accountHolderName,
+      phoneNumber: body.phoneNumber,
+      email: body.email,
+    });
   }
 
   @Get('history')

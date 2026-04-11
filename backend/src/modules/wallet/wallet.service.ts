@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Wallet, WalletDocument } from '../../schemas/wallet.schema';
+import { InviteSettings, InviteSettingsDocument } from '../../schemas/invite-settings.schema';
 
 @Injectable()
 export class WalletService {
@@ -9,18 +10,26 @@ export class WalletService {
 
   constructor(
     @InjectModel(Wallet.name) private walletModel: Model<WalletDocument>,
+    @InjectModel(InviteSettings.name) private inviteSettingsModel: Model<InviteSettingsDocument>,
   ) {}
 
-  /** Get or create wallet for a user (auto-creates with ₹80 default) */
+  /** Get current default balance from invite settings */
+  private async getDefaultBalance(): Promise<number> {
+    const settings = await this.inviteSettingsModel.findOne({ key: 'default' });
+    return settings?.defaultBalance ?? 80;
+  }
+
+  /** Get or create wallet for a user (auto-creates with dynamic default balance) */
   async getOrCreateWallet(userId: string): Promise<WalletDocument> {
     let wallet = await this.walletModel.findOne({ userId: new Types.ObjectId(userId) });
     if (!wallet) {
+      const defaultBalance = await this.getDefaultBalance();
       wallet = await this.walletModel.create({
         userId: new Types.ObjectId(userId),
-        balance: 80,
-        totalEarned: 80,
+        balance: defaultBalance,
+        totalEarned: defaultBalance,
       });
-      this.logger.log(`Created wallet for user ${userId} with ₹80 default balance`);
+      this.logger.log(`Created wallet for user ${userId} with ₹${defaultBalance} default balance`);
     }
     return wallet;
   }

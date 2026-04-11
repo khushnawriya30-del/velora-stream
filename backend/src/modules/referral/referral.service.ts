@@ -3,6 +3,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Referral, ReferralDocument } from '../../schemas/referral.schema';
 import { User, UserDocument } from '../../schemas/user.schema';
+import { InviteSettings, InviteSettingsDocument } from '../../schemas/invite-settings.schema';
 import { PendingReferralVisit, PendingReferralVisitDocument } from '../../schemas/pending-referral-visit.schema';
 import { WalletService } from '../wallet/wallet.service';
 import { randomBytes } from 'crypto';
@@ -14,6 +15,7 @@ export class ReferralService {
   constructor(
     @InjectModel(Referral.name) private referralModel: Model<ReferralDocument>,
     @InjectModel(User.name) private userModel: Model<UserDocument>,
+    @InjectModel(InviteSettings.name) private inviteSettingsModel: Model<InviteSettingsDocument>,
     @InjectModel(PendingReferralVisit.name) private pendingVisitModel: Model<PendingReferralVisitDocument>,
     private readonly walletService: WalletService,
   ) {}
@@ -129,20 +131,41 @@ export class ReferralService {
     };
   }
 
-  /** Get earnings history */
+  /** Get earnings history - includes dynamic App Gift + referral entries */
   async getEarningsHistory(userId: string) {
+    // Get current invite settings for App Gift amount
+    const settings = await this.inviteSettingsModel.findOne({ key: 'default' });
+    const appGiftAmount = settings?.defaultBalance ?? 80;
+
+    // Get wallet creation date (for App Gift entry date)
+    const wallet = await this.walletService.getOrCreateWallet(userId);
+    const walletCreatedAt = (wallet as any).createdAt || new Date();
+
+    // Referral earnings
     const referrals = await this.referralModel
       .find({ referrerId: new Types.ObjectId(userId) })
       .sort({ createdAt: -1 })
       .lean();
 
-    return referrals.map((r) => ({
-      id: r._id,
+    const referralEarnings = referrals.map((r) => ({
+      id: r._id.toString(),
       type: 'referral',
       amount: r.amount,
-      description: 'Referral bonus',
-      createdAt: (r as any).createdAt,
+      description: 'Invite User',
+      createdAt: (r as any).createdAt?.toISOString?.() || new Date().toISOString(),
     }));
+
+    // App Gift entry (always first, dynamic amount from settings)
+    const appGiftEntry = {
+      id: 'app-gift',
+      type: 'app_gift',
+      amount: appGiftAmount,
+      description: "App's Gift",
+      createdAt: walletCreatedAt.toISOString?.() || new Date().toISOString(),
+    };
+
+    // App Gift first, then referrals (most recent first)
+    return [appGiftEntry, ...referralEarnings];
   }
 
   private generateCode(): string {

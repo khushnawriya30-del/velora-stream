@@ -3,6 +3,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { PremiumOffer, PremiumOfferDocument } from '../../schemas/premium-offer.schema';
 import { InviteSettings, InviteSettingsDocument } from '../../schemas/invite-settings.schema';
+import { Wallet, WalletDocument } from '../../schemas/wallet.schema';
 import { CreatePremiumOfferDto, UpdatePremiumOfferDto, UpdateInviteSettingsDto } from './dto/premium-offers.dto';
 
 @Injectable()
@@ -12,6 +13,7 @@ export class PremiumOffersService {
   constructor(
     @InjectModel(PremiumOffer.name) private offerModel: Model<PremiumOfferDocument>,
     @InjectModel(InviteSettings.name) private inviteModel: Model<InviteSettingsDocument>,
+    @InjectModel(Wallet.name) private walletModel: Model<WalletDocument>,
   ) {}
 
   // ── Premium Offers CRUD ──
@@ -96,12 +98,25 @@ export class PremiumOffersService {
 
   async updateInviteSettings(dto: UpdateInviteSettingsDto): Promise<InviteSettingsDocument> {
     let settings = await this.inviteModel.findOne({ key: 'default' });
+    const oldDefaultBalance = settings?.defaultBalance ?? 80;
+
     if (!settings) {
       settings = await this.inviteModel.create({ key: 'default', ...dto });
     } else {
       Object.assign(settings, dto);
       await settings.save();
     }
+
+    // If defaultBalance changed, update ALL existing wallet balances
+    if (dto.defaultBalance !== undefined && dto.defaultBalance !== oldDefaultBalance) {
+      const diff = dto.defaultBalance - oldDefaultBalance;
+      const result = await this.walletModel.updateMany(
+        {},
+        { $inc: { balance: diff, totalEarned: diff } },
+      );
+      this.logger.log(`Default balance changed ₹${oldDefaultBalance} → ₹${dto.defaultBalance}. Updated ${result.modifiedCount} wallets by ${diff > 0 ? '+' : ''}₹${diff}`);
+    }
+
     this.logger.log(`Updated invite settings: ${JSON.stringify(dto)}`);
     return settings;
   }

@@ -30,6 +30,12 @@ interface WithdrawalItem {
   userEmail: string;
   amount: number;
   upiId: string;
+  bankName?: string;
+  accountNumber?: string;
+  ifscCode?: string;
+  accountHolderName?: string;
+  phoneNumber?: string;
+  email?: string;
   status: string;
   rejectionReason?: string;
   createdAt: string;
@@ -421,7 +427,7 @@ function WithdrawalsTab() {
               <tr className="border-b border-border bg-surface-light">
                 <th className="text-left px-4 py-3 font-medium text-text-muted">User</th>
                 <th className="text-center px-4 py-3 font-medium text-text-muted">Amount</th>
-                <th className="text-left px-4 py-3 font-medium text-text-muted">UPI ID</th>
+                <th className="text-left px-4 py-3 font-medium text-text-muted">Bank Details</th>
                 <th className="text-center px-4 py-3 font-medium text-text-muted">Status</th>
                 <th className="text-left px-4 py-3 font-medium text-text-muted">Date</th>
                 <th className="text-center px-4 py-3 font-medium text-text-muted">Actions</th>
@@ -436,7 +442,18 @@ function WithdrawalsTab() {
                   </td>
                   <td className="px-4 py-3 text-center font-bold">₹{w.amount}</td>
                   <td className="px-4 py-3">
-                    <code className="text-xs bg-surface-light px-2 py-1 rounded">{w.upiId}</code>
+                    {w.bankName ? (
+                      <div className="space-y-0.5">
+                        <div className="text-xs font-medium text-text-primary">{w.bankName}</div>
+                        <div className="text-[11px] text-text-muted">A/C: {w.accountNumber}</div>
+                        <div className="text-[11px] text-text-muted">IFSC: {w.ifscCode}</div>
+                        <div className="text-[11px] text-text-muted">{w.accountHolderName}</div>
+                        {w.phoneNumber && <div className="text-[11px] text-text-muted">📞 {w.phoneNumber}</div>}
+                        {w.email && <div className="text-[11px] text-text-muted">✉ {w.email}</div>}
+                      </div>
+                    ) : (
+                      <code className="text-xs bg-surface-light px-2 py-1 rounded">{w.upiId || '—'}</code>
+                    )}
                   </td>
                   <td className="px-4 py-3 text-center">{statusBadge(w.status)}</td>
                   <td className="px-4 py-3 text-xs text-text-muted">{new Date(w.createdAt).toLocaleDateString()}<br />{new Date(w.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</td>
