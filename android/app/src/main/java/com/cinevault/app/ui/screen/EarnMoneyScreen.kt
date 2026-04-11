@@ -134,8 +134,7 @@ fun EarnMoneyScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(bottom = 100.dp) // space for fixed bottom bar
-                .verticalScroll(rememberScrollState())
-                .statusBarsPadding(),
+                .verticalScroll(rememberScrollState()),
         ) {
             // ═══════════════════════════════════════════
             // SECTION 1 — HEADER
@@ -143,7 +142,7 @@ fun EarnMoneyScreen(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 8.dp, vertical = 8.dp),
+                    .padding(horizontal = 8.dp, vertical = 2.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 IconButton(onClick = onBack) {
@@ -604,7 +603,7 @@ fun EarnMoneyScreen(
                             ),
                             RoundedCornerShape(12.dp),
                         )
-                        .clickable { onNavigateToWithdrawEarning(0) }
+                        .clickable { onNavigateToWithdrawEarning(1) }
                         .padding(horizontal = 16.dp, vertical = 18.dp),
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -633,7 +632,7 @@ fun EarnMoneyScreen(
                             ),
                             RoundedCornerShape(12.dp),
                         )
-                        .clickable { onNavigateToWithdrawEarning(1) }
+                        .clickable { onNavigateToWithdrawEarning(2) }
                         .padding(horizontal = 16.dp, vertical = 18.dp),
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {

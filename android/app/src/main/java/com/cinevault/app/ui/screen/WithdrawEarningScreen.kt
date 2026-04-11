@@ -36,7 +36,7 @@ private val RedOrange = Color(0xFFE53935)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun WithdrawEarningScreen(
-    initialTab: Int = 0, // 0 = Withdraw, 1 = Earning
+    initialTab: Int = 0, // 0 = Bank Details, 1 = Withdraw History, 2 = Earning History
     onBack: () -> Unit = {},
     viewModel: EarnMoneyViewModel = hiltViewModel(),
 ) {
@@ -76,13 +76,15 @@ fun WithdrawEarningScreen(
     val threshold = invSettings?.targetAmount ?: state.withdrawThreshold
     val hasBankDetails = saved?.hasBankDetails == true
 
+    val tabTitles = listOf("Bank Details", "Withdrawals", "Earnings")
+
     Scaffold(
         containerColor = DarkBlueBg,
         topBar = {
             TopAppBar(
                 title = {
                     Text(
-                        if (selectedTab == 0) "Withdraw" else "Earnings",
+                        tabTitles.getOrElse(selectedTab) { "Withdraw" },
                         fontWeight = FontWeight.Bold,
                         color = Color.White,
                     )
@@ -110,7 +112,7 @@ fun WithdrawEarningScreen(
                     .padding(4.dp),
                 horizontalArrangement = Arrangement.SpaceEvenly,
             ) {
-                listOf("Withdraw", "Earning").forEachIndexed { idx, label ->
+                tabTitles.forEachIndexed { idx, label ->
                     Box(
                         modifier = Modifier
                             .weight(1f)
@@ -123,7 +125,7 @@ fun WithdrawEarningScreen(
                         Text(
                             label,
                             fontWeight = FontWeight.SemiBold,
-                            fontSize = 14.sp,
+                            fontSize = 13.sp,
                             color = if (selectedTab == idx) Color.Black else Color.White.copy(alpha = 0.6f),
                         )
                     }
@@ -134,7 +136,7 @@ fun WithdrawEarningScreen(
 
             // ── Tab Content ──
             when (selectedTab) {
-                0 -> WithdrawTab(
+                0 -> BankDetailsTab(
                     state = state,
                     threshold = threshold,
                     hasBankDetails = hasBankDetails,
@@ -167,17 +169,18 @@ fun WithdrawEarningScreen(
                     },
                     onClearWithdrawState = { viewModel.clearWithdrawState() },
                 )
-                1 -> EarningTab(state = state)
+                1 -> WithdrawHistoryTab(state = state)
+                2 -> EarningTab(state = state)
             }
         }
     }
 }
 
 // ═══════════════════════════════════════════
-// WITHDRAW TAB
+// BANK DETAILS TAB (save/view + withdraw)
 // ═══════════════════════════════════════════
 @Composable
-private fun WithdrawTab(
+private fun BankDetailsTab(
     state: com.cinevault.app.ui.viewmodel.EarnMoneyUiState,
     threshold: Int,
     hasBankDetails: Boolean,
@@ -307,23 +310,6 @@ private fun WithdrawTab(
                     )
                 }
             }
-
-            Spacer(Modifier.height(20.dp))
-
-            // ── Withdrawal History ──
-            if (state.withdrawals.isNotEmpty()) {
-                Text(
-                    "Withdrawal History",
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White,
-                )
-                Spacer(Modifier.height(8.dp))
-                state.withdrawals.forEach { item ->
-                    WithdrawalHistoryCard(item)
-                    Spacer(Modifier.height(8.dp))
-                }
-            }
         } else {
             // ── Bank Details Form (first time or editing) ──
             BankDetailsForm(
@@ -343,6 +329,78 @@ private fun WithdrawTab(
                 onEmailChange = onEmailChange,
                 onSave = onSaveBankDetails,
             )
+        }
+
+        Spacer(Modifier.height(24.dp))
+    }
+}
+
+// ═══════════════════════════════════════════
+// WITHDRAW HISTORY TAB
+// ═══════════════════════════════════════════
+@Composable
+private fun WithdrawHistoryTab(
+    state: com.cinevault.app.ui.viewmodel.EarnMoneyUiState,
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = 16.dp),
+    ) {
+        if (state.withdrawals.isEmpty()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(CardBlue, RoundedCornerShape(12.dp))
+                    .padding(40.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Icon(
+                        Icons.Default.Inbox,
+                        contentDescription = null,
+                        tint = Color.White.copy(alpha = 0.3f),
+                        modifier = Modifier.size(48.dp),
+                    )
+                    Spacer(Modifier.height(12.dp))
+                    Text(
+                        "No Record",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = Color.White.copy(alpha = 0.5f),
+                    )
+                    Text(
+                        "No withdrawal record yet",
+                        fontSize = 12.sp,
+                        color = Color.White.copy(alpha = 0.3f),
+                    )
+                }
+            }
+        } else {
+            Text(
+                "Withdrawal History",
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color.White,
+            )
+            Spacer(Modifier.height(8.dp))
+            state.withdrawals.forEach { item ->
+                WithdrawalHistoryCard(item)
+                Spacer(Modifier.height(8.dp))
+            }
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 16.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    "— No More —",
+                    fontSize = 13.sp,
+                    color = Color.White.copy(alpha = 0.3f),
+                )
+            }
         }
 
         Spacer(Modifier.height(24.dp))
