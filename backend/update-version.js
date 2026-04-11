@@ -3,7 +3,7 @@ mongoose.connect('mongodb+srv://vishu09921202023_db_user:GYeX5ttXbU6yaFMM@cluste
   .then(async () => {
     const r = await mongoose.connection.collection('appversions').updateOne(
       {},
-      { $set: { versionCode: 72, versionName: '2.5.1', releaseNotes: 'v2.5.1: Premium badge on SectionDetail grid, Search results, full badge consistency' } }
+      { $set: { versionCode: 73, versionName: '2.5.2', releaseNotes: 'v2.5.2: User-provided premium badge, editable Premium Exclusive admin, Me section tab, independent Premium Only vs Premium Exclusive' } }
     );
     console.log('Updated:', JSON.stringify(r));
     process.exit(0);
