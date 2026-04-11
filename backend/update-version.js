@@ -3,7 +3,7 @@ mongoose.connect('mongodb+srv://vishu09921202023_db_user:GYeX5ttXbU6yaFMM@cluste
   .then(async () => {
     const r = await mongoose.connection.collection('appversions').updateOne(
       {},
-      { $set: { versionCode: 74, versionName: '2.5.3', releaseNotes: 'v2.5.3: Premium toggle on Series/Anime admin, bigger badges, auto-premium on exclusive add' } }
+      { $set: { versionCode: 75, versionName: '2.5.4', releaseNotes: 'v2.5.4: Enhanced Premium Exclusive add modal with content type filter, auto-premium notice' } }
     );
     console.log('Updated:', JSON.stringify(r));
     process.exit(0);
