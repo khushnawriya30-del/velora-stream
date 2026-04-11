@@ -314,8 +314,7 @@ export default function MoviesPage() {
                   {isLoading ? (
                     Array.from({ length: 5 }).map((_, i) => (
                       <tr key={i} className="border-b border-border">
-                        <td colSpan={7} className="px-4 py-4">
-                      <td colSpan={8} className="px-4 py-4">
+                        <td colSpan={8} className="px-4 py-4">
                           <div className="h-4 bg-surface-light rounded animate-pulse" />
                         </td>
                       </tr>
