@@ -8,6 +8,8 @@ import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -306,39 +308,16 @@ fun MovieDetailScreen(
                     )
                     Spacer(modifier = Modifier.height(6.dp))
                 }
-                if (isSeries && uiState.seasons.isNotEmpty()) {
-                    val selectedSeason = uiState.seasons.find { it.id == uiState.selectedSeasonId }
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(10.dp),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text(
-                            movie.title,
-                            fontSize = 26.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.White,
-                            maxLines = 2,
-                            overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.weight(1f, fill = false)
-                        )
-                        SeasonDropdownBadge(
-                            seasonName = "Season ${selectedSeason?.seasonNumber ?: 1}",
-                            onClick = { showMoreSeasonsSheet = true }
-                        )
-                    }
-                } else {
-                    Text(
-                        movie.title,
-                        fontSize = 28.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
+                Text(
+                    movie.title,
+                    fontSize = 28.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
                 Spacer(modifier = Modifier.height(10.dp))
-                MovieMetaChips(movie)
+                MovieMetaChips(movie, isContentPremium = movie.isPremium == true)
             }
         } else {
             // ── Banner image as hero ──
@@ -423,39 +402,16 @@ fun MovieDetailScreen(
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                     }
-                    if (isSeries && uiState.seasons.isNotEmpty()) {
-                        val selectedSeason = uiState.seasons.find { it.id == uiState.selectedSeasonId }
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(10.dp),
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Text(
-                                movie.title,
-                                fontSize = 26.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color.White,
-                                maxLines = 2,
-                                overflow = TextOverflow.Ellipsis,
-                                modifier = Modifier.weight(1f, fill = false)
-                            )
-                            SeasonDropdownBadge(
-                                seasonName = "Season ${selectedSeason?.seasonNumber ?: 1}",
-                                onClick = { showMoreSeasonsSheet = true }
-                            )
-                        }
-                    } else {
-                        Text(
-                            movie.title,
-                            fontSize = 28.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.White,
-                            maxLines = 2,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    }
+                    Text(
+                        movie.title,
+                        fontSize = 28.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
+                    )
                     Spacer(modifier = Modifier.height(10.dp))
-                    MovieMetaChips(movie)
+                    MovieMetaChips(movie, isContentPremium = movie.isPremium == true)
                 }
             }
         }
@@ -468,45 +424,59 @@ fun MovieDetailScreen(
         ) {
             Spacer(modifier = Modifier.height(4.dp))
 
-            // IMDb Rating
+            // IMDb Rating + Season Selector row
             val starRating = movie.starRating ?: movie.rating ?: 0.0
             if (starRating > 0) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    modifier = Modifier.fillMaxWidth()
                 ) {
-                    Surface(
-                        shape = RoundedCornerShape(4.dp),
-                        color = Color(0xFFE6B91E)
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
+                        Surface(
+                            shape = RoundedCornerShape(4.dp),
+                            color = Color(0xFFE6B91E)
+                        ) {
+                            Text(
+                                "IMDb",
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = Color.Black,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                            )
+                        }
                         Text(
-                            "IMDb",
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.ExtraBold,
-                            color = Color.Black,
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                            String.format("%.1f", starRating),
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
                         )
+                        val starsOut5 = (starRating / 2.0).coerceIn(0.0, 5.0)
+                        val fullStars = starsOut5.toInt()
+                        val hasHalf = (starsOut5 - fullStars) >= 0.25
+                        val emptyStars = 5 - fullStars - if (hasHalf) 1 else 0
+                        Row(horizontalArrangement = Arrangement.spacedBy(1.dp)) {
+                            repeat(fullStars) {
+                                Icon(Icons.Default.Star, null, tint = Color(0xFFFFD700), modifier = Modifier.size(16.dp))
+                            }
+                            if (hasHalf) {
+                                Icon(Icons.Default.StarHalf, null, tint = Color(0xFFFFD700), modifier = Modifier.size(16.dp))
+                            }
+                            repeat(emptyStars) {
+                                Icon(Icons.Default.StarBorder, null, tint = Color(0xFFFFD700).copy(alpha = 0.4f), modifier = Modifier.size(16.dp))
+                            }
+                        }
                     }
-                    Text(
-                        String.format("%.1f", starRating),
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
-                    )
-                    val starsOut5 = (starRating / 2.0).coerceIn(0.0, 5.0)
-                    val fullStars = starsOut5.toInt()
-                    val hasHalf = (starsOut5 - fullStars) >= 0.25
-                    val emptyStars = 5 - fullStars - if (hasHalf) 1 else 0
-                    Row(horizontalArrangement = Arrangement.spacedBy(1.dp)) {
-                        repeat(fullStars) {
-                            Icon(Icons.Default.Star, null, tint = Color(0xFFFFD700), modifier = Modifier.size(16.dp))
-                        }
-                        if (hasHalf) {
-                            Icon(Icons.Default.StarHalf, null, tint = Color(0xFFFFD700), modifier = Modifier.size(16.dp))
-                        }
-                        repeat(emptyStars) {
-                            Icon(Icons.Default.StarBorder, null, tint = Color(0xFFFFD700).copy(alpha = 0.4f), modifier = Modifier.size(16.dp))
-                        }
+                    // Season selector next to IMDB rating (series only)
+                    if (isSeries && uiState.seasons.isNotEmpty()) {
+                        Spacer(modifier = Modifier.weight(1f))
+                        val selectedSeason = uiState.seasons.find { it.id == uiState.selectedSeasonId }
+                        SeasonDropdownBadge(
+                            seasonName = "Season ${selectedSeason?.seasonNumber ?: 1}",
+                            onClick = { showMoreSeasonsSheet = true }
+                        )
                     }
                 }
                 Spacer(modifier = Modifier.height(16.dp))
@@ -514,17 +484,6 @@ fun MovieDetailScreen(
 
             // ── Premium WATCH NOW / RESUME WATCHING button (hidden for upcoming) ──
             if (!isUpcoming) {
-            // Show Premium Exclusive badge if content is premium
-            if (isContentPremium) {
-                Image(
-                    painter = painterResource(id = R.drawable.premium_exclusive_badge),
-                    contentDescription = "Premium Exclusive",
-                    modifier = Modifier
-                        .height(40.dp)
-                        .padding(bottom = 8.dp),
-                    contentScale = ContentScale.Inside
-                )
-            }
             Button(
                 onClick = {
                     if (movie.id.isNotBlank()) {
@@ -753,30 +712,49 @@ fun MovieDetailScreen(
     }
 }
 
-// ── Premium Meta Chips (highlight boxes) ──
+// ── Premium Meta Chips (highlight boxes with wrap layout) ──
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun MovieMetaChips(movie: MovieDto) {
+private fun MovieMetaChips(movie: MovieDto, isContentPremium: Boolean = false) {
     val seriesTypes = listOf("web_series", "tv_show", "anime")
     val metaParts = buildList {
         movie.releaseYear?.let { add(it.toString()) }
         if (movie.contentType !in seriesTypes) movie.duration?.let { add("$it min") }
         movie.country?.let { if (it.isNotBlank()) add(it) }
         movie.contentRating?.let { add(it) }
-        movie.genres.take(2).forEach { add(it) }
+        movie.genres.forEach { add(it) }
     }
-    if (metaParts.isNotEmpty()) {
-        LazyRow(
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+    if (isContentPremium || metaParts.isNotEmpty()) {
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            items(metaParts.size) { index ->
+            // Premium Exclusive badge first
+            if (isContentPremium) {
+                Surface(
+                    shape = RoundedCornerShape(6.dp),
+                    color = Color(0xFFD4AF37).copy(alpha = 0.2f),
+                    border = BorderStroke(0.5.dp, Color(0xFFD4AF37).copy(alpha = 0.5f)),
+                ) {
+                    Text(
+                        "Premium Exclusive",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFFD4AF37),
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+                        maxLines = 1
+                    )
+                }
+            }
+            metaParts.forEach { part ->
                 Surface(
                     shape = RoundedCornerShape(6.dp),
                     color = Color.White.copy(alpha = 0.1f),
                     border = BorderStroke(0.5.dp, Color.White.copy(alpha = 0.2f)),
                 ) {
                     Text(
-                        metaParts[index],
+                        part,
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Medium,
                         color = Color.White.copy(alpha = 0.85f),
