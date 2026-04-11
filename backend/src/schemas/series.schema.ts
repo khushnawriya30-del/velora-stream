@@ -114,6 +114,9 @@ export class Season {
 
   @Prop({ default: 0 })
   episodeCount: number;
+
+  @Prop({ default: false })
+  isPremium: boolean;
 }
 
 export const SeasonSchema = SchemaFactory.createForClass(Season);

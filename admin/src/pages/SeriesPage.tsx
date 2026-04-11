@@ -18,6 +18,7 @@ interface Season {
   posterUrl?: string;
   releaseYear?: number;
   episodeCount: number;
+  isPremium?: boolean;
 }
 
 interface Episode {
@@ -627,10 +628,26 @@ function SeasonRow({
                 <span className="text-text-secondary text-sm">— {season.title}</span>
               )}
               <span className="text-xs text-text-muted ml-2">{season.episodeCount} episodes</span>
+              {season.isPremium && <span className="text-xs text-amber-400 ml-2">👑 Premium</span>}
             </>
           )}
         </button>
         {!isRenamingSeason && (
+          <>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              const newVal = !season.isPremium;
+              api.patch(`/series/seasons/${season._id}`, { isPremium: newVal }).then(() => {
+                queryClient.invalidateQueries({ queryKey: ['seasons'] });
+                toast.success(newVal ? 'Season marked Premium' : 'Season Premium removed');
+              }).catch(() => toast.error('Failed to update'));
+            }}
+            className={`p-1.5 rounded-lg transition-colors ${season.isPremium ? 'text-amber-400 hover:bg-amber-500/20' : 'text-text-secondary hover:text-amber-400 hover:bg-amber-500/10'}`}
+            title={season.isPremium ? 'Remove Premium' : 'Make Season Premium'}
+          >
+            <Crown size={14} />
+          </button>
           <button
             onClick={(e) => { e.stopPropagation(); setIsRenamingSeason(true); setSeasonTitle(season.title); }}
             className="flex items-center gap-1 text-xs text-blue-400 hover:text-blue-300 px-2 py-1 rounded bg-blue-400/10"
@@ -638,6 +655,7 @@ function SeasonRow({
           >
             <Pencil size={12} />
           </button>
+          </>
         )}
         <button
           onClick={() => setShowBunnyStream(showBunnyStream === season._id ? null : season._id)}
@@ -762,7 +780,10 @@ function SortableEpisodeItem({ episode: ep, onEdit, onDelete }: { episode: Episo
 
       {/* Info */}
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium truncate">{ep.title}</p>
+        <p className="text-sm font-medium truncate">
+          {ep.title}
+          {ep.isPremium && <span className="ml-1.5 text-[10px] text-amber-400 font-semibold">👑 PREMIUM</span>}
+        </p>
         <p className="text-xs text-text-muted truncate">
           {ep.duration ? `${ep.duration} min` : 'No duration'}
           {ep.streamingSources?.length > 0 && ` · ${ep.streamingSources.length} source${ep.streamingSources.length > 1 ? 's' : ''}`}

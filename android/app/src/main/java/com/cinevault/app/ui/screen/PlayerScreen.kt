@@ -416,6 +416,7 @@ fun PlayerScreen(
 
     var isLocked by remember { mutableStateOf(false) }
     var showQualityPopup by remember { mutableStateOf(false) }
+    var showPremiumQualityDialog by remember { mutableStateOf(false) }
     var showSpeedPopup by remember { mutableStateOf(false) }
     var showAudioPopup by remember { mutableStateOf(false) }
     var showEpisodePopup by remember { mutableStateOf(false) }
@@ -1239,7 +1240,8 @@ fun PlayerScreen(
                         isSelected = uiState.selectedQuality == quality,
                         onClick = {
                             if (isLocked) {
-                                toastMessage = "Upgrade to Premium for $quality quality"
+                                showQualityPopup = false
+                                showPremiumQualityDialog = true
                             } else {
                                 viewModel.setQuality(quality); showQualityPopup = false; toastMessage = "Quality: $fullLabel"
                             }
@@ -1497,6 +1499,105 @@ fun PlayerScreen(
                                 )
                                 onBack()
                             },
+                        ) {
+                            Text(
+                                "Close",
+                                color = Color.White.copy(alpha = 0.6f),
+                                fontSize = 14.sp,
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
+        // ============================================================
+        // PREMIUM QUALITY LOCK: Subscribe Popup for 1080p+
+        // ============================================================
+        if (showPremiumQualityDialog) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = 0.85f))
+                    .zIndex(100f)
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null,
+                        onClick = {},
+                    ),
+                contentAlignment = Alignment.Center,
+            ) {
+                Surface(
+                    shape = RoundedCornerShape(20.dp),
+                    color = Color(0xFF1A1A1A),
+                    border = BorderStroke(1.dp, GoldAccent.copy(alpha = 0.4f)),
+                    shadowElevation = 16.dp,
+                    modifier = Modifier
+                        .widthIn(max = 380.dp)
+                        .padding(24.dp),
+                ) {
+                    Column(
+                        modifier = Modifier.padding(24.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                    ) {
+                        Icon(
+                            Icons.Filled.HighQuality,
+                            contentDescription = null,
+                            tint = GoldAccent,
+                            modifier = Modifier.size(48.dp),
+                        )
+                        Spacer(Modifier.height(16.dp))
+                        Text(
+                            "Premium Quality",
+                            color = Color.White,
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Bold,
+                            textAlign = TextAlign.Center,
+                        )
+                        Spacer(Modifier.height(10.dp))
+                        Text(
+                            "1080p Full HD and above is available\nexclusively for Premium subscribers.",
+                            color = Color.White.copy(alpha = 0.7f),
+                            fontSize = 14.sp,
+                            textAlign = TextAlign.Center,
+                            lineHeight = 20.sp,
+                        )
+                        Spacer(Modifier.height(24.dp))
+                        Button(
+                            onClick = {
+                                showPremiumQualityDialog = false
+                                onNavigateToPremium()
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(48.dp),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
+                            contentPadding = PaddingValues(),
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .background(
+                                        Brush.horizontalGradient(
+                                            listOf(GoldAccent, Color(0xFFB8860B), GoldAccent)
+                                        ),
+                                        RoundedCornerShape(12.dp),
+                                    ),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                Text(
+                                    "SUBSCRIBE NOW",
+                                    color = Color.Black,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    fontSize = 14.sp,
+                                    letterSpacing = 1.sp,
+                                )
+                            }
+                        }
+                        Spacer(Modifier.height(10.dp))
+                        TextButton(
+                            onClick = { showPremiumQualityDialog = false },
                         ) {
                             Text(
                                 "Close",
