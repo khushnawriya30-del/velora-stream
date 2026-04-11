@@ -14,7 +14,7 @@ export class AppVersionService {
   ) {}
 
   private getGithubApkUrl(version: string): string {
-    return `https://github.com/khushnawriya30-del/velora-stream/releases/download/v${version}/app-release.apk`;
+    return `https://github.com/khushnawriya30-del/velora-stream/releases/download/latest/app-release.apk`;
   }
 
   async getLatest(): Promise<AppVersion> {
