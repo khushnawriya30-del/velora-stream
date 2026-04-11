@@ -824,8 +824,8 @@ fun CineVaultNavHost(navController: NavHostController = rememberNavController())
             ) {
                 MovieDetailScreen(
                     onBack = { navController.popBackStack() },
-                    onPlay = { contentId, episodeId ->
-                        requireAuth { navController.navigate(Screen.CinematicIntro.createRoute(contentId, episodeId)) }
+                    onPlay = { contentId, episodeId, freePreview ->
+                        requireAuth { navController.navigate(Screen.CinematicIntro.createRoute(contentId, episodeId, freePreview)) }
                     },
                     onRelatedClick = { movieId ->
                         navController.navigate(Screen.MovieDetail.createRoute(movieId))
@@ -839,6 +839,7 @@ fun CineVaultNavHost(navController: NavHostController = rememberNavController())
                 arguments = listOf(
                     navArgument("contentId") { type = NavType.StringType },
                     navArgument("episodeId") { type = NavType.StringType; nullable = true; defaultValue = null },
+                    navArgument("freePreview") { type = NavType.BoolType; defaultValue = false },
                 ),
             ) {
                 PlayerScreen(
@@ -852,13 +853,15 @@ fun CineVaultNavHost(navController: NavHostController = rememberNavController())
                 arguments = listOf(
                     navArgument("contentId") { type = NavType.StringType },
                     navArgument("episodeId") { type = NavType.StringType; nullable = true; defaultValue = null },
+                    navArgument("freePreview") { type = NavType.BoolType; defaultValue = false },
                 ),
             ) { backStackEntry ->
                 val contentId = backStackEntry.arguments?.getString("contentId") ?: ""
                 val episodeId = backStackEntry.arguments?.getString("episodeId")
+                val freePreview = backStackEntry.arguments?.getBoolean("freePreview") ?: false
                 CinematicIntroScreen(
                     onIntroFinished = {
-                        navController.navigate(Screen.Player.createRoute(contentId, episodeId)) {
+                        navController.navigate(Screen.Player.createRoute(contentId, episodeId, freePreview)) {
                             // Remove intro from back stack so Back goes to detail, not replay intro
                             popUpTo(Screen.CinematicIntro.route) { inclusive = true }
                         }

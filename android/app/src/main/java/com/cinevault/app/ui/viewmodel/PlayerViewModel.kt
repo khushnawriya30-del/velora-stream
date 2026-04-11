@@ -45,6 +45,9 @@ data class PlayerUiState(
     val isPremium: Boolean = false,
     val isQualitySwitching: Boolean = false,
     val isPreRollPending: Boolean = true,
+    val isFreePreview: Boolean = false,
+    val previewLimitMs: Long = 10 * 60 * 1000L, // 10 minutes default
+    val previewExpired: Boolean = false,
 )
 
 @HiltViewModel
@@ -58,6 +61,7 @@ class PlayerViewModel @Inject constructor(
 
     private val contentId: String = savedStateHandle.get<String>("contentId") ?: ""
     private val initialEpisodeId: String? = savedStateHandle.get<String>("episodeId")
+    private val isFreePreview: Boolean = savedStateHandle.get<Boolean>("freePreview") ?: false
     private var currentEpisodeId: String? = initialEpisodeId
 
     /** When playing an episode, progress is keyed by episodeId not contentId (series id). */
@@ -80,6 +84,10 @@ class PlayerViewModel @Inject constructor(
     init {
         adManager.initialize()
         adManager.loadInterstitialAd()
+        // Set free preview flag
+        if (isFreePreview) {
+            _uiState.update { it.copy(isFreePreview = true) }
+        }
         if (contentId.isNotEmpty()) {
             loadContent()
             startProgressTimer()
@@ -614,6 +622,10 @@ class PlayerViewModel @Inject constructor(
 
     fun markPreRollDone() {
         _uiState.update { it.copy(isPreRollPending = false) }
+    }
+
+    fun markPreviewExpired() {
+        _uiState.update { it.copy(previewExpired = true) }
     }
 
     /** Reset ad state for new episode playback. */

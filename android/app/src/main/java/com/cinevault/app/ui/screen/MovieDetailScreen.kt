@@ -29,6 +29,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.style.TextAlign
@@ -36,6 +37,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
+import com.cinevault.app.R
 import com.cinevault.app.data.model.*
 import com.cinevault.app.ui.theme.CineVaultTheme
 import com.cinevault.app.ui.viewmodel.MovieDetailViewModel
@@ -61,7 +63,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun MovieDetailScreen(
     onBack: () -> Unit,
-    onPlay: (contentId: String, episodeId: String?) -> Unit,
+    onPlay: (contentId: String, episodeId: String?, freePreview: Boolean) -> Unit,
     onRelatedClick: (String) -> Unit,
     onNavigateToPremium: () -> Unit = {},
     viewModel: MovieDetailViewModel = hiltViewModel(),
@@ -512,48 +514,22 @@ fun MovieDetailScreen(
 
             // ── Premium WATCH NOW / RESUME WATCHING button (hidden for upcoming) ──
             if (!isUpcoming) {
-            // Show premium badge if content is premium
-            if (isContentPremium && !isUserPremium && !isSeries) {
-                // Movie-level premium lock
-                Box(
+            // Show Premium Exclusive badge if content is premium
+            if (isContentPremium) {
+                Image(
+                    painter = painterResource(id = R.drawable.premium_exclusive_badge),
+                    contentDescription = "Premium Exclusive",
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(bottom = 8.dp)
-                        .background(
-                            Brush.horizontalGradient(
-                                listOf(Color(0xFF3A2F0B), Color(0xFF2A1F08))
-                            ),
-                            RoundedCornerShape(12.dp)
-                        )
-                        .padding(12.dp),
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text("👑", fontSize = 18.sp)
-                        Spacer(Modifier.width(8.dp))
-                        Column {
-                            Text(
-                                "Premium Content",
-                                color = Color(0xFFD4AF37),
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 14.sp,
-                            )
-                            Text(
-                                "Activate a Premium code to watch this content",
-                                color = Color.White.copy(alpha = 0.6f),
-                                fontSize = 12.sp,
-                            )
-                        }
-                    }
-                }
+                        .height(40.dp)
+                        .padding(bottom = 8.dp),
+                    contentScale = ContentScale.Inside
+                )
             }
             Button(
                 onClick = {
-                    if (isContentPremium && !isUserPremium && !isSeries) {
-                        // Premium content locked for free users (movies) — navigate to premium screen
-                        onNavigateToPremium()
-                        return@Button
-                    }
                     if (movie.id.isNotBlank()) {
+                        // Premium content + free user + movie → free preview
+                        val isFreePreview = isContentPremium && !isUserPremium && !isSeries
                         val episodeIdToPlay = when {
                             // Series: resume last watched episode
                             isSeries && hasProgress -> watchProgress?.contentId
@@ -562,7 +538,7 @@ fun MovieDetailScreen(
                             // Movie / Anime Movie: no episode ID needed
                             else -> null
                         }
-                        onPlay(movie.id, episodeIdToPlay)
+                        onPlay(movie.id, episodeIdToPlay, isFreePreview)
                     }
                 },
                 modifier = Modifier
@@ -578,11 +554,14 @@ fun MovieDetailScreen(
                         .fillMaxSize()
                         .background(
                             Brush.horizontalGradient(
-                                colors = listOf(
-                                    CineVaultTheme.colors.accentGold,
-                                    CineVaultTheme.colors.accentGold.copy(alpha = 0.85f),
-                                    Color(0xFFFFBE45)
-                                )
+                                colors = if (isContentPremium && !isUserPremium && !isSeries)
+                                    listOf(Color(0xFFD4AF37), Color(0xFFB8860B), Color(0xFFD4AF37))
+                                else
+                                    listOf(
+                                        CineVaultTheme.colors.accentGold,
+                                        CineVaultTheme.colors.accentGold.copy(alpha = 0.85f),
+                                        Color(0xFFFFBE45)
+                                    )
                             ),
                             RoundedCornerShape(12.dp)
                         ),
@@ -590,7 +569,7 @@ fun MovieDetailScreen(
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(
-                            if (isContentPremium && !isUserPremium && !isSeries) Icons.Default.Lock else Icons.Default.PlayArrow,
+                            Icons.Default.PlayArrow,
                             "Play",
                             tint = Color.Black,
                             modifier = Modifier.size(26.dp)
@@ -598,7 +577,7 @@ fun MovieDetailScreen(
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
                             when {
-                                isContentPremium && !isUserPremium && !isSeries -> "PREMIUM ONLY 👑"
+                                isContentPremium && !isUserPremium && !isSeries -> "FREE PREVIEW"
                                 hasProgress -> "RESUME WATCHING"
                                 else -> "WATCH NOW"
                             },
@@ -702,7 +681,7 @@ fun MovieDetailScreen(
                     if (isEpisodeLocked) {
                         onNavigateToPremium()
                     } else {
-                        onPlay(movie.id, episode.id)
+                        onPlay(movie.id, episode.id, false)
                     }
                 },
                 onMoreSeasonsClick = { showMoreSeasonsSheet = true },
@@ -768,7 +747,7 @@ fun MovieDetailScreen(
             episodes = uiState.episodes,
             selectedSeasonId = uiState.selectedSeasonId,
             onSeasonSelected = { viewModel.selectSeason(it) },
-            onEpisodeClick = { episode -> onPlay(movie.id, episode.id) },
+            onEpisodeClick = { episode -> onPlay(movie.id, episode.id, false) },
             onDismiss = { showMoreSeasonsSheet = false }
         )
     }

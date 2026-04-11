@@ -420,6 +420,26 @@ fun PlayerScreen(
     var showAudioPopup by remember { mutableStateOf(false) }
     var showEpisodePopup by remember { mutableStateOf(false) }
 
+    // -- Free Preview: 10-minute lock system --
+    val isFreePreview = uiState.isFreePreview
+    val previewLimitMs = uiState.previewLimitMs
+    var showPreviewExpiredDialog by remember { mutableStateOf(false) }
+
+    // Enforce 10-minute limit: when position reaches limit, pause and show popup
+    LaunchedEffect(uiState.currentPosition, isFreePreview) {
+        if (isFreePreview && !uiState.previewExpired && uiState.currentPosition >= previewLimitMs) {
+            exoPlayer.pause()
+            viewModel.markPreviewExpired()
+            showPreviewExpiredDialog = true
+        }
+    }
+
+    // Helper to clamp seek position for free preview
+    val clampSeek: (Long) -> Long = { target ->
+        if (isFreePreview && !uiState.isPremium) target.coerceAtMost(previewLimitMs)
+        else target
+    }
+
     // -- Quality switching: pause player during switch, resume after --
     var wasPlayingBeforeSwitch by remember { mutableStateOf(false) }
     LaunchedEffect(uiState.isQualitySwitching) {
@@ -553,14 +573,14 @@ fun PlayerScreen(
                         val seekable = exoPlayer.isCurrentMediaItemSeekable
                         Log.d("CineVaultPlayer", "DOUBLE-TAP: pos=$pos, dur=$dur, seekable=$seekable, side=${if (offset.x < screenWidth / 2) "LEFT" else "RIGHT"}")
                         if (offset.x < screenWidth / 2) {
-                            val target = (pos - 10_000).coerceAtLeast(0)
+                            val target = clampSeek((pos - 10_000).coerceAtLeast(0))
                             Log.d("CineVaultPlayer", "SEEK-BACK: target=$target")
                             exoPlayer.seekTo(target)
                             viewModel.seekTo(target)
                             doubleTapLabel = "bk"
                         } else {
-                            val oldPos = pos
-                            val target = if (dur > 0) (pos + 10_000).coerceAtMost(dur) else pos + 10_000
+                            val rawTarget = if (dur > 0) (pos + 10_000).coerceAtMost(dur) else pos + 10_000
+                            val target = clampSeek(rawTarget)
                             Log.d("CineVaultPlayer", "SEEK-FWD: target=$target")
                             exoPlayer.seekTo(target)
                             viewModel.seekTo(target)
@@ -959,7 +979,7 @@ fun PlayerScreen(
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
                             IconButton(onClick = {
-                                val target = (exoPlayer.currentPosition - 10_000).coerceAtLeast(0)
+                                val target = clampSeek((exoPlayer.currentPosition - 10_000).coerceAtLeast(0))
                                 exoPlayer.seekTo(target)
                                 viewModel.seekTo(target)
                                 doubleTapLabel = "bk"
@@ -998,7 +1018,8 @@ fun PlayerScreen(
                                 val oldPos = exoPlayer.currentPosition.coerceAtLeast(0)
                                 val dur = exoPlayer.duration.coerceAtLeast(0)
                                 val seekable = exoPlayer.isCurrentMediaItemSeekable
-                                val target = if (dur > 0) (oldPos + 10_000).coerceAtMost(dur) else oldPos + 10_000
+                                val rawTarget = if (dur > 0) (oldPos + 10_000).coerceAtMost(dur) else oldPos + 10_000
+                                val target = clampSeek(rawTarget)
                                 Log.d("CineVaultPlayer", "FWD-BTN: pos=$oldPos, dur=$dur, seekable=$seekable, target=$target")
                                 exoPlayer.seekTo(target)
                                 viewModel.seekTo(target)
@@ -1022,11 +1043,13 @@ fun PlayerScreen(
                                 totalDuration = uiState.totalDuration,
                                 bufferedPosition = bufferedPosition,
                                 adMarkers = emptyList(),
+                                previewLimitMs = if (isFreePreview) previewLimitMs else 0L,
                                 onSeek = { fraction ->
                                     val dur = uiState.totalDuration
                                     if (dur > 0) {
                                         val oldPos = exoPlayer.currentPosition.coerceAtLeast(0)
-                                        val seekPos = (fraction * dur).toLong()
+                                        val rawSeekPos = (fraction * dur).toLong()
+                                        val seekPos = clampSeek(rawSeekPos)
                                         val seekable = exoPlayer.isCurrentMediaItemSeekable
                                         Log.d("CineVaultPlayer", "PROGRESS-BAR: fraction=$fraction, dur=$dur, seekPos=$seekPos, seekable=$seekable, curPos=$oldPos")
                                         exoPlayer.seekTo(seekPos)
@@ -1309,6 +1332,147 @@ fun PlayerScreen(
         }
 
         // (Smart Ad System uses AdMob interstitial ads — no in-app overlay needed)
+
+        // ============================================================
+        // FREE PREVIEW: Disclaimer Banner (bottom overlay)
+        // ============================================================
+        if (isFreePreview && !uiState.previewExpired) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .fillMaxWidth()
+                    .background(Color.Black.copy(alpha = 0.80f))
+                    .padding(horizontal = 16.dp, vertical = 10.dp)
+                    .zIndex(80f),
+            ) {
+                Column {
+                    Text(
+                        "This is a Premium Exclusive video",
+                        color = GoldAccent,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold,
+                    )
+                    Spacer(Modifier.height(2.dp))
+                    val remainingMs = (previewLimitMs - uiState.currentPosition).coerceAtLeast(0)
+                    val remainingMin = remainingMs / 60000
+                    val remainingSec = (remainingMs % 60000) / 1000
+                    Text(
+                        "You have ${remainingMin}:${String.format("%02d", remainingSec)} of free watching left. Subscribe to Premium to watch the full video.",
+                        color = Color.White.copy(alpha = 0.7f),
+                        fontSize = 11.sp,
+                        lineHeight = 15.sp,
+                    )
+                }
+            }
+        }
+
+        // ============================================================
+        // FREE PREVIEW: Trial Expiry Popup Dialog
+        // ============================================================
+        if (showPreviewExpiredDialog) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = 0.85f))
+                    .zIndex(100f)
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null,
+                        onClick = {},
+                    ),
+                contentAlignment = Alignment.Center,
+            ) {
+                Surface(
+                    shape = RoundedCornerShape(20.dp),
+                    color = Color(0xFF1A1A1A),
+                    border = BorderStroke(1.dp, GoldAccent.copy(alpha = 0.4f)),
+                    shadowElevation = 16.dp,
+                    modifier = Modifier
+                        .widthIn(max = 380.dp)
+                        .padding(24.dp),
+                ) {
+                    Column(
+                        modifier = Modifier.padding(24.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                    ) {
+                        Icon(
+                            Icons.Filled.Lock,
+                            contentDescription = null,
+                            tint = GoldAccent,
+                            modifier = Modifier.size(48.dp),
+                        )
+                        Spacer(Modifier.height(16.dp))
+                        Text(
+                            "Free Preview Ended",
+                            color = Color.White,
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Bold,
+                            textAlign = TextAlign.Center,
+                        )
+                        Spacer(Modifier.height(10.dp))
+                        Text(
+                            "The 10-minute free trial has ended.\nPlease subscribe to Premium to continue watching.",
+                            color = Color.White.copy(alpha = 0.7f),
+                            fontSize = 14.sp,
+                            textAlign = TextAlign.Center,
+                            lineHeight = 20.sp,
+                        )
+                        Spacer(Modifier.height(24.dp))
+                        // Subscribe button
+                        Button(
+                            onClick = {
+                                showPreviewExpiredDialog = false
+                                onNavigateToPremium()
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(48.dp),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
+                            contentPadding = PaddingValues(),
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .background(
+                                        Brush.horizontalGradient(
+                                            listOf(GoldAccent, Color(0xFFB8860B), GoldAccent)
+                                        ),
+                                        RoundedCornerShape(12.dp),
+                                    ),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                Text(
+                                    "SUBSCRIBE NOW",
+                                    color = Color.Black,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    fontSize = 14.sp,
+                                    letterSpacing = 1.sp,
+                                )
+                            }
+                        }
+                        Spacer(Modifier.height(10.dp))
+                        // Close button
+                        TextButton(
+                            onClick = {
+                                showPreviewExpiredDialog = false
+                                viewModel.saveExplicitProgress(
+                                    exoPlayer.currentPosition,
+                                    exoPlayer.duration.coerceAtLeast(0),
+                                )
+                                onBack()
+                            },
+                        ) {
+                            Text(
+                                "Close",
+                                color = Color.White.copy(alpha = 0.6f),
+                                fontSize = 14.sp,
+                            )
+                        }
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -1467,34 +1631,39 @@ private fun ObsidianSeekBubble(symbol: String, label: String) {
 
 // -- Progress Bar --
 @Composable
-private fun ObsidianProgressBar(currentPosition: Long, totalDuration: Long, bufferedPosition: Long, adMarkers: List<Float> = emptyList(), onSeek: (Float) -> Unit) {
+private fun ObsidianProgressBar(currentPosition: Long, totalDuration: Long, bufferedPosition: Long, adMarkers: List<Float> = emptyList(), previewLimitMs: Long = 0L, onSeek: (Float) -> Unit) {
     val playedFraction = if (totalDuration > 0) (currentPosition.toFloat() / totalDuration).coerceIn(0f, 1f) else 0f
     val bufferedFraction = if (totalDuration > 0) (bufferedPosition.toFloat() / totalDuration).coerceIn(0f, 1f) else 0f
+    val lockFraction = if (previewLimitMs > 0 && totalDuration > 0) (previewLimitMs.toFloat() / totalDuration).coerceIn(0f, 1f) else 0f
     var isDragging by remember { mutableStateOf(false) }
     var dragFraction by remember { mutableFloatStateOf(0f) }
     val displayFraction = if (isDragging) dragFraction else playedFraction
+    // Clamp drag to lock position for free preview
+    val clampDrag: (Float) -> Float = { f ->
+        if (lockFraction > 0f) f.coerceAtMost(lockFraction) else f
+    }
 
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .height(28.dp)
-            .pointerInput(Unit) {
+            .pointerInput(lockFraction) {
                 detectDragGestures(
                     onDragStart = { offset ->
                         isDragging = true
-                        dragFraction = (offset.x / size.width).coerceIn(0f, 1f)
+                        dragFraction = clampDrag((offset.x / size.width).coerceIn(0f, 1f))
                     },
                     onDragEnd = { onSeek(dragFraction); isDragging = false },
                     onDragCancel = { isDragging = false },
                     onDrag = { change, _ ->
                         change.consume()
-                        dragFraction = (change.position.x / size.width).coerceIn(0f, 1f)
+                        dragFraction = clampDrag((change.position.x / size.width).coerceIn(0f, 1f))
                     },
                 )
             }
-            .pointerInput(Unit) {
+            .pointerInput(lockFraction) {
                 detectTapGestures { offset ->
-                    val fraction = (offset.x / size.width).coerceIn(0f, 1f)
+                    val fraction = clampDrag((offset.x / size.width).coerceIn(0f, 1f))
                     onSeek(fraction)
                 }
             },
@@ -1521,6 +1690,22 @@ private fun ObsidianProgressBar(currentPosition: Long, totalDuration: Long, buff
                         center = Offset(x, size.height / 2),
                     )
                 }
+            }
+        }
+        // Lock icon at preview limit position
+        if (lockFraction in 0.01f..0.99f) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth(lockFraction)
+                    .wrapContentWidth(Alignment.End)
+                    .offset(x = 0.dp, y = (-10).dp)
+            ) {
+                Icon(
+                    Icons.Filled.Lock,
+                    contentDescription = "Preview limit",
+                    tint = GoldAccent,
+                    modifier = Modifier.size(16.dp),
+                )
             }
         }
         // Thumb

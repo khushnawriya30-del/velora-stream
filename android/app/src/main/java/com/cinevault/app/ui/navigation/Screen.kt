@@ -40,17 +40,23 @@ sealed class Screen(val route: String) {
         fun createRoute(movieId: String) = "movie/$movieId"
     }
 
-    data object Player : Screen("player/{contentId}?episodeId={episodeId}") {
-        fun createRoute(contentId: String, episodeId: String? = null): String {
-            return if (episodeId != null) "player/$contentId?episodeId=$episodeId"
-            else "player/$contentId"
+    data object Player : Screen("player/{contentId}?episodeId={episodeId}&freePreview={freePreview}") {
+        fun createRoute(contentId: String, episodeId: String? = null, freePreview: Boolean = false): String {
+            val base = "player/$contentId"
+            val params = mutableListOf<String>()
+            if (episodeId != null) params.add("episodeId=$episodeId")
+            if (freePreview) params.add("freePreview=true")
+            return if (params.isNotEmpty()) "$base?${params.joinToString("&")}" else base
         }
     }
 
-    data object CinematicIntro : Screen("cinematic_intro/{contentId}?episodeId={episodeId}") {
-        fun createRoute(contentId: String, episodeId: String? = null): String {
-            return if (episodeId != null) "cinematic_intro/$contentId?episodeId=$episodeId"
-            else "cinematic_intro/$contentId"
+    data object CinematicIntro : Screen("cinematic_intro/{contentId}?episodeId={episodeId}&freePreview={freePreview}") {
+        fun createRoute(contentId: String, episodeId: String? = null, freePreview: Boolean = false): String {
+            val base = "cinematic_intro/$contentId"
+            val params = mutableListOf<String>()
+            if (episodeId != null) params.add("episodeId=$episodeId")
+            if (freePreview) params.add("freePreview=true")
+            return if (params.isNotEmpty()) "$base?${params.joinToString("&")}" else base
         }
     }
 
