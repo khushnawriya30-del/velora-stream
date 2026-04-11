@@ -663,6 +663,8 @@ fun CineVaultNavHost(navController: NavHostController = rememberNavController())
                             navController.navigate(Screen.MovieDetail.createRoute(contentId))
                             navController.navigate(Screen.CinematicIntro.createRoute(contentId, episodeId))
                         },
+                        onAddMoreWatchlist = { navController.navigate(Screen.AddMoreWatchlist.route) },
+                        onAddMoreCollection = { navController.navigate(Screen.AddMoreCollection.route) },
                     )
                 } else {
                     Box(
@@ -744,6 +746,20 @@ fun CineVaultNavHost(navController: NavHostController = rememberNavController())
 
             composable(Screen.TermsOfService.route) {
                 TermsOfServiceScreen(onBack = { navController.popBackStack() })
+            }
+
+            composable(Screen.AddMoreWatchlist.route) {
+                AddMoreScreen(
+                    type = "watchlist",
+                    onBack = { navController.popBackStack() },
+                )
+            }
+
+            composable(Screen.AddMoreCollection.route) {
+                AddMoreScreen(
+                    type = "collection",
+                    onBack = { navController.popBackStack() },
+                )
             }
 
             composable(Screen.ActivatePremium.route) {

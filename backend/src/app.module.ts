@@ -36,6 +36,7 @@ import { WithdrawalModule } from './modules/withdrawal/withdrawal.module';
 import { RazorpayModule } from './modules/razorpay/razorpay.module';
 import { PremiumOffersModule } from './modules/premium-offers/premium-offers.module';
 import { EarnerProofsModule } from './modules/earner-proofs/earner-proofs.module';
+import { ThematicCollectionModule } from './modules/thematic-collection/thematic-collection.module';
 
 @Module({
   imports: [
@@ -93,6 +94,7 @@ import { EarnerProofsModule } from './modules/earner-proofs/earner-proofs.module
     RazorpayModule,
     PremiumOffersModule,
     EarnerProofsModule,
+    ThematicCollectionModule,
   ],
 })
 export class AppModule {}

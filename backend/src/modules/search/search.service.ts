@@ -2,10 +2,14 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Movie, MovieDocument, ContentStatus } from '../../schemas/movie.schema';
+import { SearchQuery, SearchQueryDocument } from '../../schemas/search-query.schema';
 
 @Injectable()
 export class SearchService {
-  constructor(@InjectModel(Movie.name) private movieModel: Model<MovieDocument>) {}
+  constructor(
+    @InjectModel(Movie.name) private movieModel: Model<MovieDocument>,
+    @InjectModel(SearchQuery.name) private searchQueryModel: Model<SearchQueryDocument>,
+  ) {}
 
   async search(
     query: string,
@@ -69,17 +73,52 @@ export class SearchService {
       this.movieModel.countDocuments(filter),
     ]);
 
+    // Track search query for popular searches
+    if (query && query.trim().length >= 2) {
+      this.trackSearchQuery(query.trim()).catch(() => {});
+    }
+
     return { results, total };
+  }
+
+  private async trackSearchQuery(query: string): Promise<void> {
+    const normalized = query.toLowerCase().trim();
+    // Find the best matching movie for this query
+    const matchingMovie = await this.movieModel.findOne({
+      status: ContentStatus.PUBLISHED,
+      title: { $regex: normalized.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), $options: 'i' },
+    }).select('_id posterUrl contentType').lean();
+
+    await this.searchQueryModel.findOneAndUpdate(
+      { query: normalized },
+      {
+        $inc: { count: 1 },
+        ...(matchingMovie ? {
+          $set: {
+            contentId: matchingMovie._id.toString(),
+            posterUrl: matchingMovie.posterUrl,
+            contentType: matchingMovie.contentType,
+          },
+        } : {}),
+      },
+      { upsert: true },
+    );
   }
 
   async autocomplete(query: string): Promise<any[]> {
     if (!query || query.trim().length < 2) return [];
 
-    const escapedQuery = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    // Normalize: strip special chars for matching
+    const normalized = query.replace(/[:_\-\/]/g, ' ').replace(/\s+/g, ' ').trim();
+    const words = normalized.split(' ').filter(w => w.length > 0);
+    // Build regex that matches all words in any order
+    const regexParts = words.map(w => `(?=.*${w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`);
+    const regexStr = regexParts.join('') + '.*';
+
     return this.movieModel
       .find({
         status: ContentStatus.PUBLISHED,
-        title: { $regex: escapedQuery, $options: 'i' },
+        title: { $regex: regexStr, $options: 'i' },
       })
       .sort({ popularityScore: -1 })
       .limit(10)
@@ -87,13 +126,65 @@ export class SearchService {
   }
 
   async getTrendingSearches(): Promise<string[]> {
-    // In production, this would be backed by Redis with search query tracking
+    // Return top searches from tracked query data
+    const tracked = await this.searchQueryModel
+      .find({ count: { $gte: 1 } })
+      .sort({ count: -1 })
+      .limit(10)
+      .lean();
+
+    if (tracked.length >= 3) {
+      return tracked.map(t => t.query);
+    }
+
+    // Fallback: use most viewed content titles
     const trending = await this.movieModel
       .find({ status: ContentStatus.PUBLISHED })
       .sort({ viewCount: -1 })
       .limit(10)
       .select('title');
     return trending.map((m) => m.title);
+  }
+
+  async getMostPopularSearches(): Promise<any[]> {
+    // Get top 3 most searched with poster info
+    const tracked = await this.searchQueryModel
+      .find({ count: { $gte: 1 }, contentId: { $ne: null } })
+      .sort({ count: -1 })
+      .limit(3)
+      .lean();
+
+    if (tracked.length >= 1) {
+      // Resolve movie data for each
+      const results = [];
+      for (const t of tracked) {
+        if (t.contentId) {
+          const movie = await this.movieModel
+            .findById(t.contentId)
+            .select('title posterUrl bannerUrl contentType releaseYear rating')
+            .lean();
+          if (movie) {
+            results.push({ ...movie, searchCount: t.count });
+          }
+        }
+      }
+      if (results.length > 0) return results;
+    }
+
+    // Fallback: most viewed
+    return this.movieModel
+      .find({ status: ContentStatus.PUBLISHED })
+      .sort({ viewCount: -1 })
+      .limit(3)
+      .select('title posterUrl bannerUrl contentType releaseYear rating');
+  }
+
+  async getRecommended(limit = 10): Promise<any[]> {
+    return this.movieModel
+      .find({ status: ContentStatus.PUBLISHED })
+      .sort({ popularityScore: -1, viewCount: -1 })
+      .limit(limit)
+      .select('title posterUrl bannerUrl contentType contentRating genres releaseYear duration rating languages');
   }
 
   async getGenres(): Promise<string[]> {

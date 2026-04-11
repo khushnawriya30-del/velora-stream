@@ -8,6 +8,7 @@ import com.cinevault.app.data.repository.AuthRepository
 import com.cinevault.app.data.repository.ContentRepository
 import com.cinevault.app.data.repository.ProfileRepository
 import com.cinevault.app.data.repository.WatchProgressRepository
+import com.cinevault.app.data.repository.ThematicCollectionRepository
 import com.cinevault.app.data.repository.WatchlistRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
@@ -21,6 +22,7 @@ data class ProfileUiState(
     val activeProfile: ProfileDto? = null,
     val watchHistory: List<WatchProgressDto> = emptyList(),
     val watchlist: List<MovieDto> = emptyList(),
+    val thematicCollection: List<MovieDto> = emptyList(),
     val likedMovies: List<MovieDto> = emptyList(),
     val userName: String = "",
     val userEmail: String = "",
@@ -31,6 +33,7 @@ class ProfileViewModel @Inject constructor(
     private val profileRepository: ProfileRepository,
     private val watchProgressRepository: WatchProgressRepository,
     private val watchlistRepository: WatchlistRepository,
+    private val thematicCollectionRepository: ThematicCollectionRepository,
     private val contentRepository: ContentRepository,
     private val authRepository: AuthRepository,
     private val sessionManager: SessionManager,
@@ -104,7 +107,11 @@ class ProfileViewModel @Inject constructor(
                 is Result.Success -> r.data
                 else -> emptyList()
             }
-            _uiState.update { it.copy(watchHistory = history, watchlist = watchlist) }
+            val collection = when (val r = thematicCollectionRepository.getCollection(profileId)) {
+                is Result.Success -> r.data
+                else -> emptyList()
+            }
+            _uiState.update { it.copy(watchHistory = history, watchlist = watchlist, thematicCollection = collection) }
         }
     }
 
@@ -152,5 +159,57 @@ class ProfileViewModel @Inject constructor(
 
     fun clearError() {
         _uiState.update { it.copy(error = null) }
+    }
+
+    fun addToWatchlist(contentId: String) {
+        val profileId = _uiState.value.activeProfile?.id ?: return
+        viewModelScope.launch {
+            when (watchlistRepository.addToWatchlist(profileId, contentId)) {
+                is Result.Success -> loadProfileContent(profileId)
+                is Result.Error -> {}
+                is Result.Loading -> {}
+            }
+        }
+    }
+
+    fun removeFromWatchlist(contentId: String) {
+        val profileId = _uiState.value.activeProfile?.id ?: return
+        viewModelScope.launch {
+            when (watchlistRepository.removeFromWatchlist(profileId, contentId)) {
+                is Result.Success -> {
+                    _uiState.update { state ->
+                        state.copy(watchlist = state.watchlist.filter { it.id != contentId })
+                    }
+                }
+                is Result.Error -> {}
+                is Result.Loading -> {}
+            }
+        }
+    }
+
+    fun addToThematicCollection(contentId: String) {
+        val profileId = _uiState.value.activeProfile?.id ?: return
+        viewModelScope.launch {
+            when (thematicCollectionRepository.addToCollection(profileId, contentId)) {
+                is Result.Success -> loadProfileContent(profileId)
+                is Result.Error -> {}
+                is Result.Loading -> {}
+            }
+        }
+    }
+
+    fun removeFromThematicCollection(contentId: String) {
+        val profileId = _uiState.value.activeProfile?.id ?: return
+        viewModelScope.launch {
+            when (thematicCollectionRepository.removeFromCollection(profileId, contentId)) {
+                is Result.Success -> {
+                    _uiState.update { state ->
+                        state.copy(thematicCollection = state.thematicCollection.filter { it.id != contentId })
+                    }
+                }
+                is Result.Error -> {}
+                is Result.Loading -> {}
+            }
+        }
     }
 }

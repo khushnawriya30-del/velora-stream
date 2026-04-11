@@ -341,4 +341,35 @@ interface CineVaultApi {
     // ── Invite Settings ──
     @GET("premium-offers/invite-settings")
     suspend fun getInviteSettings(): Response<InviteSettingsDto>
+
+    // ── Thematic Collection ──
+    @GET("thematic-collection")
+    suspend fun getThematicCollection(
+        @Header("x-profile-id") profileId: String,
+    ): Response<List<ThematicCollectionItemDto>>
+
+    @POST("thematic-collection/{contentId}")
+    suspend fun addToThematicCollection(
+        @Header("x-profile-id") profileId: String,
+        @Path("contentId") contentId: String,
+    ): Response<MessageResponse>
+
+    @DELETE("thematic-collection/{contentId}")
+    suspend fun removeFromThematicCollection(
+        @Header("x-profile-id") profileId: String,
+        @Path("contentId") contentId: String,
+    ): Response<MessageResponse>
+
+    @GET("thematic-collection/{contentId}/check")
+    suspend fun checkThematicCollection(
+        @Header("x-profile-id") profileId: String,
+        @Path("contentId") contentId: String,
+    ): Response<ThematicCollectionCheckResponse>
+
+    // ── Search Extras ──
+    @GET("search/most-popular")
+    suspend fun getMostPopularSearches(): Response<List<PopularSearchDto>>
+
+    @GET("search/recommended")
+    suspend fun getRecommended(@Query("limit") limit: Int = 10): Response<List<MovieDto>>
 }

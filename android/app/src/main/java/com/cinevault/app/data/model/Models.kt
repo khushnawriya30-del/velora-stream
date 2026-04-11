@@ -609,3 +609,22 @@ data class InviteSettingsDto(
     val earnWindowDays: Int = 60,
     val isActive: Boolean = true,
 )
+
+// ── Thematic Collection ──
+data class ThematicCollectionItemDto(
+    @SerializedName("_id") val id: String?,
+    val contentId: MovieDto,
+)
+data class ThematicCollectionCheckResponse(val inCollection: Boolean)
+
+// ── Popular Search ──
+data class PopularSearchDto(
+    @SerializedName("_id") val id: String,
+    val title: String,
+    val posterUrl: String?,
+    val bannerUrl: String?,
+    val contentType: String?,
+    val releaseYear: Int?,
+    val rating: Double?,
+    val searchCount: Int?,
+)

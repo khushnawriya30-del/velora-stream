@@ -10,6 +10,7 @@ import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -37,6 +38,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.zIndex
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.cinevault.app.R
@@ -48,6 +50,8 @@ import com.cinevault.app.ui.theme.CineVaultTheme
 import com.cinevault.app.ui.viewmodel.EarnMoneyViewModel
 import com.cinevault.app.ui.viewmodel.PremiumViewModel
 import com.cinevault.app.ui.viewmodel.ProfileViewModel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 
 // Premium text color – dark brown for strong contrast on gold card
 private val PremTextOnGold = Color(0xFF4A3000)
@@ -59,6 +63,8 @@ fun MeScreen(
     onNavigateToPremium: () -> Unit = {},
     onNavigateToEarnMoney: () -> Unit = {},
     onMovieClick: (String) -> Unit = {},
+    onAddMoreWatchlist: () -> Unit = {},
+    onAddMoreCollection: () -> Unit = {},
     /** Navigate to content from history. For movies: episodeId = null. For episodes: episodeId = episode id, contentId = seriesId. */
     onHistoryItemClick: (contentId: String, episodeId: String?) -> Unit = { _, _ -> },
     profileViewModel: ProfileViewModel = hiltViewModel(),
@@ -148,16 +154,45 @@ fun MeScreen(
             Spacer(Modifier.height(28.dp))
         }
 
+        // ── My Watchlist Section ──
+        MeSectionHeaderWithAddMore(
+            icon = Icons.Outlined.BookmarkBorder,
+            title = "My Watchlist",
+            onAddMore = onAddMoreWatchlist,
+        )
+        Spacer(Modifier.height(12.dp))
         if (uiState.watchlist.isNotEmpty()) {
-            MeSectionHeader(icon = Icons.Outlined.BookmarkBorder, title = "My List", onSeeAll = null)
-            Spacer(Modifier.height(12.dp))
-            LazyRow(contentPadding = PaddingValues(horizontal = 20.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                items(uiState.watchlist) { movie ->
-                    MeMovieCard(movie = movie, onClick = { onMovieClick(movie.id) })
-                }
-            }
-            Spacer(Modifier.height(28.dp))
+            MeAutoScrollCarousel(
+                movies = uiState.watchlist,
+                onMovieClick = onMovieClick,
+            )
+        } else {
+            MeEmptyCarouselPlaceholder(
+                text = "Your watchlist is empty",
+                onAddMore = onAddMoreWatchlist,
+            )
         }
+        Spacer(Modifier.height(28.dp))
+
+        // ── My Thematic Collection Section ──
+        MeSectionHeaderWithAddMore(
+            icon = Icons.Filled.Star,
+            title = "My Thematic Collection",
+            onAddMore = onAddMoreCollection,
+        )
+        Spacer(Modifier.height(12.dp))
+        if (uiState.thematicCollection.isNotEmpty()) {
+            MeStackedCarousel(
+                movies = uiState.thematicCollection,
+                onMovieClick = onMovieClick,
+            )
+        } else {
+            MeEmptyCarouselPlaceholder(
+                text = "Your collection is empty",
+                onAddMore = onAddMoreCollection,
+            )
+        }
+        Spacer(Modifier.height(28.dp))
 
         if (uiState.likedMovies.isNotEmpty()) {
             MeSectionHeader(icon = Icons.Outlined.ThumbUp, title = "Liked Videos", onSeeAll = null)
@@ -653,6 +688,298 @@ private fun MeEarnMoneyCard(
                         color = Color.White,
                     )
                 }
+            }
+        }
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// ── Section Header with Add More button ──
+// ═══════════════════════════════════════════════════════════════
+
+@Composable
+private fun MeSectionHeaderWithAddMore(icon: ImageVector, title: String, onAddMore: () -> Unit) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(icon, contentDescription = null, tint = CineVaultTheme.colors.accentGold, modifier = Modifier.size(20.dp))
+        Spacer(Modifier.width(8.dp))
+        Text(
+            text = title,
+            style = CineVaultTheme.typography.sectionTitle,
+            color = CineVaultTheme.colors.textPrimary,
+            modifier = Modifier.weight(1f),
+        )
+        TextButton(onClick = onAddMore) {
+            Text("+ Add More", style = CineVaultTheme.typography.label, color = CineVaultTheme.colors.accentGold)
+            Icon(Icons.Filled.ChevronRight, contentDescription = null, tint = CineVaultTheme.colors.accentGold, modifier = Modifier.size(16.dp))
+        }
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// ── Auto-Scrolling Carousel (flat, for My Watchlist) ──
+// ═══════════════════════════════════════════════════════════════
+
+@Composable
+private fun MeAutoScrollCarousel(
+    movies: List<MovieDto>,
+    onMovieClick: (String) -> Unit,
+) {
+    if (movies.isEmpty()) return
+
+    val listState = rememberLazyListState()
+    val itemCount = movies.size
+
+    // Auto-scroll: smoothly scroll one item every 3 seconds
+    LaunchedEffect(itemCount) {
+        if (itemCount <= 1) return@LaunchedEffect
+        while (isActive) {
+            delay(3000)
+            val nextIndex = listState.firstVisibleItemIndex + 1
+            if (nextIndex < itemCount) {
+                listState.animateScrollToItem(nextIndex)
+            } else {
+                // Loop back to start
+                listState.animateScrollToItem(0)
+            }
+        }
+    }
+
+    LazyRow(
+        state = listState,
+        contentPadding = PaddingValues(horizontal = 20.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        items(movies) { movie ->
+            MeWatchlistCard(movie = movie, onClick = { onMovieClick(movie.id) })
+        }
+    }
+}
+
+@Composable
+private fun MeWatchlistCard(movie: MovieDto, onClick: () -> Unit) {
+    Column(
+        modifier = Modifier
+            .width(130.dp)
+            .clickable(onClick = onClick),
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(185.dp)
+                .clip(RoundedCornerShape(12.dp))
+                .background(CineVaultTheme.colors.surface),
+        ) {
+            AsyncImage(
+                model = movie.posterUrl,
+                contentDescription = movie.title,
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop,
+            )
+            // Quality badge
+            movie.videoQuality?.let { quality ->
+                if (quality.isNotBlank()) {
+                    Surface(
+                        modifier = Modifier.align(Alignment.TopStart).padding(6.dp),
+                        shape = RoundedCornerShape(4.dp),
+                        color = CineVaultTheme.colors.accentGold.copy(alpha = 0.9f),
+                    ) {
+                        Text(
+                            text = quality.uppercase(),
+                            style = CineVaultTheme.typography.labelSmall.copy(fontSize = 8.sp, fontWeight = FontWeight.Bold),
+                            color = Color.Black,
+                            modifier = Modifier.padding(horizontal = 5.dp, vertical = 1.dp),
+                        )
+                    }
+                }
+            }
+            // Rating badge
+            if ((movie.rating ?: 0.0) > 0.0) {
+                Surface(
+                    modifier = Modifier.align(Alignment.TopEnd).padding(6.dp),
+                    shape = RoundedCornerShape(4.dp),
+                    color = Color(0xCC000000),
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Icon(Icons.Filled.Star, contentDescription = null, tint = CineVaultTheme.colors.accentGold, modifier = Modifier.size(10.dp))
+                        Spacer(Modifier.width(2.dp))
+                        Text(String.format("%.1f", movie.rating), style = CineVaultTheme.typography.labelSmall.copy(fontSize = 9.sp), color = Color.White)
+                    }
+                }
+            }
+        }
+        Spacer(Modifier.height(6.dp))
+        Text(
+            text = movie.title,
+            style = CineVaultTheme.typography.labelSmall,
+            color = CineVaultTheme.colors.textPrimary,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+        )
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// ── Stacked Card Carousel (for My Thematic Collection) ──
+// ═══════════════════════════════════════════════════════════════
+
+@Composable
+private fun MeStackedCarousel(
+    movies: List<MovieDto>,
+    onMovieClick: (String) -> Unit,
+) {
+    if (movies.isEmpty()) return
+
+    val listState = rememberLazyListState()
+    val itemCount = movies.size
+
+    // Auto-scroll
+    LaunchedEffect(itemCount) {
+        if (itemCount <= 1) return@LaunchedEffect
+        while (isActive) {
+            delay(3500)
+            val nextIndex = listState.firstVisibleItemIndex + 1
+            if (nextIndex < itemCount) {
+                listState.animateScrollToItem(nextIndex)
+            } else {
+                listState.animateScrollToItem(0)
+            }
+        }
+    }
+
+    LazyRow(
+        state = listState,
+        contentPadding = PaddingValues(horizontal = 20.dp),
+        horizontalArrangement = Arrangement.spacedBy((-30).dp), // Overlap cards
+    ) {
+        items(movies.size) { index ->
+            val movie = movies[index]
+            val zIndex = (movies.size - index).toFloat()
+            Box(
+                modifier = Modifier
+                    .graphicsLayer {
+                        this.shadowElevation = (3f * (movies.size - index))
+                        this.translationX = 0f
+                        // Scale: front card = 1.0, each subsequent slightly smaller
+                        val depthScale = 1f - (index.coerceAtMost(2) * 0.00f) // all same size, depth from overlap
+                        scaleX = depthScale
+                        scaleY = depthScale
+                    }
+                    .zIndex(zIndex),
+            ) {
+                MeStackedCard(movie = movie, onClick = { onMovieClick(movie.id) })
+            }
+        }
+    }
+}
+
+@Composable
+private fun MeStackedCard(movie: MovieDto, onClick: () -> Unit) {
+    Column(
+        modifier = Modifier
+            .width(140.dp)
+            .clickable(onClick = onClick),
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(195.dp)
+                .clip(RoundedCornerShape(14.dp))
+                .background(CineVaultTheme.colors.surface)
+                .border(
+                    width = 1.dp,
+                    color = CineVaultTheme.colors.border.copy(alpha = 0.3f),
+                    shape = RoundedCornerShape(14.dp),
+                ),
+        ) {
+            AsyncImage(
+                model = movie.posterUrl,
+                contentDescription = movie.title,
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop,
+            )
+            // Bottom gradient
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(60.dp)
+                    .align(Alignment.BottomCenter)
+                    .background(
+                        Brush.verticalGradient(
+                            colors = listOf(Color.Transparent, Color(0xCC000000)),
+                        ),
+                    ),
+            )
+            // Title overlay
+            Text(
+                text = movie.title,
+                style = CineVaultTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
+                color = Color.White,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier
+                    .align(Alignment.BottomStart)
+                    .padding(horizontal = 8.dp, vertical = 8.dp),
+            )
+            // Category tag
+            Surface(
+                modifier = Modifier.align(Alignment.TopStart).padding(6.dp),
+                shape = RoundedCornerShape(4.dp),
+                color = CineVaultTheme.colors.accentGold.copy(alpha = 0.85f),
+            ) {
+                Text(
+                    text = movie.contentType.replaceFirstChar { it.uppercase() },
+                    style = CineVaultTheme.typography.labelSmall.copy(fontSize = 8.sp, fontWeight = FontWeight.Bold),
+                    color = Color.Black,
+                    modifier = Modifier.padding(horizontal = 5.dp, vertical = 1.dp),
+                )
+            }
+        }
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// ── Empty State Placeholder ──
+// ═══════════════════════════════════════════════════════════════
+
+@Composable
+private fun MeEmptyCarouselPlaceholder(text: String, onAddMore: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 20.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        // First card: placeholder with + Add More
+        Box(
+            modifier = Modifier
+                .width(130.dp)
+                .height(185.dp)
+                .clip(RoundedCornerShape(12.dp))
+                .background(CineVaultTheme.colors.surface.copy(alpha = 0.5f))
+                .border(1.dp, CineVaultTheme.colors.border.copy(alpha = 0.3f), RoundedCornerShape(12.dp))
+                .clickable(onClick = onAddMore),
+            contentAlignment = Alignment.Center,
+        ) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Icon(
+                    Icons.Filled.Add,
+                    contentDescription = "Add More",
+                    tint = CineVaultTheme.colors.textSecondary,
+                    modifier = Modifier.size(36.dp),
+                )
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    text = "+ Add More",
+                    style = CineVaultTheme.typography.labelSmall,
+                    color = CineVaultTheme.colors.textSecondary,
+                    textAlign = TextAlign.Center,
+                )
             }
         }
     }

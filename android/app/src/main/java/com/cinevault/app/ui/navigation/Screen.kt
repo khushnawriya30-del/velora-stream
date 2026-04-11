@@ -53,4 +53,7 @@ sealed class Screen(val route: String) {
             else "cinematic_intro/$contentId"
         }
     }
+
+    data object AddMoreWatchlist : Screen("add_more_watchlist")
+    data object AddMoreCollection : Screen("add_more_collection")
 }

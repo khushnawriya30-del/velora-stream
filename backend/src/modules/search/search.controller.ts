@@ -76,6 +76,18 @@ export class SearchController {
     return this.searchService.getYears();
   }
 
+  @Get('most-popular')
+  @ApiOperation({ summary: 'Get top 3 most popular searches with poster info' })
+  async mostPopular() {
+    return this.searchService.getMostPopularSearches();
+  }
+
+  @Get('recommended')
+  @ApiOperation({ summary: 'Get recommended/trending content' })
+  async recommended(@Query('limit') limit?: number) {
+    return this.searchService.getRecommended(limit || 10);
+  }
+
   @Get('ranking')
   @ApiOperation({ summary: 'Get ranked content by category' })
   @ApiQuery({ name: 'type', required: false, description: 'download or rating' })

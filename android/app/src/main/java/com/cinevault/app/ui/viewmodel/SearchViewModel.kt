@@ -1,5 +1,6 @@
 package com.cinevault.app.ui.viewmodel
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.cinevault.app.data.model.*
@@ -17,6 +18,9 @@ data class SearchUiState(
     val results: List<MovieDto> = emptyList(),
     val autocomplete: List<AutocompleteItem> = emptyList(),
     val trendingSearches: List<String> = emptyList(),
+    val recentSearches: List<String> = emptyList(),
+    val popularSearches: List<PopularSearchDto> = emptyList(),
+    val recommendedContent: List<MovieDto> = emptyList(),
     val genres: List<String> = emptyList(),
     val languages: List<String> = emptyList(),
     val selectedGenre: String? = null,
@@ -39,9 +43,64 @@ class SearchViewModel @Inject constructor(
     private var searchJob: Job? = null
     private var autocompleteJob: Job? = null
 
+    companion object {
+        private const val PREFS_NAME = "search_history"
+        private const val KEY_RECENT = "recent_searches"
+        private const val MAX_RECENT = 15
+    }
+
     init {
         loadFilterOptions()
         loadTrendingSearches()
+    }
+
+    fun loadSearchScreenData() {
+        viewModelScope.launch {
+            // Load popular searches
+            when (val result = contentRepository.getMostPopularSearches()) {
+                is Result.Success -> _uiState.update { it.copy(popularSearches = result.data) }
+                else -> {}
+            }
+        }
+        viewModelScope.launch {
+            // Load recommended content
+            when (val result = contentRepository.getRecommended()) {
+                is Result.Success -> _uiState.update { it.copy(recommendedContent = result.data) }
+                else -> {}
+            }
+        }
+    }
+
+    fun saveRecentSearch(context: Context) {
+        val query = _uiState.value.query.trim()
+        if (query.isBlank()) return
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val existing = prefs.getStringSet(KEY_RECENT, emptySet())?.toMutableList() ?: mutableListOf()
+        existing.remove(query)
+        existing.add(0, query)
+        val trimmed = existing.take(MAX_RECENT)
+        prefs.edit().putStringSet(KEY_RECENT, trimmed.toSet()).apply()
+        _uiState.update { it.copy(recentSearches = trimmed) }
+    }
+
+    fun loadRecentSearches(context: Context) {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val recent = prefs.getStringSet(KEY_RECENT, emptySet())?.toList() ?: emptyList()
+        _uiState.update { it.copy(recentSearches = recent) }
+    }
+
+    fun clearAllRecentSearches(context: Context) {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        prefs.edit().remove(KEY_RECENT).apply()
+        _uiState.update { it.copy(recentSearches = emptyList()) }
+    }
+
+    fun removeRecentSearch(context: Context, query: String) {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val existing = prefs.getStringSet(KEY_RECENT, emptySet())?.toMutableSet() ?: mutableSetOf()
+        existing.remove(query)
+        prefs.edit().putStringSet(KEY_RECENT, existing).apply()
+        _uiState.update { it.copy(recentSearches = existing.toList()) }
     }
 
     private fun loadTrendingSearches() {
