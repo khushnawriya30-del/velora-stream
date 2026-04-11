@@ -115,6 +115,12 @@ const PREMIUM_EXCLUSIVE_DEFAULTS = [
     section: TabSection.ANIME,
     contentTypes: ['anime'] as string[],
   },
+  {
+    slug: 'system-premium-exclusive-me',
+    title: 'Premium Exclusive',
+    section: TabSection.ME,
+    contentTypes: [] as string[], // all types
+  },
 ];
 
 @Injectable()
@@ -213,28 +219,11 @@ export class HomeSectionsService implements OnModuleInit {
       }
 
       if (section.type === SectionType.PREMIUM_EXCLUSIVE) {
-        // Premium Exclusive: auto-fetch isPremium content, filtered by contentType
-        const premFilter: any = { status: ContentStatus.PUBLISHED, isPremium: true };
-        if ((section as any).contentTypes?.length > 0) {
-          premFilter.contentType = { $in: (section as any).contentTypes };
-        }
-        movies = await this.movieModel
-          .find(premFilter)
-          .sort({ createdAt: -1 })
-          .limit(section.maxItems)
-          .select('title posterUrl bannerUrl contentType contentRating genres releaseYear duration rating viewCount starRating videoQuality languages isPremium');
-
-        // Also include any manually added content that isn't already in the auto list
+        // Premium Exclusive: show ONLY manually added content (independent from Premium Only flag)
         if (section.contentIds?.length > 0) {
-          const autoIds = new Set(movies.map((m) => m._id.toString()));
-          const manualMovies = await this.movieModel
+          movies = await this.movieModel
             .find({ _id: { $in: section.contentIds }, status: ContentStatus.PUBLISHED })
             .select('title posterUrl bannerUrl contentType contentRating genres releaseYear duration rating viewCount starRating videoQuality languages isPremium');
-          for (const m of manualMovies) {
-            if (!autoIds.has(m._id.toString())) {
-              movies.push(m);
-            }
-          }
         }
 
         // Force isPremium on all items in premium exclusive section

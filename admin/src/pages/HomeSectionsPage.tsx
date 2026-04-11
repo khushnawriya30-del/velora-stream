@@ -27,6 +27,7 @@ const SECTIONS = [
   { key: 'movies', label: 'Movies' },
   { key: 'shows', label: 'Shows' },
   { key: 'anime', label: 'Anime' },
+  { key: 'me', label: 'Me' },
 ] as const;
 
 type SectionKey = (typeof SECTIONS)[number]['key'];
@@ -119,10 +120,11 @@ function SortableSectionRow({
               {section.type === 'trending' && 'Trending'}
               {section.type === 'mid_banner' && 'Featured Banner'}
               {section.type === 'upcoming' && 'Upcoming'}
+              {section.type === 'premium_exclusive' && 'Premium Exclusive'}
             </span>
           )}
         </div>
-        {isSystem ? (
+        {isSystem && section.type !== 'premium_exclusive' ? (
           <p className="text-xs text-emerald-400/80 mt-0.5">
             Auto-populated •{' '}
             {section.type === 'trending' ? 'sorted by popularity' : section.type === 'upcoming' ? 'sorted by release date' : 'newest first'} • up to{' '}
@@ -130,6 +132,13 @@ function SortableSectionRow({
             {section.contentTypes && section.contentTypes.length > 0
               ? ` • ${section.contentTypes.join(', ')}`
               : ' • all content types'}
+          </p>
+        ) : section.type === 'premium_exclusive' ? (
+          <p className="text-xs text-amber-400/80 mt-0.5">
+            Auto-fills premium content + {section.contentIds?.length || 0} manually added •{' '}
+            {section.contentTypes && section.contentTypes.length > 0
+              ? section.contentTypes.join(', ')
+              : 'all types'}
           </p>
         ) : (
           <p className="text-xs text-text-secondary mt-0.5">
@@ -161,8 +170,8 @@ function SortableSectionRow({
           </div>
         </label>
 
-        {/* Manage Content — hidden for system sections (auto-managed) */}
-        {!isSystem && (
+        {/* Manage Content — allowed for non-system sections AND premium_exclusive sections */}
+        {(!isSystem || section.type === 'premium_exclusive') && (
           <button
             onClick={onManageContent}
             className="p-2 rounded-lg hover:bg-gold/10 text-text-secondary hover:text-gold transition-colors"
@@ -172,8 +181,8 @@ function SortableSectionRow({
           </button>
         )}
 
-        {/* Edit — hidden for system sections */}
-        {!isSystem && (
+        {/* Edit — allowed for non-system sections AND premium_exclusive sections */}
+        {(!isSystem || section.type === 'premium_exclusive') && (
           <button
             onClick={onEdit}
             className="p-2 rounded-lg hover:bg-gold/10 text-text-secondary hover:text-gold transition-colors"

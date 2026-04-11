@@ -23,6 +23,7 @@ export enum TabSection {
   MOVIES = 'movies',
   SHOWS = 'shows',
   ANIME = 'anime',
+  ME = 'me',
 }
 
 @Schema({ timestamps: true })

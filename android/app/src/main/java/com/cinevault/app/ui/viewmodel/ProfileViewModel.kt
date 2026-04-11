@@ -54,8 +54,15 @@ class ProfileViewModel @Inject constructor(
 
     private fun loadPremiumContent() {
         viewModelScope.launch {
-            when (val r = contentRepository.getPremiumContent(limit = 30)) {
-                is Result.Success -> _uiState.update { it.copy(premiumContent = r.data) }
+            // Fetch the "me" section feed — Premium Exclusive is manually curated by admin
+            when (val r = contentRepository.getHomeFeed("me")) {
+                is Result.Success -> {
+                    // Find the premium_exclusive section items from the feed
+                    val premiumItems = r.data
+                        .filter { it.isPremiumOnly == true }
+                        .flatMap { it.items }
+                    _uiState.update { it.copy(premiumContent = premiumItems) }
+                }
                 else -> {}
             }
         }

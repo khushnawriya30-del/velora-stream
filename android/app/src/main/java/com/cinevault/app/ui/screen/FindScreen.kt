@@ -33,6 +33,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.cinevault.app.R
 import com.cinevault.app.data.model.MovieDto
+import com.cinevault.app.ui.components.PremiumBadgeOverlay
 import com.cinevault.app.ui.theme.CineVaultTheme
 import com.cinevault.app.ui.viewmodel.FindUiState
 import com.cinevault.app.ui.viewmodel.FindViewModel
@@ -675,6 +676,16 @@ private fun FindMovieCard(
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Crop,
             )
+
+            // Premium badge (top-left)
+            if (movie.isPremium == true) {
+                PremiumBadgeOverlay(
+                    modifier = Modifier
+                        .align(Alignment.TopStart)
+                        .padding(4.dp),
+                    size = 18.dp,
+                )
+            }
 
             // Language badge (top-right)
             val langLabel = movie.languageLabel

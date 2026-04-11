@@ -47,6 +47,7 @@ import com.cinevault.app.data.model.PremiumOfferDto
 import com.cinevault.app.data.model.ProfileDto
 import com.cinevault.app.data.model.WatchProgressDto
 import com.cinevault.app.ui.theme.CineVaultTheme
+import com.cinevault.app.ui.components.PremiumBadgeOverlay
 import com.cinevault.app.ui.viewmodel.EarnMoneyViewModel
 import com.cinevault.app.ui.viewmodel.PremiumViewModel
 import com.cinevault.app.ui.viewmodel.ProfileViewModel
@@ -897,20 +898,28 @@ private fun MeWatchlistCard(movie: MovieDto, onClick: () -> Unit) {
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Crop,
             )
-            // Quality badge
-            movie.videoQuality?.let { quality ->
-                if (quality.isNotBlank()) {
-                    Surface(
-                        modifier = Modifier.align(Alignment.TopStart).padding(6.dp),
-                        shape = RoundedCornerShape(4.dp),
-                        color = CineVaultTheme.colors.accentGold.copy(alpha = 0.9f),
-                    ) {
-                        Text(
-                            text = quality.uppercase(),
-                            style = CineVaultTheme.typography.labelSmall.copy(fontSize = 8.sp, fontWeight = FontWeight.Bold),
-                            color = Color.Black,
-                            modifier = Modifier.padding(horizontal = 5.dp, vertical = 1.dp),
-                        )
+            // Premium badge (top-left)
+            if (movie.isPremium == true) {
+                PremiumBadgeOverlay(
+                    modifier = Modifier.align(Alignment.TopStart).padding(4.dp),
+                    size = 18.dp,
+                )
+            } else {
+                // Quality badge (only when no premium badge)
+                movie.videoQuality?.let { quality ->
+                    if (quality.isNotBlank()) {
+                        Surface(
+                            modifier = Modifier.align(Alignment.TopStart).padding(6.dp),
+                            shape = RoundedCornerShape(4.dp),
+                            color = CineVaultTheme.colors.accentGold.copy(alpha = 0.9f),
+                        ) {
+                            Text(
+                                text = quality.uppercase(),
+                                style = CineVaultTheme.typography.labelSmall.copy(fontSize = 8.sp, fontWeight = FontWeight.Bold),
+                                color = Color.Black,
+                                modifier = Modifier.padding(horizontal = 5.dp, vertical = 1.dp),
+                            )
+                        }
                     }
                 }
             }
