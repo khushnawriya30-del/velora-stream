@@ -301,6 +301,12 @@ interface CineVaultApi {
     @GET("wallet/balance")
     suspend fun getWalletBalance(): Response<WalletBalanceResponse>
 
+    @GET("wallet/bank-details")
+    suspend fun getBankDetails(): Response<BankDetailsResponse>
+
+    @POST("wallet/bank-details")
+    suspend fun saveBankDetails(@Body request: SaveBankDetailsRequest): Response<BankDetailsResponse>
+
     // ── Referral ──
     @GET("referral/stats")
     suspend fun getReferralStats(): Response<ReferralStatsResponse>

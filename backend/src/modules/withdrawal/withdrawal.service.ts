@@ -24,7 +24,7 @@ export class WithdrawalService {
     private readonly walletService: WalletService,
   ) {}
 
-  /** Request a withdrawal with bank details */
+  /** Request a withdrawal — uses saved bank details from wallet */
   async requestWithdrawal(userId: string, amount: number, upiId: string, bankDetails?: BankDetails) {
     if (amount < 100) {
       throw new BadRequestException('Minimum withdrawal is ₹100');
@@ -46,20 +46,40 @@ export class WithdrawalService {
       throw new BadRequestException('You already have a pending withdrawal request');
     }
 
+    // Auto-fetch saved bank details from wallet if not provided
+    let finalBank = bankDetails || {} as BankDetails;
+    if (!finalBank.bankName) {
+      const saved = await this.walletService.getBankDetails(userId);
+      if (saved.hasBankDetails) {
+        finalBank = {
+          bankName: saved.bankName,
+          accountNumber: saved.accountNumber,
+          ifscCode: saved.ifscCode,
+          accountHolderName: saved.accountHolderName,
+          phoneNumber: saved.phoneNumber,
+          email: saved.email,
+        };
+      }
+    }
+
+    if (!finalBank.bankName || !finalBank.accountNumber) {
+      throw new BadRequestException('Please save your bank details first before withdrawing');
+    }
+
     // Deduct balance
     await this.walletService.deductBalance(userId, amount);
 
-    // Create withdrawal request
+    // Create withdrawal request with bank details
     const withdrawal = await this.withdrawalModel.create({
       userId: new Types.ObjectId(userId),
       amount,
       upiId: upiId || '',
-      bankName: bankDetails?.bankName || '',
-      accountNumber: bankDetails?.accountNumber || '',
-      ifscCode: bankDetails?.ifscCode || '',
-      accountHolderName: bankDetails?.accountHolderName || '',
-      phoneNumber: bankDetails?.phoneNumber || '',
-      email: bankDetails?.email || '',
+      bankName: finalBank.bankName || '',
+      accountNumber: finalBank.accountNumber || '',
+      ifscCode: finalBank.ifscCode || '',
+      accountHolderName: finalBank.accountHolderName || '',
+      phoneNumber: finalBank.phoneNumber || '',
+      email: finalBank.email || '',
       status: 'pending',
     });
 

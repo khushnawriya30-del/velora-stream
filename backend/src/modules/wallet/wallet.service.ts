@@ -71,4 +71,64 @@ export class WalletService {
       amountNeeded: remaining,
     };
   }
+
+  /** Save bank details for a user (one-time save) */
+  async saveBankDetails(userId: string, details: {
+    bankName: string;
+    accountNumber: string;
+    ifscCode: string;
+    accountHolderName: string;
+    phoneNumber: string;
+    bankEmail: string;
+  }) {
+    const wallet = await this.getOrCreateWallet(userId);
+    wallet.bankName = details.bankName;
+    wallet.accountNumber = details.accountNumber;
+    wallet.ifscCode = details.ifscCode;
+    wallet.accountHolderName = details.accountHolderName;
+    wallet.phoneNumber = details.phoneNumber;
+    wallet.bankEmail = details.bankEmail;
+    await wallet.save();
+    this.logger.log(`Saved bank details for user ${userId}`);
+    return {
+      bankName: wallet.bankName,
+      accountNumber: wallet.accountNumber,
+      ifscCode: wallet.ifscCode,
+      accountHolderName: wallet.accountHolderName,
+      phoneNumber: wallet.phoneNumber,
+      email: wallet.bankEmail,
+    };
+  }
+
+  /** Get saved bank details for a user */
+  async getBankDetails(userId: string) {
+    const wallet = await this.getOrCreateWallet(userId);
+    return {
+      bankName: wallet.bankName || '',
+      accountNumber: wallet.accountNumber || '',
+      ifscCode: wallet.ifscCode || '',
+      accountHolderName: wallet.accountHolderName || '',
+      phoneNumber: wallet.phoneNumber || '',
+      email: wallet.bankEmail || '',
+      hasBankDetails: !!(wallet.bankName && wallet.accountNumber && wallet.ifscCode),
+    };
+  }
+
+  /** Admin: get bank details for a specific user */
+  async getAdminUserBankDetails(userId: string) {
+    const wallet = await this.walletModel.findOne({ userId: new Types.ObjectId(userId) }).lean();
+    if (!wallet) return null;
+    return {
+      bankName: wallet.bankName || '',
+      accountNumber: wallet.accountNumber || '',
+      ifscCode: wallet.ifscCode || '',
+      accountHolderName: wallet.accountHolderName || '',
+      phoneNumber: wallet.phoneNumber || '',
+      email: wallet.bankEmail || '',
+      balance: wallet.balance,
+      totalEarned: wallet.totalEarned,
+      totalWithdrawn: wallet.totalWithdrawn,
+      totalReferrals: wallet.totalReferrals,
+    };
+  }
 }

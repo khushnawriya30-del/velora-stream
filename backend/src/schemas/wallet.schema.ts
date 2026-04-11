@@ -22,6 +22,25 @@ export class Wallet {
 
   @Prop({ default: 0 })
   totalReferrals: number;
+
+  // Saved bank details (filled once by user)
+  @Prop({ default: '' })
+  bankName: string;
+
+  @Prop({ default: '' })
+  accountNumber: string;
+
+  @Prop({ default: '' })
+  ifscCode: string;
+
+  @Prop({ default: '' })
+  accountHolderName: string;
+
+  @Prop({ default: '' })
+  phoneNumber: string;
+
+  @Prop({ default: '' })
+  bankEmail: string;
 }
 
 export const WalletSchema = SchemaFactory.createForClass(Wallet);

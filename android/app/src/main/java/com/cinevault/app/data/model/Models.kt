@@ -513,6 +513,26 @@ data class EarningItem(
     val createdAt: String,
 )
 
+// Saved bank details (stored on wallet, filled once)
+data class SaveBankDetailsRequest(
+    val bankName: String,
+    val accountNumber: String,
+    val ifscCode: String,
+    val accountHolderName: String,
+    val phoneNumber: String,
+    val email: String,
+)
+
+data class BankDetailsResponse(
+    val bankName: String = "",
+    val accountNumber: String = "",
+    val ifscCode: String = "",
+    val accountHolderName: String = "",
+    val phoneNumber: String = "",
+    val email: String = "",
+    val hasBankDetails: Boolean = false,
+)
+
 data class WithdrawRequest(
     val amount: Int,
     val upiId: String = "",

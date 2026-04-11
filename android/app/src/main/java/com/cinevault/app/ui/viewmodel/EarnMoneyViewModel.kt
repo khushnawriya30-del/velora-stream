@@ -34,6 +34,11 @@ data class EarnMoneyUiState(
     val isWithdrawing: Boolean = false,
     val rewardPerInvite: Int = 1,
     val inviteSettings: InviteSettingsDto? = null,
+    // Bank details
+    val savedBankDetails: BankDetailsResponse? = null,
+    val isSavingBank: Boolean = false,
+    val bankSaveSuccess: Boolean = false,
+    val bankSaveError: String? = null,
 )
 
 @HiltViewModel
@@ -121,11 +126,62 @@ class EarnMoneyViewModel @Inject constructor(
                     )
                 }
 
+                // Load saved bank details
+                try {
+                    val bankResp = api.getBankDetails()
+                    if (bankResp.isSuccessful) {
+                        _uiState.value = _uiState.value.copy(
+                            savedBankDetails = bankResp.body()
+                        )
+                    }
+                } catch (_: Exception) {}
+
                 _uiState.value = _uiState.value.copy(isLoading = false)
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
                     error = e.message ?: "Something went wrong"
+                )
+            }
+        }
+    }
+
+    fun saveBankDetails(bankName: String, accountNumber: String, ifscCode: String, accountHolderName: String, phoneNumber: String, email: String) {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isSavingBank = true, bankSaveError = null, bankSaveSuccess = false)
+            try {
+                val resp = api.saveBankDetails(SaveBankDetailsRequest(
+                    bankName = bankName,
+                    accountNumber = accountNumber,
+                    ifscCode = ifscCode,
+                    accountHolderName = accountHolderName,
+                    phoneNumber = phoneNumber,
+                    email = email,
+                ))
+                if (resp.isSuccessful) {
+                    _uiState.value = _uiState.value.copy(
+                        isSavingBank = false,
+                        bankSaveSuccess = true,
+                        savedBankDetails = BankDetailsResponse(
+                            bankName = bankName,
+                            accountNumber = accountNumber,
+                            ifscCode = ifscCode,
+                            accountHolderName = accountHolderName,
+                            phoneNumber = phoneNumber,
+                            email = email,
+                            hasBankDetails = true,
+                        ),
+                    )
+                } else {
+                    _uiState.value = _uiState.value.copy(
+                        isSavingBank = false,
+                        bankSaveError = resp.errorBody()?.string() ?: "Failed to save",
+                    )
+                }
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(
+                    isSavingBank = false,
+                    bankSaveError = e.message ?: "Failed to save bank details",
                 )
             }
         }

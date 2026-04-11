@@ -61,8 +61,6 @@ fun EarnMoneyScreen(
     val state by viewModel.uiState.collectAsState()
     val context = LocalContext.current
     val clipboardManager = LocalClipboardManager.current
-    var showWithdrawDialog by remember { mutableStateOf(false) }
-    var upiInput by remember { mutableStateOf("") }
     var showRules by remember { mutableStateOf(false) }
 
     // ── Animated balance counter ──
@@ -788,9 +786,9 @@ fun EarnMoneyScreen(
                 Spacer(Modifier.height(16.dp))
             }
 
-            // ── Rules Section (toggleable) ──
+            // ── Rules Section (toggleable, expandable cards with Hindi/English toggle) ──
             if (showRules) {
-                RulesSection(inviteSettings = state.inviteSettings)
+                ExpandableRulesSection()
                 Spacer(Modifier.height(16.dp))
             }
 
@@ -875,120 +873,6 @@ fun EarnMoneyScreen(
         }
     }
 
-    // ═══════════════════════════════════════════
-    // WITHDRAW DIALOG
-    // ═══════════════════════════════════════════
-    if (showWithdrawDialog) {
-        AlertDialog(
-            onDismissRequest = {
-                showWithdrawDialog = false
-                viewModel.clearWithdrawState()
-            },
-            containerColor = CardBlue,
-            title = {
-                Text(
-                    "Withdraw Request",
-                    color = Color.White,
-                    fontWeight = FontWeight.Bold,
-                )
-            },
-            text = {
-                Column {
-                    if (state.withdrawSuccess) {
-                        Text(
-                            "✅ Withdrawal request submitted successfully!",
-                            color = GreenProgress,
-                            fontSize = 15.sp,
-                        )
-                    } else if (!state.canWithdraw) {
-                        Text(
-                            "You need ₹${state.amountNeeded} more to withdraw ₹${threshold}",
-                            color = Color(0xFFFFAB00),
-                            fontSize = 14.sp,
-                        )
-                    } else {
-                        Text(
-                            "Amount: ₹${threshold}",
-                            color = Color.White,
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.SemiBold,
-                        )
-                        Spacer(Modifier.height(12.dp))
-                        OutlinedTextField(
-                            value = upiInput,
-                            onValueChange = { upiInput = it },
-                            label = { Text("Enter UPI ID") },
-                            placeholder = { Text("example@upi") },
-                            singleLine = true,
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = GoldYellow,
-                                unfocusedBorderColor = Color(0xFF3A4A6C),
-                                cursorColor = GoldYellow,
-                                focusedLabelColor = GoldYellow,
-                                unfocusedLabelColor = Color.Gray,
-                                focusedTextColor = Color.White,
-                                unfocusedTextColor = Color.White,
-                            ),
-                            modifier = Modifier.fillMaxWidth(),
-                        )
-                        if (state.withdrawError != null) {
-                            Spacer(Modifier.height(8.dp))
-                            Text(
-                                state.withdrawError!!,
-                                color = Color(0xFFFF5252),
-                                fontSize = 13.sp,
-                            )
-                        }
-                    }
-                }
-            },
-            confirmButton = {
-                if (state.withdrawSuccess) {
-                    Button(
-                        onClick = {
-                            showWithdrawDialog = false
-                            viewModel.clearWithdrawState()
-                        },
-                        colors = ButtonDefaults.buttonColors(containerColor = GoldAmber),
-                    ) {
-                        Text("Done", color = Color.Black, fontWeight = FontWeight.Bold)
-                    }
-                } else if (state.canWithdraw) {
-                    Button(
-                        onClick = {
-                            viewModel.requestWithdrawal(threshold, upiInput.trim())
-                        },
-                        enabled = upiInput.contains("@") && !state.isWithdrawing,
-                        colors = ButtonDefaults.buttonColors(containerColor = GoldAmber),
-                    ) {
-                        if (state.isWithdrawing) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(18.dp),
-                                color = Color.Black,
-                                strokeWidth = 2.dp,
-                            )
-                        } else {
-                            Text(
-                                "Confirm Withdraw",
-                                color = Color.Black,
-                                fontWeight = FontWeight.Bold,
-                            )
-                        }
-                    }
-                }
-            },
-            dismissButton = {
-                if (!state.withdrawSuccess) {
-                    TextButton(onClick = {
-                        showWithdrawDialog = false
-                        viewModel.clearWithdrawState()
-                    }) {
-                        Text("Cancel", color = Color.Gray)
-                    }
-                }
-            },
-        )
-    }
 }
 
 // ═══════════════════════════════════════════
@@ -1043,56 +927,166 @@ private fun EarnerItem(name: String, amount: String) {
 }
 
 // ═══════════════════════════════════════════
-// Rules Section
+// EXPANDABLE RULES SECTION — Cards with Hindi/English Toggle
 // ═══════════════════════════════════════════
+private data class RuleCard(
+    val titleEn: String,
+    val titleHi: String,
+    val contentEn: String,
+    val contentHi: String,
+)
+
+private val rulesData = listOf(
+    RuleCard(
+        titleEn = "Basic Event Information",
+        titleHi = "बेसिक इवेंट जानकारी",
+        contentEn = "Share the app with your friends using your referral code. Each successful referral earns you ₹1 directly to your wallet. Your App's Gift amount is shown in your earnings history.",
+        contentHi = "अपने रेफरल कोड का उपयोग करके ऐप को अपने दोस्तों के साथ शेयर करें। हर सफल रेफरल पर आपको सीधे वॉलेट में ₹1 मिलता है। आपकी ऐप गिफ्ट राशि आपकी कमाई हिस्ट्री में दिखाई देती है।",
+    ),
+    RuleCard(
+        titleEn = "Core Mechanism & Reward Levels",
+        titleHi = "मुख्य प्रक्रिया और रिवॉर्ड लेवल",
+        contentEn = "When a new user downloads the app and signs up using your referral code, you earn ₹1. Only verified and active users are counted. The more you invite, the more you earn — there is no upper limit.",
+        contentHi = "जब कोई नया यूजर ऐप डाउनलोड करके आपके रेफरल कोड से साइन अप करता है, तो आपको ₹1 मिलता है। केवल सत्यापित और सक्रिय यूजर गिने जाते हैं। जितना ज़्यादा इनवाइट करेंगे, उतना ज़्यादा कमाएंगे — कोई ऊपरी सीमा नहीं।",
+    ),
+    RuleCard(
+        titleEn = "Limited-Time Sprint Bonuses",
+        titleHi = "लिमिटेड-टाइम स्प्रिंट बोनस",
+        contentEn = "Special bonus events may be activated from time to time. During these events, you can earn extra rewards per referral. Keep an eye on notifications for bonus rounds!",
+        contentHi = "समय-समय पर विशेष बोनस इवेंट सक्रिय किए जा सकते हैं। इन इवेंट्स के दौरान, आप प्रति रेफरल अतिरिक्त रिवॉर्ड कमा सकते हैं। बोनस राउंड के लिए नोटिफिकेशन पर नज़र रखें!",
+    ),
+    RuleCard(
+        titleEn = "Reward Distribution & Withdrawal",
+        titleHi = "रिवॉर्ड वितरण और निकासी",
+        contentEn = "Earnings are added to your wallet instantly. You can withdraw once your balance reaches the minimum threshold (₹100). Provide your bank details for withdrawal. Processing takes 2-5 business days.",
+        contentHi = "कमाई तुरंत आपके वॉलेट में जुड़ जाती है। जब आपका बैलेंस न्यूनतम सीमा (₹100) तक पहुंच जाए तो आप निकासी कर सकते हैं। निकासी के लिए अपने बैंक डिटेल्स दें। प्रोसेसिंग में 2-5 कार्य दिवस लगते हैं।",
+    ),
+    RuleCard(
+        titleEn = "Important Terms",
+        titleHi = "ज़रूरी शर्तें",
+        contentEn = "Self-referral is not allowed. Fake or duplicate accounts will be detected and banned. The app reserves the right to modify reward amounts. Misuse of the referral system will result in wallet suspension.",
+        contentHi = "स्वयं रेफरल की अनुमति नहीं है। फर्जी या डुप्लीकेट अकाउंट पकड़े जाएंगे और बैन किए जाएंगे। ऐप को रिवॉर्ड राशि में बदलाव करने का अधिकार है। रेफरल सिस्टम के दुरुपयोग पर वॉलेट सस्पेंड किया जाएगा।",
+    ),
+)
+
 @Composable
-private fun RulesSection(inviteSettings: com.cinevault.app.data.model.InviteSettingsDto? = null) {
-    Box(
+private fun ExpandableRulesSection() {
+    var isHindi by remember { mutableStateOf(false) }
+
+    Column(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp)
             .background(CardBlue, RoundedCornerShape(12.dp))
-            .border(
-                1.dp,
-                GoldYellow.copy(alpha = 0.2f),
-                RoundedCornerShape(12.dp),
-            )
+            .border(1.dp, GoldYellow.copy(alpha = 0.2f), RoundedCornerShape(12.dp))
             .padding(16.dp),
     ) {
-        Column {
+        // Header with language toggle
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
             Text(
                 "📋 Rules / नियम",
                 fontSize = 17.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color.White,
             )
-            Spacer(Modifier.height(12.dp))
-            val rules = listOf(
-                "Minimum withdrawal ₹${inviteSettings?.targetAmount ?: 100} / न्यूनतम निकासी ₹${inviteSettings?.targetAmount ?: 100}",
-                "₹${inviteSettings?.rewardPerInvite ?: 1} per referral / हर रेफरल पर ₹${inviteSettings?.rewardPerInvite ?: 1}",
-                "Only verified users counted / केवल सत्यापित उपयोगकर्ता",
-                "No fake invites allowed / नकली आमंत्रण की अनुमति नहीं",
-                "Self-referral not allowed / स्वयं रेफरल की अनुमति नहीं",
-                "Withdrawal via UPI only / केवल UPI से निकासी",
-                "${inviteSettings?.earnWindowDays ?: 60}-day earn window / ${inviteSettings?.earnWindowDays ?: 60} दिन की कमाई अवधि",
-            )
-            rules.forEach { rule ->
-                Row(modifier = Modifier.padding(vertical = 3.dp)) {
-                    Text(
-                        "•",
-                        color = GoldYellow,
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Bold,
-                    )
-                    Spacer(Modifier.width(8.dp))
-                    Text(
-                        rule,
-                        fontSize = 13.sp,
-                        color = Color.White.copy(alpha = 0.7f),
-                        lineHeight = 18.sp,
-                    )
-                }
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(if (isHindi) Color(0xFF3A6BA5) else Color(0xFF2E5090))
+                    .clickable { isHindi = !isHindi }
+                    .padding(horizontal = 12.dp, vertical = 6.dp),
+            ) {
+                Text(
+                    if (isHindi) "हिंदी" else "English",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = Color.White,
+                )
             }
+        }
+
+        Spacer(Modifier.height(12.dp))
+
+        rulesData.forEachIndexed { index, rule ->
+            ExpandableRuleCard(
+                title = if (isHindi) rule.titleHi else rule.titleEn,
+                content = if (isHindi) rule.contentHi else rule.contentEn,
+                index = index + 1,
+            )
+            if (index < rulesData.lastIndex) {
+                Spacer(Modifier.height(8.dp))
+            }
+        }
+    }
+}
+
+@Composable
+private fun ExpandableRuleCard(title: String, content: String, index: Int) {
+    var expanded by remember { mutableStateOf(false) }
+    val rotationAngle by animateFloatAsState(
+        targetValue = if (expanded) 180f else 0f,
+        animationSpec = tween(300),
+        label = "arrow",
+    )
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(10.dp))
+            .background(CardBlueLighter.copy(alpha = 0.6f))
+            .clickable { expanded = !expanded },
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 14.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(24.dp)
+                    .clip(CircleShape)
+                    .background(GoldYellow),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text("$index", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.Black)
+            }
+            Spacer(Modifier.width(10.dp))
+            Text(
+                title,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = Color.White,
+                modifier = Modifier.weight(1f),
+            )
+            Icon(
+                Icons.Default.ExpandMore,
+                contentDescription = if (expanded) "Collapse" else "Expand",
+                tint = Color.White.copy(alpha = 0.6f),
+                modifier = Modifier
+                    .size(20.dp)
+                    .graphicsLayer { rotationZ = rotationAngle },
+            )
+        }
+
+        androidx.compose.animation.AnimatedVisibility(
+            visible = expanded,
+            enter = androidx.compose.animation.expandVertically(animationSpec = tween(300)) +
+                    androidx.compose.animation.fadeIn(animationSpec = tween(300)),
+            exit = androidx.compose.animation.shrinkVertically(animationSpec = tween(300)) +
+                    androidx.compose.animation.fadeOut(animationSpec = tween(300)),
+        ) {
+            Text(
+                content,
+                fontSize = 13.sp,
+                color = Color.White.copy(alpha = 0.7f),
+                lineHeight = 19.sp,
+                modifier = Modifier.padding(start = 14.dp, end = 14.dp, bottom = 14.dp),
+            )
         }
     }
 }
