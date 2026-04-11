@@ -41,6 +41,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.cinevault.app.R
 import com.cinevault.app.data.model.*
+import com.cinevault.app.ui.components.PremiumBadgeOverlay
 import com.cinevault.app.ui.theme.CineVaultTheme
 import com.cinevault.app.ui.viewmodel.MovieDetailViewModel
 import android.annotation.SuppressLint
@@ -180,9 +181,11 @@ fun MovieDetailScreen(
     val hasTrailer = !movie.trailerUrl.isNullOrBlank()
     val isSeries = movie.contentType in listOf("web_series", "tv_show", "anime")
     val isUpcoming = movie.status == "upcoming"
-    val isContentPremium = movie.isPremium == true
     val isUserPremium = uiState.isPremium
     val freeEpisodeCount = movie.freeEpisodeCount ?: 0
+    // Content is premium if series-level flag is set OR any loaded episode is premium
+    val hasAnyPremiumEpisode = uiState.episodes.any { it.isPremium }
+    val isContentPremium = movie.isPremium == true || hasAnyPremiumEpisode
 
     // Resume watching logic
     val watchProgress = uiState.watchProgress
@@ -635,10 +638,11 @@ fun MovieDetailScreen(
                 onSeasonSelected = { viewModel.selectSeason(it) },
                 onEpisodeClick = { episode ->
                     val epIndex = uiState.episodes.indexOfFirst { it.id == episode.id }
-                    val isEpisodeLocked = isContentPremium && !isUserPremium &&
-                        (episode.isPremium || (freeEpisodeCount > 0 && epIndex >= freeEpisodeCount))
+                    val isEpisodeLocked = !isUserPremium &&
+                        (episode.isPremium || (isContentPremium && freeEpisodeCount > 0 && epIndex >= freeEpisodeCount))
                     if (isEpisodeLocked) {
-                        onNavigateToPremium()
+                        // Premium episode for free user → play with free preview
+                        onPlay(movie.id, episode.id, true)
                     } else {
                         onPlay(movie.id, episode.id, false)
                     }
@@ -706,7 +710,11 @@ fun MovieDetailScreen(
             episodes = uiState.episodes,
             selectedSeasonId = uiState.selectedSeasonId,
             onSeasonSelected = { viewModel.selectSeason(it) },
-            onEpisodeClick = { episode -> onPlay(movie.id, episode.id, false) },
+            onEpisodeClick = { episode ->
+                val isEpPremium = !isUserPremium &&
+                    (episode.isPremium || (isContentPremium && freeEpisodeCount > 0 && uiState.episodes.indexOf(episode).let { it >= 0 && it >= freeEpisodeCount }))
+                onPlay(movie.id, episode.id, isEpPremium)
+            },
             onDismiss = { showMoreSeasonsSheet = false }
         )
     }
@@ -1070,8 +1078,8 @@ private fun EpisodesSection(
             ) {
                 items(episodes) { episode ->
                     val epIndex = episodes.indexOf(episode)
-                    val isEpLocked = isContentPremium && !isUserPremium &&
-                        (episode.isPremium || (freeEpisodeCount > 0 && epIndex >= freeEpisodeCount))
+                    val isEpLocked = !isUserPremium &&
+                        (episode.isPremium || (isContentPremium && freeEpisodeCount > 0 && epIndex >= freeEpisodeCount))
                     HorizontalEpisodeCard(
                         episode = episode,
                         seriesPosterUrl = seriesPosterUrl,
@@ -1305,6 +1313,16 @@ private fun HorizontalEpisodeCard(
                     fontSize = 10.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color.Black
+                )
+            }
+
+            // Premium badge – top-right
+            if (episode.isPremium) {
+                PremiumBadgeOverlay(
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(4.dp),
+                    size = 20.dp
                 )
             }
 

@@ -455,6 +455,7 @@ class PlayerViewModel @Inject constructor(
     }
 
     private fun startProgressTimer() {
+        if (isFreePreview) return // Don't save watch history during free preview
         progressJob?.cancel()
         progressJob = viewModelScope.launch {
             // Wait 20s before first save to let the player seek to saved position
@@ -492,6 +493,7 @@ class PlayerViewModel @Inject constructor(
     /** Called when user presses Back — pass real ExoPlayer values directly.
      *  Uses NonCancellable so the HTTP save survives ViewModel destruction. */
     fun saveExplicitProgress(position: Long, duration: Long) {
+        if (isFreePreview) return // Don't save watch history during free preview
         if (duration <= 0) return
         // Use a scope that survives ViewModel clearing
         saveScope.launch {
