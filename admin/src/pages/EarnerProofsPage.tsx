@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Plus, Trash2, Pencil, X, Image as ImageIcon, GripVertical, Eye, EyeOff } from 'lucide-react';
+import { Plus, Trash2, Pencil, X, Image as ImageIcon, Eye, EyeOff } from 'lucide-react';
 import { useState } from 'react';
 import api from '../lib/api';
 import toast from 'react-hot-toast';
