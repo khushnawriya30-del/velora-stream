@@ -605,17 +605,17 @@ private fun BankDetailsForm(
 
         Spacer(Modifier.height(16.dp))
 
-        BankTextField("Bank Name", bankName, onBankNameChange, Icons.Default.AccountBalance)
+        BankTextField("Bank Name", bankName, onBankNameChange, Icons.Default.AccountBalance, placeholder = "e.g. - State Bank of India")
         Spacer(Modifier.height(10.dp))
-        BankTextField("Account Number", accountNumber, onAccountNumberChange, Icons.Default.Numbers, KeyboardType.Number)
+        BankTextField("Account No.", accountNumber, onAccountNumberChange, Icons.Default.Numbers, KeyboardType.Number, placeholder = "e.g. - 123456789012")
         Spacer(Modifier.height(10.dp))
-        BankTextField("IFSC Code", ifscCode, onIfscCodeChange, Icons.Default.Code)
+        BankTextField("IFSC Code", ifscCode, onIfscCodeChange, Icons.Default.Code, placeholder = "e.g. - SBIN0000123")
         Spacer(Modifier.height(10.dp))
-        BankTextField("Account Holder Name", accountHolderName, onAccountHolderNameChange, Icons.Default.Person)
+        BankTextField("Account Holder Name", accountHolderName, onAccountHolderNameChange, Icons.Default.Person, placeholder = "e.g. - Rajesh Kumar")
         Spacer(Modifier.height(10.dp))
-        BankTextField("Phone Number", phoneNumber, onPhoneNumberChange, Icons.Default.Phone, KeyboardType.Phone)
+        BankTextField("Phone Number", phoneNumber, onPhoneNumberChange, Icons.Default.Phone, KeyboardType.Phone, placeholder = "IN +91 | 00000 00000")
         Spacer(Modifier.height(10.dp))
-        BankTextField("Email", email, onEmailChange, Icons.Default.Email, KeyboardType.Email)
+        BankTextField("Email", email, onEmailChange, Icons.Default.Email, KeyboardType.Email, placeholder = "Required")
 
         if (saveError != null) {
             Spacer(Modifier.height(10.dp))
@@ -661,11 +661,13 @@ private fun BankTextField(
     onValueChange: (String) -> Unit,
     icon: androidx.compose.ui.graphics.vector.ImageVector,
     keyboardType: KeyboardType = KeyboardType.Text,
+    placeholder: String = "",
 ) {
     OutlinedTextField(
         value = value,
         onValueChange = onValueChange,
         label = { Text(label) },
+        placeholder = if (placeholder.isNotEmpty()) {{ Text(placeholder, color = Color.White.copy(alpha = 0.3f)) }} else null,
         leadingIcon = { Icon(icon, null, tint = GoldYellow.copy(alpha = 0.7f), modifier = Modifier.size(20.dp)) },
         singleLine = true,
         keyboardOptions = KeyboardOptions(keyboardType = keyboardType),

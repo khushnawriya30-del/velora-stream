@@ -786,10 +786,7 @@ fun EarnMoneyScreen(
             }
 
             // ── Rules Section (toggleable, expandable cards with Hindi/English toggle) ──
-            if (showRules) {
-                ExpandableRulesSection()
-                Spacer(Modifier.height(16.dp))
-            }
+            // (moved to ModalBottomSheet below)
 
             Spacer(Modifier.height(20.dp))
         }
@@ -872,6 +869,45 @@ fun EarnMoneyScreen(
         }
     }
 
+    // ═══════════════════════════════════════════
+    // RULES BOTTOM SHEET
+    // ═══════════════════════════════════════════
+    if (showRules) {
+        ModalBottomSheet(
+            onDismissRequest = { showRules = false },
+            containerColor = CardBlue,
+            tonalElevation = 0.dp,
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 16.dp)
+                    .padding(bottom = 32.dp),
+            ) {
+                // Header
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                ) {
+                    Text(
+                        "📋 Withdrawal Rules",
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White,
+                    )
+                    IconButton(onClick = { showRules = false }) {
+                        Icon(Icons.Default.Close, "Close", tint = Color.White)
+                    }
+                }
+
+                Spacer(Modifier.height(16.dp))
+
+                ExpandableRulesContent()
+            }
+        }
+    }
 }
 
 // ═══════════════════════════════════════════
@@ -969,29 +1005,15 @@ private val rulesData = listOf(
 )
 
 @Composable
-private fun ExpandableRulesSection() {
+private fun ExpandableRulesContent() {
     var isHindi by remember { mutableStateOf(false) }
 
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp)
-            .background(CardBlue, RoundedCornerShape(12.dp))
-            .border(1.dp, GoldYellow.copy(alpha = 0.2f), RoundedCornerShape(12.dp))
-            .padding(16.dp),
-    ) {
-        // Header with language toggle
+    Column(modifier = Modifier.fillMaxWidth()) {
+        // Language toggle
         Row(
             modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween,
+            horizontalArrangement = Arrangement.End,
         ) {
-            Text(
-                "📋 Rules / नियम",
-                fontSize = 17.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color.White,
-            )
             Box(
                 modifier = Modifier
                     .clip(RoundedCornerShape(8.dp))
