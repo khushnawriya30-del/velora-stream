@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Pencil, Trash2, Eye, Grid3x3, List, Play, Cloud, X, Loader2, Check, Download, Film } from 'lucide-react';
+import { Plus, Pencil, Trash2, Eye, Grid3x3, List, Play, Cloud, X, Loader2, Check, Download, Film, Search } from 'lucide-react';
 import { useState } from 'react';
 import api from '../lib/api';
 import type { Movie } from '../types';
@@ -12,15 +12,17 @@ export default function MoviesPage() {
   const queryClient = useQueryClient();
   const [page, setPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState<string>('');
+  const [searchQuery, setSearchQuery] = useState('');
   const [viewMode, setViewMode] = useState<'table' | 'grid'>('grid');
   const [showBunnyImport, setShowBunnyImport] = useState(false);
   const [renamingMovie, setRenamingMovie] = useState<Movie | null>(null);
 
   const { data, isLoading } = useQuery({
-    queryKey: ['movies', page, statusFilter],
+    queryKey: ['movies', page, statusFilter, searchQuery],
     queryFn: async () => {
       const params = new URLSearchParams({ page: String(page), limit: '20' });
       if (statusFilter) params.set('status', statusFilter);
+      if (searchQuery) params.set('search', searchQuery);
       // Movies page only shows movie content type
       params.set('contentType', 'movie');
       const { data } = await api.get(`/movies?${params}`);
@@ -38,6 +40,8 @@ export default function MoviesPage() {
   });
 
   const movies: Movie[] = data?.movies ?? data?.data ?? data ?? [];
+  const totalMovies: number = data?.total ?? movies.length;
+  const totalPages: number = data?.pages ?? 1;
 
   return (
     <div className="space-y-6">
@@ -109,7 +113,17 @@ export default function MoviesPage() {
       </div>
 
       {/* Filters */}
-      <div className="flex gap-3 flex-wrap">
+      <div className="flex gap-3 flex-wrap items-center">
+        <div className="relative flex-1 min-w-[200px] max-w-sm">
+          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
+          <input
+            type="text"
+            placeholder="Search movies by title..."
+            value={searchQuery}
+            onChange={(e) => { setSearchQuery(e.target.value); setPage(1); }}
+            className="w-full bg-surface-light border border-border rounded-lg pl-9 pr-3 py-2 text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:border-gold"
+          />
+        </div>
         <select
           value={statusFilter}
           onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}
@@ -121,6 +135,9 @@ export default function MoviesPage() {
           <option value="upcoming">Upcoming</option>
           <option value="archived">Archived</option>
         </select>
+        <span className="text-sm text-text-secondary ml-auto">
+          {totalMovies} movie{totalMovies !== 1 ? 's' : ''} found
+        </span>
       </div>
 
       {/* Grid View */}
@@ -360,27 +377,29 @@ export default function MoviesPage() {
               </table>
             </div>
           </div>
-
-          {/* Pagination */}
-          <div className="flex justify-center gap-2">
-            <button
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-              disabled={page === 1}
-              className="px-3 py-1.5 rounded-lg bg-surface-light text-text-secondary disabled:opacity-30 hover:text-text-primary transition-colors text-sm"
-            >
-              Previous
-            </button>
-            <span className="px-3 py-1.5 text-sm text-text-secondary">Page {page}</span>
-            <button
-              onClick={() => setPage((p) => p + 1)}
-              disabled={movies.length < 20}
-              className="px-3 py-1.5 rounded-lg bg-surface-light text-text-secondary disabled:opacity-30 hover:text-text-primary transition-colors text-sm"
-            >
-              Next
-            </button>
-          </div>
         </>
       )}
+
+      {/* Pagination — always visible */}
+      <div className="flex justify-center items-center gap-2">
+        <button
+          onClick={() => setPage((p) => Math.max(1, p - 1))}
+          disabled={page === 1}
+          className="px-3 py-1.5 rounded-lg bg-surface-light text-text-secondary disabled:opacity-30 hover:text-text-primary transition-colors text-sm"
+        >
+          Previous
+        </button>
+        <span className="px-3 py-1.5 text-sm text-text-secondary">
+          Page {page} of {totalPages}
+        </span>
+        <button
+          onClick={() => setPage((p) => p + 1)}
+          disabled={page >= totalPages}
+          className="px-3 py-1.5 rounded-lg bg-surface-light text-text-secondary disabled:opacity-30 hover:text-text-primary transition-colors text-sm"
+        >
+          Next
+        </button>
+      </div>
 
       {/* Bunny Stream Import Modal */}
       {showBunnyImport && (

@@ -20,4 +20,6 @@ export class QueryMoviesDto {
   @ApiPropertyOptional({ enum: ContentStatus })
   @IsEnum(ContentStatus) @IsOptional()
   status?: ContentStatus;
+
+  @ApiPropertyOptional() @IsString() @IsOptional() search?: string;
 }

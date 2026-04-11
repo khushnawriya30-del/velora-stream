@@ -99,10 +99,14 @@ export class MoviesService {
   }
 
   async findAll(query: QueryMoviesDto): Promise<{ movies: MovieDocument[]; total: number; page: number; pages: number }> {
-    const { page = 1, limit = 20, contentType, genre, language, year, rating, sort, status } = query;
+    const { page = 1, limit = 20, contentType, genre, language, year, rating, sort, status, search } = query;
     const skip = (page - 1) * limit;
 
     const filter: any = {};
+
+    if (search) {
+      filter.title = { $regex: search, $options: 'i' };
+    }
 
     if (status) {
       filter.status = status;
