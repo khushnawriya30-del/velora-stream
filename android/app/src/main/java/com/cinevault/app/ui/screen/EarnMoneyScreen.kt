@@ -298,9 +298,8 @@ fun EarnMoneyScreen(
                             painter = painterResource(R.drawable.app_logo),
                             contentDescription = "App Logo",
                             modifier = Modifier
-                                .size(40.dp)
-                                .clip(RoundedCornerShape(10.dp)),
-                            contentScale = ContentScale.Crop,
+                                .size(40.dp),
+                            contentScale = ContentScale.Fit,
                         )
                         Spacer(Modifier.width(10.dp))
                         Text(
@@ -673,8 +672,7 @@ fun EarnMoneyScreen(
                 contentDescription = "How much others earned",
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp)
-                    .clip(RoundedCornerShape(24.dp)),
+                    .padding(horizontal = 16.dp),
                 contentScale = ContentScale.FillWidth,
             )
 
