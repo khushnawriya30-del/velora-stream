@@ -161,17 +161,12 @@ fun MeScreen(
             onAddMore = onAddMoreWatchlist,
         )
         Spacer(Modifier.height(12.dp))
-        if (uiState.watchlist.isNotEmpty()) {
-            MeAutoScrollCarousel(
-                movies = uiState.watchlist,
-                onMovieClick = onMovieClick,
-            )
-        } else {
-            MeEmptyCarouselPlaceholder(
-                text = "Your watchlist is empty",
-                onAddMore = onAddMoreWatchlist,
-            )
-        }
+        MeWatchlistSection(
+            userMovies = uiState.watchlist,
+            randomPool = uiState.randomContentPool,
+            onMovieClick = onMovieClick,
+            onAddMore = onAddMoreWatchlist,
+        )
         Spacer(Modifier.height(28.dp))
 
         // ── My Thematic Collection Section ──
@@ -181,17 +176,12 @@ fun MeScreen(
             onAddMore = onAddMoreCollection,
         )
         Spacer(Modifier.height(12.dp))
-        if (uiState.thematicCollection.isNotEmpty()) {
-            MeStackedCarousel(
-                movies = uiState.thematicCollection,
-                onMovieClick = onMovieClick,
-            )
-        } else {
-            MeEmptyCarouselPlaceholder(
-                text = "Your collection is empty",
-                onAddMore = onAddMoreCollection,
-            )
-        }
+        MeThematicCollectionSection(
+            userMovies = uiState.thematicCollection,
+            randomPool = uiState.randomContentPool,
+            onMovieClick = onMovieClick,
+            onAddMore = onAddMoreCollection,
+        )
         Spacer(Modifier.height(28.dp))
 
         if (uiState.likedMovies.isNotEmpty()) {
@@ -719,41 +709,105 @@ private fun MeSectionHeaderWithAddMore(icon: ImageVector, title: String, onAddMo
 }
 
 // ═══════════════════════════════════════════════════════════════
-// ── Auto-Scrolling Carousel (flat, for My Watchlist) ──
+// ── My Watchlist Section (smart auto-loop or static) ──
 // ═══════════════════════════════════════════════════════════════
 
 @Composable
-private fun MeAutoScrollCarousel(
-    movies: List<MovieDto>,
+private fun MeWatchlistSection(
+    userMovies: List<MovieDto>,
+    randomPool: List<MovieDto>,
     onMovieClick: (String) -> Unit,
+    onAddMore: () -> Unit,
 ) {
-    if (movies.isEmpty()) return
-
-    val listState = rememberLazyListState()
-    val itemCount = movies.size
-
-    // Auto-scroll: smoothly scroll one item every 3 seconds
-    LaunchedEffect(itemCount) {
-        if (itemCount <= 1) return@LaunchedEffect
-        while (isActive) {
-            delay(3000)
-            val nextIndex = listState.firstVisibleItemIndex + 1
-            if (nextIndex < itemCount) {
-                listState.animateScrollToItem(nextIndex)
-            } else {
-                // Loop back to start
-                listState.animateScrollToItem(0)
+    if (userMovies.isNotEmpty()) {
+        // ── User has content → static horizontal scroll, NO auto-loop ──
+        LazyRow(
+            contentPadding = PaddingValues(horizontal = 20.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            items(userMovies) { movie ->
+                MeWatchlistCard(movie = movie, onClick = { onMovieClick(movie.id) })
             }
+        }
+    } else if (randomPool.size >= 2) {
+        // ── Empty → Auto-looping random 2 cards with fade animation ──
+        MeAutoLoopWatchlist(
+            pool = randomPool,
+            onMovieClick = onMovieClick,
+            onAddMore = onAddMore,
+        )
+    } else {
+        // ── No pool yet (loading) → placeholder ──
+        MeEmptyCarouselPlaceholder(onAddMore = onAddMore)
+    }
+}
+
+@Composable
+private fun MeAutoLoopWatchlist(
+    pool: List<MovieDto>,
+    onMovieClick: (String) -> Unit,
+    onAddMore: () -> Unit,
+) {
+    // Two slots that randomly swap content
+    var slot1 by remember { mutableStateOf(pool.random()) }
+    var slot2 by remember { mutableStateOf(pool.filter { it.id != slot1.id }.randomOrNull() ?: pool.random()) }
+    var alpha1 by remember { mutableFloatStateOf(1f) }
+    var alpha2 by remember { mutableFloatStateOf(1f) }
+
+    val animatedAlpha1 by animateFloatAsState(
+        targetValue = alpha1,
+        animationSpec = tween(durationMillis = 400, easing = FastOutSlowInEasing),
+        label = "watchlistAlpha1",
+    )
+    val animatedAlpha2 by animateFloatAsState(
+        targetValue = alpha2,
+        animationSpec = tween(durationMillis = 400, easing = FastOutSlowInEasing),
+        label = "watchlistAlpha2",
+    )
+
+    // Auto loop: swap one card every 1.5s, alternating slots
+    LaunchedEffect(pool) {
+        if (pool.size < 2) return@LaunchedEffect
+        var swapSlot1Next = true
+        while (isActive) {
+            delay(1500L)
+            val usedIds = setOf(slot1.id, slot2.id)
+            val candidates = pool.filter { it.id !in usedIds }.ifEmpty { pool }
+            val newMovie = candidates.random()
+            if (swapSlot1Next) {
+                alpha1 = 0f
+                delay(400L)
+                slot1 = newMovie
+                alpha1 = 1f
+            } else {
+                alpha2 = 0f
+                delay(400L)
+                slot2 = newMovie
+                alpha2 = 1f
+            }
+            swapSlot1Next = !swapSlot1Next
         }
     }
 
-    LazyRow(
-        state = listState,
-        contentPadding = PaddingValues(horizontal = 20.dp),
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 20.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        items(movies) { movie ->
-            MeWatchlistCard(movie = movie, onClick = { onMovieClick(movie.id) })
+        Box(
+            modifier = Modifier
+                .weight(1f)
+                .graphicsLayer { alpha = animatedAlpha1 },
+        ) {
+            MeWatchlistCard(movie = slot1, onClick = { onMovieClick(slot1.id) })
+        }
+        Box(
+            modifier = Modifier
+                .weight(1f)
+                .graphicsLayer { alpha = animatedAlpha2 },
+        ) {
+            MeWatchlistCard(movie = slot2, onClick = { onMovieClick(slot2.id) })
         }
     }
 }
@@ -762,7 +816,7 @@ private fun MeAutoScrollCarousel(
 private fun MeWatchlistCard(movie: MovieDto, onClick: () -> Unit) {
     Column(
         modifier = Modifier
-            .width(130.dp)
+            .fillMaxWidth()
             .clickable(onClick = onClick),
     ) {
         Box(
@@ -825,64 +879,180 @@ private fun MeWatchlistCard(movie: MovieDto, onClick: () -> Unit) {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// ── Stacked Card Carousel (for My Thematic Collection) ──
+// ── My Thematic Collection Section (stacked + smart auto-loop) ──
 // ═══════════════════════════════════════════════════════════════
 
 @Composable
-private fun MeStackedCarousel(
+private fun MeThematicCollectionSection(
+    userMovies: List<MovieDto>,
+    randomPool: List<MovieDto>,
+    onMovieClick: (String) -> Unit,
+    onAddMore: () -> Unit,
+) {
+    if (userMovies.isNotEmpty()) {
+        // ── User has content → static stacked cards, NO auto-loop ──
+        MeStaticStackedCarousel(movies = userMovies, onMovieClick = onMovieClick)
+    } else if (randomPool.size >= 2) {
+        // ── Empty → Auto-looping random 2 stacked cards ──
+        MeAutoLoopStackedCollection(
+            pool = randomPool,
+            onMovieClick = onMovieClick,
+            onAddMore = onAddMore,
+        )
+    } else {
+        MeEmptyCarouselPlaceholder(onAddMore = onAddMore)
+    }
+}
+
+@Composable
+private fun MeStaticStackedCarousel(
     movies: List<MovieDto>,
     onMovieClick: (String) -> Unit,
 ) {
-    if (movies.isEmpty()) return
-
-    val listState = rememberLazyListState()
-    val itemCount = movies.size
-
-    // Auto-scroll
-    LaunchedEffect(itemCount) {
-        if (itemCount <= 1) return@LaunchedEffect
-        while (isActive) {
-            delay(3500)
-            val nextIndex = listState.firstVisibleItemIndex + 1
-            if (nextIndex < itemCount) {
-                listState.animateScrollToItem(nextIndex)
-            } else {
-                listState.animateScrollToItem(0)
-            }
-        }
-    }
-
     LazyRow(
-        state = listState,
         contentPadding = PaddingValues(horizontal = 20.dp),
-        horizontalArrangement = Arrangement.spacedBy((-30).dp), // Overlap cards
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        items(movies.size) { index ->
-            val movie = movies[index]
-            val zIndex = (movies.size - index).toFloat()
-            Box(
-                modifier = Modifier
-                    .graphicsLayer {
-                        this.shadowElevation = (3f * (movies.size - index))
-                        this.translationX = 0f
-                        // Scale: front card = 1.0, each subsequent slightly smaller
-                        val depthScale = 1f - (index.coerceAtMost(2) * 0.00f) // all same size, depth from overlap
-                        scaleX = depthScale
-                        scaleY = depthScale
-                    }
-                    .zIndex(zIndex),
-            ) {
-                MeStackedCard(movie = movie, onClick = { onMovieClick(movie.id) })
-            }
+        items(movies) { movie ->
+            MeStackedCardWithDepth(movie = movie, onClick = { onMovieClick(movie.id) })
         }
     }
 }
 
 @Composable
-private fun MeStackedCard(movie: MovieDto, onClick: () -> Unit) {
+private fun MeAutoLoopStackedCollection(
+    pool: List<MovieDto>,
+    onMovieClick: (String) -> Unit,
+    onAddMore: () -> Unit,
+) {
+    // Two visible front cards + ghost "behind" cards for depth
+    var slot1 by remember { mutableStateOf(pool.random()) }
+    var slot2 by remember { mutableStateOf(pool.filter { it.id != slot1.id }.randomOrNull() ?: pool.random()) }
+    var bg1 by remember { mutableStateOf(pool.filter { it.id != slot1.id && it.id != slot2.id }.randomOrNull() ?: pool.random()) }
+    var bg2 by remember { mutableStateOf(pool.filter { it.id !in setOf(slot1.id, slot2.id, bg1.id) }.randomOrNull() ?: pool.random()) }
+    var alpha1 by remember { mutableFloatStateOf(1f) }
+    var alpha2 by remember { mutableFloatStateOf(1f) }
+
+    val animatedAlpha1 by animateFloatAsState(
+        targetValue = alpha1,
+        animationSpec = tween(durationMillis = 450, easing = FastOutSlowInEasing),
+        label = "collAlpha1",
+    )
+    val animatedAlpha2 by animateFloatAsState(
+        targetValue = alpha2,
+        animationSpec = tween(durationMillis = 450, easing = FastOutSlowInEasing),
+        label = "collAlpha2",
+    )
+
+    // Auto loop: swap cards every ~1.8s alternating
+    LaunchedEffect(pool) {
+        if (pool.size < 2) return@LaunchedEffect
+        var swapSlot1Next = true
+        while (isActive) {
+            delay(1800L)
+            val usedIds = setOf(slot1.id, slot2.id, bg1.id, bg2.id)
+            val candidates = pool.filter { it.id !in usedIds }.ifEmpty { pool }
+            val newMovie = candidates.random()
+            if (swapSlot1Next) {
+                alpha1 = 0f
+                delay(450L)
+                bg1 = slot1 // old front becomes background
+                slot1 = newMovie
+                alpha1 = 1f
+            } else {
+                alpha2 = 0f
+                delay(450L)
+                bg2 = slot2
+                slot2 = newMovie
+                alpha2 = 1f
+            }
+            swapSlot1Next = !swapSlot1Next
+        }
+    }
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 20.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        // Slot 1: stacked with depth
+        Box(modifier = Modifier.weight(1f)) {
+            MeStackedSlot(
+                frontMovie = slot1,
+                bgMovie = bg1,
+                frontAlpha = animatedAlpha1,
+                onClick = { onMovieClick(slot1.id) },
+            )
+        }
+        // Slot 2: stacked with depth
+        Box(modifier = Modifier.weight(1f)) {
+            MeStackedSlot(
+                frontMovie = slot2,
+                bgMovie = bg2,
+                frontAlpha = animatedAlpha2,
+                onClick = { onMovieClick(slot2.id) },
+            )
+        }
+    }
+}
+
+/** A single stacked card slot: background card behind + front card with animated alpha */
+@Composable
+private fun MeStackedSlot(
+    frontMovie: MovieDto,
+    bgMovie: MovieDto,
+    frontAlpha: Float,
+    onClick: () -> Unit,
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(210.dp),
+    ) {
+        // ── Background card (behind, scaled down, faded) ──
+        Box(
+            modifier = Modifier
+                .fillMaxWidth(0.9f)
+                .height(195.dp)
+                .align(Alignment.TopCenter)
+                .zIndex(0f)
+                .graphicsLayer {
+                    scaleX = 0.92f
+                    scaleY = 0.92f
+                    translationY = -8f
+                    alpha = 0.35f
+                }
+                .clip(RoundedCornerShape(14.dp))
+                .background(CineVaultTheme.colors.surface),
+        ) {
+            AsyncImage(
+                model = bgMovie.posterUrl,
+                contentDescription = null,
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop,
+            )
+        }
+
+        // ── Front card ──
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(195.dp)
+                .align(Alignment.BottomCenter)
+                .zIndex(1f)
+                .graphicsLayer { alpha = frontAlpha },
+        ) {
+            MeStackedCardWithDepth(movie = frontMovie, onClick = onClick)
+        }
+    }
+}
+
+@Composable
+private fun MeStackedCardWithDepth(movie: MovieDto, onClick: () -> Unit) {
     Column(
         modifier = Modifier
-            .width(140.dp)
+            .fillMaxWidth()
             .clickable(onClick = onClick),
     ) {
         Box(
@@ -948,17 +1118,16 @@ private fun MeStackedCard(movie: MovieDto, onClick: () -> Unit) {
 // ═══════════════════════════════════════════════════════════════
 
 @Composable
-private fun MeEmptyCarouselPlaceholder(text: String, onAddMore: () -> Unit) {
+private fun MeEmptyCarouselPlaceholder(onAddMore: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 20.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        // First card: placeholder with + Add More
         Box(
             modifier = Modifier
-                .width(130.dp)
+                .weight(1f)
                 .height(185.dp)
                 .clip(RoundedCornerShape(12.dp))
                 .background(CineVaultTheme.colors.surface.copy(alpha = 0.5f))
@@ -982,5 +1151,6 @@ private fun MeEmptyCarouselPlaceholder(text: String, onAddMore: () -> Unit) {
                 )
             }
         }
+        Spacer(Modifier.weight(1f))
     }
 }

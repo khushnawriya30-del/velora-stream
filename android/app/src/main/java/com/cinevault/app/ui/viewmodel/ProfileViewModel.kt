@@ -24,6 +24,7 @@ data class ProfileUiState(
     val watchlist: List<MovieDto> = emptyList(),
     val thematicCollection: List<MovieDto> = emptyList(),
     val likedMovies: List<MovieDto> = emptyList(),
+    val randomContentPool: List<MovieDto> = emptyList(),
     val userName: String = "",
     val userEmail: String = "",
 )
@@ -46,6 +47,16 @@ class ProfileViewModel @Inject constructor(
         loadProfiles()
         loadUserInfo()
         loadLikedMovies()
+        loadRandomContentPool()
+    }
+
+    private fun loadRandomContentPool() {
+        viewModelScope.launch {
+            when (val r = contentRepository.getRecommended(limit = 30)) {
+                is Result.Success -> _uiState.update { it.copy(randomContentPool = r.data) }
+                else -> {}
+            }
+        }
     }
 
     private fun loadUserInfo() {
