@@ -24,6 +24,7 @@ import PremiumPage from './pages/PremiumPage';
 import PremiumOffersPage from './pages/PremiumOffersPage';
 import TelegramPaymentsPage from './pages/TelegramPaymentsPage';
 import ReferralPage from './pages/ReferralPage';
+import EarnerProofsPage from './pages/EarnerProofsPage';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const token = useAuthStore((s) => s.token);
@@ -66,6 +67,7 @@ export default function App() {
         <Route path="premium-offers" element={<PremiumOffersPage />} />
         <Route path="telegram-payments" element={<TelegramPaymentsPage />} />
         <Route path="referrals" element={<ReferralPage />} />
+        <Route path="earner-proofs" element={<EarnerProofsPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

@@ -6,6 +6,8 @@ import androidx.compose.animation.core.*
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -35,6 +37,8 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import coil.compose.AsyncImage
+import coil.request.ImageRequest
 import com.cinevault.app.R
 import com.cinevault.app.ui.viewmodel.EarnMoneyViewModel
 import kotlinx.coroutines.delay
@@ -289,9 +293,9 @@ fun EarnMoneyScreen(
                         modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        // App logo (foreground vector drawable)
+                        // App logo PNG from drawable-nodpi
                         Image(
-                            painter = painterResource(R.drawable.ic_launcher_foreground),
+                            painter = painterResource(R.drawable.app_logo),
                             contentDescription = "App Logo",
                             modifier = Modifier
                                 .size(40.dp)
@@ -375,24 +379,30 @@ fun EarnMoneyScreen(
                                     RoundedCornerShape(6.dp),
                                 ),
                         )
-                        // Progress percentage on bar
-                        if (animatedProgress.value > 0.08f) {
+                        // Dynamic progress percentage — moves with progress bar
+                        if (animatedProgress.value > 0.05f) {
                             Box(
                                 modifier = Modifier
                                     .align(Alignment.CenterStart)
-                                    .padding(start = 8.dp)
-                                    .background(
-                                        Color(0xAAB8860B),
-                                        RoundedCornerShape(8.dp),
-                                    )
-                                    .padding(horizontal = 6.dp, vertical = 1.dp),
+                                    .fillMaxWidth(animatedProgress.value)
+                                    .height(12.dp),
+                                contentAlignment = Alignment.CenterEnd,
                             ) {
-                                Text(
-                                    "${(animatedProgress.value * 100).toInt()}%",
-                                    fontSize = 8.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color.White,
-                                )
+                                Box(
+                                    modifier = Modifier
+                                        .background(
+                                            Color(0xAAB8860B),
+                                            RoundedCornerShape(8.dp),
+                                        )
+                                        .padding(horizontal = 6.dp, vertical = 1.dp),
+                                ) {
+                                    Text(
+                                        "${(animatedProgress.value * 100).toInt()}%",
+                                        fontSize = 8.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color.White,
+                                    )
+                                }
                             }
                         }
                         // Balance / target text below bar
@@ -656,80 +666,68 @@ fun EarnMoneyScreen(
             Spacer(Modifier.height(20.dp))
 
             // ═══════════════════════════════════════════
-            // SECTION 8 — HOW MUCH OTHERS EARNED (styled as reference PNG)
+            // SECTION 8 — HOW MUCH OTHERS EARNED (using provided PNG)
             // ═══════════════════════════════════════════
-            Box(
+            Image(
+                painter = painterResource(R.drawable.how_much_other_earned),
+                contentDescription = "How much others earned",
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp)
-                    .background(
-                        Brush.horizontalGradient(
-                            listOf(
-                                Color(0xFFD4A574),
-                                Color(0xFFE8C88A),
-                                Color(0xFFDDB47A),
-                                Color(0xFFC9985E),
-                            )
-                        ),
-                        RoundedCornerShape(24.dp),
-                    )
-                    .padding(horizontal = 14.dp, vertical = 10.dp),
-                contentAlignment = Alignment.CenterStart,
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    // Chat bubble icon matching reference
-                    Box(
-                        modifier = Modifier.size(32.dp),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        // Back bubble
-                        Box(
-                            modifier = Modifier
-                                .size(24.dp)
-                                .offset(x = (-2).dp, y = 2.dp)
-                                .background(
-                                    Color(0xFF5B7FBF),
-                                    RoundedCornerShape(12.dp, 12.dp, 4.dp, 12.dp),
-                                ),
-                        )
-                        // Front bubble
-                        Box(
-                            modifier = Modifier
-                                .size(22.dp)
-                                .offset(x = 3.dp, y = (-2).dp)
-                                .background(
-                                    Color(0xFF4169B0),
-                                    RoundedCornerShape(11.dp, 11.dp, 11.dp, 3.dp),
-                                ),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
-                                repeat(3) {
-                                    Box(
-                                        modifier = Modifier
-                                            .size(4.dp)
-                                            .background(Color.White, CircleShape),
-                                    )
-                                }
-                            }
-                        }
-                    }
-                    Spacer(Modifier.width(8.dp))
-                    Text(
-                        "How much others earned?",
-                        fontSize = 17.sp,
-                        fontWeight = FontWeight.ExtraBold,
-                        color = Color.White,
-                        fontStyle = FontStyle.Italic,
-                    )
-                }
-            }
+                    .clip(RoundedCornerShape(24.dp)),
+                contentScale = ContentScale.FillWidth,
+            )
 
             Spacer(Modifier.height(12.dp))
 
-            // ── Earner leaderboard ──
-            dummyEarners.forEach { (name, amount) ->
-                EarnerItem(name = name, amount = amount)
+            // ── Dynamic Earner Proof Screenshots from Admin ──
+            if (state.earnerProofs.isNotEmpty()) {
+                LazyRow(
+                    modifier = Modifier.fillMaxWidth(),
+                    contentPadding = PaddingValues(horizontal = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    items(state.earnerProofs) { proof ->
+                        Column(
+                            modifier = Modifier
+                                .width(180.dp)
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(CardBlue)
+                                .border(
+                                    1.dp,
+                                    GoldYellow.copy(alpha = 0.2f),
+                                    RoundedCornerShape(12.dp),
+                                ),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                        ) {
+                            AsyncImage(
+                                model = ImageRequest.Builder(context)
+                                    .data(proof.imageUrl)
+                                    .crossfade(true)
+                                    .build(),
+                                contentDescription = proof.caption,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .aspectRatio(0.75f)
+                                    .clip(RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp)),
+                                contentScale = ContentScale.Crop,
+                            )
+                            if (proof.caption.isNotEmpty()) {
+                                Text(
+                                    proof.caption,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 8.dp, vertical = 8.dp),
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    color = GoldYellow,
+                                    textAlign = TextAlign.Center,
+                                    maxLines = 2,
+                                )
+                            }
+                        }
+                    }
+                }
             }
 
             Spacer(Modifier.height(20.dp))
@@ -907,57 +905,6 @@ fun EarnMoneyScreen(
                 ExpandableRulesContent()
             }
         }
-    }
-}
-
-// ═══════════════════════════════════════════
-// Earner Item (leaderboard)
-// ═══════════════════════════════════════════
-private val dummyEarners = listOf(
-    "sharma077" to "₹340",
-    "priya_k" to "₹280",
-    "rahul_99" to "₹210",
-    "sneha_r" to "₹190",
-    "amit_j21" to "₹150",
-)
-
-@Composable
-private fun EarnerItem(name: String, amount: String) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 4.dp)
-            .background(CardBlue.copy(alpha = 0.6f), RoundedCornerShape(10.dp))
-            .padding(horizontal = 14.dp, vertical = 10.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Box(
-            modifier = Modifier
-                .size(32.dp)
-                .clip(CircleShape)
-                .background(Color(0xFF3A4A6C)),
-            contentAlignment = Alignment.Center,
-        ) {
-            Text(
-                name.first().uppercase(),
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color.White,
-            )
-        }
-        Spacer(Modifier.width(10.dp))
-        Text(
-            name,
-            fontSize = 14.sp,
-            color = Color.White,
-            modifier = Modifier.weight(1f),
-        )
-        Text(
-            amount,
-            fontSize = 14.sp,
-            fontWeight = FontWeight.Bold,
-            color = GreenProgress,
-        )
     }
 }
 

@@ -39,6 +39,8 @@ data class EarnMoneyUiState(
     val isSavingBank: Boolean = false,
     val bankSaveSuccess: Boolean = false,
     val bankSaveError: String? = null,
+    // Earner proofs
+    val earnerProofs: List<EarnerProof> = emptyList(),
 )
 
 @HiltViewModel
@@ -132,6 +134,16 @@ class EarnMoneyViewModel @Inject constructor(
                     if (bankResp.isSuccessful) {
                         _uiState.value = _uiState.value.copy(
                             savedBankDetails = bankResp.body()
+                        )
+                    }
+                } catch (_: Exception) {}
+
+                // Load earner proofs
+                try {
+                    val proofsResp = api.getEarnerProofs()
+                    if (proofsResp.isSuccessful) {
+                        _uiState.value = _uiState.value.copy(
+                            earnerProofs = proofsResp.body() ?: emptyList()
                         )
                     }
                 } catch (_: Exception) {}

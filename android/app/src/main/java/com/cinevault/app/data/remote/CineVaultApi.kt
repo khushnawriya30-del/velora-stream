@@ -327,6 +327,10 @@ interface CineVaultApi {
     @GET("withdraw/history")
     suspend fun getWithdrawalHistory(): Response<List<WithdrawalHistoryItem>>
 
+    // ── Earner Proofs ──
+    @GET("earner-proofs")
+    suspend fun getEarnerProofs(): Response<List<EarnerProof>>
+
     // ── Premium Offers ──
     @GET("premium-offers")
     suspend fun getPremiumOffers(@Query("isPremium") isPremium: Boolean = false): Response<List<PremiumOfferDto>>

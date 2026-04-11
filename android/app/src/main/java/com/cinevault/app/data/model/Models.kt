@@ -513,6 +513,14 @@ data class EarningItem(
     val createdAt: String,
 )
 
+data class EarnerProof(
+    val _id: String,
+    val imageUrl: String,
+    val caption: String = "",
+    val displayOrder: Int = 0,
+    val isActive: Boolean = true,
+)
+
 // Saved bank details (stored on wallet, filled once)
 data class SaveBankDetailsRequest(
     val bankName: String,
