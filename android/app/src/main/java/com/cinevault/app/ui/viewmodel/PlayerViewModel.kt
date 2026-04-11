@@ -47,7 +47,6 @@ data class PlayerUiState(
     val isPreRollPending: Boolean = true,
     val isFreePreview: Boolean = false,
     val previewLimitMs: Long = 10 * 60 * 1000L, // 10 minutes default
-    val previewExpired: Boolean = false,
 )
 
 @HiltViewModel
@@ -624,9 +623,7 @@ class PlayerViewModel @Inject constructor(
         _uiState.update { it.copy(isPreRollPending = false) }
     }
 
-    fun markPreviewExpired() {
-        _uiState.update { it.copy(previewExpired = true) }
-    }
+
 
     /** Reset ad state for new episode playback. */
     private fun resetAdSchedule() {

@@ -420,23 +420,42 @@ fun PlayerScreen(
     var showAudioPopup by remember { mutableStateOf(false) }
     var showEpisodePopup by remember { mutableStateOf(false) }
 
-    // -- Free Preview: 10-minute lock system --
+    // -- Free Preview: 10-minute hard lock system --
     val isFreePreview = uiState.isFreePreview
     val previewLimitMs = uiState.previewLimitMs
+    val previewActive = isFreePreview && !uiState.isPremium
     var showPreviewExpiredDialog by remember { mutableStateOf(false) }
 
-    // Enforce 10-minute limit: when position reaches limit, pause and show popup
-    LaunchedEffect(uiState.currentPosition, isFreePreview) {
-        if (isFreePreview && !uiState.previewExpired && uiState.currentPosition >= previewLimitMs) {
+    // WATCHDOG: Continuous enforcement — runs on EVERY position update.
+    // If free preview and position >= limit: force-seek back, pause, show popup.
+    // This catches ALL bypass vectors: resume, background return, seek past, double-tap.
+    LaunchedEffect(uiState.currentPosition, previewActive) {
+        if (previewActive && uiState.currentPosition >= previewLimitMs) {
+            exoPlayer.seekTo(previewLimitMs)
             exoPlayer.pause()
-            viewModel.markPreviewExpired()
             showPreviewExpiredDialog = true
         }
     }
 
+    // RESUME GUARD: When user returns from premium/subscribe screen,
+    // re-check immediately and re-show popup if still not subscribed.
+    DisposableEffect(lifecycleOwner, previewActive) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME && previewActive) {
+                if (exoPlayer.currentPosition >= previewLimitMs) {
+                    exoPlayer.seekTo(previewLimitMs)
+                    exoPlayer.pause()
+                    showPreviewExpiredDialog = true
+                }
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+
     // Helper to clamp seek position for free preview
     val clampSeek: (Long) -> Long = { target ->
-        if (isFreePreview && !uiState.isPremium) target.coerceAtMost(previewLimitMs)
+        if (previewActive) target.coerceAtMost(previewLimitMs)
         else target
     }
 
@@ -585,6 +604,11 @@ fun PlayerScreen(
                             exoPlayer.seekTo(target)
                             viewModel.seekTo(target)
                             doubleTapLabel = "fw"
+                            // If clamped to limit, show popup
+                            if (previewActive && target >= previewLimitMs) {
+                                exoPlayer.pause()
+                                showPreviewExpiredDialog = true
+                            }
                         }
                     },
                     onLongPress = { viewModel.setSpeedOverride(true) },
@@ -995,6 +1019,13 @@ fun PlayerScreen(
                             ) {
                                 IconButton(
                                     onClick = {
+                                        // PREVIEW GUARD: block play if at/past preview limit
+                                        if (previewActive && exoPlayer.currentPosition >= previewLimitMs) {
+                                            exoPlayer.seekTo(previewLimitMs)
+                                            exoPlayer.pause()
+                                            showPreviewExpiredDialog = true
+                                            return@IconButton
+                                        }
                                         if (exoPlayer.isPlaying) {
                                             exoPlayer.pause()
                                             centerFlashIcon = "pause"
@@ -1024,6 +1055,10 @@ fun PlayerScreen(
                                 exoPlayer.seekTo(target)
                                 viewModel.seekTo(target)
                                 doubleTapLabel = "fw"
+                                if (previewActive && target >= previewLimitMs) {
+                                    exoPlayer.pause()
+                                    showPreviewExpiredDialog = true
+                                }
                             }) {
                                 Icon(Icons.Filled.Forward10, contentDescription = "Forward 10s", tint = Color.White, modifier = Modifier.size(42.dp))
                             }
@@ -1043,7 +1078,7 @@ fun PlayerScreen(
                                 totalDuration = uiState.totalDuration,
                                 bufferedPosition = bufferedPosition,
                                 adMarkers = emptyList(),
-                                previewLimitMs = if (isFreePreview) previewLimitMs else 0L,
+                                previewLimitMs = if (previewActive) previewLimitMs else 0L,
                                 onSeek = { fraction ->
                                     val dur = uiState.totalDuration
                                     if (dur > 0) {
@@ -1336,7 +1371,7 @@ fun PlayerScreen(
         // ============================================================
         // FREE PREVIEW: Disclaimer Banner (bottom overlay)
         // ============================================================
-        if (isFreePreview && !uiState.previewExpired) {
+        if (previewActive && !showPreviewExpiredDialog) {
             Box(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
@@ -1418,10 +1453,10 @@ fun PlayerScreen(
                             lineHeight = 20.sp,
                         )
                         Spacer(Modifier.height(24.dp))
-                        // Subscribe button
+                        // Subscribe button — navigate but keep dialog flag so it re-shows on return
                         Button(
                             onClick = {
-                                showPreviewExpiredDialog = false
+                                // Do NOT dismiss dialog — the resume guard will re-show it if still not premium
                                 onNavigateToPremium()
                             },
                             modifier = Modifier
