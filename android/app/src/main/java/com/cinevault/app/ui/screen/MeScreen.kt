@@ -770,7 +770,7 @@ private fun MeAutoLoopWatchlist(
         if (pool.size < 2) return@LaunchedEffect
         var swapSlot1Next = true
         while (isActive) {
-            delay(1500L)
+            delay(2500L)
             val usedIds = setOf(slot1.id, slot2.id)
             val candidates = pool.filter { it.id !in usedIds }.ifEmpty { pool }
             val newMovie = candidates.random()
@@ -949,7 +949,7 @@ private fun MeAutoLoopStackedCollection(
         if (pool.size < 2) return@LaunchedEffect
         var swapSlot1Next = true
         while (isActive) {
-            delay(1800L)
+            delay(3500L)
             val usedIds = setOf(slot1.id, slot2.id, bg1.id, bg2.id)
             val candidates = pool.filter { it.id !in usedIds }.ifEmpty { pool }
             val newMovie = candidates.random()
