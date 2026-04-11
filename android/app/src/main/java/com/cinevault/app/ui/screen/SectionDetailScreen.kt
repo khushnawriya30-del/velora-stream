@@ -176,7 +176,7 @@ private fun GridMovieCard(
                     modifier = Modifier
                         .align(Alignment.TopStart)
                         .padding(4.dp),
-                    size = 20.dp
+                    size = 26.dp
                 )
             } else if (!movie.contentRating.isNullOrEmpty()) {
                 // Content rating — top-left, white faded (only when no premium badge)

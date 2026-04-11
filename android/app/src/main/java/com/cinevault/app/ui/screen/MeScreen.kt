@@ -124,7 +124,7 @@ fun MeScreen(
                 Image(
                     painter = painterResource(R.drawable.premium_badge_small),
                     contentDescription = "Premium",
-                    modifier = Modifier.size(20.dp),
+                    modifier = Modifier.size(24.dp),
                 )
                 Spacer(Modifier.width(6.dp))
                 Text(
@@ -288,7 +288,7 @@ private fun MePremiumHeader(
                         Image(
                             painter = painterResource(R.drawable.premium_badge),
                             contentDescription = "Premium Member",
-                            modifier = Modifier.size(24.dp),
+                            modifier = Modifier.size(32.dp),
                         )
                     }
                 }
@@ -340,7 +340,7 @@ private fun MeMovieCard(movie: MovieDto, onClick: () -> Unit) {
                 Image(
                     painter = painterResource(R.drawable.premium_badge_small),
                     contentDescription = "Premium",
-                    modifier = Modifier.align(Alignment.TopStart).padding(4.dp).size(18.dp),
+                    modifier = Modifier.align(Alignment.TopStart).padding(4.dp).size(24.dp),
                 )
             }
         }
@@ -902,7 +902,7 @@ private fun MeWatchlistCard(movie: MovieDto, onClick: () -> Unit) {
             if (movie.isPremium == true) {
                 PremiumBadgeOverlay(
                     modifier = Modifier.align(Alignment.TopStart).padding(4.dp),
-                    size = 18.dp,
+                    size = 24.dp,
                 )
             } else {
                 // Quality badge (only when no premium badge)

@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Sparkles, Pencil, Trash2 } from 'lucide-react';
+import { Sparkles, Pencil, Trash2, Crown } from 'lucide-react';
 import api from '../lib/api';
 import type { Movie } from '../types';
 import { useNavigate } from 'react-router-dom';
@@ -26,6 +26,16 @@ export default function AnimePage() {
       toast.success('Anime deleted');
     },
     onError: () => toast.error('Failed to delete anime'),
+  });
+
+  const togglePremiumMutation = useMutation({
+    mutationFn: ({ id, isPremium }: { id: string; isPremium: boolean }) =>
+      api.patch(`/movies/${id}`, { isPremium }),
+    onSuccess: (_, { isPremium }) => {
+      queryClient.invalidateQueries({ queryKey: ['anime'] });
+      toast.success(isPremium ? 'Marked as Premium' : 'Removed Premium');
+    },
+    onError: () => toast.error('Failed to update premium status'),
   });
 
   return (
@@ -82,6 +92,13 @@ export default function AnimePage() {
               <div className="px-2 py-2 flex items-center justify-between text-xs text-text-muted border-t border-border">
                 <span className="pl-1">{anime.genres?.slice(0, 2).join(', ')}</span>
                 <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                  <button
+                    onClick={() => togglePremiumMutation.mutate({ id: anime._id, isPremium: !anime.isPremium })}
+                    className={`p-1.5 rounded-lg transition-colors ${anime.isPremium ? 'text-amber-400 hover:bg-amber-500/20' : 'text-text-secondary hover:text-amber-400 hover:bg-amber-500/10'}`}
+                    title={anime.isPremium ? 'Remove Premium' : 'Make Premium'}
+                  >
+                    <Crown size={13} />
+                  </button>
                   <button
                     onClick={() => navigate(`/movies/${anime._id}/edit?section=anime`)}
                     className="p-1.5 rounded-lg hover:bg-surface-light text-text-secondary hover:text-gold transition-colors"

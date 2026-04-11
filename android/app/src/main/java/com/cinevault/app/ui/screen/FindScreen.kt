@@ -683,7 +683,7 @@ private fun FindMovieCard(
                     modifier = Modifier
                         .align(Alignment.TopStart)
                         .padding(4.dp),
-                    size = 18.dp,
+                    size = 24.dp,
                 )
             }
 

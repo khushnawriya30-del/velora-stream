@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Pencil, Trash2, Eye, Grid3x3, List, Play, Cloud, X, Loader2, Check, Download, Film, Search } from 'lucide-react';
+import { Plus, Pencil, Trash2, Eye, Grid3x3, List, Play, Cloud, X, Loader2, Check, Download, Film, Search, Crown } from 'lucide-react';
 import { useState } from 'react';
 import api from '../lib/api';
 import type { Movie } from '../types';
@@ -16,6 +16,16 @@ export default function MoviesPage() {
   const [viewMode, setViewMode] = useState<'table' | 'grid'>('grid');
   const [showBunnyImport, setShowBunnyImport] = useState(false);
   const [renamingMovie, setRenamingMovie] = useState<Movie | null>(null);
+
+  const togglePremiumMutation = useMutation({
+    mutationFn: ({ id, isPremium }: { id: string; isPremium: boolean }) =>
+      api.patch(`/movies/${id}`, { isPremium }),
+    onSuccess: (_, { isPremium }) => {
+      queryClient.invalidateQueries({ queryKey: ['movies'] });
+      toast.success(isPremium ? 'Marked as Premium' : 'Removed Premium');
+    },
+    onError: () => toast.error('Failed to update premium status'),
+  });
 
   const { data, isLoading } = useQuery({
     queryKey: ['movies', page, statusFilter, searchQuery],
@@ -213,6 +223,23 @@ export default function MoviesPage() {
                       <span className="text-text-secondary">{movie.releaseYear}</span>
                     </div>
 
+                    {/* Premium Toggle */}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        togglePremiumMutation.mutate({ id: movie._id, isPremium: !movie.isPremium });
+                      }}
+                      className={clsx(
+                        'w-full flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-xs font-medium transition-colors',
+                        movie.isPremium
+                          ? 'bg-amber-500/20 text-amber-400 hover:bg-amber-500/30'
+                          : 'bg-surface-light text-text-muted hover:text-amber-400 hover:bg-amber-500/10'
+                      )}
+                    >
+                      <Crown size={13} />
+                      {movie.isPremium ? 'Premium' : 'Make Premium'}
+                    </button>
+
                     {/* Buttons */}
                     <div className="flex gap-2 pt-2 border-t border-border">
                       <button
@@ -279,6 +306,7 @@ export default function MoviesPage() {
                     <th className="text-left px-4 py-3 font-medium text-text-secondary">Rating</th>
                     <th className="text-left px-4 py-3 font-medium text-text-secondary">Views</th>
                     <th className="text-left px-4 py-3 font-medium text-text-secondary">Status</th>
+                    <th className="text-left px-4 py-3 font-medium text-text-secondary">Premium</th>
                     <th className="text-right px-4 py-3 font-medium text-text-secondary">Actions</th>
                   </tr>
                 </thead>
@@ -287,13 +315,14 @@ export default function MoviesPage() {
                     Array.from({ length: 5 }).map((_, i) => (
                       <tr key={i} className="border-b border-border">
                         <td colSpan={7} className="px-4 py-4">
+                      <td colSpan={8} className="px-4 py-4">
                           <div className="h-4 bg-surface-light rounded animate-pulse" />
                         </td>
                       </tr>
                     ))
                   ) : movies.length === 0 ? (
                     <tr>
-                      <td colSpan={7} className="text-center py-12 text-text-secondary">
+                      <td colSpan={8} className="text-center py-12 text-text-secondary">
                         No content found
                       </td>
                     </tr>
@@ -333,6 +362,20 @@ export default function MoviesPage() {
                           >
                             {movie.status}
                           </span>
+                        </td>
+                        <td className="px-4 py-3">
+                          <button
+                            onClick={() => togglePremiumMutation.mutate({ id: movie._id, isPremium: !movie.isPremium })}
+                            className={clsx(
+                              'flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium transition-colors',
+                              movie.isPremium
+                                ? 'bg-amber-500/20 text-amber-400 hover:bg-amber-500/30'
+                                : 'bg-surface-light text-text-muted hover:text-amber-400 hover:bg-amber-500/10'
+                            )}
+                          >
+                            <Crown size={12} />
+                            {movie.isPremium ? 'Premium' : 'Free'}
+                          </button>
                         </td>
                         <td className="px-4 py-3">
                           <div className="flex items-center justify-end gap-1">

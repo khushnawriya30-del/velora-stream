@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Film, Plus, ChevronDown, ChevronRight, Trash2, Pencil, Upload, X, Layers, FolderInput, Loader2, Check, AlertTriangle, Cloud, RefreshCw, Zap, Download, GripVertical, CheckCircle2 } from 'lucide-react';
+import { Film, Plus, ChevronDown, ChevronRight, Trash2, Pencil, Upload, X, Layers, FolderInput, Loader2, Check, AlertTriangle, Cloud, RefreshCw, Zap, Download, GripVertical, CheckCircle2, Crown } from 'lucide-react';
 import { useState, useMemo, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../lib/api';
@@ -88,6 +88,16 @@ export default function SeriesPage() {
     onError: () => toast.error('Failed to delete series'),
   });
 
+  const togglePremiumMutation = useMutation({
+    mutationFn: ({ id, isPremium }: { id: string; isPremium: boolean }) =>
+      api.patch(`/movies/${id}`, { isPremium }),
+    onSuccess: (_, { isPremium }) => {
+      queryClient.invalidateQueries({ queryKey: ['series-list'] });
+      toast.success(isPremium ? 'Marked as Premium' : 'Removed Premium');
+    },
+    onError: () => toast.error('Failed to update premium status'),
+  });
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -169,6 +179,16 @@ export default function SeriesPage() {
                 )}
               </div>
               <div className="px-2 py-2 flex items-center justify-end gap-1 border-t border-border bg-surface">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    togglePremiumMutation.mutate({ id: s._id, isPremium: !s.isPremium });
+                  }}
+                  className={`p-1.5 rounded-lg transition-colors ${s.isPremium ? 'text-amber-400 hover:bg-amber-500/20' : 'text-text-secondary hover:text-amber-400 hover:bg-amber-500/10'}`}
+                  title={s.isPremium ? 'Remove Premium' : 'Make Premium'}
+                >
+                  <Crown size={14} />
+                </button>
                 <button
                   onClick={(e) => {
                     e.stopPropagation();

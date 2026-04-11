@@ -967,7 +967,7 @@ fun PremiumSectionHeader(
                     Image(
                         painter = painterResource(R.drawable.premium_badge_small),
                         contentDescription = "Premium",
-                        modifier = Modifier.size(20.dp),
+                        modifier = Modifier.size(24.dp),
                     )
                     Spacer(Modifier.width(6.dp))
                 }
@@ -1150,7 +1150,7 @@ fun PremiumMovieCard(
                     modifier = Modifier
                         .align(Alignment.TopStart)
                         .padding(4.dp)
-                        .size(22.dp),
+                        .size(28.dp),
                 )
             }
         }

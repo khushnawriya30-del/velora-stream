@@ -395,6 +395,14 @@ export class HomeSectionsService implements OnModuleInit {
     if (newIds.length > 0) {
       section.contentIds.push(...newIds.map((id) => new Types.ObjectId(id)));
       await section.save();
+
+      // Auto-mark content as Premium when added to Premium Exclusive section
+      if (section.type === SectionType.PREMIUM_EXCLUSIVE) {
+        await this.movieModel.updateMany(
+          { _id: { $in: newIds.map((id) => new Types.ObjectId(id)) } },
+          { $set: { isPremium: true } },
+        );
+      }
     }
     return section;
   }

@@ -48,9 +48,9 @@ import com.cinevault.app.data.model.MovieDto
 import com.cinevault.app.data.model.WatchProgressDto
 import com.cinevault.app.ui.theme.CineVaultTheme
 
-/** Small premium crown badge overlay — placed top-left on premium content cards. */
+/** Premium crown badge overlay — placed top-left on premium content cards. */
 @Composable
-fun PremiumBadgeOverlay(modifier: Modifier = Modifier, size: Dp = 22.dp) {
+fun PremiumBadgeOverlay(modifier: Modifier = Modifier, size: Dp = 28.dp) {
     Image(
         painter = painterResource(R.drawable.premium_badge_small),
         contentDescription = "Premium",
@@ -671,7 +671,7 @@ fun LargeMovieCard(
                     modifier = Modifier
                         .align(Alignment.TopStart)
                         .padding(6.dp),
-                    size = 26.dp,
+                    size = 34.dp,
                 )
             }
         }
@@ -796,7 +796,7 @@ fun TrendingMovieCard(
                         modifier = Modifier
                             .align(Alignment.TopStart)
                             .padding(4.dp),
-                        size = 20.dp,
+                        size = 26.dp,
                     )
                 }
             }
