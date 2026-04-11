@@ -554,6 +554,35 @@ function SeasonRow({
     onError: () => toast.error('Failed to delete episode'),
   });
 
+  // ── Multi-select for bulk premium ──
+  const [showSelect, setShowSelect] = useState(false);
+  const [selectedEpisodes, setSelectedEpisodes] = useState<Set<string>>(new Set());
+
+  const toggleEpisodePremium = useMutation({
+    mutationFn: ({ id, isPremium }: { id: string; isPremium: boolean }) =>
+      api.patch(`/series/episodes/${id}`, { isPremium }),
+    onSuccess: (_, { isPremium }) => {
+      queryClient.invalidateQueries({ queryKey: ['episodes', season._id] });
+      toast.success(isPremium ? 'Episode marked Premium' : 'Episode Premium removed');
+    },
+    onError: () => toast.error('Failed to update episode premium'),
+  });
+
+  const bulkTogglePremium = useMutation({
+    mutationFn: async (isPremium: boolean) => {
+      const ids = Array.from(selectedEpisodes);
+      await Promise.all(ids.map((id) => api.patch(`/series/episodes/${id}`, { isPremium })));
+      return { count: ids.length, isPremium };
+    },
+    onSuccess: ({ count, isPremium }) => {
+      queryClient.invalidateQueries({ queryKey: ['episodes', season._id] });
+      setSelectedEpisodes(new Set());
+      setShowSelect(false);
+      toast.success(`${count} episode${count > 1 ? 's' : ''} ${isPremium ? 'marked Premium' : 'Premium removed'}`);
+    },
+    onError: () => toast.error('Failed to bulk update premium'),
+  });
+
   // ── Drag-and-drop reorder state ──
   const [localEpisodes, setLocalEpisodes] = useState<Episode[]>([]);
   const [hasReordered, setHasReordered] = useState(false);
@@ -691,6 +720,51 @@ function SeasonRow({
             <p className="text-sm text-text-muted py-4 text-center">No episodes yet. Use &quot;Bulk Add&quot; to add episodes.</p>
           ) : (
             <>
+              {/* Multi-select toolbar */}
+              <div className="flex items-center gap-2 mb-2 py-2 flex-wrap">
+                <button
+                  onClick={() => { setShowSelect(!showSelect); setSelectedEpisodes(new Set()); }}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors border ${showSelect ? 'bg-gold/20 text-gold border-gold/40' : 'text-text-secondary border-border hover:border-text-muted hover:text-text-primary'}`}
+                >
+                  <CheckCircle2 size={14} /> {showSelect ? 'Cancel Select' : 'Select'}
+                </button>
+                {showSelect && (
+                  <>
+                    <button
+                      onClick={() => {
+                        if (selectedEpisodes.size === displayEpisodes.length) {
+                          setSelectedEpisodes(new Set());
+                        } else {
+                          setSelectedEpisodes(new Set(displayEpisodes.map((e) => e._id)));
+                        }
+                      }}
+                      className="px-3 py-1.5 rounded-lg text-sm text-text-secondary hover:text-text-primary border border-border hover:border-text-muted transition-colors"
+                    >
+                      {selectedEpisodes.size === displayEpisodes.length ? 'Deselect All' : 'Select All'}
+                    </button>
+                    {selectedEpisodes.size > 0 && (
+                      <>
+                        <span className="text-xs text-text-muted">{selectedEpisodes.size} selected</span>
+                        <button
+                          onClick={() => bulkTogglePremium.mutate(true)}
+                          disabled={bulkTogglePremium.isPending}
+                          className="flex items-center gap-1.5 bg-amber-500/20 hover:bg-amber-500/30 text-amber-400 border border-amber-500/30 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
+                        >
+                          {bulkTogglePremium.isPending ? <Loader2 size={14} className="animate-spin" /> : <Crown size={14} />} Make Premium
+                        </button>
+                        <button
+                          onClick={() => bulkTogglePremium.mutate(false)}
+                          disabled={bulkTogglePremium.isPending}
+                          className="flex items-center gap-1.5 bg-surface-light hover:bg-surface text-text-secondary border border-border px-3 py-1.5 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
+                        >
+                          {bulkTogglePremium.isPending ? <Loader2 size={14} className="animate-spin" /> : <Crown size={14} />} Remove Premium
+                        </button>
+                      </>
+                    )}
+                  </>
+                )}
+              </div>
+
               {hasReordered && (
                 <div className="flex items-center gap-2 mb-2 py-2">
                   <button
@@ -720,6 +794,16 @@ function SeasonRow({
                         onDelete={() => {
                           if (confirm(`Delete Episode ${ep.episodeNumber}?`)) deleteEpisode.mutate(ep._id);
                         }}
+                        onTogglePremium={() => toggleEpisodePremium.mutate({ id: ep._id, isPremium: !ep.isPremium })}
+                        showSelect={showSelect}
+                        isSelected={selectedEpisodes.has(ep._id)}
+                        onToggleSelect={() => {
+                          setSelectedEpisodes((prev) => {
+                            const next = new Set(prev);
+                            if (next.has(ep._id)) next.delete(ep._id); else next.add(ep._id);
+                            return next;
+                          });
+                        }}
                       />
                     ))}
                   </div>
@@ -740,7 +824,12 @@ function SeasonRow({
 
 // ── Sortable Episode Item (drag handle) ──
 
-function SortableEpisodeItem({ episode: ep, onEdit, onDelete }: { episode: Episode; onEdit: () => void; onDelete: () => void }) {
+function SortableEpisodeItem({
+  episode: ep, onEdit, onDelete, onTogglePremium, showSelect, isSelected, onToggleSelect,
+}: {
+  episode: Episode; onEdit: () => void; onDelete: () => void;
+  onTogglePremium: () => void; showSelect: boolean; isSelected: boolean; onToggleSelect: () => void;
+}) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: ep._id });
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -753,8 +842,18 @@ function SortableEpisodeItem({ episode: ep, onEdit, onDelete }: { episode: Episo
     <div
       ref={setNodeRef}
       style={style}
-      className={`flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-surface-light/40 group transition-colors ${isDragging ? 'bg-surface-light/60 shadow-lg' : ''}`}
+      className={`flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-surface-light/40 group transition-colors ${isDragging ? 'bg-surface-light/60 shadow-lg' : ''} ${isSelected ? 'bg-gold/5 border border-gold/20' : ''}`}
     >
+      {/* Multi-select Checkbox */}
+      {showSelect && (
+        <input
+          type="checkbox"
+          checked={isSelected}
+          onChange={onToggleSelect}
+          className="w-4 h-4 accent-gold flex-shrink-0 cursor-pointer"
+        />
+      )}
+
       {/* Drag Handle */}
       <button
         {...attributes}
@@ -800,6 +899,15 @@ function SortableEpisodeItem({ episode: ep, onEdit, onDelete }: { episode: Episo
           <span className="text-[10px] text-green-400 bg-green-400/10 px-2 py-0.5 rounded">Has Video</span>
         )
       )}
+
+      {/* Premium Toggle */}
+      <button
+        onClick={onTogglePremium}
+        className={`p-1.5 rounded-lg transition-colors ${ep.isPremium ? 'text-amber-400 hover:bg-amber-500/20' : 'text-text-muted hover:text-amber-400 hover:bg-amber-500/10'}`}
+        title={ep.isPremium ? 'Remove Premium' : 'Make Premium'}
+      >
+        <Crown size={14} />
+      </button>
 
       {/* Actions */}
       <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
