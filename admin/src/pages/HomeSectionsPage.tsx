@@ -224,12 +224,13 @@ function AddContentModal({
 }) {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState('');
+  const [typeFilter, setTypeFilter] = useState<string>('all');
 
   // Fetch all movies
   const { data: moviesData } = useQuery<{ movies: MovieItem[] }>({
     queryKey: ['allMoviesForSection'],
     queryFn: async () => {
-      const { data } = await api.get('/movies', { params: { limit: 200 } });
+      const { data } = await api.get('/movies', { params: { limit: 500 } });
       return data;
     },
   });
@@ -280,15 +281,25 @@ function AddContentModal({
   const existingIds = new Set(section.contentIds || []);
 
   const filteredMovies = useMemo(() => {
-    if (!search.trim()) return allMovies;
-    const q = search.toLowerCase();
-    return allMovies.filter(
-      (m) =>
-        m.title.toLowerCase().includes(q) ||
-        m.contentType?.toLowerCase().includes(q) ||
-        m.genres?.some((g) => g.toLowerCase().includes(q))
-    );
-  }, [allMovies, search]);
+    let list = allMovies;
+    if (typeFilter !== 'all') {
+      if (typeFilter === 'series') {
+        list = list.filter((m) => ['web_series', 'tv_show'].includes(m.contentType));
+      } else {
+        list = list.filter((m) => m.contentType === typeFilter);
+      }
+    }
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      list = list.filter(
+        (m) =>
+          m.title.toLowerCase().includes(q) ||
+          m.contentType?.toLowerCase().includes(q) ||
+          m.genres?.some((g) => g.toLowerCase().includes(q))
+      );
+    }
+    return list;
+  }, [allMovies, search, typeFilter]);
 
   const typeLabel = (t: string) => {
     const map: Record<string, string> = {
@@ -310,6 +321,11 @@ function AddContentModal({
           <div>
             <h2 className="text-lg font-semibold">Manage Content</h2>
             <p className="text-sm text-text-secondary">{section.title}</p>
+            {section.type === 'premium_exclusive' && (
+              <p className="text-xs text-amber-400 mt-1 flex items-center gap-1">
+                ⚡ Content added here will be auto-marked as Premium
+              </p>
+            )}
           </div>
           <button onClick={onClose} className="text-text-secondary hover:text-text-primary">
             <X size={20} />
@@ -349,9 +365,9 @@ function AddContentModal({
           </div>
         )}
 
-        {/* Search */}
-        <div className="px-5 pt-4 pb-3 shrink-0">
-          <div className="relative">
+        {/* Search + Filter */}
+        <div className="px-5 pt-4 pb-3 shrink-0 flex gap-2">
+          <div className="relative flex-1">
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
             <input
               value={search}
@@ -361,6 +377,16 @@ function AddContentModal({
               autoFocus
             />
           </div>
+          <select
+            value={typeFilter}
+            onChange={(e) => setTypeFilter(e.target.value)}
+            className="bg-surface-light border border-border rounded-xl px-3 py-2.5 text-sm text-text-primary focus:outline-none focus:border-gold"
+          >
+            <option value="all">All Types</option>
+            <option value="movie">Movies</option>
+            <option value="series">Series / Shows</option>
+            <option value="anime">Anime</option>
+          </select>
         </div>
 
         {/* Movie List */}
