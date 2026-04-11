@@ -736,7 +736,7 @@ private fun MovieMetaChips(movie: MovieDto, isContentPremium: Boolean = false) {
                     painter = painterResource(R.drawable.premium_exclusive_badge),
                     contentDescription = "Premium Exclusive",
                     modifier = Modifier.height(22.dp),
-                    contentScale = ContentScale.FitHeight
+                    contentScale = ContentScale.FillHeight
                 )
             }
             metaParts.forEach { part ->
