@@ -730,22 +730,14 @@ private fun MovieMetaChips(movie: MovieDto, isContentPremium: Boolean = false) {
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            // Premium Exclusive badge first
+            // Premium Exclusive badge first (PNG)
             if (isContentPremium) {
-                Surface(
-                    shape = RoundedCornerShape(6.dp),
-                    color = Color(0xFFD4AF37).copy(alpha = 0.2f),
-                    border = BorderStroke(0.5.dp, Color(0xFFD4AF37).copy(alpha = 0.5f)),
-                ) {
-                    Text(
-                        "Premium Exclusive",
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFFD4AF37),
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
-                        maxLines = 1
-                    )
-                }
+                Image(
+                    painter = painterResource(R.drawable.premium_exclusive_badge),
+                    contentDescription = "Premium Exclusive",
+                    modifier = Modifier.height(22.dp),
+                    contentScale = ContentScale.FitHeight
+                )
             }
             metaParts.forEach { part ->
                 Surface(
