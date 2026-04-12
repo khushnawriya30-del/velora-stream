@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Download as DownloadIcon, ChevronDown, Clock, ExternalLink, Smartphone, CheckCircle } from 'lucide-react';
+import { Download as DownloadIcon, ChevronDown, Clock, ExternalLink, Smartphone, CheckCircle, Tv, Monitor } from 'lucide-react';
 import { useGitHubRelease } from '../hooks/useGitHubRelease';
 import { APP_CONFIG } from '../config';
 
@@ -137,6 +137,39 @@ export default function Download({ referralCode }: { referralCode?: string | nul
             <DownloadIcon className="w-5 h-5 group-hover:animate-bounce" />
             Download APK v{version}
           </a>
+        </motion.div>
+
+        {/* TV App Download */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6, delay: 0.2 }}
+          className="mt-10"
+        >
+          <div className="max-w-md mx-auto bg-white/[0.03] border border-white/10 rounded-2xl p-6 hover:border-white/20 transition-all">
+            <div className="flex items-center justify-center gap-3 mb-3">
+              <div className="p-2 rounded-xl bg-purple-500/10 border border-purple-500/20">
+                <Tv className="w-6 h-6 text-purple-400" />
+              </div>
+              <h3 className="text-lg font-bold text-white">Android TV App</h3>
+            </div>
+            <p className="text-gray-400 text-sm mb-5">
+              Stream on the big screen with our dedicated Android TV application. D-pad navigation, hero banners & full remote support.
+            </p>
+            <div className="flex flex-col sm:flex-row items-center gap-3 justify-center">
+              <a
+                href="/api/download-tv"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group inline-flex items-center gap-2 px-8 py-3 bg-gradient-to-r from-purple-500 to-indigo-600 text-white font-bold rounded-xl text-sm hover:opacity-90 transition-all shadow-lg shadow-purple-500/20 hover:shadow-purple-500/30 hover:scale-[1.02] active:scale-[0.98]"
+              >
+                <Monitor className="w-4 h-4 group-hover:animate-bounce" />
+                Download TV APK
+              </a>
+            </div>
+            <p className="text-gray-500 text-xs mt-3">Requires Premium • Scan QR code from mobile app to login</p>
+          </div>
         </motion.div>
 
         {/* Post-download: Open App button (auto-redirect also happening in background) */}
