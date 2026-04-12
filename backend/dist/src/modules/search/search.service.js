@@ -46,7 +46,7 @@ let SearchService = class SearchService {
         if (filters?.ratingMin)
             filter.rating = { $gte: filters.ratingMin };
         if (filters?.platform)
-            filter.platformOrigin = { $regex: filters.platform, $options: 'i' };
+            filter.ottPlatforms = { $regex: filters.platform, $options: 'i' };
         let sortObj = {};
         if (query && query.trim() && !filters?.sort) {
             sortObj = { score: { $meta: 'textScore' }, popularityScore: -1 };
@@ -176,9 +176,9 @@ let SearchService = class SearchService {
         return this.movieModel.distinct('languages', { status: movie_schema_1.ContentStatus.PUBLISHED });
     }
     async getPlatforms() {
-        return this.movieModel.distinct('platformOrigin', {
+        return this.movieModel.distinct('ottPlatforms', {
             status: movie_schema_1.ContentStatus.PUBLISHED,
-            platformOrigin: { $nin: [null, ''] },
+            ottPlatforms: { $exists: true, $ne: [] },
         });
     }
     async getYears() {

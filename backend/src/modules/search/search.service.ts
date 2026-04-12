@@ -43,7 +43,7 @@ export class SearchService {
       if (filters.yearMax) filter.releaseYear.$lte = filters.yearMax;
     }
     if (filters?.ratingMin) filter.rating = { $gte: filters.ratingMin };
-    if (filters?.platform) filter.platformOrigin = { $regex: filters.platform, $options: 'i' };
+    if (filters?.platform) filter.ottPlatforms = { $regex: filters.platform, $options: 'i' };
 
     let sortObj: any = {};
     if (query && query.trim() && !filters?.sort) {
@@ -199,9 +199,9 @@ export class SearchService {
   }
 
   async getPlatforms(): Promise<string[]> {
-    return this.movieModel.distinct('platformOrigin', {
+    return this.movieModel.distinct('ottPlatforms', {
       status: ContentStatus.PUBLISHED,
-      platformOrigin: { $nin: [null, ''] },
+      ottPlatforms: { $exists: true, $ne: [] },
     });
   }
 
