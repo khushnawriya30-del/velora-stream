@@ -233,7 +233,7 @@ fun PlayerScreen(
             showAdCrossIcon = false
             viewModel.markPreRollDone()
             // Free preview: always start from 0 after ad
-            if (previewActive) {
+            if (uiState.isFreePreview && !uiState.isPremium) {
                 exoPlayer.seekTo(0L)
             }
             exoPlayer.play()
