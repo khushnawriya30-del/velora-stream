@@ -33,7 +33,7 @@ android {
             isMinifyEnabled = true
             isShrinkResources = true
             signingConfig = signingConfigs.getByName("release")
-            proguard(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
         debug {
             buildConfigField("String", "BASE_URL", "\"https://p2zb77xpuy.ap-south-1.awsapprunner.com/api/v1/\"")
