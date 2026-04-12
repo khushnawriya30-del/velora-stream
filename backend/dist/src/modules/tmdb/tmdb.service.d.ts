@@ -65,5 +65,6 @@ export declare class TmdbService {
         items: any[];
     }>;
     private filterByWatchProviders;
+    private fetchOttPlatforms;
     private fetchAndCreateMovie;
 }

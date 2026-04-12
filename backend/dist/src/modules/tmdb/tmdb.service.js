@@ -44,6 +44,39 @@ const GENRE_MAP = {
     10759: 'Action & Adventure', 10762: 'Kids', 10763: 'News', 10764: 'Reality',
     10765: 'Sci-Fi & Fantasy', 10766: 'Soap', 10767: 'Talk', 10768: 'War & Politics',
 };
+const TMDB_PROVIDER_MAP = {
+    'netflix': 'Netflix',
+    'netflix basic with ads': 'Netflix',
+    'amazon prime video': 'Amazon Prime Video',
+    'amazon video': 'Amazon Prime Video',
+    'disney plus': 'Disney+ Hotstar',
+    'disney+ hotstar': 'Disney+ Hotstar',
+    'hotstar': 'Disney+ Hotstar',
+    'jiocinema': 'JioCinema',
+    'jio cinema': 'JioCinema',
+    'sonyliv': 'SonyLIV',
+    'zee5': 'Zee5',
+    'apple tv plus': 'Apple TV+',
+    'apple tv+': 'Apple TV+',
+    'apple itunes': 'Apple TV+',
+    'hulu': 'Hulu',
+    'hbo max': 'HBO Max',
+    'max': 'HBO Max',
+    'max amazon channel': 'HBO Max',
+    'paramount plus': 'Paramount+',
+    'paramount+ amazon channel': 'Paramount+',
+    'paramount plus apple tv channel': 'Paramount+',
+    'peacock': 'Peacock',
+    'peacock premium': 'Peacock',
+    'mx player': 'MX Player',
+    'voot': 'Voot',
+    'jio voot': 'Voot',
+    'altbalaji': 'ALTBalaji',
+    'aha': 'Aha',
+    'hoichoi': 'Hoichoi',
+    'lionsgate play': 'Lionsgate Play',
+    'crunchyroll': 'Crunchyroll',
+};
 let TmdbService = class TmdbService {
     constructor(movieModel, configService, settingsService) {
         this.movieModel = movieModel;
@@ -267,11 +300,41 @@ let TmdbService = class TmdbService {
         }));
         return checks.filter((c) => c.hasProvider).map((c) => c.item);
     }
+    async fetchOttPlatforms(tmdbId, mediaType) {
+        try {
+            const data = await this.tmdbGet(`/${mediaType}/${tmdbId}/watch/providers`);
+            const regions = ['IN', 'US', 'GB'];
+            const providerNames = new Set();
+            for (const region of regions) {
+                const regionData = data.results?.[region];
+                if (!regionData)
+                    continue;
+                const providers = [
+                    ...(regionData.flatrate ?? []),
+                    ...(regionData.ads ?? []),
+                    ...(regionData.free ?? []),
+                ];
+                for (const p of providers) {
+                    const name = (p.provider_name ?? '').toLowerCase().trim();
+                    const mapped = TMDB_PROVIDER_MAP[name];
+                    if (mapped)
+                        providerNames.add(mapped);
+                }
+            }
+            return Array.from(providerNames);
+        }
+        catch {
+            return [];
+        }
+    }
     async fetchAndCreateMovie(tmdbId, mediaType, contentType, asUpcoming = false) {
-        const detail = await this.tmdbGet(`/${mediaType}/${tmdbId}`, {
-            language: 'en-US',
-            append_to_response: 'credits',
-        });
+        const [detail, ottPlatforms] = await Promise.all([
+            this.tmdbGet(`/${mediaType}/${tmdbId}`, {
+                language: 'en-US',
+                append_to_response: 'credits',
+            }),
+            this.fetchOttPlatforms(tmdbId, mediaType),
+        ]);
         let appContentType;
         if (contentType === 'anime') {
             appContentType = movie_schema_1.ContentType.ANIME;
@@ -359,6 +422,7 @@ let TmdbService = class TmdbService {
             popularityScore: Math.round(detail.popularity ?? 0),
             tags: (detail.keywords?.keywords ?? detail.keywords?.results ?? []).map((k) => k.name).slice(0, 10),
             platformOrigin: 'tmdb',
+            ottPlatforms,
         };
         return this.movieModel.create(movieData);
     }
