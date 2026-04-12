@@ -3,6 +3,7 @@ package com.cinevault.tv.ui.screens.login
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -91,7 +92,8 @@ fun QrLoginScreen(
                     .weight(1f)
                     .clip(RoundedCornerShape(d.padLarge))
                     .background(TvSurface)
-                    .padding(d.padXXL),
+                    .padding(d.padXXL)
+                    .verticalScroll(rememberScrollState()),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center,
             ) {
@@ -152,6 +154,21 @@ fun QrLoginScreen(
                         fontSize = d.fontBody,
                         textAlign = TextAlign.Center,
                     )
+                    Spacer(modifier = Modifier.height(d.padMedium))
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(d.padSmall))
+                            .background(TvPrimary)
+                            .clickable { viewModel.generateQrCode() }
+                            .padding(horizontal = d.padXL, vertical = d.padSmall),
+                    ) {
+                        Text(
+                            text = "Retry",
+                            color = Color.Black,
+                            fontSize = d.fontBody,
+                            fontWeight = FontWeight.Bold,
+                        )
+                    }
                 }
 
                 Spacer(modifier = Modifier.height(d.padXL))
