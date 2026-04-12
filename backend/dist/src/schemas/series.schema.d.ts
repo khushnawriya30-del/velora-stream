@@ -76,6 +76,7 @@ export declare class Season {
     posterUrl: string;
     releaseYear: number;
     episodeCount: number;
+    isPremium: boolean;
 }
 export declare const SeasonSchema: import("mongoose").Schema<Season, import("mongoose").Model<Season, any, any, any, Document<unknown, any, Season, any, {}> & Season & {
     _id: Types.ObjectId;

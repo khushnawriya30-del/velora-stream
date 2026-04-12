@@ -13,6 +13,7 @@ const movies_controller_1 = require("./movies.controller");
 const movies_service_1 = require("./movies.service");
 const movie_schema_1 = require("../../schemas/movie.schema");
 const content_view_schema_1 = require("../../schemas/content-view.schema");
+const series_schema_1 = require("../../schemas/series.schema");
 let MoviesModule = class MoviesModule {
 };
 exports.MoviesModule = MoviesModule;
@@ -21,6 +22,8 @@ exports.MoviesModule = MoviesModule = __decorate([
         imports: [mongoose_1.MongooseModule.forFeature([
                 { name: movie_schema_1.Movie.name, schema: movie_schema_1.MovieSchema },
                 { name: content_view_schema_1.ContentView.name, schema: content_view_schema_1.ContentViewSchema },
+                { name: series_schema_1.Season.name, schema: series_schema_1.SeasonSchema },
+                { name: series_schema_1.Episode.name, schema: series_schema_1.EpisodeSchema },
             ])],
         controllers: [movies_controller_1.MoviesController],
         providers: [movies_service_1.MoviesService],

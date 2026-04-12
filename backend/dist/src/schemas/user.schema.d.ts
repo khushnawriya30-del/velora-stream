@@ -38,6 +38,8 @@ export declare class User {
     premiumExpiresAt: Date;
     premiumActivatedAt: Date;
     activationCode: string;
+    referralCode: string;
+    referredBy: Types.ObjectId;
     maxDevices: number;
 }
 export declare const UserSchema: import("mongoose").Schema<User, import("mongoose").Model<User, any, any, any, Document<unknown, any, User, any, {}> & User & {

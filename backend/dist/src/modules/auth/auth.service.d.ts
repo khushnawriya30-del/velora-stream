@@ -5,6 +5,7 @@ import { Model } from 'mongoose';
 import { UserDocument } from '../../schemas/user.schema';
 import { PhoneOtpDocument } from '../../schemas/phone-otp.schema';
 import { EmailOtpDocument } from '../../schemas/email-otp.schema';
+import { ReferralService } from '../referral/referral.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 export declare class AuthService implements OnModuleInit {
@@ -13,10 +14,11 @@ export declare class AuthService implements OnModuleInit {
     private emailOtpModel;
     private jwtService;
     private configService;
+    private readonly referralService;
     private readonly logger;
-    constructor(userModel: Model<UserDocument>, phoneOtpModel: Model<PhoneOtpDocument>, emailOtpModel: Model<EmailOtpDocument>, jwtService: JwtService, configService: ConfigService);
+    constructor(userModel: Model<UserDocument>, phoneOtpModel: Model<PhoneOtpDocument>, emailOtpModel: Model<EmailOtpDocument>, jwtService: JwtService, configService: ConfigService, referralService: ReferralService);
     onModuleInit(): Promise<void>;
-    register(dto: RegisterDto): Promise<{
+    register(dto: RegisterDto, ipAddress?: string): Promise<{
         accessToken: string;
         refreshToken: string;
         user: any;
@@ -48,18 +50,23 @@ export declare class AuthService implements OnModuleInit {
     resetPassword(token: string, newPassword: string): Promise<{
         message: string;
     }>;
-    googleVerifyIdToken(idToken: string): Promise<{
+    googleVerifyIdToken(idToken: string, referralCode?: string, ipAddress?: string): Promise<{
         accessToken: string;
         refreshToken: string;
         user: any;
     }>;
-    googleSignup(idToken: string): Promise<{
+    googleSignup(idToken: string, referralCode?: string, ipAddress?: string): Promise<{
+        accessToken: string;
+        refreshToken: string;
+        user: any;
+    }>;
+    googleVerifyAccessToken(accessToken: string, referralCode?: string, ipAddress?: string): Promise<{
         accessToken: string;
         refreshToken: string;
         user: any;
     }>;
     private verifyGoogleToken;
-    verifyFirebasePhoneToken(idToken: string): Promise<{
+    verifyFirebasePhoneToken(idToken: string, referralCode?: string, ipAddress?: string): Promise<{
         accessToken: string;
         refreshToken: string;
         user: any;
@@ -68,7 +75,7 @@ export declare class AuthService implements OnModuleInit {
         message: string;
         devOtp?: string;
     }>;
-    verifyPhoneOtp(phone: string, otp: string): Promise<{
+    verifyPhoneOtp(phone: string, otp: string, referralCode?: string, ipAddress?: string): Promise<{
         accessToken: string;
         refreshToken: string;
         user: any;
@@ -78,7 +85,7 @@ export declare class AuthService implements OnModuleInit {
         message: string;
         devOtp?: string;
     }>;
-    verifyEmailLoginOtp(email: string, otp: string): Promise<{
+    verifyEmailLoginOtp(email: string, otp: string, referralCode?: string, ipAddress?: string): Promise<{
         accessToken: string;
         refreshToken: string;
         user: any;

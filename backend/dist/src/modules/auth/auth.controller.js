@@ -26,8 +26,13 @@ let AuthController = class AuthController {
     constructor(authService) {
         this.authService = authService;
     }
-    async register(dto, res) {
-        const result = await this.authService.register(dto);
+    getClientIp(req) {
+        return req.headers['x-forwarded-for']?.split(',')[0]?.trim()
+            || req.socket?.remoteAddress
+            || 'unknown';
+    }
+    async register(dto, req, res) {
+        const result = await this.authService.register(dto, this.getClientIp(req));
         this.setRefreshTokenCookie(res, result.refreshToken);
         return { accessToken: result.accessToken, refreshToken: result.refreshToken, user: result.user };
     }
@@ -43,13 +48,23 @@ let AuthController = class AuthController {
         this.setRefreshTokenCookie(res, result.refreshToken);
         return { accessToken: result.accessToken, refreshToken: result.refreshToken, user: result.user };
     }
-    async googleMobile(body, res) {
-        const result = await this.authService.googleVerifyIdToken(body.idToken);
+    async googleMobile(body, req, res) {
+        const result = await this.authService.googleVerifyIdToken(body.idToken, body.referralCode, this.getClientIp(req));
         this.setRefreshTokenCookie(res, result.refreshToken);
         return { accessToken: result.accessToken, refreshToken: result.refreshToken, user: result.user };
     }
-    async googleMobileSignup(body, res) {
-        const result = await this.authService.googleSignup(body.idToken);
+    async googleMobileSignup(body, req, res) {
+        const result = await this.authService.googleSignup(body.idToken, body.referralCode, this.getClientIp(req));
+        this.setRefreshTokenCookie(res, result.refreshToken);
+        return { accessToken: result.accessToken, refreshToken: result.refreshToken, user: result.user };
+    }
+    async googleWebLogin(body, req, res) {
+        const result = await this.authService.googleVerifyAccessToken(body.accessToken, body.referralCode, this.getClientIp(req));
+        this.setRefreshTokenCookie(res, result.refreshToken);
+        return { accessToken: result.accessToken, refreshToken: result.refreshToken, user: result.user };
+    }
+    async googleWebSignup(body, req, res) {
+        const result = await this.authService.googleVerifyAccessToken(body.accessToken, body.referralCode, this.getClientIp(req));
         this.setRefreshTokenCookie(res, result.refreshToken);
         return { accessToken: result.accessToken, refreshToken: result.refreshToken, user: result.user };
     }
@@ -74,21 +89,21 @@ let AuthController = class AuthController {
     async sendEmailOtp(body) {
         return this.authService.sendEmailLoginOtp(body.email);
     }
-    async verifyEmailOtp(body, res) {
-        const result = await this.authService.verifyEmailLoginOtp(body.email, body.otp);
+    async verifyEmailOtp(body, req, res) {
+        const result = await this.authService.verifyEmailLoginOtp(body.email, body.otp, body.referralCode, this.getClientIp(req));
         this.setRefreshTokenCookie(res, result.refreshToken);
         return { accessToken: result.accessToken, refreshToken: result.refreshToken, user: result.user };
     }
     async sendPhoneOtp(body) {
         return this.authService.sendPhoneOtp(body.phone);
     }
-    async verifyPhoneOtp(body, res) {
-        const result = await this.authService.verifyPhoneOtp(body.phone, body.otp);
+    async verifyPhoneOtp(body, req, res) {
+        const result = await this.authService.verifyPhoneOtp(body.phone, body.otp, body.referralCode, this.getClientIp(req));
         this.setRefreshTokenCookie(res, result.refreshToken);
         return { accessToken: result.accessToken, refreshToken: result.refreshToken, user: result.user };
     }
-    async firebasePhoneVerify(body, res) {
-        const result = await this.authService.verifyFirebasePhoneToken(body.idToken);
+    async firebasePhoneVerify(body, req, res) {
+        const result = await this.authService.verifyFirebasePhoneToken(body.idToken, body.referralCode, this.getClientIp(req));
         this.setRefreshTokenCookie(res, result.refreshToken);
         return { accessToken: result.accessToken, refreshToken: result.refreshToken, user: result.user };
     }
@@ -118,9 +133,10 @@ __decorate([
     (0, swagger_1.ApiResponse)({ status: 201, description: 'Account created successfully' }),
     (0, swagger_1.ApiResponse)({ status: 409, description: 'Email already exists' }),
     __param(0, (0, common_1.Body)()),
-    __param(1, (0, common_1.Res)({ passthrough: true })),
+    __param(1, (0, common_1.Req)()),
+    __param(2, (0, common_1.Res)({ passthrough: true })),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [register_dto_1.RegisterDto, Object]),
+    __metadata("design:paramtypes", [register_dto_1.RegisterDto, Object, Object]),
     __metadata("design:returntype", Promise)
 ], AuthController.prototype, "register", null);
 __decorate([
@@ -158,9 +174,10 @@ __decorate([
     (0, common_1.HttpCode)(common_1.HttpStatus.OK),
     (0, swagger_1.ApiOperation)({ summary: 'Login with Google ID token (Android/iOS) — user must be already registered' }),
     __param(0, (0, common_1.Body)()),
-    __param(1, (0, common_1.Res)({ passthrough: true })),
+    __param(1, (0, common_1.Req)()),
+    __param(2, (0, common_1.Res)({ passthrough: true })),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object, Object]),
+    __metadata("design:paramtypes", [Object, Object, Object]),
     __metadata("design:returntype", Promise)
 ], AuthController.prototype, "googleMobile", null);
 __decorate([
@@ -168,11 +185,34 @@ __decorate([
     (0, common_1.HttpCode)(common_1.HttpStatus.CREATED),
     (0, swagger_1.ApiOperation)({ summary: 'Sign up with Google ID token (Android/iOS) — creates new account' }),
     __param(0, (0, common_1.Body)()),
-    __param(1, (0, common_1.Res)({ passthrough: true })),
+    __param(1, (0, common_1.Req)()),
+    __param(2, (0, common_1.Res)({ passthrough: true })),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object, Object]),
+    __metadata("design:paramtypes", [Object, Object, Object]),
     __metadata("design:returntype", Promise)
 ], AuthController.prototype, "googleMobileSignup", null);
+__decorate([
+    (0, common_1.Post)('google/web-login'),
+    (0, common_1.HttpCode)(common_1.HttpStatus.OK),
+    (0, swagger_1.ApiOperation)({ summary: 'Login with Google access token (web flow)' }),
+    __param(0, (0, common_1.Body)()),
+    __param(1, (0, common_1.Req)()),
+    __param(2, (0, common_1.Res)({ passthrough: true })),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, Object, Object]),
+    __metadata("design:returntype", Promise)
+], AuthController.prototype, "googleWebLogin", null);
+__decorate([
+    (0, common_1.Post)('google/web-signup'),
+    (0, common_1.HttpCode)(common_1.HttpStatus.CREATED),
+    (0, swagger_1.ApiOperation)({ summary: 'Sign up with Google access token (web flow)' }),
+    __param(0, (0, common_1.Body)()),
+    __param(1, (0, common_1.Req)()),
+    __param(2, (0, common_1.Res)({ passthrough: true })),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, Object, Object]),
+    __metadata("design:returntype", Promise)
+], AuthController.prototype, "googleWebSignup", null);
 __decorate([
     (0, common_1.Post)('refresh'),
     (0, common_1.HttpCode)(common_1.HttpStatus.OK),
@@ -236,9 +276,10 @@ __decorate([
     (0, common_1.HttpCode)(common_1.HttpStatus.OK),
     (0, swagger_1.ApiOperation)({ summary: 'Verify email OTP and login/register' }),
     __param(0, (0, common_1.Body)()),
-    __param(1, (0, common_1.Res)({ passthrough: true })),
+    __param(1, (0, common_1.Req)()),
+    __param(2, (0, common_1.Res)({ passthrough: true })),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object, Object]),
+    __metadata("design:paramtypes", [Object, Object, Object]),
     __metadata("design:returntype", Promise)
 ], AuthController.prototype, "verifyEmailOtp", null);
 __decorate([
@@ -255,9 +296,10 @@ __decorate([
     (0, common_1.HttpCode)(common_1.HttpStatus.OK),
     (0, swagger_1.ApiOperation)({ summary: 'Verify OTP and login/register with phone number' }),
     __param(0, (0, common_1.Body)()),
-    __param(1, (0, common_1.Res)({ passthrough: true })),
+    __param(1, (0, common_1.Req)()),
+    __param(2, (0, common_1.Res)({ passthrough: true })),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object, Object]),
+    __metadata("design:paramtypes", [Object, Object, Object]),
     __metadata("design:returntype", Promise)
 ], AuthController.prototype, "verifyPhoneOtp", null);
 __decorate([
@@ -265,9 +307,10 @@ __decorate([
     (0, common_1.HttpCode)(common_1.HttpStatus.OK),
     (0, swagger_1.ApiOperation)({ summary: 'Verify Firebase phone auth token and login/register' }),
     __param(0, (0, common_1.Body)()),
-    __param(1, (0, common_1.Res)({ passthrough: true })),
+    __param(1, (0, common_1.Req)()),
+    __param(2, (0, common_1.Res)({ passthrough: true })),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object, Object]),
+    __metadata("design:paramtypes", [Object, Object, Object]),
     __metadata("design:returntype", Promise)
 ], AuthController.prototype, "firebasePhoneVerify", null);
 __decorate([

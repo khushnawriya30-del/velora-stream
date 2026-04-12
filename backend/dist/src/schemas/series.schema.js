@@ -161,6 +161,10 @@ __decorate([
     (0, mongoose_1.Prop)({ default: 0 }),
     __metadata("design:type", Number)
 ], Season.prototype, "episodeCount", void 0);
+__decorate([
+    (0, mongoose_1.Prop)({ default: false }),
+    __metadata("design:type", Boolean)
+], Season.prototype, "isPremium", void 0);
 exports.Season = Season = __decorate([
     (0, mongoose_1.Schema)({ timestamps: true })
 ], Season);

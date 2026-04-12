@@ -24,11 +24,25 @@ const current_user_decorator_1 = require("../auth/decorators/current-user.decora
 const user_schema_1 = require("../../schemas/user.schema");
 const admin_log_schema_1 = require("../../schemas/admin-log.schema");
 const watch_progress_schema_1 = require("../../schemas/watch-progress.schema");
+const wallet_schema_1 = require("../../schemas/wallet.schema");
+const referral_schema_1 = require("../../schemas/referral.schema");
+const profile_schema_1 = require("../../schemas/profile.schema");
+const watchlist_schema_1 = require("../../schemas/watchlist.schema");
+const review_schema_1 = require("../../schemas/review.schema");
+const withdrawal_schema_1 = require("../../schemas/withdrawal.schema");
+const content_view_schema_1 = require("../../schemas/content-view.schema");
 let AdminController = class AdminController {
-    constructor(userModel, adminLogModel, watchProgressModel) {
+    constructor(userModel, adminLogModel, watchProgressModel, walletModel, referralModel, profileModel, watchlistModel, reviewModel, withdrawalModel, contentViewModel) {
         this.userModel = userModel;
         this.adminLogModel = adminLogModel;
         this.watchProgressModel = watchProgressModel;
+        this.walletModel = walletModel;
+        this.referralModel = referralModel;
+        this.profileModel = profileModel;
+        this.watchlistModel = watchlistModel;
+        this.reviewModel = reviewModel;
+        this.withdrawalModel = withdrawalModel;
+        this.contentViewModel = contentViewModel;
     }
     async getUsers(page = 1, limit = 20, search) {
         const skip = (Number(page) - 1) * Number(limit);
@@ -73,8 +87,16 @@ let AdminController = class AdminController {
         if (!user)
             return { message: 'User not found' };
         const userName = user.name || user.email;
+        const oid = new mongoose_2.Types.ObjectId(id);
         await Promise.all([
-            this.watchProgressModel.deleteMany({ userId: new mongoose_2.Types.ObjectId(id) }),
+            this.watchProgressModel.deleteMany({ userId: oid }),
+            this.walletModel.deleteMany({ userId: oid }),
+            this.referralModel.deleteMany({ $or: [{ referrerId: oid }, { newUserId: oid }] }),
+            this.profileModel.deleteMany({ userId: oid }),
+            this.watchlistModel.deleteMany({ userId: oid }),
+            this.reviewModel.deleteMany({ userId: oid }),
+            this.withdrawalModel.deleteMany({ userId: oid }),
+            this.contentViewModel.deleteMany({ userId: oid }),
             this.userModel.findByIdAndDelete(id),
         ]);
         await this.adminLogModel.create({
@@ -85,7 +107,7 @@ let AdminController = class AdminController {
             resourceId: id,
             details: { userName },
         });
-        return { message: `User ${userName} deleted successfully` };
+        return { message: `User ${userName} and all related data deleted successfully` };
     }
     async getLogs(page = 1, limit = 50) {
         const skip = (Number(page) - 1) * Number(limit);
@@ -184,7 +206,21 @@ exports.AdminController = AdminController = __decorate([
     __param(0, (0, mongoose_1.InjectModel)(user_schema_1.User.name)),
     __param(1, (0, mongoose_1.InjectModel)(admin_log_schema_1.AdminLog.name)),
     __param(2, (0, mongoose_1.InjectModel)(watch_progress_schema_1.WatchProgress.name)),
+    __param(3, (0, mongoose_1.InjectModel)(wallet_schema_1.Wallet.name)),
+    __param(4, (0, mongoose_1.InjectModel)(referral_schema_1.Referral.name)),
+    __param(5, (0, mongoose_1.InjectModel)(profile_schema_1.Profile.name)),
+    __param(6, (0, mongoose_1.InjectModel)(watchlist_schema_1.Watchlist.name)),
+    __param(7, (0, mongoose_1.InjectModel)(review_schema_1.Review.name)),
+    __param(8, (0, mongoose_1.InjectModel)(withdrawal_schema_1.Withdrawal.name)),
+    __param(9, (0, mongoose_1.InjectModel)(content_view_schema_1.ContentView.name)),
     __metadata("design:paramtypes", [mongoose_2.Model,
+        mongoose_2.Model,
+        mongoose_2.Model,
+        mongoose_2.Model,
+        mongoose_2.Model,
+        mongoose_2.Model,
+        mongoose_2.Model,
+        mongoose_2.Model,
         mongoose_2.Model,
         mongoose_2.Model])
 ], AdminController);

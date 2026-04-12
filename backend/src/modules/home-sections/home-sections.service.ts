@@ -221,14 +221,15 @@ export class HomeSectionsService implements OnModuleInit {
 
       if (section.type === SectionType.PREMIUM_EXCLUSIVE) {
         // Premium Exclusive: show ONLY manually added content (independent from Premium Only flag)
+        let premMovies: any[] = [];
         if (section.contentIds?.length > 0) {
-          movies = await this.movieModel
+          premMovies = await this.movieModel
             .find({ _id: { $in: section.contentIds }, status: ContentStatus.PUBLISHED })
             .select('title posterUrl bannerUrl contentType contentRating genres releaseYear duration rating viewCount starRating videoQuality languages isPremium');
         }
 
         // Force isPremium on all items in premium exclusive section
-        const items = movies.map((m) => {
+        const items = premMovies.map((m) => {
           const obj = m.toObject();
           obj.isPremium = true;
           return obj;

@@ -12,5 +12,7 @@ export declare class SearchController {
     languages(): Promise<string[]>;
     platforms(): Promise<string[]>;
     years(): Promise<number[]>;
+    mostPopular(): Promise<any[]>;
+    recommended(limit?: number): Promise<any[]>;
     ranking(type?: string, contentType?: string, genre?: string, limit?: number): Promise<import("../../schemas/movie.schema").MovieDocument[]>;
 }

@@ -240,6 +240,14 @@ __decorate([
     (0, mongoose_1.Prop)({ default: 0 }),
     __metadata("design:type", Number)
 ], Movie.prototype, "freeEpisodeCount", void 0);
+__decorate([
+    (0, mongoose_1.Prop)([String]),
+    __metadata("design:type", Array)
+], Movie.prototype, "ottPlatforms", void 0);
+__decorate([
+    (0, mongoose_1.Prop)({ default: 'bunny' }),
+    __metadata("design:type", String)
+], Movie.prototype, "uploadSource", void 0);
 exports.Movie = Movie = __decorate([
     (0, mongoose_1.Schema)({ timestamps: true })
 ], Movie);

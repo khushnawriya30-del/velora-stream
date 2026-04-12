@@ -9,4 +9,5 @@ export declare class QueryMoviesDto {
     rating?: number;
     sort?: string;
     status?: ContentStatus;
+    search?: string;
 }

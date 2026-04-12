@@ -17,9 +17,12 @@ const common_1 = require("@nestjs/common");
 const mongoose_1 = require("@nestjs/mongoose");
 const mongoose_2 = require("mongoose");
 const movie_schema_1 = require("../../schemas/movie.schema");
+const search_query_schema_1 = require("../../schemas/search-query.schema");
+const premium_enrichment_1 = require("../../utils/premium-enrichment");
 let SearchService = class SearchService {
-    constructor(movieModel) {
+    constructor(movieModel, searchQueryModel) {
         this.movieModel = movieModel;
+        this.searchQueryModel = searchQueryModel;
     }
     async search(query, filters, page = 1, limit = 20) {
         const skip = (page - 1) * limit;
@@ -72,31 +75,99 @@ let SearchService = class SearchService {
                 .sort(sortObj)
                 .skip(skip)
                 .limit(limit)
-                .select('title posterUrl bannerUrl contentType contentRating genres releaseYear duration rating languages'),
+                .select('title posterUrl bannerUrl contentType contentRating genres releaseYear duration rating languages isPremium'),
             this.movieModel.countDocuments(filter),
         ]);
-        return { results, total };
+        if (query && query.trim().length >= 2) {
+            this.trackSearchQuery(query.trim()).catch(() => { });
+        }
+        const enriched = await (0, premium_enrichment_1.enrichWithPremiumEpisodeFlag)(this.movieModel, results);
+        return { results: enriched, total };
+    }
+    async trackSearchQuery(query) {
+        const normalized = query.toLowerCase().trim();
+        const matchingMovie = await this.movieModel.findOne({
+            status: movie_schema_1.ContentStatus.PUBLISHED,
+            title: { $regex: normalized.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), $options: 'i' },
+        }).select('_id posterUrl contentType').lean();
+        await this.searchQueryModel.findOneAndUpdate({ query: normalized }, {
+            $inc: { count: 1 },
+            ...(matchingMovie ? {
+                $set: {
+                    contentId: matchingMovie._id.toString(),
+                    posterUrl: matchingMovie.posterUrl,
+                    contentType: matchingMovie.contentType,
+                },
+            } : {}),
+        }, { upsert: true });
     }
     async autocomplete(query) {
         if (!query || query.trim().length < 2)
             return [];
-        const escapedQuery = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const normalized = query.replace(/[:_\-\/]/g, ' ').replace(/\s+/g, ' ').trim();
+        const words = normalized.split(' ').filter(w => w.length > 0);
+        const regexParts = words.map(w => `(?=.*${w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`);
+        const regexStr = regexParts.join('') + '.*';
         return this.movieModel
             .find({
             status: movie_schema_1.ContentStatus.PUBLISHED,
-            title: { $regex: escapedQuery, $options: 'i' },
+            title: { $regex: regexStr, $options: 'i' },
         })
             .sort({ popularityScore: -1 })
             .limit(10)
             .select('title posterUrl contentType releaseYear');
     }
     async getTrendingSearches() {
+        const tracked = await this.searchQueryModel
+            .find({ count: { $gte: 1 } })
+            .sort({ count: -1 })
+            .limit(10)
+            .lean();
+        if (tracked.length >= 3) {
+            return tracked.map(t => t.query);
+        }
         const trending = await this.movieModel
             .find({ status: movie_schema_1.ContentStatus.PUBLISHED })
             .sort({ viewCount: -1 })
             .limit(10)
             .select('title');
         return trending.map((m) => m.title);
+    }
+    async getMostPopularSearches() {
+        const tracked = await this.searchQueryModel
+            .find({ count: { $gte: 1 }, contentId: { $ne: null } })
+            .sort({ count: -1 })
+            .limit(3)
+            .lean();
+        if (tracked.length >= 1) {
+            const results = [];
+            for (const t of tracked) {
+                if (t.contentId) {
+                    const movie = await this.movieModel
+                        .findById(t.contentId)
+                        .select('title posterUrl bannerUrl contentType releaseYear rating')
+                        .lean();
+                    if (movie) {
+                        results.push({ ...movie, searchCount: t.count });
+                    }
+                }
+            }
+            if (results.length > 0)
+                return results;
+        }
+        return this.movieModel
+            .find({ status: movie_schema_1.ContentStatus.PUBLISHED })
+            .sort({ viewCount: -1 })
+            .limit(3)
+            .select('title posterUrl bannerUrl contentType releaseYear rating');
+    }
+    async getRecommended(limit = 10) {
+        const movies = await this.movieModel
+            .find({ status: movie_schema_1.ContentStatus.PUBLISHED })
+            .sort({ popularityScore: -1, viewCount: -1 })
+            .limit(limit)
+            .select('title posterUrl bannerUrl contentType contentRating genres releaseYear duration rating languages isPremium');
+        return (0, premium_enrichment_1.enrichWithPremiumEpisodeFlag)(this.movieModel, movies);
     }
     async getGenres() {
         return this.movieModel.distinct('genres', { status: movie_schema_1.ContentStatus.PUBLISHED });
@@ -141,6 +212,8 @@ exports.SearchService = SearchService;
 exports.SearchService = SearchService = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, mongoose_1.InjectModel)(movie_schema_1.Movie.name)),
-    __metadata("design:paramtypes", [mongoose_2.Model])
+    __param(1, (0, mongoose_1.InjectModel)(search_query_schema_1.SearchQuery.name)),
+    __metadata("design:paramtypes", [mongoose_2.Model,
+        mongoose_2.Model])
 ], SearchService);
 //# sourceMappingURL=search.service.js.map

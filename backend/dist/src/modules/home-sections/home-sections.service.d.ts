@@ -25,4 +25,8 @@ export declare class HomeSectionsService implements OnModuleInit {
         created: number;
         message: string;
     }>;
+    seedPremiumExclusive(): Promise<{
+        created: number;
+        message: string;
+    }>;
 }

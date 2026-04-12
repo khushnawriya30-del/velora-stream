@@ -5,7 +5,8 @@ export declare enum SectionType {
     LARGE_CARD = "large_card",
     MID_BANNER = "mid_banner",
     TRENDING = "trending",
-    UPCOMING = "upcoming"
+    UPCOMING = "upcoming",
+    PREMIUM_EXCLUSIVE = "premium_exclusive"
 }
 export declare enum CardSize {
     SMALL = "small",
@@ -16,7 +17,8 @@ export declare enum TabSection {
     HOME = "home",
     MOVIES = "movies",
     SHOWS = "shows",
-    ANIME = "anime"
+    ANIME = "anime",
+    ME = "me"
 }
 export declare class HomeSection {
     title: string;

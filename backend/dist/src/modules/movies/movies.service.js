@@ -18,6 +18,7 @@ const mongoose_1 = require("@nestjs/mongoose");
 const mongoose_2 = require("mongoose");
 const movie_schema_1 = require("../../schemas/movie.schema");
 const content_view_schema_1 = require("../../schemas/content-view.schema");
+const premium_enrichment_1 = require("../../utils/premium-enrichment");
 function toDirectDriveUrl(url) {
     const patterns = [
         /drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)/,
@@ -95,9 +96,12 @@ let MoviesService = class MoviesService {
         return true;
     }
     async findAll(query) {
-        const { page = 1, limit = 20, contentType, genre, language, year, rating, sort, status } = query;
+        const { page = 1, limit = 20, contentType, genre, language, year, rating, sort, status, search } = query;
         const skip = (page - 1) * limit;
         const filter = {};
+        if (search) {
+            filter.title = { $regex: search, $options: 'i' };
+        }
         if (status) {
             filter.status = status;
         }
@@ -152,40 +156,53 @@ let MoviesService = class MoviesService {
                 filter.contentType = 'movie';
             }
         }
-        return this.movieModel
+        const movies = await this.movieModel
             .find(filter)
             .sort({ popularityScore: -1, viewCount: -1 })
             .limit(limit);
+        return (0, premium_enrichment_1.enrichWithPremiumEpisodeFlag)(this.movieModel, movies);
     }
     async getNewReleases(limit = 20) {
-        return this.movieModel
+        const movies = await this.movieModel
             .find({ status: movie_schema_1.ContentStatus.PUBLISHED })
             .sort({ createdAt: -1 })
             .limit(limit);
+        return (0, premium_enrichment_1.enrichWithPremiumEpisodeFlag)(this.movieModel, movies);
     }
     async getTopRated(limit = 20) {
-        return this.movieModel
+        const movies = await this.movieModel
             .find({ status: movie_schema_1.ContentStatus.PUBLISHED, voteCount: { $gte: 5 } })
             .sort({ rating: -1 })
             .limit(limit);
+        return (0, premium_enrichment_1.enrichWithPremiumEpisodeFlag)(this.movieModel, movies);
+    }
+    async getPremiumContent(limit = 30) {
+        const movies = await this.movieModel
+            .find({ status: movie_schema_1.ContentStatus.PUBLISHED, isPremium: true })
+            .sort({ createdAt: -1 })
+            .limit(limit)
+            .select('title posterUrl bannerUrl contentType contentRating genres releaseYear duration rating viewCount starRating videoQuality languages isPremium');
+        return (0, premium_enrichment_1.enrichWithPremiumEpisodeFlag)(this.movieModel, movies);
     }
     async getByGenre(genre, limit = 20) {
-        return this.movieModel
+        const movies = await this.movieModel
             .find({ status: movie_schema_1.ContentStatus.PUBLISHED, genres: genre })
             .sort({ popularityScore: -1 })
             .limit(limit);
+        return (0, premium_enrichment_1.enrichWithPremiumEpisodeFlag)(this.movieModel, movies);
     }
     async getByContentType(contentType, limit = 20) {
-        return this.movieModel
+        const movies = await this.movieModel
             .find({ status: movie_schema_1.ContentStatus.PUBLISHED, contentType })
             .sort({ popularityScore: -1 })
             .limit(limit);
+        return (0, premium_enrichment_1.enrichWithPremiumEpisodeFlag)(this.movieModel, movies);
     }
     async getRelated(movieId, limit = 12) {
         const movie = await this.movieModel.findById(movieId);
         if (!movie)
             return [];
-        return this.movieModel
+        const movies = await this.movieModel
             .find({
             _id: { $ne: movie._id },
             status: movie_schema_1.ContentStatus.PUBLISHED,
@@ -196,6 +213,7 @@ let MoviesService = class MoviesService {
         })
             .sort({ popularityScore: -1 })
             .limit(limit);
+        return (0, premium_enrichment_1.enrichWithPremiumEpisodeFlag)(this.movieModel, movies);
     }
     async incrementViewCount(id) {
         await this.movieModel.findByIdAndUpdate(id, { $inc: { viewCount: 1 } });

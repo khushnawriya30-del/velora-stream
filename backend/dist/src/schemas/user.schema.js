@@ -12,6 +12,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.UserSchema = exports.User = exports.AuthProvider = exports.UserRole = void 0;
 const mongoose_1 = require("@nestjs/mongoose");
 const mongoose_2 = require("mongoose");
+const crypto_1 = require("crypto");
 var UserRole;
 (function (UserRole) {
     UserRole["USER"] = "user";
@@ -133,6 +134,14 @@ __decorate([
     __metadata("design:type", String)
 ], User.prototype, "activationCode", void 0);
 __decorate([
+    (0, mongoose_1.Prop)({ unique: true, sparse: true }),
+    __metadata("design:type", String)
+], User.prototype, "referralCode", void 0);
+__decorate([
+    (0, mongoose_1.Prop)({ type: mongoose_2.Types.ObjectId, ref: 'User' }),
+    __metadata("design:type", mongoose_2.Types.ObjectId)
+], User.prototype, "referredBy", void 0);
+__decorate([
     (0, mongoose_1.Prop)({ default: 0 }),
     __metadata("design:type", Number)
 ], User.prototype, "maxDevices", void 0);
@@ -143,4 +152,16 @@ exports.UserSchema = mongoose_1.SchemaFactory.createForClass(User);
 exports.UserSchema.index({ email: 1, authProvider: 1 }, { unique: true });
 exports.UserSchema.index({ googleId: 1 }, { sparse: true });
 exports.UserSchema.index({ role: 1 });
+exports.UserSchema.pre('save', function (next) {
+    if (!this.referralCode) {
+        const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+        const bytes = (0, crypto_1.randomBytes)(8);
+        let code = '';
+        for (let i = 0; i < 8; i++) {
+            code += chars[bytes[i] % chars.length];
+        }
+        this.referralCode = code;
+    }
+    next();
+});
 //# sourceMappingURL=user.schema.js.map

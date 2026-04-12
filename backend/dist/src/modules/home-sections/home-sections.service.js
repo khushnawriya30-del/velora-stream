@@ -20,6 +20,7 @@ const mongoose_2 = require("mongoose");
 const home_section_schema_1 = require("../../schemas/home-section.schema");
 const movie_schema_1 = require("../../schemas/movie.schema");
 const banner_schema_1 = require("../../schemas/banner.schema");
+const premium_enrichment_1 = require("../../utils/premium-enrichment");
 const RECENTLY_ADDED_DEFAULTS = [
     {
         slug: 'system-recently-added-home',
@@ -98,6 +99,38 @@ const TRENDING_DEFAULTS = [
         contentTypes: ['anime'],
     },
 ];
+const PREMIUM_EXCLUSIVE_DEFAULTS = [
+    {
+        slug: 'system-premium-exclusive-home',
+        title: 'Premium Exclusive',
+        section: home_section_schema_1.TabSection.HOME,
+        contentTypes: [],
+    },
+    {
+        slug: 'system-premium-exclusive-movies',
+        title: 'Premium Exclusive',
+        section: home_section_schema_1.TabSection.MOVIES,
+        contentTypes: ['movie'],
+    },
+    {
+        slug: 'system-premium-exclusive-shows',
+        title: 'Premium Exclusive',
+        section: home_section_schema_1.TabSection.SHOWS,
+        contentTypes: ['web_series', 'tv_show'],
+    },
+    {
+        slug: 'system-premium-exclusive-anime',
+        title: 'Premium Exclusive',
+        section: home_section_schema_1.TabSection.ANIME,
+        contentTypes: ['anime'],
+    },
+    {
+        slug: 'system-premium-exclusive-me',
+        title: 'Premium Exclusive',
+        section: home_section_schema_1.TabSection.ME,
+        contentTypes: [],
+    },
+];
 let HomeSectionsService = HomeSectionsService_1 = class HomeSectionsService {
     constructor(sectionModel, movieModel, bannerModel) {
         this.sectionModel = sectionModel;
@@ -109,6 +142,10 @@ let HomeSectionsService = HomeSectionsService_1 = class HomeSectionsService {
         const result = await this.seedRecentlyAdded();
         if (result.created > 0) {
             this.logger.log(result.message);
+        }
+        const premResult = await this.seedPremiumExclusive();
+        if (premResult.created > 0) {
+            this.logger.log(premResult.message);
         }
         await this.sectionModel.updateMany({ type: home_section_schema_1.SectionType.UPCOMING }, { $set: { contentTypes: [], title: 'Upcoming' } });
         await this.autoReleaseUpcoming();
@@ -162,6 +199,35 @@ let HomeSectionsService = HomeSectionsService_1 = class HomeSectionsService {
                 });
                 continue;
             }
+            if (section.type === home_section_schema_1.SectionType.PREMIUM_EXCLUSIVE) {
+                let premMovies = [];
+                if (section.contentIds?.length > 0) {
+                    premMovies = await this.movieModel
+                        .find({ _id: { $in: section.contentIds }, status: movie_schema_1.ContentStatus.PUBLISHED })
+                        .select('title posterUrl bannerUrl contentType contentRating genres releaseYear duration rating viewCount starRating videoQuality languages isPremium');
+                }
+                const items = premMovies.map((m) => {
+                    const obj = m.toObject();
+                    obj.isPremium = true;
+                    return obj;
+                });
+                if (items.length > 0) {
+                    feed.push({
+                        id: section._id,
+                        title: section.title,
+                        type: 'standard',
+                        slug: section.slug,
+                        cardSize: section.cardSize,
+                        showViewMore: section.showViewMore,
+                        viewMoreText: section.viewMoreText,
+                        showTrendingNumbers: false,
+                        bannerImageUrl: null,
+                        isPremiumOnly: true,
+                        items,
+                    });
+                }
+                continue;
+            }
             if (section.isSystemManaged) {
                 const filter = { status: movie_schema_1.ContentStatus.PUBLISHED };
                 if (section.contentTypes?.length > 0) {
@@ -203,6 +269,11 @@ let HomeSectionsService = HomeSectionsService_1 = class HomeSectionsService {
                 isPremiumOnly: !!section.isPremiumOnly,
                 items: movies,
             });
+        }
+        for (const section of feed) {
+            if (section.items?.length > 0) {
+                section.items = await (0, premium_enrichment_1.enrichWithPremiumEpisodeFlag)(this.movieModel, section.items);
+            }
         }
         const sectionTab = filter.section || home_section_schema_1.TabSection.HOME;
         const midBanners = await this.getMidBannersForFeed(sectionTab);
@@ -295,6 +366,9 @@ let HomeSectionsService = HomeSectionsService_1 = class HomeSectionsService {
         if (newIds.length > 0) {
             section.contentIds.push(...newIds.map((id) => new mongoose_2.Types.ObjectId(id)));
             await section.save();
+            if (section.type === home_section_schema_1.SectionType.PREMIUM_EXCLUSIVE) {
+                await this.movieModel.updateMany({ _id: { $in: newIds.map((id) => new mongoose_2.Types.ObjectId(id)) } }, { $set: { isPremium: true } });
+            }
         }
         return section;
     }
@@ -386,6 +460,39 @@ let HomeSectionsService = HomeSectionsService_1 = class HomeSectionsService {
             message: created > 0
                 ? `${created} system section(s) created`
                 : 'All default sections already exist',
+        };
+    }
+    async seedPremiumExclusive() {
+        let created = 0;
+        for (const def of PREMIUM_EXCLUSIVE_DEFAULTS) {
+            const existing = await this.sectionModel.findOne({ slug: def.slug });
+            if (existing)
+                continue;
+            const count = await this.sectionModel.countDocuments({ section: def.section });
+            await this.sectionModel.create({
+                slug: def.slug,
+                title: def.title,
+                section: def.section,
+                contentTypes: def.contentTypes,
+                type: home_section_schema_1.SectionType.PREMIUM_EXCLUSIVE,
+                cardSize: home_section_schema_1.CardSize.SMALL,
+                maxItems: 20,
+                isSystemManaged: true,
+                isVisible: true,
+                showViewMore: true,
+                viewMoreText: 'View All',
+                showTrendingNumbers: false,
+                isPremiumOnly: true,
+                displayOrder: 1,
+                contentIds: [],
+            });
+            created++;
+        }
+        return {
+            created,
+            message: created > 0
+                ? `${created} Premium Exclusive section(s) created`
+                : 'All Premium Exclusive sections already exist',
         };
     }
 };

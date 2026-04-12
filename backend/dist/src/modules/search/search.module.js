@@ -12,12 +12,21 @@ const mongoose_1 = require("@nestjs/mongoose");
 const search_controller_1 = require("./search.controller");
 const search_service_1 = require("./search.service");
 const movie_schema_1 = require("../../schemas/movie.schema");
+const search_query_schema_1 = require("../../schemas/search-query.schema");
+const series_schema_1 = require("../../schemas/series.schema");
 let SearchModule = class SearchModule {
 };
 exports.SearchModule = SearchModule;
 exports.SearchModule = SearchModule = __decorate([
     (0, common_1.Module)({
-        imports: [mongoose_1.MongooseModule.forFeature([{ name: movie_schema_1.Movie.name, schema: movie_schema_1.MovieSchema }])],
+        imports: [
+            mongoose_1.MongooseModule.forFeature([
+                { name: movie_schema_1.Movie.name, schema: movie_schema_1.MovieSchema },
+                { name: search_query_schema_1.SearchQuery.name, schema: search_query_schema_1.SearchQuerySchema },
+                { name: series_schema_1.Season.name, schema: series_schema_1.SeasonSchema },
+                { name: series_schema_1.Episode.name, schema: series_schema_1.EpisodeSchema },
+            ]),
+        ],
         controllers: [search_controller_1.SearchController],
         providers: [search_service_1.SearchService],
     })

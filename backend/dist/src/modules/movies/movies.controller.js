@@ -38,6 +38,9 @@ let MoviesController = class MoviesController {
     async getTopRated(limit) {
         return this.moviesService.getTopRated(limit);
     }
+    async getPremium(limit) {
+        return this.moviesService.getPremiumContent(limit);
+    }
     async getByGenre(genre, limit) {
         return this.moviesService.getByGenre(genre, limit);
     }
@@ -105,6 +108,14 @@ __decorate([
     __metadata("design:paramtypes", [Number]),
     __metadata("design:returntype", Promise)
 ], MoviesController.prototype, "getTopRated", null);
+__decorate([
+    (0, common_1.Get)('premium'),
+    (0, swagger_1.ApiOperation)({ summary: 'Get all premium content' }),
+    __param(0, (0, common_1.Query)('limit')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Number]),
+    __metadata("design:returntype", Promise)
+], MoviesController.prototype, "getPremium", null);
 __decorate([
     (0, common_1.Get)('genre/:genre'),
     (0, swagger_1.ApiOperation)({ summary: 'Get movies by genre' }),

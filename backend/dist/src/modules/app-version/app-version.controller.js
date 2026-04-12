@@ -25,6 +25,10 @@ let AppVersionController = class AppVersionController {
     getLatest() {
         return this.service.getLatest();
     }
+    async download(res) {
+        const resolved = await this.service.resolveDownloadUrl();
+        res.redirect(302, resolved);
+    }
     update(body) {
         return this.service.update(body);
     }
@@ -36,6 +40,13 @@ __decorate([
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", Promise)
 ], AppVersionController.prototype, "getLatest", null);
+__decorate([
+    (0, common_1.Get)('download'),
+    __param(0, (0, common_1.Res)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], AppVersionController.prototype, "download", null);
 __decorate([
     (0, common_1.UseGuards)((0, passport_1.AuthGuard)('jwt'), roles_guard_1.RolesGuard),
     (0, roles_decorator_1.Roles)('admin'),

@@ -10,9 +10,11 @@ const app_module_1 = require("./app.module");
 const path_1 = require("path");
 const fs = require("fs");
 async function bootstrap() {
-    const app = await core_1.NestFactory.create(app_module_1.AppModule);
+    const app = await core_1.NestFactory.create(app_module_1.AppModule, {
+        rawBody: true,
+    });
     const configService = app.get(config_1.ConfigService);
-    app.use((0, helmet_1.default)());
+    app.use((0, helmet_1.default)({ contentSecurityPolicy: false }));
     app.use(cookieParser());
     app.useBodyParser('json', { limit: '10mb' });
     const hlsDir = (0, path_1.join)(process.cwd(), 'public', 'hls');
@@ -32,7 +34,14 @@ async function bootstrap() {
         allowedHeaders: ['Content-Type', 'Authorization', 'x-profile-id'],
     });
     const apiPrefix = configService.get('API_PREFIX', 'api/v1');
-    app.setGlobalPrefix(apiPrefix);
+    app.setGlobalPrefix(apiPrefix, {
+        exclude: [
+            { path: 'pay/:paymentId', method: common_1.RequestMethod.GET },
+            { path: 'auth/google-web', method: common_1.RequestMethod.GET },
+            { path: 'auth/google-web/callback', method: common_1.RequestMethod.GET },
+            { path: 'auth/google-web/verify', method: common_1.RequestMethod.POST },
+        ],
+    });
     app.useGlobalPipes(new common_1.ValidationPipe({
         whitelist: true,
         forbidNonWhitelisted: true,
@@ -48,6 +57,10 @@ async function bootstrap() {
         .build();
     const document = swagger_1.SwaggerModule.createDocument(app, swaggerConfig);
     swagger_1.SwaggerModule.setup('docs', app, document);
+    const httpAdapter = app.getHttpAdapter();
+    httpAdapter.get('/', (_req, res) => {
+        res.status(200).json({ status: 'ok', service: 'velora-api' });
+    });
     const port = configService.get('PORT', 3000);
     await app.listen(port);
     console.log(`VELORA API running on port ${port}`);

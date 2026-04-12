@@ -12,11 +12,4 @@ export declare class AppController {
             banners: string;
         };
     };
-    getAppVersion(): {
-        versionCode: number;
-        versionName: string;
-        forceUpdate: boolean;
-        apkUrl: string;
-        releaseNotes: string;
-    };
 }

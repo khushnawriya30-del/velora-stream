@@ -21,12 +21,13 @@ export declare class MoviesService {
     }>;
     update(id: string, dto: UpdateMovieDto): Promise<MovieDocument>;
     delete(id: string): Promise<void>;
-    getTrending(limit?: number, contentType?: string): Promise<MovieDocument[]>;
-    getNewReleases(limit?: number): Promise<MovieDocument[]>;
-    getTopRated(limit?: number): Promise<MovieDocument[]>;
-    getByGenre(genre: string, limit?: number): Promise<MovieDocument[]>;
-    getByContentType(contentType: string, limit?: number): Promise<MovieDocument[]>;
-    getRelated(movieId: string, limit?: number): Promise<MovieDocument[]>;
+    getTrending(limit?: number, contentType?: string): Promise<any[]>;
+    getNewReleases(limit?: number): Promise<any[]>;
+    getTopRated(limit?: number): Promise<any[]>;
+    getPremiumContent(limit?: number): Promise<any[]>;
+    getByGenre(genre: string, limit?: number): Promise<any[]>;
+    getByContentType(contentType: string, limit?: number): Promise<any[]>;
+    getRelated(movieId: string, limit?: number): Promise<any[]>;
     incrementViewCount(id: string): Promise<void>;
     updateRating(id: string, newRating: number, newVoteCount: number): Promise<void>;
     getStats(): Promise<{

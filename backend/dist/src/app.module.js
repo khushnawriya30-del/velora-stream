@@ -38,6 +38,14 @@ const r2_storage_module_1 = require("./modules/r2-storage/r2-storage.module");
 const premium_module_1 = require("./modules/premium/premium.module");
 const premium_plans_module_1 = require("./modules/premium-plans/premium-plans.module");
 const telegram_bot_module_1 = require("./modules/telegram-bot/telegram-bot.module");
+const upi_payment_module_1 = require("./modules/upi-payment/upi-payment.module");
+const wallet_module_1 = require("./modules/wallet/wallet.module");
+const referral_module_1 = require("./modules/referral/referral.module");
+const withdrawal_module_1 = require("./modules/withdrawal/withdrawal.module");
+const razorpay_module_1 = require("./modules/razorpay/razorpay.module");
+const premium_offers_module_1 = require("./modules/premium-offers/premium-offers.module");
+const earner_proofs_module_1 = require("./modules/earner-proofs/earner-proofs.module");
+const thematic_collection_module_1 = require("./modules/thematic-collection/thematic-collection.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -91,6 +99,14 @@ exports.AppModule = AppModule = __decorate([
             premium_module_1.PremiumModule,
             premium_plans_module_1.PremiumPlansModule,
             telegram_bot_module_1.TelegramBotModule,
+            upi_payment_module_1.UpiPaymentModule,
+            wallet_module_1.WalletModule,
+            referral_module_1.ReferralModule,
+            withdrawal_module_1.WithdrawalModule,
+            razorpay_module_1.RazorpayModule,
+            premium_offers_module_1.PremiumOffersModule,
+            earner_proofs_module_1.EarnerProofsModule,
+            thematic_collection_module_1.ThematicCollectionModule,
         ],
     })
 ], AppModule);

@@ -12,9 +12,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.AppController = void 0;
 const common_1 = require("@nestjs/common");
 const swagger_1 = require("@nestjs/swagger");
-const LATEST_VERSION_CODE = 1;
-const LATEST_VERSION_NAME = '1.0.0';
-const APK_DOWNLOAD_URL = 'https://github.com/vishu09921202023-ops/Cinevault-App/releases/latest/download/app-release.apk';
 let AppController = class AppController {
     root() {
         return {
@@ -31,15 +28,6 @@ let AppController = class AppController {
             },
         };
     }
-    getAppVersion() {
-        return {
-            versionCode: LATEST_VERSION_CODE,
-            versionName: LATEST_VERSION_NAME,
-            forceUpdate: false,
-            apkUrl: APK_DOWNLOAD_URL,
-            releaseNotes: 'Latest version of VELORA',
-        };
-    }
 };
 exports.AppController = AppController;
 __decorate([
@@ -49,13 +37,6 @@ __decorate([
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", void 0)
 ], AppController.prototype, "root", null);
-__decorate([
-    (0, common_1.Get)('app-version'),
-    (0, swagger_1.ApiOperation)({ summary: 'Get latest Android app version info' }),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", []),
-    __metadata("design:returntype", void 0)
-], AppController.prototype, "getAppVersion", null);
 exports.AppController = AppController = __decorate([
     (0, swagger_1.ApiTags)('Root'),
     (0, common_1.Controller)()

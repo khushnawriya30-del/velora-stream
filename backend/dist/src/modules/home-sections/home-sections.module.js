@@ -14,6 +14,7 @@ const home_sections_service_1 = require("./home-sections.service");
 const home_section_schema_1 = require("../../schemas/home-section.schema");
 const movie_schema_1 = require("../../schemas/movie.schema");
 const banner_schema_1 = require("../../schemas/banner.schema");
+const series_schema_1 = require("../../schemas/series.schema");
 let HomeSectionsModule = class HomeSectionsModule {
 };
 exports.HomeSectionsModule = HomeSectionsModule;
@@ -24,6 +25,8 @@ exports.HomeSectionsModule = HomeSectionsModule = __decorate([
                 { name: home_section_schema_1.HomeSection.name, schema: home_section_schema_1.HomeSectionSchema },
                 { name: movie_schema_1.Movie.name, schema: movie_schema_1.MovieSchema },
                 { name: banner_schema_1.Banner.name, schema: banner_schema_1.BannerSchema },
+                { name: series_schema_1.Season.name, schema: series_schema_1.SeasonSchema },
+                { name: series_schema_1.Episode.name, schema: series_schema_1.EpisodeSchema },
             ]),
         ],
         controllers: [home_sections_controller_1.HomeSectionsController],

@@ -41,6 +41,12 @@ let SearchController = class SearchController {
     async years() {
         return this.searchService.getYears();
     }
+    async mostPopular() {
+        return this.searchService.getMostPopularSearches();
+    }
+    async recommended(limit) {
+        return this.searchService.getRecommended(limit || 10);
+    }
     async ranking(type, contentType, genre, limit) {
         return this.searchService.getRanking(type, contentType, genre, limit);
     }
@@ -117,6 +123,21 @@ __decorate([
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", Promise)
 ], SearchController.prototype, "years", null);
+__decorate([
+    (0, common_1.Get)('most-popular'),
+    (0, swagger_1.ApiOperation)({ summary: 'Get top 3 most popular searches with poster info' }),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", Promise)
+], SearchController.prototype, "mostPopular", null);
+__decorate([
+    (0, common_1.Get)('recommended'),
+    (0, swagger_1.ApiOperation)({ summary: 'Get recommended/trending content' }),
+    __param(0, (0, common_1.Query)('limit')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Number]),
+    __metadata("design:returntype", Promise)
+], SearchController.prototype, "recommended", null);
 __decorate([
     (0, common_1.Get)('ranking'),
     (0, swagger_1.ApiOperation)({ summary: 'Get ranked content by category' }),

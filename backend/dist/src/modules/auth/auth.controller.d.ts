@@ -7,7 +7,8 @@ import { ResetPasswordDto } from './dto/reset-password.dto';
 export declare class AuthController {
     private readonly authService;
     constructor(authService: AuthService);
-    register(dto: RegisterDto, res: Response): Promise<{
+    private getClientIp;
+    register(dto: RegisterDto, req: Request, res: Response): Promise<{
         accessToken: string;
         refreshToken: string;
         user: any;
@@ -25,14 +26,32 @@ export declare class AuthController {
     }>;
     googleMobile(body: {
         idToken: string;
-    }, res: Response): Promise<{
+        referralCode?: string;
+    }, req: Request, res: Response): Promise<{
         accessToken: string;
         refreshToken: string;
         user: any;
     }>;
     googleMobileSignup(body: {
         idToken: string;
-    }, res: Response): Promise<{
+        referralCode?: string;
+    }, req: Request, res: Response): Promise<{
+        accessToken: string;
+        refreshToken: string;
+        user: any;
+    }>;
+    googleWebLogin(body: {
+        accessToken: string;
+        referralCode?: string;
+    }, req: Request, res: Response): Promise<{
+        accessToken: string;
+        refreshToken: string;
+        user: any;
+    }>;
+    googleWebSignup(body: {
+        accessToken: string;
+        referralCode?: string;
+    }, req: Request, res: Response): Promise<{
         accessToken: string;
         refreshToken: string;
         user: any;
@@ -69,7 +88,8 @@ export declare class AuthController {
     verifyEmailOtp(body: {
         email: string;
         otp: string;
-    }, res: Response): Promise<{
+        referralCode?: string;
+    }, req: Request, res: Response): Promise<{
         accessToken: string;
         refreshToken: string;
         user: any;
@@ -83,14 +103,16 @@ export declare class AuthController {
     verifyPhoneOtp(body: {
         phone: string;
         otp: string;
-    }, res: Response): Promise<{
+        referralCode?: string;
+    }, req: Request, res: Response): Promise<{
         accessToken: string;
         refreshToken: string;
         user: any;
     }>;
     firebasePhoneVerify(body: {
         idToken: string;
-    }, res: Response): Promise<{
+        referralCode?: string;
+    }, req: Request, res: Response): Promise<{
         accessToken: string;
         refreshToken: string;
         user: any;

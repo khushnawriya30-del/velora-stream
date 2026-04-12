@@ -19,6 +19,7 @@ var SectionType;
     SectionType["MID_BANNER"] = "mid_banner";
     SectionType["TRENDING"] = "trending";
     SectionType["UPCOMING"] = "upcoming";
+    SectionType["PREMIUM_EXCLUSIVE"] = "premium_exclusive";
 })(SectionType || (exports.SectionType = SectionType = {}));
 var CardSize;
 (function (CardSize) {
@@ -32,6 +33,7 @@ var TabSection;
     TabSection["MOVIES"] = "movies";
     TabSection["SHOWS"] = "shows";
     TabSection["ANIME"] = "anime";
+    TabSection["ME"] = "me";
 })(TabSection || (exports.TabSection = TabSection = {}));
 let HomeSection = class HomeSection {
 };

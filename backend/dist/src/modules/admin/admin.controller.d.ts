@@ -2,11 +2,25 @@ import { Model, Types } from 'mongoose';
 import { User, UserDocument } from '../../schemas/user.schema';
 import { AdminLog, AdminLogDocument } from '../../schemas/admin-log.schema';
 import { WatchProgress, WatchProgressDocument } from '../../schemas/watch-progress.schema';
+import { WalletDocument } from '../../schemas/wallet.schema';
+import { ReferralDocument } from '../../schemas/referral.schema';
+import { ProfileDocument } from '../../schemas/profile.schema';
+import { WatchlistDocument } from '../../schemas/watchlist.schema';
+import { ReviewDocument } from '../../schemas/review.schema';
+import { WithdrawalDocument } from '../../schemas/withdrawal.schema';
+import { ContentViewDocument } from '../../schemas/content-view.schema';
 export declare class AdminController {
     private userModel;
     private adminLogModel;
     private watchProgressModel;
-    constructor(userModel: Model<UserDocument>, adminLogModel: Model<AdminLogDocument>, watchProgressModel: Model<WatchProgressDocument>);
+    private walletModel;
+    private referralModel;
+    private profileModel;
+    private watchlistModel;
+    private reviewModel;
+    private withdrawalModel;
+    private contentViewModel;
+    constructor(userModel: Model<UserDocument>, adminLogModel: Model<AdminLogDocument>, watchProgressModel: Model<WatchProgressDocument>, walletModel: Model<WalletDocument>, referralModel: Model<ReferralDocument>, profileModel: Model<ProfileDocument>, watchlistModel: Model<WatchlistDocument>, reviewModel: Model<ReviewDocument>, withdrawalModel: Model<WithdrawalDocument>, contentViewModel: Model<ContentViewDocument>);
     getUsers(page?: number, limit?: number, search?: string): Promise<{
         users: (import("mongoose").Document<unknown, {}, UserDocument, {}, {}> & User & import("mongoose").Document<Types.ObjectId, any, any, Record<string, any>, {}> & Required<{
             _id: Types.ObjectId;

@@ -41,5 +41,9 @@ export declare class CreateMovieDto {
     rankingLabel?: string;
     starRating?: number;
     videoQuality?: string;
+    isPremium?: boolean;
+    freeEpisodeCount?: number;
+    ottPlatforms?: string[];
+    uploadSource?: string;
 }
 export {};

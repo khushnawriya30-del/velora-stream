@@ -22,16 +22,19 @@ const mongoose_2 = require("mongoose");
 const bcrypt = require("bcryptjs");
 const nodemailer = require("nodemailer");
 const uuid_1 = require("uuid");
+const crypto_1 = require("crypto");
 const user_schema_1 = require("../../schemas/user.schema");
 const phone_otp_schema_1 = require("../../schemas/phone-otp.schema");
 const email_otp_schema_1 = require("../../schemas/email-otp.schema");
+const referral_service_1 = require("../referral/referral.service");
 let AuthService = AuthService_1 = class AuthService {
-    constructor(userModel, phoneOtpModel, emailOtpModel, jwtService, configService) {
+    constructor(userModel, phoneOtpModel, emailOtpModel, jwtService, configService, referralService) {
         this.userModel = userModel;
         this.phoneOtpModel = phoneOtpModel;
         this.emailOtpModel = emailOtpModel;
         this.jwtService = jwtService;
         this.configService = configService;
+        this.referralService = referralService;
         this.logger = new common_1.Logger(AuthService_1.name);
     }
     async onModuleInit() {
@@ -55,8 +58,39 @@ let AuthService = AuthService_1 = class AuthService {
         if (migratedNull.modifiedCount > 0) {
             this.logger.log(`Migrated ${migratedNull.modifiedCount} null-provider users to authProvider=local`);
         }
+        const usersWithoutCode = await this.userModel.find({
+            $or: [
+                { referralCode: { $exists: false } },
+                { referralCode: null },
+                { referralCode: '' },
+            ],
+        });
+        if (usersWithoutCode.length > 0) {
+            const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+            for (const user of usersWithoutCode) {
+                for (let attempt = 0; attempt < 5; attempt++) {
+                    const bytes = (0, crypto_1.randomBytes)(8);
+                    let code = '';
+                    for (let i = 0; i < 8; i++) {
+                        code += chars[bytes[i] % chars.length];
+                    }
+                    try {
+                        await this.userModel.findByIdAndUpdate(user._id, {
+                            $set: { referralCode: code },
+                        });
+                        this.logger.log(`Backfilled referral code for user ${user._id}`);
+                        break;
+                    }
+                    catch (e) {
+                        if (e?.code === 11000 && attempt < 4)
+                            continue;
+                        this.logger.warn(`Failed to backfill referral code for user ${user._id}: ${e.message}`);
+                    }
+                }
+            }
+        }
     }
-    async register(dto) {
+    async register(dto, ipAddress) {
         const existingUser = await this.userModel.findOne({ email: dto.email.toLowerCase(), authProvider: user_schema_1.AuthProvider.LOCAL });
         if (existingUser) {
             throw new common_1.ConflictException('An account with this email already exists');
@@ -68,6 +102,19 @@ let AuthService = AuthService_1 = class AuthService {
             password: hashedPassword,
             authProvider: user_schema_1.AuthProvider.LOCAL,
         });
+        let referralCode = dto.referralCode;
+        if (!referralCode && ipAddress) {
+            referralCode = await this.referralService.findReferralCodeByIp(ipAddress);
+        }
+        if (referralCode) {
+            try {
+                await this.referralService.applyReferral(user._id.toString(), referralCode);
+                this.logger.log(`Referral applied during registration: ${referralCode} → ${user._id}`);
+            }
+            catch (e) {
+                this.logger.warn(`Referral apply failed during registration: ${e.message}`);
+            }
+        }
         const tokens = await this.generateTokens(user);
         return {
             ...tokens,
@@ -258,7 +305,7 @@ let AuthService = AuthService_1 = class AuthService {
         await matchedUser.save();
         return { message: 'Password has been reset successfully' };
     }
-    async googleVerifyIdToken(idToken) {
+    async googleVerifyIdToken(idToken, referralCode, ipAddress) {
         const { uid, email, name, picture } = await this.verifyGoogleToken(idToken);
         if (!email)
             throw new common_1.BadRequestException('Google account has no email');
@@ -266,7 +313,9 @@ let AuthService = AuthService_1 = class AuthService {
         if (!user) {
             user = await this.userModel.findOne({ email: email.toLowerCase(), authProvider: user_schema_1.AuthProvider.GOOGLE });
         }
+        let isNewUser = false;
         if (!user) {
+            isNewUser = true;
             user = await this.userModel.create({
                 name: name ?? email.split('@')[0],
                 email: email.toLowerCase(),
@@ -293,11 +342,95 @@ let AuthService = AuthService_1 = class AuthService {
             throw new common_1.UnauthorizedException('Your account has been suspended');
         user.lastActiveAt = new Date();
         await user.save();
+        if (isNewUser) {
+            let code = referralCode;
+            if (!code && ipAddress) {
+                code = await this.referralService.findReferralCodeByIp(ipAddress);
+            }
+            if (code) {
+                try {
+                    await this.referralService.applyReferral(user._id.toString(), code);
+                    this.logger.log(`Referral applied during Google auth: ${code} → ${user._id}`);
+                }
+                catch (e) {
+                    this.logger.warn(`Referral apply failed during Google auth: ${e.message}`);
+                }
+            }
+        }
         const tokens = await this.generateTokens(user);
         return { ...tokens, user: this.sanitizeUser(user) };
     }
-    async googleSignup(idToken) {
-        return this.googleVerifyIdToken(idToken);
+    async googleSignup(idToken, referralCode, ipAddress) {
+        return this.googleVerifyIdToken(idToken, referralCode, ipAddress);
+    }
+    async googleVerifyAccessToken(accessToken, referralCode, ipAddress) {
+        let userInfo;
+        try {
+            const response = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+                headers: { Authorization: `Bearer ${accessToken}` },
+            });
+            userInfo = await response.json();
+        }
+        catch {
+            throw new common_1.UnauthorizedException('Failed to verify Google access token');
+        }
+        if (!userInfo.sub || !userInfo.email) {
+            throw new common_1.UnauthorizedException('Invalid Google access token');
+        }
+        const uid = userInfo.sub;
+        const email = userInfo.email;
+        const name = userInfo.name ?? email.split('@')[0];
+        const picture = userInfo.picture ?? '';
+        let user = await this.userModel.findOne({ googleId: uid });
+        if (!user) {
+            user = await this.userModel.findOne({ email: email.toLowerCase(), authProvider: user_schema_1.AuthProvider.GOOGLE });
+        }
+        let isNewUser = false;
+        if (!user) {
+            isNewUser = true;
+            user = await this.userModel.create({
+                name,
+                email: email.toLowerCase(),
+                googleId: uid,
+                authProvider: user_schema_1.AuthProvider.GOOGLE,
+                avatarUrl: picture,
+                isEmailVerified: true,
+            });
+        }
+        else {
+            let needsSave = false;
+            if (!user.googleId) {
+                user.googleId = uid;
+                needsSave = true;
+            }
+            if (picture && !user.avatarUrl) {
+                user.avatarUrl = picture;
+                needsSave = true;
+            }
+            if (needsSave)
+                await user.save();
+        }
+        if (user.isSuspended)
+            throw new common_1.UnauthorizedException('Your account has been suspended');
+        user.lastActiveAt = new Date();
+        await user.save();
+        if (isNewUser) {
+            let code = referralCode;
+            if (!code && ipAddress) {
+                code = await this.referralService.findReferralCodeByIp(ipAddress);
+            }
+            if (code) {
+                try {
+                    await this.referralService.applyReferral(user._id.toString(), code);
+                    this.logger.log(`Referral applied during Google web auth: ${code} → ${user._id}`);
+                }
+                catch (e) {
+                    this.logger.warn(`Referral apply failed during Google web auth: ${e.message}`);
+                }
+            }
+        }
+        const tokens = await this.generateTokens(user);
+        return { ...tokens, user: this.sanitizeUser(user) };
     }
     async verifyGoogleToken(idToken) {
         let data;
@@ -318,7 +451,7 @@ let AuthService = AuthService_1 = class AuthService {
             picture: data.picture ?? '',
         };
     }
-    async verifyFirebasePhoneToken(idToken) {
+    async verifyFirebasePhoneToken(idToken, referralCode, ipAddress) {
         const firebaseApiKey = this.configService.get('FIREBASE_WEB_API_KEY') ?? 'AIzaSyCYm3w06LQbfFGqCiGYSBYfbExNokEIJaw';
         let phoneNumber;
         try {
@@ -341,7 +474,9 @@ let AuthService = AuthService_1 = class AuthService {
             throw new common_1.BadRequestException('Firebase token does not contain a phone number');
         }
         let user = await this.userModel.findOne({ phone });
+        let isNewUser = false;
         if (!user) {
+            isNewUser = true;
             const lastFour = phone.slice(-4);
             const numericPhone = phone.replace('+', '');
             const generatedEmail = `ph${numericPhone}@cinevault.app`;
@@ -358,6 +493,21 @@ let AuthService = AuthService_1 = class AuthService {
         }
         user.lastActiveAt = new Date();
         await user.save();
+        if (isNewUser) {
+            let code = referralCode;
+            if (!code && ipAddress) {
+                code = await this.referralService.findReferralCodeByIp(ipAddress);
+            }
+            if (code) {
+                try {
+                    await this.referralService.applyReferral(user._id.toString(), code);
+                    this.logger.log(`Referral applied during Firebase phone auth: ${code} → ${user._id}`);
+                }
+                catch (e) {
+                    this.logger.warn(`Referral apply failed during Firebase phone auth: ${e.message}`);
+                }
+            }
+        }
         const tokens = await this.generateTokens(user);
         return { ...tokens, user: this.sanitizeUser(user) };
     }
@@ -380,7 +530,7 @@ let AuthService = AuthService_1 = class AuthService {
         }
         return { message: 'OTP sent successfully to your mobile number' };
     }
-    async verifyPhoneOtp(phone, otp) {
+    async verifyPhoneOtp(phone, otp, referralCode, ipAddress) {
         const cleaned = phone.replace(/\s/g, '');
         if (!/^\+91[6-9]\d{9}$/.test(cleaned)) {
             throw new common_1.BadRequestException('Invalid phone number format');
@@ -398,7 +548,9 @@ let AuthService = AuthService_1 = class AuthService {
         }
         await this.phoneOtpModel.deleteOne({ _id: otpRecord._id });
         let user = await this.userModel.findOne({ phone: cleaned });
+        let isNewUser = false;
         if (!user) {
+            isNewUser = true;
             const lastFour = cleaned.slice(-4);
             const numericPhone = cleaned.replace('+', '');
             const generatedEmail = `ph${numericPhone}@cinevault.app`;
@@ -415,6 +567,21 @@ let AuthService = AuthService_1 = class AuthService {
         }
         user.lastActiveAt = new Date();
         await user.save();
+        if (isNewUser) {
+            let code = referralCode;
+            if (!code && ipAddress) {
+                code = await this.referralService.findReferralCodeByIp(ipAddress);
+            }
+            if (code) {
+                try {
+                    await this.referralService.applyReferral(user._id.toString(), code);
+                    this.logger.log(`Referral applied during phone OTP auth: ${code} → ${user._id}`);
+                }
+                catch (e) {
+                    this.logger.warn(`Referral apply failed during phone OTP auth: ${e.message}`);
+                }
+            }
+        }
         const tokens = await this.generateTokens(user);
         return { ...tokens, user: this.sanitizeUser(user) };
     }
@@ -498,7 +665,7 @@ let AuthService = AuthService_1 = class AuthService {
         }
         return { message: 'OTP sent to your email address' };
     }
-    async verifyEmailLoginOtp(email, otp) {
+    async verifyEmailLoginOtp(email, otp, referralCode, ipAddress) {
         const normalizedEmail = email.toLowerCase().trim();
         const otpRecord = await this.emailOtpModel.findOne({
             email: normalizedEmail,
@@ -516,7 +683,9 @@ let AuthService = AuthService_1 = class AuthService {
             email: normalizedEmail,
             authProvider: { $in: [user_schema_1.AuthProvider.LOCAL, null] },
         });
+        let isNewUser = false;
         if (!user) {
+            isNewUser = true;
             user = await this.userModel.create({
                 name: normalizedEmail.split('@')[0],
                 email: normalizedEmail,
@@ -534,6 +703,21 @@ let AuthService = AuthService_1 = class AuthService {
         }
         user.lastActiveAt = new Date();
         await user.save();
+        if (isNewUser) {
+            let code = referralCode;
+            if (!code && ipAddress) {
+                code = await this.referralService.findReferralCodeByIp(ipAddress);
+            }
+            if (code) {
+                try {
+                    await this.referralService.applyReferral(user._id.toString(), code);
+                    this.logger.log(`Referral applied during email OTP auth: ${code} → ${user._id}`);
+                }
+                catch (e) {
+                    this.logger.warn(`Referral apply failed during email OTP auth: ${e.message}`);
+                }
+            }
+        }
         const tokens = await this.generateTokens(user);
         return { ...tokens, user: this.sanitizeUser(user) };
     }
@@ -572,6 +756,7 @@ exports.AuthService = AuthService = AuthService_1 = __decorate([
         mongoose_2.Model,
         mongoose_2.Model,
         jwt_1.JwtService,
-        config_1.ConfigService])
+        config_1.ConfigService,
+        referral_service_1.ReferralService])
 ], AuthService);
 //# sourceMappingURL=auth.service.js.map

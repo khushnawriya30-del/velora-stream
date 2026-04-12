@@ -11,13 +11,14 @@ export declare class MoviesController {
         page: number;
         pages: number;
     }>;
-    getTrending(limit?: number, contentType?: string): Promise<import("../../schemas/movie.schema").MovieDocument[]>;
-    getNewReleases(limit?: number): Promise<import("../../schemas/movie.schema").MovieDocument[]>;
-    getTopRated(limit?: number): Promise<import("../../schemas/movie.schema").MovieDocument[]>;
-    getByGenre(genre: string, limit?: number): Promise<import("../../schemas/movie.schema").MovieDocument[]>;
-    getByType(type: string, limit?: number): Promise<import("../../schemas/movie.schema").MovieDocument[]>;
+    getTrending(limit?: number, contentType?: string): Promise<any[]>;
+    getNewReleases(limit?: number): Promise<any[]>;
+    getTopRated(limit?: number): Promise<any[]>;
+    getPremium(limit?: number): Promise<any[]>;
+    getByGenre(genre: string, limit?: number): Promise<any[]>;
+    getByType(type: string, limit?: number): Promise<any[]>;
     findById(id: string): Promise<import("../../schemas/movie.schema").MovieDocument>;
-    getRelated(id: string): Promise<import("../../schemas/movie.schema").MovieDocument[]>;
+    getRelated(id: string): Promise<any[]>;
     trackView(id: string, req: any): Promise<{
         tracked: boolean;
     }>;

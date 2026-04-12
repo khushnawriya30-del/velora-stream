@@ -13,12 +13,14 @@ const passport_1 = require("@nestjs/passport");
 const mongoose_1 = require("@nestjs/mongoose");
 const config_1 = require("@nestjs/config");
 const auth_controller_1 = require("./auth.controller");
+const google_web_auth_controller_1 = require("./google-web-auth.controller");
 const auth_service_1 = require("./auth.service");
 const jwt_strategy_1 = require("./strategies/jwt.strategy");
 const google_strategy_1 = require("./strategies/google.strategy");
 const user_schema_1 = require("../../schemas/user.schema");
 const phone_otp_schema_1 = require("../../schemas/phone-otp.schema");
 const email_otp_schema_1 = require("../../schemas/email-otp.schema");
+const referral_module_1 = require("../referral/referral.module");
 const optionalProviders = [];
 if (process.env.GOOGLE_CLIENT_ID) {
     optionalProviders.push(google_strategy_1.GoogleStrategy);
@@ -45,8 +47,9 @@ exports.AuthModule = AuthModule = __decorate([
                 { name: phone_otp_schema_1.PhoneOtp.name, schema: phone_otp_schema_1.PhoneOtpSchema },
                 { name: email_otp_schema_1.EmailOtp.name, schema: email_otp_schema_1.EmailOtpSchema },
             ]),
+            referral_module_1.ReferralModule,
         ],
-        controllers: [auth_controller_1.AuthController],
+        controllers: [auth_controller_1.AuthController, google_web_auth_controller_1.GoogleWebAuthController],
         providers: [auth_service_1.AuthService, jwt_strategy_1.JwtStrategy, ...optionalProviders],
         exports: [auth_service_1.AuthService, jwt_strategy_1.JwtStrategy, passport_1.PassportModule],
     })
