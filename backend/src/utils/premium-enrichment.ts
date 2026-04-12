@@ -1,10 +1,9 @@
-import { Model, Connection } from 'mongoose';
+import { Model } from 'mongoose';
 
 /**
  * Enriches an array of movies with `hasPremiumEpisode: true` for any series
  * that has at least one episode marked as premium.
- * Uses raw MongoDB queries via the model's db connection (no extra DI needed).
- * Performs exactly 2 queries regardless of movie count.
+ * Uses Mongoose models via the connection to avoid native driver type issues.
  */
 export async function enrichWithPremiumEpisodeFlag(
   movieModel: Model<any>,
@@ -21,16 +20,17 @@ export async function enrichWithPremiumEpisodeFlag(
 
   const seriesIds = seriesMovies.map((m) => m._id);
 
-  // Access the native MongoDB Db via Mongoose connection
-  const conn: Connection = movieModel.db;
-  const nativeDb = conn.getClient().db();
+  // Use Mongoose models registered on the same connection
+  const conn = movieModel.db;
+  const SeasonModel = conn.model('Season');
+  const EpisodeModel = conn.model('Episode');
 
   try {
     // 1) Get all seasons for these series
-    const seasons = await nativeDb
-      .collection('seasons')
-      .find({ seriesId: { $in: seriesIds } }, { projection: { _id: 1, seriesId: 1 } })
-      .toArray();
+    const seasons: any[] = await SeasonModel
+      .find({ seriesId: { $in: seriesIds } })
+      .select('_id seriesId')
+      .lean();
     if (seasons.length === 0) return movies.map((m) => m.toObject ? m.toObject() : { ...m });
 
     // Map seasonId → seriesId
@@ -40,13 +40,10 @@ export async function enrichWithPremiumEpisodeFlag(
     }
 
     // 2) Find any premium episodes in those seasons
-    const premiumEps = await nativeDb
-      .collection('episodes')
-      .find(
-        { seasonId: { $in: seasons.map((s) => s._id) }, isPremium: true },
-        { projection: { seasonId: 1 } },
-      )
-      .toArray();
+    const premiumEps: any[] = await EpisodeModel
+      .find({ seasonId: { $in: seasons.map((s: any) => s._id) }, isPremium: true })
+      .select('seasonId')
+      .lean();
 
     const premiumSeriesIds = new Set<string>();
     for (const ep of premiumEps) {
@@ -63,7 +60,6 @@ export async function enrichWithPremiumEpisodeFlag(
       return obj;
     });
   } catch (err) {
-    // On any error, return movies as plain objects without enrichment
     console.error('enrichWithPremiumEpisodeFlag error:', err);
     return movies.map((m) => m.toObject ? m.toObject() : { ...m });
   }
