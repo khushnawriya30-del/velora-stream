@@ -686,11 +686,12 @@ fun TrendingMovieCard(
     onClick: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val posterWidth = if (rank < 10) 100.dp else 95.dp
+    val posterWidth = 120.dp
+    val containerWidth = if (rank >= 10) 170.dp else 155.dp
 
     Column(
         modifier = modifier
-            .width(135.dp)
+            .width(containerWidth)
             .clickable { onClick(movie.id) },
         horizontalAlignment = Alignment.End,
     ) {
@@ -698,7 +699,7 @@ fun TrendingMovieCard(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(175.dp)
+                .height(185.dp)
         ) {
             // Large ranking number — outline stroke (behind poster)
             Text(
@@ -786,7 +787,7 @@ fun TrendingMovieCard(
                         modifier = Modifier
                             .align(Alignment.TopStart)
                             .padding(4.dp),
-                        size = 32.dp,
+                        size = 36.dp,
                     )
                 }
             }
