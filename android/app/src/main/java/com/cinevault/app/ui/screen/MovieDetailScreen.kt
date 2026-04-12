@@ -1165,7 +1165,7 @@ private fun EpisodeCard(
         // Episode info
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                episode.title,
+                "Episode ${episode.episodeNumber}",
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Medium,
                 color = CineVaultTheme.colors.textPrimary,
@@ -1353,15 +1353,6 @@ private fun HorizontalEpisodeCard(
             color = CineVaultTheme.colors.textPrimary,
             maxLines = 1
         )
-        if (episode.title.isNotBlank()) {
-            Text(
-                episode.title,
-                fontSize = 11.sp,
-                color = CineVaultTheme.colors.textSecondary,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-        }
     }
 }
 
