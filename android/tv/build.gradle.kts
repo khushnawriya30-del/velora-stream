@@ -13,8 +13,8 @@ android {
         applicationId = "com.cinevault.tv"
         minSdk = 26
         targetSdk = 34
-        versionCode = 3
-        versionName = "1.1.1"
+        versionCode = 4
+        versionName = "1.2.0"
 
         buildConfigField("String", "BASE_URL", "\"https://p2zb77xpuy.ap-south-1.awsapprunner.com/api/v1/\"")
 

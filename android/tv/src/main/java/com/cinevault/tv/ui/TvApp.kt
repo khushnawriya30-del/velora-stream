@@ -22,6 +22,7 @@ import com.cinevault.tv.ui.screens.search.SearchScreen
 import com.cinevault.tv.ui.screens.splash.SplashScreen
 import com.cinevault.tv.ui.theme.CineVaultTvTheme
 import com.cinevault.tv.ui.theme.ProvideTvDimens
+import com.cinevault.tv.ui.components.TvUpdateDialog
 import kotlinx.coroutines.delay
 
 object TvRoutes {
@@ -49,6 +50,16 @@ fun TvApp() {
         val authViewModel: AuthViewModel = hiltViewModel()
         val isLoggedIn by authViewModel.isLoggedIn.collectAsState()
         val isPremium by authViewModel.isPremium.collectAsState()
+        val updateInfo by authViewModel.updateInfo.collectAsState()
+
+        // Show update dialog
+        if (updateInfo != null) {
+            TvUpdateDialog(
+                info = updateInfo!!,
+                onDismiss = { authViewModel.dismissUpdate() },
+                onInstallClicked = { code -> authViewModel.markUpdateInstalled(code) },
+            )
+        }
 
         NavHost(navController = navController, startDestination = TvRoutes.SPLASH) {
 

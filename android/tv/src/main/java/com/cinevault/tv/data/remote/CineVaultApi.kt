@@ -6,6 +6,10 @@ import retrofit2.http.*
 
 interface CineVaultApi {
 
+    // ── App Version ──
+    @GET("app-version?platform=tv")
+    suspend fun getAppVersion(): Response<AppVersionResponse>
+
     // ── QR Login ──
     @POST("auth/tv/qr-generate")
     suspend fun generateQrToken(): Response<QrGenerateResponse>
@@ -173,8 +177,4 @@ interface CineVaultApi {
     // ── Premium ──
     @GET("premium/status")
     suspend fun getPremiumStatus(): Response<PremiumStatusResponse>
-
-    // ── App Version ──
-    @GET("app-version")
-    suspend fun getAppVersion(): Response<AppVersionResponse>
 }

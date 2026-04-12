@@ -19,6 +19,9 @@ export class AppVersion {
 
   @Prop({ default: '' })
   releaseNotes: string;
+
+  @Prop({ default: 'mobile' })
+  platform: string;
 }
 
 export const AppVersionSchema = SchemaFactory.createForClass(AppVersion);

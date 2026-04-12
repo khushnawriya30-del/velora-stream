@@ -16,6 +16,15 @@ data class RefreshResponse(
 
 data class MessageResponse(val message: String)
 
+// ── App Version ──
+data class AppVersionResponse(
+    val versionCode: Int,
+    val versionName: String,
+    val forceUpdate: Boolean = false,
+    val apkUrl: String = "",
+    val releaseNotes: String? = null,
+)
+
 // ── QR Login ──
 data class QrGenerateResponse(
     val token: String,
@@ -291,13 +300,4 @@ data class PremiumStatusResponse(
     val expiresAt: String? = null,
     val activatedAt: String? = null,
     val daysRemaining: Int? = null,
-)
-
-// ── App Version ──
-data class AppVersionResponse(
-    val versionCode: Int,
-    val versionName: String,
-    val forceUpdate: Boolean,
-    val apkUrl: String,
-    val releaseNotes: String?,
 )

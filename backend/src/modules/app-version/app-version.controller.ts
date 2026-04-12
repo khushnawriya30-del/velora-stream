@@ -1,4 +1,4 @@
-import { Controller, Get, Put, Body, Res, UseGuards } from '@nestjs/common';
+import { Controller, Get, Put, Body, Query, Res, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { Response } from 'express';
 import { AppVersionService } from './app-version.service';
@@ -11,8 +11,8 @@ export class AppVersionController {
   constructor(private readonly service: AppVersionService) {}
 
   @Get()
-  getLatest(): Promise<AppVersion> {
-    return this.service.getLatest();
+  getLatest(@Query('platform') platform?: string): Promise<AppVersion> {
+    return this.service.getLatest(platform || 'mobile');
   }
 
   /**
@@ -23,8 +23,8 @@ export class AppVersionController {
    * final CDN URL that DownloadManager can handle.
    */
   @Get('download')
-  async download(@Res() res: Response) {
-    const resolved = await this.service.resolveDownloadUrl();
+  async download(@Query('platform') platform: string, @Res() res: Response) {
+    const resolved = await this.service.resolveDownloadUrl(platform || 'mobile');
     res.redirect(302, resolved);
   }
 

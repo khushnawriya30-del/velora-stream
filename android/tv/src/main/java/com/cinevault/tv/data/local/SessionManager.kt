@@ -28,6 +28,7 @@ class SessionManager @Inject constructor(@ApplicationContext private val context
         private val PREMIUM_EXPIRES_AT = stringPreferencesKey("premium_expires_at")
         private val ACTIVE_PROFILE_ID = stringPreferencesKey("active_profile_id")
         private val ACTIVE_PROFILE_NAME = stringPreferencesKey("active_profile_name")
+        private val INSTALLED_VERSION_CODE = intPreferencesKey("installed_version_code")
     }
 
     val accessToken: Flow<String?> = context.dataStore.data.map { it[ACCESS_TOKEN] }
@@ -41,6 +42,7 @@ class SessionManager @Inject constructor(@ApplicationContext private val context
     val activeProfileId: Flow<String?> = context.dataStore.data.map { it[ACTIVE_PROFILE_ID] }
     val premiumPlan: Flow<String?> = context.dataStore.data.map { it[PREMIUM_PLAN] }
     val premiumExpiresAt: Flow<String?> = context.dataStore.data.map { it[PREMIUM_EXPIRES_AT] }
+    val installedVersionCode: Flow<Int> = context.dataStore.data.map { it[INSTALLED_VERSION_CODE] ?: 0 }
 
     suspend fun getAccessTokenSync(): String? = context.dataStore.data.first()[ACCESS_TOKEN]
     suspend fun getRefreshTokenSync(): String? = context.dataStore.data.first()[REFRESH_TOKEN]
@@ -98,5 +100,9 @@ class SessionManager @Inject constructor(@ApplicationContext private val context
 
     suspend fun clearSession() {
         context.dataStore.edit { it.clear() }
+    }
+
+    suspend fun saveInstalledVersionCode(code: Int) {
+        context.dataStore.edit { it[INSTALLED_VERSION_CODE] = code }
     }
 }
