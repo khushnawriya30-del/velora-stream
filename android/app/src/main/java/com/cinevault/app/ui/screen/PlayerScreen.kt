@@ -986,22 +986,27 @@ fun PlayerScreen(
                                     .weight(1f)
                                     .padding(end = 8.dp),
                             ) {
-                                Text(
-                                    uiState.movie?.title ?: "",
-                                    color = Color.White,
-                                    fontSize = 17.sp,
-                                    fontWeight = FontWeight.SemiBold,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis,
-                                )
-                                if (!uiState.currentEpisodeTitle.isNullOrBlank()) {
+                                if (uiState.episodes.isNotEmpty()) {
+                                    // Series: show "Episode X" only
+                                    val epNum = uiState.episodes.getOrNull(uiState.currentEpisodeIndex)?.episodeNumber
+                                        ?: (uiState.currentEpisodeIndex + 1)
                                     Text(
-                                        uiState.currentEpisodeTitle ?: "",
-                                        color = TextDim,
-                                        fontSize = 12.sp,
+                                        "Episode $epNum",
+                                        color = Color.White,
+                                        fontSize = 17.sp,
+                                        fontWeight = FontWeight.SemiBold,
                                         maxLines = 1,
                                         overflow = TextOverflow.Ellipsis,
-                                        letterSpacing = 0.5.sp,
+                                    )
+                                } else {
+                                    // Movie: show movie title
+                                    Text(
+                                        uiState.movie?.title ?: "",
+                                        color = Color.White,
+                                        fontSize = 17.sp,
+                                        fontWeight = FontWeight.SemiBold,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
                                     )
                                 }
                             }
