@@ -266,37 +266,8 @@ fun RegisterScreen(
 
             Spacer(Modifier.height(12.dp))
 
-            // Continue with Phone
-            OutlinedButton(
-                onClick = onNavigateToPhoneAuth,
-                enabled = !uiState.isLoading,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(52.dp),
-                shape = RoundedCornerShape(12.dp),
-                colors = ButtonDefaults.outlinedButtonColors(
-                    contentColor = Color.White,
-                ),
-                border = androidx.compose.foundation.BorderStroke(1.dp, CineVaultTheme.colors.border),
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.Center,
-                ) {
-                    Icon(
-                        Icons.Filled.Phone,
-                        contentDescription = "Phone",
-                        tint = CineVaultTheme.colors.accentGold,
-                        modifier = Modifier.size(20.dp),
-                    )
-                    Spacer(Modifier.width(12.dp))
-                    Text(
-                        "Continue with Phone",
-                        style = CineVaultTheme.typography.body.copy(fontSize = 15.sp),
-                        color = Color.White,
-                    )
-                }
-            }
+            // Phone login temporarily disabled (Firebase Blaze billing required)
+            // TODO: Re-enable when Firebase billing is set up
 
             Spacer(Modifier.height(40.dp))
         }
