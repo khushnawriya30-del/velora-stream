@@ -424,37 +424,8 @@ private fun MainAuthPage(
 
         HorizontalDivider(color = Color(0xFF333333), thickness = 0.5.dp, modifier = Modifier.padding(horizontal = 16.dp))
 
-        // ── Phone Account (saved) ──
-        if (lastPhoneName != null && lastPhoneNumber != null) {
-            LoginOptionRow(
-                icon = {
-                    Icon(
-                        Icons.Filled.Phone,
-                        contentDescription = null,
-                        tint = Color(0xFF25D366),
-                        modifier = Modifier.size(28.dp),
-                    )
-                },
-                title = lastPhoneName,
-                subtitle = maskPhone(lastPhoneNumber),
-                onClick = onPhoneSavedClick,
-            )
-            HorizontalDivider(color = Color(0xFF333333), thickness = 0.5.dp, modifier = Modifier.padding(horizontal = 16.dp))
-        }
-
-        // ── Continue with Phone ──
-        LoginOptionRow(
-            icon = {
-                Icon(
-                    Icons.Filled.PhoneAndroid,
-                    contentDescription = null,
-                    tint = Color(0xFFB0B0B0),
-                    modifier = Modifier.size(28.dp),
-                )
-            },
-            title = "Continue with Phone",
-            onClick = onPhoneNewClick,
-        )
+        // Phone login temporarily disabled (Firebase Blaze billing required)
+        // TODO: Re-enable when Firebase billing is set up
 
         Spacer(Modifier.height(24.dp))
 
