@@ -164,7 +164,7 @@ fun MovieCard(
             }
 
             // Premium badge — top-left
-            if (movie.isPremium == true) {
+            if (movie.isEffectivelyPremium) {
                 PremiumBadgeOverlay(
                     modifier = Modifier
                         .align(Alignment.TopStart)
@@ -543,7 +543,7 @@ fun SquareMovieCard(
             }
 
             // Premium badge — top-left
-            if (movie.isPremium == true) {
+            if (movie.isEffectivelyPremium) {
                 PremiumBadgeOverlay(
                     modifier = Modifier
                         .align(Alignment.TopStart)
@@ -666,7 +666,7 @@ fun LargeMovieCard(
             }
 
             // Premium badge — top-left
-            if (movie.isPremium == true) {
+            if (movie.isEffectivelyPremium) {
                 PremiumBadgeOverlay(
                     modifier = Modifier
                         .align(Alignment.TopStart)
@@ -791,7 +791,7 @@ fun TrendingMovieCard(
                 }
 
                 // Premium badge — top-left on poster
-                if (movie.isPremium == true) {
+                if (movie.isEffectivelyPremium) {
                     PremiumBadgeOverlay(
                         modifier = Modifier
                             .align(Alignment.TopStart)

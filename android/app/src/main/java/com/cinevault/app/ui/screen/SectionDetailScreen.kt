@@ -171,7 +171,7 @@ private fun GridMovieCard(
             }
 
             // Premium badge — top-left
-            if (movie.isPremium == true) {
+            if (movie.isEffectivelyPremium) {
                 PremiumBadgeOverlay(
                     modifier = Modifier
                         .align(Alignment.TopStart)

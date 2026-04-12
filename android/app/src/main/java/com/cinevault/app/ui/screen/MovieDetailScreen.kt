@@ -320,7 +320,7 @@ fun MovieDetailScreen(
                     overflow = TextOverflow.Ellipsis
                 )
                 Spacer(modifier = Modifier.height(10.dp))
-                MovieMetaChips(movie, isContentPremium = movie.isPremium == true)
+                MovieMetaChips(movie, isContentPremium = movie.isEffectivelyPremium)
             }
         } else {
             // ── Banner image as hero ──
@@ -414,7 +414,7 @@ fun MovieDetailScreen(
                         overflow = TextOverflow.Ellipsis
                     )
                     Spacer(modifier = Modifier.height(10.dp))
-                    MovieMetaChips(movie, isContentPremium = movie.isPremium == true)
+                    MovieMetaChips(movie, isContentPremium = movie.isEffectivelyPremium)
                 }
             }
         }

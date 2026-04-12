@@ -4,6 +4,7 @@ import { Model, Types } from 'mongoose';
 import { HomeSection, HomeSectionDocument, TabSection, SectionType, CardSize } from '../../schemas/home-section.schema';
 import { Movie, MovieDocument, ContentStatus } from '../../schemas/movie.schema';
 import { Banner, BannerDocument, BannerType, BannerSection } from '../../schemas/banner.schema';
+import { enrichWithPremiumEpisodeFlag } from '../../utils/premium-enrichment';
 
 // ── Default "Recently Added" system sections ──────────────────────────────────
 const RECENTLY_ADDED_DEFAULTS = [
@@ -292,6 +293,13 @@ export class HomeSectionsService implements OnModuleInit {
         isPremiumOnly: !!(section as any).isPremiumOnly,
         items: movies,
       });
+    }
+
+    // Enrich all section items with hasPremiumEpisode flag
+    for (const section of feed) {
+      if (section.items?.length > 0) {
+        section.items = await enrichWithPremiumEpisodeFlag(this.movieModel, section.items);
+      }
     }
 
     // Interleave mid-banners between sections

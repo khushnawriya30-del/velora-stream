@@ -103,6 +103,7 @@ data class MovieDto(
     val platformOrigin: String?,
     val isFeatured: Boolean?,
     val isPremium: Boolean? = false,
+    val hasPremiumEpisode: Boolean? = false,
     val freeEpisodeCount: Int? = 0,
     val rankingLabel: String?,
     val videoQuality: String?,
@@ -114,6 +115,8 @@ data class MovieDto(
     val averageRating: Double get() = rating ?: 0.0
     val backdropUrl: String? get() = bannerUrl
     val description: String? get() = synopsis
+    /** True if this content is premium or any of its episodes are premium */
+    val isEffectivelyPremium: Boolean get() = isPremium == true || hasPremiumEpisode == true
 
     val languageLabel: String?
         get() {

@@ -1143,7 +1143,7 @@ fun PremiumMovieCard(
             }
 
             // Premium badge — top-left
-            if (movie.isPremium == true) {
+            if (movie.isEffectivelyPremium) {
                 Image(
                     painter = painterResource(R.drawable.premium_badge_small),
                     contentDescription = "Premium",

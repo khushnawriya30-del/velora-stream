@@ -60,7 +60,7 @@ class PlayerViewModel @Inject constructor(
 
     private val contentId: String = savedStateHandle.get<String>("contentId") ?: ""
     private val initialEpisodeId: String? = savedStateHandle.get<String>("episodeId")
-    private val isFreePreview: Boolean = savedStateHandle.get<Boolean>("freePreview") ?: false
+    private var isFreePreview: Boolean = savedStateHandle.get<Boolean>("freePreview") ?: false
     private var currentEpisodeId: String? = initialEpisodeId
 
     /** When playing an episode, progress is keyed by episodeId not contentId (series id). */
@@ -111,21 +111,49 @@ class PlayerViewModel @Inject constructor(
                     Log.d("CineVaultPlayer", "Movie loaded: ${movie.title}, hlsUrl=${movie.hlsUrl}, sources=${movie.streamingSources?.size ?: 0}")
                     _uiState.update { it.copy(movie = movie) }
 
+                    // Auto-detect premium content: if user is free and content is premium,
+                    // force free preview mode (10-min limit) even if not passed via navigation.
+                    // This prevents bypass via watch history or direct player navigation.
+                    if (!isFreePreview) {
+                        val isPremiumUser = sessionManager.isPremium.firstOrNull() ?: false
+                        val contentIsPremium = movie.isPremium == true || movie.hasPremiumEpisode == true
+                        if (!isPremiumUser && contentIsPremium) {
+                            // Check if the specific episode is premium
+                            var episodeIsPremium = false
+                            if (!currentEpisodeId.isNullOrBlank()) {
+                                when (val epCheck = contentRepository.getEpisode(currentEpisodeId!!)) {
+                                    is Result.Success -> episodeIsPremium = epCheck.data.isPremium
+                                    else -> {}
+                                }
+                            }
+                            if (movie.isPremium == true || episodeIsPremium) {
+                                Log.d("CineVaultPlayer", "Auto-detected premium content for free user — enabling free preview mode")
+                                isFreePreview = true
+                                _uiState.update { it.copy(isFreePreview = true) }
+                            }
+                        }
+                    }
+
                     // Fetch saved progress BEFORE loading streaming URL
                     // Use episodeId as progress key when playing episode (per-episode tracking)
                     var savedPosition = 0L
-                    val profileId = sessionManager.activeProfileId.firstOrNull()
-                    if (profileId != null) {
-                        when (val progressResult = watchProgressRepository.getProgress(profileId, progressId)) {
-                            is Result.Success -> {
-                                val progress = progressResult.data
-                                if (progress != null && !progress.isCompleted) {
-                                    savedPosition = progress.currentTime.toLong()
-                                    Log.d("CineVaultPlayer", "Restored saved position: $savedPosition ms")
+                    // Free preview: ALWAYS start from 0:00 — no resume allowed
+                    if (!isFreePreview) {
+                        val profileId = sessionManager.activeProfileId.firstOrNull()
+                        if (profileId != null) {
+                            when (val progressResult = watchProgressRepository.getProgress(profileId, progressId)) {
+                                is Result.Success -> {
+                                    val progress = progressResult.data
+                                    if (progress != null && !progress.isCompleted) {
+                                        savedPosition = progress.currentTime.toLong()
+                                        Log.d("CineVaultPlayer", "Restored saved position: $savedPosition ms")
+                                    }
                                 }
+                                else -> Log.w("CineVaultPlayer", "Could not fetch saved progress")
                             }
-                            else -> Log.w("CineVaultPlayer", "Could not fetch saved progress")
                         }
+                    } else {
+                        Log.d("CineVaultPlayer", "Free preview: skipping saved position, starting from 0")
                     }
 
                     // If episodeId is provided, load episode streaming sources instead
@@ -416,18 +444,20 @@ class PlayerViewModel @Inject constructor(
                     error = null,
                 )
             }
-            // Fetch saved progress for this episode
+            // Fetch saved progress for this episode (skip for free preview — always start from 0)
             var savedPosition = 0L
-            val profileId = sessionManager.activeProfileId.firstOrNull()
-            if (profileId != null) {
-                when (val progressResult = watchProgressRepository.getProgress(profileId, episode.id)) {
-                    is Result.Success -> {
-                        val progress = progressResult.data
-                        if (progress != null && !progress.isCompleted) {
-                            savedPosition = progress.currentTime.toLong()
+            if (!isFreePreview) {
+                val profileId = sessionManager.activeProfileId.firstOrNull()
+                if (profileId != null) {
+                    when (val progressResult = watchProgressRepository.getProgress(profileId, episode.id)) {
+                        is Result.Success -> {
+                            val progress = progressResult.data
+                            if (progress != null && !progress.isCompleted) {
+                                savedPosition = progress.currentTime.toLong()
+                            }
                         }
+                        else -> {}
                     }
-                    else -> {}
                 }
             }
             when (val result = contentRepository.getEpisode(episode.id)) {
@@ -455,12 +485,16 @@ class PlayerViewModel @Inject constructor(
     }
 
     private fun startProgressTimer() {
-        if (isFreePreview) return // Don't save watch history during free preview
         progressJob?.cancel()
         progressJob = viewModelScope.launch {
             // Wait 20s before first save to let the player seek to saved position
             delay(20_000)
             while (true) {
+                // Check dynamically — isFreePreview may be set after init via auto-detection
+                if (_uiState.value.isFreePreview) {
+                    delay(15_000)
+                    continue
+                }
                 val state = _uiState.value
                 // Save regardless of play/pause — just need a valid position and duration
                 if (state.totalDuration <= 0 || state.currentPosition <= 0) {
@@ -493,7 +527,7 @@ class PlayerViewModel @Inject constructor(
     /** Called when user presses Back — pass real ExoPlayer values directly.
      *  Uses NonCancellable so the HTTP save survives ViewModel destruction. */
     fun saveExplicitProgress(position: Long, duration: Long) {
-        if (isFreePreview) return // Don't save watch history during free preview
+        if (_uiState.value.isFreePreview) return // Don't save watch history during free preview
         if (duration <= 0) return
         // Use a scope that survives ViewModel clearing
         saveScope.launch {
@@ -522,6 +556,7 @@ class PlayerViewModel @Inject constructor(
     }
 
     fun saveProgressNow() {
+        if (_uiState.value.isFreePreview) return // Don't save watch history during free preview
         saveScope.launch {
             withContext(NonCancellable) {
                 val state = _uiState.value

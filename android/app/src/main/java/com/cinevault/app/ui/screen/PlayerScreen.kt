@@ -301,7 +301,9 @@ fun PlayerScreen(
             Log.d("CineVaultPlayer", "Loading URL: $url")
             playerError = null
             exoPlayer.stop()
-            val resumePos = uiState.currentPosition
+            // Free preview: NEVER resume — always start from 0
+            val isFreePreviewActive = uiState.isFreePreview && !uiState.isPremium
+            val resumePos = if (isFreePreviewActive) 0L else uiState.currentPosition
             exoPlayer.setMediaItem(MediaItem.fromUri(url))
             exoPlayer.prepare()
             if (resumePos > 0) {

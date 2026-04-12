@@ -336,7 +336,7 @@ private fun MeMovieCard(movie: MovieDto, onClick: () -> Unit) {
                 }
             }
             // Premium badge — top-left
-            if (movie.isPremium == true) {
+            if (movie.isEffectivelyPremium) {
                 Image(
                     painter = painterResource(R.drawable.premium_badge_small),
                     contentDescription = "Premium",
@@ -899,7 +899,7 @@ private fun MeWatchlistCard(movie: MovieDto, onClick: () -> Unit) {
                 contentScale = ContentScale.Crop,
             )
             // Premium badge (top-left)
-            if (movie.isPremium == true) {
+            if (movie.isEffectivelyPremium) {
                 PremiumBadgeOverlay(
                     modifier = Modifier.align(Alignment.TopStart).padding(4.dp),
                     size = 24.dp,

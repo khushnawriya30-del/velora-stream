@@ -6,6 +6,7 @@ import { ContentView, ContentViewDocument } from '../../schemas/content-view.sch
 import { CreateMovieDto } from './dto/create-movie.dto';
 import { UpdateMovieDto } from './dto/update-movie.dto';
 import { QueryMoviesDto } from './dto/query-movies.dto';
+import { enrichWithPremiumEpisodeFlag } from '../../utils/premium-enrichment';
 
 /**
  * Convert any Google Drive sharing link to a direct-download URL that video players can stream.
@@ -144,7 +145,7 @@ export class MoviesService {
     if (!result) throw new NotFoundException('Content not found');
   }
 
-  async getTrending(limit = 20, contentType?: string): Promise<MovieDocument[]> {
+  async getTrending(limit = 20, contentType?: string): Promise<any[]> {
     const filter: any = { status: ContentStatus.PUBLISHED };
     if (contentType) {
       // Map tab names to content types
@@ -157,53 +158,59 @@ export class MoviesService {
       }
       // 'home' or unrecognized = no filter (all types)
     }
-    return this.movieModel
+    const movies = await this.movieModel
       .find(filter)
       .sort({ popularityScore: -1, viewCount: -1 })
       .limit(limit);
+    return enrichWithPremiumEpisodeFlag(this.movieModel, movies);
   }
 
-  async getNewReleases(limit = 20): Promise<MovieDocument[]> {
-    return this.movieModel
+  async getNewReleases(limit = 20): Promise<any[]> {
+    const movies = await this.movieModel
       .find({ status: ContentStatus.PUBLISHED })
       .sort({ createdAt: -1 })
       .limit(limit);
+    return enrichWithPremiumEpisodeFlag(this.movieModel, movies);
   }
 
-  async getTopRated(limit = 20): Promise<MovieDocument[]> {
-    return this.movieModel
+  async getTopRated(limit = 20): Promise<any[]> {
+    const movies = await this.movieModel
       .find({ status: ContentStatus.PUBLISHED, voteCount: { $gte: 5 } })
       .sort({ rating: -1 })
       .limit(limit);
+    return enrichWithPremiumEpisodeFlag(this.movieModel, movies);
   }
 
-  async getPremiumContent(limit = 30): Promise<MovieDocument[]> {
-    return this.movieModel
+  async getPremiumContent(limit = 30): Promise<any[]> {
+    const movies = await this.movieModel
       .find({ status: ContentStatus.PUBLISHED, isPremium: true })
       .sort({ createdAt: -1 })
       .limit(limit)
       .select('title posterUrl bannerUrl contentType contentRating genres releaseYear duration rating viewCount starRating videoQuality languages isPremium');
+    return enrichWithPremiumEpisodeFlag(this.movieModel, movies);
   }
 
-  async getByGenre(genre: string, limit = 20): Promise<MovieDocument[]> {
-    return this.movieModel
+  async getByGenre(genre: string, limit = 20): Promise<any[]> {
+    const movies = await this.movieModel
       .find({ status: ContentStatus.PUBLISHED, genres: genre })
       .sort({ popularityScore: -1 })
       .limit(limit);
+    return enrichWithPremiumEpisodeFlag(this.movieModel, movies);
   }
 
-  async getByContentType(contentType: string, limit = 20): Promise<MovieDocument[]> {
-    return this.movieModel
+  async getByContentType(contentType: string, limit = 20): Promise<any[]> {
+    const movies = await this.movieModel
       .find({ status: ContentStatus.PUBLISHED, contentType })
       .sort({ popularityScore: -1 })
       .limit(limit);
+    return enrichWithPremiumEpisodeFlag(this.movieModel, movies);
   }
 
-  async getRelated(movieId: string, limit = 12): Promise<MovieDocument[]> {
+  async getRelated(movieId: string, limit = 12): Promise<any[]> {
     const movie = await this.movieModel.findById(movieId);
     if (!movie) return [];
 
-    return this.movieModel
+    const movies = await this.movieModel
       .find({
         _id: { $ne: movie._id },
         status: ContentStatus.PUBLISHED,
@@ -214,6 +221,7 @@ export class MoviesService {
       })
       .sort({ popularityScore: -1 })
       .limit(limit);
+    return enrichWithPremiumEpisodeFlag(this.movieModel, movies);
   }
 
   async incrementViewCount(id: string): Promise<void> {

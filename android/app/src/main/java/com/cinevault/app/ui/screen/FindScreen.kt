@@ -678,7 +678,7 @@ private fun FindMovieCard(
             )
 
             // Premium badge (top-left)
-            if (movie.isPremium == true) {
+            if (movie.isEffectivelyPremium) {
                 PremiumBadgeOverlay(
                     modifier = Modifier
                         .align(Alignment.TopStart)

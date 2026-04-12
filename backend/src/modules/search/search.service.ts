@@ -3,6 +3,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Movie, MovieDocument, ContentStatus } from '../../schemas/movie.schema';
 import { SearchQuery, SearchQueryDocument } from '../../schemas/search-query.schema';
+import { enrichWithPremiumEpisodeFlag } from '../../utils/premium-enrichment';
 
 @Injectable()
 export class SearchService {
@@ -69,7 +70,7 @@ export class SearchService {
         .sort(sortObj)
         .skip(skip)
         .limit(limit)
-        .select('title posterUrl bannerUrl contentType contentRating genres releaseYear duration rating languages'),
+        .select('title posterUrl bannerUrl contentType contentRating genres releaseYear duration rating languages isPremium'),
       this.movieModel.countDocuments(filter),
     ]);
 
@@ -78,7 +79,8 @@ export class SearchService {
       this.trackSearchQuery(query.trim()).catch(() => {});
     }
 
-    return { results, total };
+    const enriched = await enrichWithPremiumEpisodeFlag(this.movieModel, results);
+    return { results: enriched, total };
   }
 
   private async trackSearchQuery(query: string): Promise<void> {
@@ -180,11 +182,12 @@ export class SearchService {
   }
 
   async getRecommended(limit = 10): Promise<any[]> {
-    return this.movieModel
+    const movies = await this.movieModel
       .find({ status: ContentStatus.PUBLISHED })
       .sort({ popularityScore: -1, viewCount: -1 })
       .limit(limit)
-      .select('title posterUrl bannerUrl contentType contentRating genres releaseYear duration rating languages');
+      .select('title posterUrl bannerUrl contentType contentRating genres releaseYear duration rating languages isPremium');
+    return enrichWithPremiumEpisodeFlag(this.movieModel, movies);
   }
 
   async getGenres(): Promise<string[]> {
