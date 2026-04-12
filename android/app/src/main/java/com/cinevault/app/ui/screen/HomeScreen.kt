@@ -1089,14 +1089,13 @@ fun PremiumMovieCard(
                         .align(Alignment.TopEnd)
                         .padding(6.dp),
                     shape = RoundedCornerShape(4.dp),
-                    color = Color.White.copy(alpha = 0.15f),
+                    color = Color.Black.copy(alpha = 0.6f),
                 ) {
                     Text(
                         langLabel,
                         modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp),
-                        style = TextStyle(shadow = Shadow(color = Color.Black, blurRadius = 3f)),
-                        fontSize = 9.sp,
-                        fontWeight = FontWeight.Bold,
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.SemiBold,
                         color = Color.White,
                         letterSpacing = 0.3.sp,
                     )
@@ -1150,7 +1149,7 @@ fun PremiumMovieCard(
                     modifier = Modifier
                         .align(Alignment.TopStart)
                         .padding(4.dp)
-                        .size(28.dp),
+                        .size(36.dp),
                 )
             }
         }

@@ -526,7 +526,7 @@ private fun SearchResultCard(
                     modifier = Modifier
                         .align(Alignment.TopStart)
                         .padding(4.dp),
-                    size = 24.dp,
+                    size = 30.dp,
                 )
             }
 

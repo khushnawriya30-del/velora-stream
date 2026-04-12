@@ -1322,7 +1322,7 @@ private fun HorizontalEpisodeCard(
                     modifier = Modifier
                         .align(Alignment.TopEnd)
                         .padding(4.dp),
-                    size = 20.dp
+                    size = 26.dp
                 )
             }
 

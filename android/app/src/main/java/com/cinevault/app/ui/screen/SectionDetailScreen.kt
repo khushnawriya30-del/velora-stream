@@ -18,7 +18,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -156,15 +155,14 @@ private fun GridMovieCard(
                         .align(Alignment.TopEnd)
                         .padding(6.dp),
                     shape = RoundedCornerShape(4.dp),
-                    color = Color.White.copy(alpha = 0.15f),
+                    color = Color.Black.copy(alpha = 0.6f),
                 ) {
                     Text(
                         langLabel,
                         modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
-                        fontSize = 6.sp,
-                        fontWeight = FontWeight.Medium,
-                        fontStyle = FontStyle.Italic,
-                        color = Color.White.copy(alpha = 0.85f),
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color.White,
                         letterSpacing = 0.3.sp,
                     )
                 }
@@ -176,7 +174,7 @@ private fun GridMovieCard(
                     modifier = Modifier
                         .align(Alignment.TopStart)
                         .padding(4.dp),
-                    size = 26.dp
+                    size = 32.dp
                 )
             } else if (!movie.contentRating.isNullOrEmpty()) {
                 // Content rating — top-left, white faded (only when no premium badge)

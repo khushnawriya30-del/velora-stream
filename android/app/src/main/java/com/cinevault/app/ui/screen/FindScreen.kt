@@ -683,7 +683,7 @@ private fun FindMovieCard(
                     modifier = Modifier
                         .align(Alignment.TopStart)
                         .padding(4.dp),
-                    size = 24.dp,
+                    size = 30.dp,
                 )
             }
 
@@ -692,7 +692,7 @@ private fun FindMovieCard(
             if (!langLabel.isNullOrEmpty()) {
                 Text(
                     text = langLabel,
-                    fontSize = 7.sp,
+                    fontSize = 9.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color.White,
                     modifier = Modifier

@@ -50,7 +50,7 @@ import com.cinevault.app.ui.theme.CineVaultTheme
 
 /** Premium crown badge overlay — placed top-left on premium content cards. */
 @Composable
-fun PremiumBadgeOverlay(modifier: Modifier = Modifier, size: Dp = 28.dp) {
+fun PremiumBadgeOverlay(modifier: Modifier = Modifier, size: Dp = 36.dp) {
     Image(
         painter = painterResource(R.drawable.premium_badge_small),
         contentDescription = "Premium",
@@ -108,16 +108,13 @@ fun MovieCard(
                         .align(Alignment.TopEnd)
                         .padding(6.dp),
                     shape = RoundedCornerShape(4.dp),
-                    color = Color.White.copy(alpha = 0.15f),
+                    color = Color.Black.copy(alpha = 0.6f),
                 ) {
                     Text(
                         langLabel,
-                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
-                        style = CineVaultTheme.typography.labelSmall.copy(
-                            shadow = Shadow(color = Color.Black, blurRadius = 3f)
-                        ),
-                        fontSize = 9.sp,
-                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp),
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.SemiBold,
                         color = Color.White,
                         letterSpacing = 0.3.sp,
                     )
@@ -487,16 +484,13 @@ fun SquareMovieCard(
                         .align(Alignment.TopEnd)
                         .padding(6.dp),
                     shape = RoundedCornerShape(4.dp),
-                    color = Color.White.copy(alpha = 0.15f),
+                    color = Color.Black.copy(alpha = 0.6f),
                 ) {
                     Text(
                         langLabel,
-                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
-                        style = CineVaultTheme.typography.labelSmall.copy(
-                            shadow = Shadow(color = Color.Black, blurRadius = 3f)
-                        ),
-                        fontSize = 9.sp,
-                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp),
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.SemiBold,
                         color = Color.White,
                         letterSpacing = 0.3.sp,
                     )
@@ -610,16 +604,13 @@ fun LargeMovieCard(
                         .align(Alignment.TopEnd)
                         .padding(8.dp),
                     shape = RoundedCornerShape(4.dp),
-                    color = Color.White.copy(alpha = 0.15f),
+                    color = Color.Black.copy(alpha = 0.6f),
                 ) {
                     Text(
                         langLabel,
                         modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp),
-                        style = CineVaultTheme.typography.labelSmall.copy(
-                            shadow = Shadow(color = Color.Black, blurRadius = 3f)
-                        ),
-                        fontSize = 9.sp,
-                        fontWeight = FontWeight.Bold,
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.SemiBold,
                         color = Color.White,
                         letterSpacing = 0.3.sp,
                     )
@@ -671,7 +662,7 @@ fun LargeMovieCard(
                     modifier = Modifier
                         .align(Alignment.TopStart)
                         .padding(6.dp),
-                    size = 34.dp,
+                    size = 42.dp,
                 )
             }
         }
@@ -776,14 +767,13 @@ fun TrendingMovieCard(
                             .align(Alignment.TopEnd)
                             .padding(6.dp),
                         shape = RoundedCornerShape(4.dp),
-                        color = Color.White.copy(alpha = 0.15f),
+                        color = Color.Black.copy(alpha = 0.6f),
                     ) {
                         Text(
                             langLabel,
                             modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp),
-                            style = TextStyle(shadow = Shadow(color = Color.Black, blurRadius = 3f)),
-                            fontSize = 9.sp,
-                            fontWeight = FontWeight.Bold,
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.SemiBold,
                             color = Color.White,
                             letterSpacing = 0.3.sp,
                         )
@@ -796,7 +786,7 @@ fun TrendingMovieCard(
                         modifier = Modifier
                             .align(Alignment.TopStart)
                             .padding(4.dp),
-                        size = 26.dp,
+                        size = 32.dp,
                     )
                 }
             }
