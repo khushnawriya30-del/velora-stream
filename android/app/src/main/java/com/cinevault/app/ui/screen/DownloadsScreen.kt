@@ -14,6 +14,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.cinevault.app.ui.theme.CineVaultTheme
+import com.cinevault.app.ui.theme.LocalAppDimens
 
 @Composable
 fun DownloadsScreen() {
@@ -25,7 +26,7 @@ fun DownloadsScreen() {
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.padding(32.dp)
+            modifier = Modifier.padding(LocalAppDimens.current.pad32)
         ) {
             Icon(
                 Icons.Default.FileDownload,
@@ -33,17 +34,17 @@ fun DownloadsScreen() {
                 tint = CineVaultTheme.colors.textMuted,
                 modifier = Modifier.size(64.dp)
             )
-            Spacer(modifier = Modifier.height(20.dp))
+            Spacer(modifier = Modifier.height(LocalAppDimens.current.pad20))
             Text(
                 "No Downloads",
-                fontSize = 20.sp,
+                fontSize = LocalAppDimens.current.font20,
                 fontWeight = FontWeight.Bold,
                 color = CineVaultTheme.colors.textPrimary,
             )
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(LocalAppDimens.current.pad8))
             Text(
                 "Movies and shows you download will appear here.",
-                fontSize = 14.sp,
+                fontSize = LocalAppDimens.current.font14,
                 color = CineVaultTheme.colors.textSecondary,
                 textAlign = TextAlign.Center,
             )

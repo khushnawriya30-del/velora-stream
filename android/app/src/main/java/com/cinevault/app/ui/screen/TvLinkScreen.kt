@@ -44,6 +44,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import java.util.concurrent.Executors
 import javax.inject.Inject
+import com.cinevault.app.ui.theme.LocalAppDimens
 
 sealed class TvLinkState {
     data object Scanning : TvLinkState()
@@ -153,15 +154,15 @@ fun TvLinkScreen(
                     } else {
                         Column(
                             horizontalAlignment = Alignment.CenterHorizontally,
-                            modifier = Modifier.padding(32.dp),
+                            modifier = Modifier.padding(LocalAppDimens.current.pad32),
                         ) {
                             Text(
                                 text = "Camera permission is required to scan the TV QR code",
                                 color = Color.White,
-                                fontSize = 16.sp,
+                                fontSize = LocalAppDimens.current.font16,
                                 textAlign = TextAlign.Center,
                             )
-                            Spacer(modifier = Modifier.height(16.dp))
+                            Spacer(modifier = Modifier.height(LocalAppDimens.current.pad16))
                             Button(onClick = {
                                 permissionLauncher.launch(Manifest.permission.CAMERA)
                             }) {
@@ -174,15 +175,15 @@ fun TvLinkScreen(
                 is TvLinkState.Approving -> {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         CircularProgressIndicator(color = Color(0xFFE50914))
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Text("Approving TV login...", color = Color.White, fontSize = 16.sp)
+                        Spacer(modifier = Modifier.height(LocalAppDimens.current.pad16))
+                        Text("Approving TV login...", color = Color.White, fontSize = LocalAppDimens.current.font16)
                     }
                 }
 
                 is TvLinkState.Success -> {
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
-                        modifier = Modifier.padding(32.dp),
+                        modifier = Modifier.padding(LocalAppDimens.current.pad32),
                     ) {
                         Icon(
                             Icons.Filled.CheckCircle,
@@ -190,15 +191,15 @@ fun TvLinkScreen(
                             tint = Color(0xFF4CAF50),
                             modifier = Modifier.size(64.dp),
                         )
-                        Spacer(modifier = Modifier.height(16.dp))
+                        Spacer(modifier = Modifier.height(LocalAppDimens.current.pad16))
                         Text(
                             text = currentState.message,
                             color = Color.White,
-                            fontSize = 18.sp,
+                            fontSize = LocalAppDimens.current.font18,
                             fontWeight = FontWeight.SemiBold,
                             textAlign = TextAlign.Center,
                         )
-                        Spacer(modifier = Modifier.height(24.dp))
+                        Spacer(modifier = Modifier.height(LocalAppDimens.current.pad24))
                         Button(
                             onClick = onBack,
                             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE50914)),
@@ -211,7 +212,7 @@ fun TvLinkScreen(
                 is TvLinkState.Error -> {
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
-                        modifier = Modifier.padding(32.dp),
+                        modifier = Modifier.padding(LocalAppDimens.current.pad32),
                     ) {
                         Icon(
                             Icons.Filled.Error,
@@ -219,14 +220,14 @@ fun TvLinkScreen(
                             tint = Color(0xFFE50914),
                             modifier = Modifier.size(64.dp),
                         )
-                        Spacer(modifier = Modifier.height(16.dp))
+                        Spacer(modifier = Modifier.height(LocalAppDimens.current.pad16))
                         Text(
                             text = currentState.message,
                             color = Color.White,
-                            fontSize = 16.sp,
+                            fontSize = LocalAppDimens.current.font16,
                             textAlign = TextAlign.Center,
                         )
-                        Spacer(modifier = Modifier.height(24.dp))
+                        Spacer(modifier = Modifier.height(LocalAppDimens.current.pad24))
                         Button(
                             onClick = { viewModel.resetScanning() },
                             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE50914)),
@@ -253,22 +254,22 @@ private fun QrScannerView(onQrScanned: (String) -> Unit) {
         Text(
             text = "Scan QR code on your TV",
             color = Color.White,
-            fontSize = 18.sp,
+            fontSize = LocalAppDimens.current.font18,
             fontWeight = FontWeight.SemiBold,
-            modifier = Modifier.padding(top = 16.dp, bottom = 8.dp),
+            modifier = Modifier.padding(top = LocalAppDimens.current.pad16, bottom = LocalAppDimens.current.pad8),
         )
         Text(
             text = "Point your camera at the QR code shown on CineVault TV",
             color = Color(0xFF888888),
-            fontSize = 14.sp,
-            modifier = Modifier.padding(bottom = 16.dp),
+            fontSize = LocalAppDimens.current.font14,
+            modifier = Modifier.padding(bottom = LocalAppDimens.current.pad16),
         )
 
         Box(
             modifier = Modifier
                 .fillMaxWidth(0.85f)
                 .aspectRatio(1f)
-                .clip(RoundedCornerShape(16.dp)),
+                .clip(RoundedCornerShape(LocalAppDimens.current.radius16)),
         ) {
             AndroidView(
                 factory = { ctx ->
@@ -343,7 +344,7 @@ private fun QrScannerView(onQrScanned: (String) -> Unit) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(32.dp),
+                    .padding(LocalAppDimens.current.pad32),
                 contentAlignment = Alignment.Center,
             ) {
                 Box(

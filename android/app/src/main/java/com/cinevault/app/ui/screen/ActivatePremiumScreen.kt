@@ -53,6 +53,7 @@ import com.cinevault.app.data.model.PremiumOfferDto
 import com.cinevault.app.ui.viewmodel.PremiumViewModel
 import com.razorpay.Checkout
 import org.json.JSONObject
+import com.cinevault.app.ui.theme.LocalAppDimens
 
 // Dark Luxury Theme
 private val BgPrimary = Color(0xFF121212)
@@ -211,20 +212,20 @@ fun ActivatePremiumScreen(
             containerColor = CardBg,
             titleContentColor = White87,
             title = {
-                Text("Verifying Payment", fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                Text("Verifying Payment", fontWeight = FontWeight.Bold, fontSize = LocalAppDimens.current.font18)
             },
             text = {
                 Column(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(LocalAppDimens.current.pad16),
                 ) {
                     CircularProgressIndicator(
-                        color = Gold, modifier = Modifier.size(40.dp), strokeWidth = 3.dp
+                        color = Gold, modifier = Modifier.size(40.dp), strokeWidth = LocalAppDimens.current.strokeWidth
                     )
                     Text(
                         "Please wait while we verify your payment and activate premium...",
-                        fontSize = 14.sp,
+                        fontSize = LocalAppDimens.current.font14,
                         color = White60,
                         textAlign = TextAlign.Center,
                     )
@@ -250,14 +251,14 @@ fun ActivatePremiumScreen(
                 Text(
                     if (isSuccess) "Payment Successful!" else "Payment Failed",
                     fontWeight = FontWeight.Bold,
-                    fontSize = 18.sp,
+                    fontSize = LocalAppDimens.current.font18,
                 )
             },
             text = {
                 Column(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(LocalAppDimens.current.pad12),
                 ) {
                     if (isSuccess) {
                         Icon(
@@ -268,7 +269,7 @@ fun ActivatePremiumScreen(
                         )
                         Text(
                             uiState.razorpayMessage ?: "Premium activated successfully!",
-                            fontSize = 14.sp,
+                            fontSize = LocalAppDimens.current.font14,
                             color = White87,
                             textAlign = TextAlign.Center,
                         )
@@ -276,7 +277,7 @@ fun ActivatePremiumScreen(
                         if (resp?.daysRemaining != null) {
                             Text(
                                 "Plan: ${resp.premiumPlan ?: ""} - ${resp.daysRemaining} days",
-                                fontSize = 13.sp,
+                                fontSize = LocalAppDimens.current.font13,
                                 color = GoldSoft,
                                 textAlign = TextAlign.Center,
                             )
@@ -284,14 +285,14 @@ fun ActivatePremiumScreen(
                     } else {
                         Text(
                             "\u274C",
-                            fontSize = 36.sp,
+                            fontSize = LocalAppDimens.current.font36,
                             textAlign = TextAlign.Center,
                         )
                         Text(
                             razorpayFailMessage
                                 ?: uiState.razorpayMessage
                                 ?: "Payment could not be verified. Please try again.",
-                            fontSize = 14.sp,
+                            fontSize = LocalAppDimens.current.font14,
                             color = White60,
                             textAlign = TextAlign.Center,
                         )
@@ -330,13 +331,13 @@ fun ActivatePremiumScreen(
             titleContentColor = White87,
             textContentColor = White60,
             title = {
-                Text("Activate Premium Code", fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                Text("Activate Premium Code", fontWeight = FontWeight.Bold, fontSize = LocalAppDimens.current.font18)
             },
             text = {
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Column(verticalArrangement = Arrangement.spacedBy(LocalAppDimens.current.pad12)) {
                     Text(
                         "Enter your activation code to unlock Premium features.",
-                        fontSize = 13.sp,
+                        fontSize = LocalAppDimens.current.font13,
                         color = White60,
                     )
                     OutlinedTextField(
@@ -372,7 +373,7 @@ fun ActivatePremiumScreen(
                     if (uiState.error != null) {
                         Text(
                             uiState.error ?: "",
-                            fontSize = 12.sp,
+                            fontSize = LocalAppDimens.current.font12,
                             color = Color(0xFFEF4444),
                         )
                     }
@@ -394,7 +395,7 @@ fun ActivatePremiumScreen(
                             color = BgPrimary,
                             strokeWidth = 2.dp,
                         )
-                        Spacer(Modifier.width(8.dp))
+                        Spacer(Modifier.width(LocalAppDimens.current.pad8))
                     }
                     Text(
                         if (uiState.isActivating) "Activating..." else "Activate",
@@ -429,7 +430,7 @@ fun ActivatePremiumScreen(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 8.dp, vertical = 6.dp),
+                    .padding(horizontal = LocalAppDimens.current.pad8, vertical = LocalAppDimens.current.pad6),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 IconButton(onClick = onBack, modifier = Modifier.size(40.dp)) {
@@ -447,7 +448,7 @@ fun ActivatePremiumScreen(
                     color = White87,
                     modifier = Modifier
                         .weight(1f)
-                        .padding(start = 2.dp),
+                        .padding(start = LocalAppDimens.current.padTiny),
                 )
             }
 
@@ -462,7 +463,7 @@ fun ActivatePremiumScreen(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 18.dp, vertical = 6.dp),
+                        .padding(horizontal = 18.dp, vertical = LocalAppDimens.current.pad6),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Box(
@@ -473,12 +474,12 @@ fun ActivatePremiumScreen(
                     ) {
                         Text(
                             text = userName.firstOrNull()?.uppercase() ?: "P",
-                            fontSize = 18.sp,
+                            fontSize = LocalAppDimens.current.font18,
                             fontWeight = FontWeight.Bold,
                             color = Color(0xFF888888),
                         )
                     }
-                    Spacer(Modifier.width(12.dp))
+                    Spacer(Modifier.width(LocalAppDimens.current.pad12))
                     Text(
                         userName,
                         fontSize = 17.sp,
@@ -487,7 +488,7 @@ fun ActivatePremiumScreen(
                     )
                 }
 
-                Spacer(Modifier.height(10.dp))
+                Spacer(Modifier.height(LocalAppDimens.current.pad10))
 
                 // Premium Features
                 Box(
@@ -504,12 +505,12 @@ fun ActivatePremiumScreen(
                                 ),
                             ),
                         )
-                        .padding(vertical = 20.dp),
+                        .padding(vertical = LocalAppDimens.current.pad20),
                 ) {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 16.dp),
+                            .padding(horizontal = LocalAppDimens.current.pad16),
                         horizontalArrangement = Arrangement.SpaceEvenly,
                     ) {
                         val features = listOf(
@@ -530,10 +531,10 @@ fun ActivatePremiumScreen(
                                     modifier = Modifier.size(42.dp),
                                     contentScale = ContentScale.Fit,
                                 )
-                                Spacer(Modifier.height(6.dp))
+                                Spacer(Modifier.height(LocalAppDimens.current.pad6))
                                 Text(
                                     label,
-                                    fontSize = 10.sp,
+                                    fontSize = LocalAppDimens.current.font10,
                                     color = White60,
                                     textAlign = TextAlign.Center,
                                     lineHeight = 13.sp,
@@ -544,7 +545,7 @@ fun ActivatePremiumScreen(
                     }
                 }
 
-                Spacer(Modifier.height(14.dp))
+                Spacer(Modifier.height(LocalAppDimens.current.pad14))
 
                 // ── Dynamic Offer Banner (from Admin Panel) ──
                 val activeOffers = uiState.offers
@@ -552,8 +553,8 @@ fun ActivatePremiumScreen(
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 16.dp),
-                        verticalArrangement = Arrangement.spacedBy(10.dp),
+                            .padding(horizontal = LocalAppDimens.current.pad16),
+                        verticalArrangement = Arrangement.spacedBy(LocalAppDimens.current.pad10),
                     ) {
                         activeOffers.forEach { offer ->
                             OfferBanner(
@@ -565,7 +566,7 @@ fun ActivatePremiumScreen(
                             )
                         }
                     }
-                    Spacer(Modifier.height(14.dp))
+                    Spacer(Modifier.height(LocalAppDimens.current.pad14))
                 }
 
                 // Plan Cards (2x2 Grid)
@@ -573,15 +574,15 @@ fun ActivatePremiumScreen(
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 16.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                        .padding(horizontal = LocalAppDimens.current.pad16),
+                    verticalArrangement = Arrangement.spacedBy(LocalAppDimens.current.pad12),
                 ) {
                     for (rowIdx in 0..1) {
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(IntrinsicSize.Max),
-                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            horizontalArrangement = Arrangement.spacedBy(LocalAppDimens.current.pad12),
                         ) {
                             for (colIdx in 0..1) {
                                 val idx = rowIdx * 2 + colIdx
@@ -602,14 +603,14 @@ fun ActivatePremiumScreen(
                     }
                 }
 
-                Spacer(Modifier.height(16.dp))
+                Spacer(Modifier.height(LocalAppDimens.current.pad16))
 
                 // Action Rows
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 16.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                        .padding(horizontal = LocalAppDimens.current.pad16),
+                    verticalArrangement = Arrangement.spacedBy(LocalAppDimens.current.pad8),
                 ) {
                     ActionRow(
                         icon = Icons.Outlined.VpnKey,
@@ -652,7 +653,7 @@ fun ActivatePremiumScreen(
                     }
                 }
 
-                Spacer(Modifier.height(16.dp))
+                Spacer(Modifier.height(LocalAppDimens.current.pad16))
             }
 
             // STICKY BOTTOM PAY BAR
@@ -688,7 +689,7 @@ private fun OfferBanner(offer: PremiumOfferDto, onSelect: () -> Unit) {
                 ),
             )
             .clickable(onClick = onSelect)
-            .padding(14.dp),
+            .padding(LocalAppDimens.current.pad14),
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -698,23 +699,23 @@ private fun OfferBanner(offer: PremiumOfferDto, onSelect: () -> Unit) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         offer.title,
-                        fontSize = 14.sp,
+                        fontSize = LocalAppDimens.current.font14,
                         fontWeight = FontWeight.Bold,
                         color = White87,
                     )
                     if (offer.badgeText?.isNotBlank() == true) {
-                        Spacer(Modifier.width(8.dp))
+                        Spacer(Modifier.width(LocalAppDimens.current.pad8))
                         Box(
                             modifier = Modifier
                                 .background(
                                     Brush.horizontalGradient(listOf(Color(0xFFFF6B35), Color(0xFFFF4500))),
-                                    RoundedCornerShape(4.dp),
+                                    RoundedCornerShape(LocalAppDimens.current.radius4),
                                 )
-                                .padding(horizontal = 6.dp, vertical = 2.dp),
+                                .padding(horizontal = LocalAppDimens.current.pad6, vertical = LocalAppDimens.current.padTiny),
                         ) {
                             Text(
                                 offer.badgeText ?: "",
-                                fontSize = 8.sp,
+                                fontSize = LocalAppDimens.current.font8,
                                 fontWeight = FontWeight.Bold,
                                 color = Color.White,
                             )
@@ -722,39 +723,39 @@ private fun OfferBanner(offer: PremiumOfferDto, onSelect: () -> Unit) {
                     }
                 }
                 if (offer.description?.isNotBlank() == true) {
-                    Spacer(Modifier.height(2.dp))
+                    Spacer(Modifier.height(LocalAppDimens.current.padTiny))
                     Text(
                         offer.description ?: "",
-                        fontSize = 11.sp,
+                        fontSize = LocalAppDimens.current.font11,
                         color = White60,
                         maxLines = 2,
                     )
                 }
-                Spacer(Modifier.height(6.dp))
+                Spacer(Modifier.height(LocalAppDimens.current.pad6))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         "₹${offer.originalPrice}",
-                        fontSize = 13.sp,
+                        fontSize = LocalAppDimens.current.font13,
                         color = White40,
                         textDecoration = TextDecoration.LineThrough,
                     )
-                    Spacer(Modifier.width(8.dp))
+                    Spacer(Modifier.width(LocalAppDimens.current.pad8))
                     Text(
                         "₹${offer.discountPrice}",
-                        fontSize = 20.sp,
+                        fontSize = LocalAppDimens.current.font20,
                         fontWeight = FontWeight.ExtraBold,
                         color = Gold,
                     )
                     if (offer.discountPercent > 0) {
-                        Spacer(Modifier.width(8.dp))
+                        Spacer(Modifier.width(LocalAppDimens.current.pad8))
                         Box(
                             modifier = Modifier
-                                .background(GreenBadge.copy(alpha = 0.2f), RoundedCornerShape(4.dp))
-                                .padding(horizontal = 6.dp, vertical = 2.dp),
+                                .background(GreenBadge.copy(alpha = 0.2f), RoundedCornerShape(LocalAppDimens.current.radius4))
+                                .padding(horizontal = LocalAppDimens.current.pad6, vertical = LocalAppDimens.current.padTiny),
                         ) {
                             Text(
                                 "${offer.discountPercent}% OFF",
-                                fontSize = 10.sp,
+                                fontSize = LocalAppDimens.current.font10,
                                 fontWeight = FontWeight.Bold,
                                 color = GreenBadge,
                             )
@@ -818,7 +819,7 @@ private fun PlanCard(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(12.dp),
+                .padding(LocalAppDimens.current.pad12),
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -828,7 +829,7 @@ private fun PlanCard(
                 if (plan.badge != null) {
                     Text(
                         plan.badge,
-                        fontSize = 9.sp,
+                        fontSize = LocalAppDimens.current.font9,
                         fontWeight = FontWeight.Bold,
                         color = Color.White,
                         modifier = Modifier
@@ -848,7 +849,7 @@ private fun PlanCard(
                 }
                 Text(
                     "${plan.discountPercent}% Off",
-                    fontSize = 10.sp,
+                    fontSize = LocalAppDimens.current.font10,
                     fontWeight = FontWeight.SemiBold,
                     color = GoldSoft,
                     modifier = Modifier
@@ -857,31 +858,31 @@ private fun PlanCard(
                 )
             }
 
-            Spacer(Modifier.height(10.dp))
+            Spacer(Modifier.height(LocalAppDimens.current.pad10))
 
-            Text(plan.name, fontSize = 14.sp, fontWeight = FontWeight.Medium, color = White87)
+            Text(plan.name, fontSize = LocalAppDimens.current.font14, fontWeight = FontWeight.Medium, color = White87)
 
-            Spacer(Modifier.height(6.dp))
+            Spacer(Modifier.height(LocalAppDimens.current.pad6))
 
             Row(verticalAlignment = Alignment.Bottom) {
                 Text(
                     "\u20B9",
-                    fontSize = 15.sp,
+                    fontSize = LocalAppDimens.current.font15,
                     fontWeight = FontWeight.Bold,
                     color = Gold,
-                    modifier = Modifier.padding(bottom = 2.dp),
+                    modifier = Modifier.padding(bottom = LocalAppDimens.current.padTiny),
                 )
                 Text(
                     "${plan.price}",
-                    fontSize = 28.sp,
+                    fontSize = LocalAppDimens.current.font28,
                     fontWeight = FontWeight.ExtraBold,
                     color = Gold,
                     lineHeight = 30.sp,
                 )
-                Spacer(Modifier.width(6.dp))
+                Spacer(Modifier.width(LocalAppDimens.current.pad6))
                 Text(
                     "\u20B9${plan.originalPrice}",
-                    fontSize = 12.sp,
+                    fontSize = LocalAppDimens.current.font12,
                     color = White40,
                     textDecoration = TextDecoration.LineThrough,
                     modifier = Modifier.padding(bottom = 3.dp),
@@ -890,9 +891,9 @@ private fun PlanCard(
 
             Text(
                 if (plan.months > 1) "\u20B9${plan.price / plan.months}/month" else " ",
-                fontSize = 11.sp,
+                fontSize = LocalAppDimens.current.font11,
                 color = GoldSoft.copy(alpha = 0.7f),
-                modifier = Modifier.padding(top = 2.dp),
+                modifier = Modifier.padding(top = LocalAppDimens.current.padTiny),
             )
 
             Spacer(Modifier.weight(1f))
@@ -905,7 +906,7 @@ private fun PlanCard(
                 tint = Gold,
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
-                    .padding(8.dp)
+                    .padding(LocalAppDimens.current.pad8)
                     .size(20.dp),
             )
         }
@@ -920,7 +921,7 @@ private fun ActionRow(icon: ImageVector, label: String, onClick: () -> Unit) {
             .fillMaxWidth()
             .background(CardBg, RoundedCornerShape(12.dp))
             .clickable(onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 14.dp),
+            .padding(horizontal = LocalAppDimens.current.pad16, vertical = LocalAppDimens.current.pad14),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Icon(
@@ -929,8 +930,8 @@ private fun ActionRow(icon: ImageVector, label: String, onClick: () -> Unit) {
             tint = Gold,
             modifier = Modifier.size(24.dp),
         )
-        Spacer(Modifier.width(14.dp))
-        Text(label, fontSize = 14.sp, color = White87, modifier = Modifier.weight(1f))
+        Spacer(Modifier.width(LocalAppDimens.current.pad14))
+        Text(label, fontSize = LocalAppDimens.current.font14, color = White87, modifier = Modifier.weight(1f))
         Icon(
             Icons.AutoMirrored.Filled.KeyboardArrowRight,
             contentDescription = null,
@@ -967,7 +968,7 @@ private fun BottomPayBar(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 18.dp)
-                .padding(top = 12.dp, bottom = 12.dp)
+                .padding(top = LocalAppDimens.current.pad12, bottom = LocalAppDimens.current.pad12)
                 .navigationBarsPadding(),
         ) {
             Row(
@@ -977,24 +978,24 @@ private fun BottomPayBar(
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         "\u20B9${animatedPrice.toInt()}",
-                        fontSize = 24.sp,
+                        fontSize = LocalAppDimens.current.font24,
                         fontWeight = FontWeight.ExtraBold,
                         color = Gold,
                     )
                     Text(
                         "Selected Plan: ${selectedPlan.name}",
-                        fontSize = 12.sp,
+                        fontSize = LocalAppDimens.current.font12,
                         color = White60,
                         modifier = Modifier.padding(top = 1.dp),
                     )
                     Text(
                         "Valid until $formatted",
-                        fontSize = 11.sp,
+                        fontSize = LocalAppDimens.current.font11,
                         color = White40,
                         modifier = Modifier.padding(top = 1.dp),
                     )
                 }
-                Spacer(Modifier.width(10.dp))
+                Spacer(Modifier.width(LocalAppDimens.current.pad10))
                 Box(
                     modifier = Modifier
                         .clip(RoundedCornerShape(14.dp))
@@ -1005,7 +1006,7 @@ private fun BottomPayBar(
                             else Brush.horizontalGradient(listOf(GoldDark, Gold, GoldSoft))
                         )
                         .clickable(enabled = !isLoading, onClick = onPayClick)
-                        .padding(horizontal = 28.dp, vertical = 14.dp),
+                        .padding(horizontal = 28.dp, vertical = LocalAppDimens.current.pad14),
                     contentAlignment = Alignment.Center,
                 ) {
                     if (isLoading) {
@@ -1015,10 +1016,10 @@ private fun BottomPayBar(
                                 color = BgPrimary,
                                 strokeWidth = 2.dp
                             )
-                            Spacer(Modifier.width(8.dp))
+                            Spacer(Modifier.width(LocalAppDimens.current.pad8))
                             Text(
                                 "LOADING...",
-                                fontSize = 14.sp,
+                                fontSize = LocalAppDimens.current.font14,
                                 fontWeight = FontWeight.Bold,
                                 color = BgPrimary
                             )
@@ -1026,7 +1027,7 @@ private fun BottomPayBar(
                     } else {
                         Text(
                             "PAY NOW",
-                            fontSize = 15.sp,
+                            fontSize = LocalAppDimens.current.font15,
                             fontWeight = FontWeight.Bold,
                             color = BgPrimary
                         )

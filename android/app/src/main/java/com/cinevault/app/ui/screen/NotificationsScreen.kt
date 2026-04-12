@@ -24,6 +24,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.cinevault.app.data.model.NotificationDto
 import com.cinevault.app.ui.theme.CineVaultTheme
 import com.cinevault.app.ui.viewmodel.SettingsViewModel
+import com.cinevault.app.ui.theme.LocalAppDimens
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -94,7 +95,7 @@ fun NotificationsScreen(
                             color = if (selectedTab == index) CineVaultTheme.colors.accentGold
                             else CineVaultTheme.colors.textSecondary,
                             fontWeight = if (selectedTab == index) FontWeight.Bold else FontWeight.Normal,
-                            fontSize = 14.sp
+                            fontSize = LocalAppDimens.current.font14
                         )
                     }
                 )
@@ -114,7 +115,7 @@ private fun NotificationsTab(viewModel: SettingsViewModel) {
 
     if (uiState.isLoading) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            CircularProgressIndicator(color = CineVaultTheme.colors.accentGold, strokeWidth = 3.dp)
+            CircularProgressIndicator(color = CineVaultTheme.colors.accentGold, strokeWidth = LocalAppDimens.current.strokeWidth)
         }
     } else if (uiState.notifications.isEmpty()) {
         Box(
@@ -123,7 +124,7 @@ private fun NotificationsTab(viewModel: SettingsViewModel) {
         ) {
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(16.dp),
+                verticalArrangement = Arrangement.spacedBy(LocalAppDimens.current.pad16),
                 modifier = Modifier.padding(40.dp)
             ) {
                 Surface(
@@ -142,23 +143,23 @@ private fun NotificationsTab(viewModel: SettingsViewModel) {
                 }
                 Text(
                     "No Notifications",
-                    fontSize = 20.sp,
+                    fontSize = LocalAppDimens.current.font20,
                     fontWeight = FontWeight.Bold,
                     color = CineVaultTheme.colors.textPrimary,
                 )
                 Text(
                     "You're all caught up!\nNew notifications will appear here.",
-                    fontSize = 14.sp,
+                    fontSize = LocalAppDimens.current.font14,
                     color = CineVaultTheme.colors.textSecondary,
                     textAlign = TextAlign.Center,
-                    lineHeight = 22.sp
+                    lineHeight = LocalAppDimens.current.lineHeight22
                 )
             }
         }
     } else {
         LazyColumn(
-            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp),
+            contentPadding = PaddingValues(horizontal = LocalAppDimens.current.pad16, vertical = LocalAppDimens.current.pad12),
+            verticalArrangement = Arrangement.spacedBy(LocalAppDimens.current.pad10),
         ) {
             items(uiState.notifications) { notification ->
                 NotificationItem(notification)
@@ -175,8 +176,8 @@ private fun NotificationItem(notification: NotificationDto) {
         modifier = Modifier.fillMaxWidth(),
     ) {
         Row(
-            modifier = Modifier.padding(14.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            modifier = Modifier.padding(LocalAppDimens.current.pad14),
+            horizontalArrangement = Arrangement.spacedBy(LocalAppDimens.current.pad12),
             verticalAlignment = Alignment.Top,
         ) {
             Surface(
@@ -191,23 +192,23 @@ private fun NotificationItem(notification: NotificationDto) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     notification.title,
-                    fontSize = 14.sp,
+                    fontSize = LocalAppDimens.current.font14,
                     fontWeight = FontWeight.SemiBold,
                     color = CineVaultTheme.colors.textPrimary,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
                 )
-                Spacer(Modifier.height(2.dp))
+                Spacer(Modifier.height(LocalAppDimens.current.padTiny))
                 Text(
                     notification.body,
-                    fontSize = 13.sp,
+                    fontSize = LocalAppDimens.current.font13,
                     color = CineVaultTheme.colors.textSecondary,
                     maxLines = 3,
                     overflow = TextOverflow.Ellipsis,
                 )
                 notification.sentAt?.let {
-                    Spacer(Modifier.height(4.dp))
-                    Text(it, fontSize = 11.sp, color = CineVaultTheme.colors.textMuted)
+                    Spacer(Modifier.height(LocalAppDimens.current.pad4))
+                    Text(it, fontSize = LocalAppDimens.current.font11, color = CineVaultTheme.colors.textMuted)
                 }
             }
         }
@@ -223,16 +224,16 @@ private fun DownloadsTab() {
         Surface(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
-            shape = RoundedCornerShape(16.dp),
+                .padding(LocalAppDimens.current.pad16),
+            shape = RoundedCornerShape(LocalAppDimens.current.radius16),
             color = CineVaultTheme.colors.surface,
         ) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(16.dp),
+                    .padding(LocalAppDimens.current.pad16),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                horizontalArrangement = Arrangement.spacedBy(LocalAppDimens.current.pad12)
             ) {
                 Surface(
                     modifier = Modifier.size(44.dp),
@@ -251,13 +252,13 @@ private fun DownloadsTab() {
                 Column {
                     Text(
                         "0 Movies Downloaded",
-                        fontSize = 16.sp,
+                        fontSize = LocalAppDimens.current.font16,
                         fontWeight = FontWeight.Bold,
                         color = CineVaultTheme.colors.textPrimary,
                     )
                     Text(
                         "No storage used",
-                        fontSize = 12.sp,
+                        fontSize = LocalAppDimens.current.font12,
                         color = CineVaultTheme.colors.textSecondary,
                     )
                 }
@@ -273,7 +274,7 @@ private fun DownloadsTab() {
         ) {
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(16.dp),
+                verticalArrangement = Arrangement.spacedBy(LocalAppDimens.current.pad16),
                 modifier = Modifier.padding(40.dp)
             ) {
                 Surface(
@@ -292,16 +293,16 @@ private fun DownloadsTab() {
                 }
                 Text(
                     "No Downloads Yet",
-                    fontSize = 20.sp,
+                    fontSize = LocalAppDimens.current.font20,
                     fontWeight = FontWeight.Bold,
                     color = CineVaultTheme.colors.textPrimary,
                 )
                 Text(
                     "Download movies to watch them offline,\neven without an internet connection.\n\nTap the download icon on any movie\nto save it for offline viewing.",
-                    fontSize = 14.sp,
+                    fontSize = LocalAppDimens.current.font14,
                     color = CineVaultTheme.colors.textSecondary,
                     textAlign = TextAlign.Center,
-                    lineHeight = 22.sp
+                    lineHeight = LocalAppDimens.current.lineHeight22
                 )
             }
         }

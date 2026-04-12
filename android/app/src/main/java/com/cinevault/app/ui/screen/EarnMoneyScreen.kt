@@ -42,6 +42,7 @@ import coil.request.ImageRequest
 import com.cinevault.app.R
 import com.cinevault.app.ui.viewmodel.EarnMoneyViewModel
 import kotlinx.coroutines.delay
+import com.cinevault.app.ui.theme.LocalAppDimens
 
 // ── Color Palette ──
 private val DarkBlueBg = Color(0xFF0D1B3E)
@@ -146,7 +147,7 @@ fun EarnMoneyScreen(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 8.dp, vertical = 2.dp),
+                    .padding(horizontal = LocalAppDimens.current.pad8, vertical = LocalAppDimens.current.padTiny),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 IconButton(onClick = onBack) {
@@ -154,7 +155,7 @@ fun EarnMoneyScreen(
                 }
                 Spacer(Modifier.weight(1f))
                 TextButton(onClick = { showRules = !showRules }) {
-                    Text("Rules", color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.Medium)
+                    Text("Rules", color = Color.White, fontSize = LocalAppDimens.current.font15, fontWeight = FontWeight.Medium)
                 }
             }
 
@@ -167,12 +168,12 @@ fun EarnMoneyScreen(
                     }
                     append(" By Inviting")
                 },
-                modifier = Modifier.padding(horizontal = 20.dp),
-                fontSize = 22.sp,
+                modifier = Modifier.padding(horizontal = LocalAppDimens.current.pad20),
+                fontSize = LocalAppDimens.current.font22,
                 fontWeight = FontWeight.Bold,
                 color = Color.White,
             )
-            Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(LocalAppDimens.current.pad16))
 
             // ═══════════════════════════════════════════
             // SECTION 2 — BALANCE CARD (Left: balance, Right: empty for video)
@@ -180,7 +181,7 @@ fun EarnMoneyScreen(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp),
+                    .padding(horizontal = LocalAppDimens.current.pad16),
             ) {
                 // Left side — My Balance card
                 Box(
@@ -194,7 +195,7 @@ fun EarnMoneyScreen(
                             shape = RoundedCornerShape(12.dp),
                         )
                         .background(CardBlue, RoundedCornerShape(12.dp))
-                        .padding(14.dp),
+                        .padding(LocalAppDimens.current.pad14),
                 ) {
                     Column {
                         // Coin + My Balance
@@ -210,10 +211,10 @@ fun EarnMoneyScreen(
                                     },
                                 contentScale = ContentScale.Fit,
                             )
-                            Spacer(Modifier.width(6.dp))
-                            Text("My Balance", fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = GoldYellow)
+                            Spacer(Modifier.width(LocalAppDimens.current.pad6))
+                            Text("My Balance", fontSize = LocalAppDimens.current.font14, fontWeight = FontWeight.SemiBold, color = GoldYellow)
                         }
-                        Spacer(Modifier.height(6.dp))
+                        Spacer(Modifier.height(LocalAppDimens.current.pad6))
 
                         // Balance
                         Text(
@@ -222,7 +223,7 @@ fun EarnMoneyScreen(
                             fontWeight = FontWeight.Black,
                             color = Color.White,
                         )
-                        Spacer(Modifier.height(10.dp))
+                        Spacer(Modifier.height(LocalAppDimens.current.pad10))
 
                         // Withdraw button
                         Box(
@@ -250,11 +251,11 @@ fun EarnMoneyScreen(
                                     RoundedCornerShape(20.dp),
                                 )
                                 .clickable { onNavigateToWithdrawEarning(0) }
-                                .padding(horizontal = 20.dp, vertical = 8.dp),
+                                .padding(horizontal = LocalAppDimens.current.pad20, vertical = LocalAppDimens.current.pad8),
                         ) {
                             Text(
                                 "Withdraw",
-                                fontSize = 14.sp,
+                                fontSize = LocalAppDimens.current.font14,
                                 fontWeight = FontWeight.Bold,
                                 color = Color(0xFF3E2723),
                             )
@@ -262,13 +263,13 @@ fun EarnMoneyScreen(
                     }
                 }
 
-                Spacer(Modifier.width(12.dp))
+                Spacer(Modifier.width(LocalAppDimens.current.pad12))
 
                 // Right side — Empty space for video (clean, no placeholder)
                 Spacer(modifier = Modifier.weight(0.45f))
             }
 
-            Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(LocalAppDimens.current.pad16))
 
             // ═══════════════════════════════════════════
             // SECTION 3 — SHARE APP CARD
@@ -276,7 +277,7 @@ fun EarnMoneyScreen(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp)
+                    .padding(horizontal = LocalAppDimens.current.pad16)
                     .border(
                         width = 1.5.dp,
                         brush = Brush.linearGradient(
@@ -285,7 +286,7 @@ fun EarnMoneyScreen(
                         shape = RoundedCornerShape(12.dp),
                     )
                     .background(CardBlue, RoundedCornerShape(12.dp))
-                    .padding(16.dp),
+                    .padding(LocalAppDimens.current.pad16),
             ) {
                 Column {
                     // Share APP header row
@@ -301,10 +302,10 @@ fun EarnMoneyScreen(
                                 .size(40.dp),
                             contentScale = ContentScale.Fit,
                         )
-                        Spacer(Modifier.width(10.dp))
+                        Spacer(Modifier.width(LocalAppDimens.current.pad10))
                         Text(
                             "Share APP",
-                            fontSize = 18.sp,
+                            fontSize = LocalAppDimens.current.font18,
                             fontWeight = FontWeight.Bold,
                             color = Color.White,
                         )
@@ -318,18 +319,18 @@ fun EarnMoneyScreen(
                                     RoundedCornerShape(20.dp),
                                 )
                                 .clickable { /* stats */ }
-                                .padding(horizontal = 14.dp, vertical = 6.dp),
+                                .padding(horizontal = LocalAppDimens.current.pad14, vertical = LocalAppDimens.current.pad6),
                         ) {
                             Text(
                                 "Invitation Stats",
-                                fontSize = 12.sp,
+                                fontSize = LocalAppDimens.current.font12,
                                 color = Color.White,
                                 fontWeight = FontWeight.Medium,
                             )
                         }
                     }
 
-                    Spacer(Modifier.height(16.dp))
+                    Spacer(Modifier.height(LocalAppDimens.current.pad16))
 
                     // ── Gold Progress Bar with Treasure Box ──
                     val levels = listOf("Lv.1", "Lv.2", "Lv.3", "Lv.4")
@@ -362,7 +363,7 @@ fun EarnMoneyScreen(
                                 .fillMaxWidth()
                                 .height(12.dp)
                                 .align(Alignment.Center)
-                                .clip(RoundedCornerShape(6.dp))
+                                .clip(RoundedCornerShape(LocalAppDimens.current.radius6))
                                 .background(Color(0xFF2A3040)),
                         )
                         // Gold gradient progress fill
@@ -375,7 +376,7 @@ fun EarnMoneyScreen(
                                     Brush.horizontalGradient(
                                         listOf(GoldAmber, GoldYellow, Color(0xFFFFA000))
                                     ),
-                                    RoundedCornerShape(6.dp),
+                                    RoundedCornerShape(LocalAppDimens.current.radius6),
                                 ),
                         )
                         // Dynamic progress percentage — moves with progress bar
@@ -391,13 +392,13 @@ fun EarnMoneyScreen(
                                     modifier = Modifier
                                         .background(
                                             Color(0xAAB8860B),
-                                            RoundedCornerShape(8.dp),
+                                            RoundedCornerShape(LocalAppDimens.current.radius8),
                                         )
-                                        .padding(horizontal = 6.dp, vertical = 1.dp),
+                                        .padding(horizontal = LocalAppDimens.current.pad6, vertical = 1.dp),
                                 ) {
                                     Text(
                                         "${(animatedProgress.value * 100).toInt()}%",
-                                        fontSize = 8.sp,
+                                        fontSize = LocalAppDimens.current.font8,
                                         fontWeight = FontWeight.Bold,
                                         color = Color.White,
                                     )
@@ -407,7 +408,7 @@ fun EarnMoneyScreen(
                         // Balance / target text below bar
                         Text(
                             "₹${balance} / ₹${threshold}",
-                            fontSize = 10.sp,
+                            fontSize = LocalAppDimens.current.font10,
                             fontWeight = FontWeight.Bold,
                             color = GoldYellow,
                             modifier = Modifier.align(Alignment.BottomCenter),
@@ -425,7 +426,7 @@ fun EarnMoneyScreen(
                             // Treasure box emoji/icon
                             Text(
                                 "🎁",
-                                fontSize = 26.sp,
+                                fontSize = LocalAppDimens.current.font26,
                             )
                         }
                         // Level markers
@@ -448,7 +449,7 @@ fun EarnMoneyScreen(
                                     )
                                     Text(
                                         level,
-                                        fontSize = 8.sp,
+                                        fontSize = LocalAppDimens.current.font8,
                                         color = GoldYellow.copy(alpha = 0.8f),
                                         fontWeight = FontWeight.Bold,
                                     )
@@ -457,7 +458,7 @@ fun EarnMoneyScreen(
                         }
                     }
 
-                    Spacer(Modifier.height(12.dp))
+                    Spacer(Modifier.height(LocalAppDimens.current.pad12))
 
                     // Progress text
                     Text(
@@ -483,11 +484,11 @@ fun EarnMoneyScreen(
                         },
                         modifier = Modifier.fillMaxWidth(),
                         textAlign = TextAlign.Center,
-                        fontSize = 14.sp,
+                        fontSize = LocalAppDimens.current.font14,
                         color = Color.White,
                     )
 
-                    Spacer(Modifier.height(14.dp))
+                    Spacer(Modifier.height(LocalAppDimens.current.pad14))
 
                     // ═══════════════════════════════════════════
                     // SECTION 4 — INVITE BUTTON
@@ -505,7 +506,7 @@ fun EarnMoneyScreen(
                                 brush = Brush.verticalGradient(
                                     listOf(Color(0xFFFFE082), Color(0xFFFF5722))
                                 ),
-                                shape = RoundedCornerShape(10.dp),
+                                shape = RoundedCornerShape(LocalAppDimens.current.radius10),
                             )
                             .background(
                                 Brush.verticalGradient(
@@ -516,7 +517,7 @@ fun EarnMoneyScreen(
                                         RedOrange,
                                     )
                                 ),
-                                RoundedCornerShape(10.dp),
+                                RoundedCornerShape(LocalAppDimens.current.radius10),
                             )
                             .clickable {
                                 val shareText =
@@ -529,18 +530,18 @@ fun EarnMoneyScreen(
                                     Intent.createChooser(intent, "Share Velora")
                                 )
                             }
-                            .padding(vertical = 14.dp),
+                            .padding(vertical = LocalAppDimens.current.pad14),
                         contentAlignment = Alignment.Center,
                     ) {
                         Text(
                             "+ Invite new users to earn cash",
-                            fontSize = 16.sp,
+                            fontSize = LocalAppDimens.current.font16,
                             fontWeight = FontWeight.Bold,
                             color = Color.White,
                         )
                     }
 
-                    Spacer(Modifier.height(14.dp))
+                    Spacer(Modifier.height(LocalAppDimens.current.pad14))
 
                     // ═══════════════════════════════════════════
                     // SECTION 5 — DYNAMIC TIMER
@@ -552,46 +553,46 @@ fun EarnMoneyScreen(
                     ) {
                         Text(
                             "End in ",
-                            fontSize = 14.sp,
+                            fontSize = LocalAppDimens.current.font14,
                             color = Color.White.copy(alpha = 0.8f),
                         )
                         Box(
                             modifier = Modifier
                                 .background(
                                     Color.White.copy(alpha = 0.15f),
-                                    RoundedCornerShape(4.dp),
+                                    RoundedCornerShape(LocalAppDimens.current.radius4),
                                 )
-                                .padding(horizontal = 8.dp, vertical = 2.dp),
+                                .padding(horizontal = LocalAppDimens.current.pad8, vertical = LocalAppDimens.current.padTiny),
                         ) {
                             Text(
                                 "${state.daysRemaining}",
-                                fontSize = 15.sp,
+                                fontSize = LocalAppDimens.current.font15,
                                 fontWeight = FontWeight.Bold,
                                 color = Color.White,
                             )
                         }
                         Text(
                             " Days",
-                            fontSize = 14.sp,
+                            fontSize = LocalAppDimens.current.font14,
                             color = Color.White.copy(alpha = 0.8f),
                         )
                     }
 
-                    Spacer(Modifier.height(10.dp))
+                    Spacer(Modifier.height(LocalAppDimens.current.pad10))
 
                     // Qualification text
                     Text(
                         "To qualify: Only new, active users of the app qualify for referral rewards.",
                         modifier = Modifier.fillMaxWidth(),
                         textAlign = TextAlign.Center,
-                        fontSize = 11.sp,
+                        fontSize = LocalAppDimens.current.font11,
                         color = Color.White.copy(alpha = 0.5f),
                         fontStyle = FontStyle.Italic,
                     )
                 }
             }
 
-            Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(LocalAppDimens.current.pad16))
 
             // ═══════════════════════════════════════════
             // SECTION 6 & 7 — WITHDRAW / EARNING HISTORY
@@ -599,8 +600,8 @@ fun EarnMoneyScreen(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    .padding(horizontal = LocalAppDimens.current.pad16),
+                horizontalArrangement = Arrangement.spacedBy(LocalAppDimens.current.pad12),
             ) {
                 // Withdraw History
                 Box(
@@ -613,12 +614,12 @@ fun EarnMoneyScreen(
                             RoundedCornerShape(12.dp),
                         )
                         .clickable { onNavigateToWithdrawEarning(1) }
-                        .padding(horizontal = 16.dp, vertical = 18.dp),
+                        .padding(horizontal = LocalAppDimens.current.pad16, vertical = 18.dp),
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
                             "Withdraw History",
-                            fontSize = 13.sp,
+                            fontSize = LocalAppDimens.current.font13,
                             fontWeight = FontWeight.Medium,
                             color = Color.White,
                         )
@@ -642,12 +643,12 @@ fun EarnMoneyScreen(
                             RoundedCornerShape(12.dp),
                         )
                         .clickable { onNavigateToWithdrawEarning(2) }
-                        .padding(horizontal = 16.dp, vertical = 18.dp),
+                        .padding(horizontal = LocalAppDimens.current.pad16, vertical = 18.dp),
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
                             "Earning History",
-                            fontSize = 13.sp,
+                            fontSize = LocalAppDimens.current.font13,
                             fontWeight = FontWeight.Medium,
                             color = Color.White,
                         )
@@ -662,7 +663,7 @@ fun EarnMoneyScreen(
                 }
             }
 
-            Spacer(Modifier.height(20.dp))
+            Spacer(Modifier.height(LocalAppDimens.current.pad20))
 
             // ═══════════════════════════════════════════
             // SECTION 8 — HOW MUCH OTHERS EARNED (using provided PNG)
@@ -672,18 +673,18 @@ fun EarnMoneyScreen(
                 contentDescription = "How much others earned",
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp),
+                    .padding(horizontal = LocalAppDimens.current.pad16),
                 contentScale = ContentScale.FillWidth,
             )
 
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(LocalAppDimens.current.pad12))
 
             // ── Dynamic Earner Proof Screenshots from Admin ──
             if (state.earnerProofs.isNotEmpty()) {
                 LazyRow(
                     modifier = Modifier.fillMaxWidth(),
-                    contentPadding = PaddingValues(horizontal = 16.dp),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    contentPadding = PaddingValues(horizontal = LocalAppDimens.current.pad16),
+                    horizontalArrangement = Arrangement.spacedBy(LocalAppDimens.current.pad12),
                 ) {
                     items(state.earnerProofs) { proof ->
                         Column(
@@ -715,8 +716,8 @@ fun EarnMoneyScreen(
                                     proof.caption,
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .padding(horizontal = 8.dp, vertical = 8.dp),
-                                    fontSize = 12.sp,
+                                        .padding(horizontal = LocalAppDimens.current.pad8, vertical = LocalAppDimens.current.pad8),
+                                    fontSize = LocalAppDimens.current.font12,
                                     fontWeight = FontWeight.Medium,
                                     color = GoldYellow,
                                     textAlign = TextAlign.Center,
@@ -728,21 +729,21 @@ fun EarnMoneyScreen(
                 }
             }
 
-            Spacer(Modifier.height(20.dp))
+            Spacer(Modifier.height(LocalAppDimens.current.pad20))
 
             // ── Referral Code Section ──
             if (state.referralCode.isNotEmpty()) {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 16.dp)
+                        .padding(horizontal = LocalAppDimens.current.pad16)
                         .background(CardBlue, RoundedCornerShape(12.dp))
                         .border(
                             1.dp,
                             GoldYellow.copy(alpha = 0.3f),
                             RoundedCornerShape(12.dp),
                         )
-                        .padding(16.dp),
+                        .padding(LocalAppDimens.current.pad16),
                 ) {
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
@@ -750,19 +751,19 @@ fun EarnMoneyScreen(
                     ) {
                         Text(
                             "Your Referral Code",
-                            fontSize = 14.sp,
+                            fontSize = LocalAppDimens.current.font14,
                             color = Color.White.copy(alpha = 0.7f),
                         )
-                        Spacer(Modifier.height(8.dp))
+                        Spacer(Modifier.height(LocalAppDimens.current.pad8))
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(
                                 state.referralCode,
-                                fontSize = 22.sp,
+                                fontSize = LocalAppDimens.current.font22,
                                 fontWeight = FontWeight.Bold,
                                 color = GoldYellow,
                                 letterSpacing = 3.sp,
                             )
-                            Spacer(Modifier.width(12.dp))
+                            Spacer(Modifier.width(LocalAppDimens.current.pad12))
                             IconButton(onClick = {
                                 clipboardManager.setText(
                                     AnnotatedString(state.referralCode)
@@ -778,13 +779,13 @@ fun EarnMoneyScreen(
                         }
                     }
                 }
-                Spacer(Modifier.height(16.dp))
+                Spacer(Modifier.height(LocalAppDimens.current.pad16))
             }
 
             // ── Rules Section (toggleable, expandable cards with Hindi/English toggle) ──
             // (moved to ModalBottomSheet below)
 
-            Spacer(Modifier.height(20.dp))
+            Spacer(Modifier.height(LocalAppDimens.current.pad20))
         }
 
         // ═══════════════════════════════════════════
@@ -796,17 +797,17 @@ fun EarnMoneyScreen(
                 .fillMaxWidth()
                 .background(DarkBlueBg)
                 .navigationBarsPadding()
-                .padding(horizontal = 16.dp, vertical = 8.dp),
+                .padding(horizontal = LocalAppDimens.current.pad16, vertical = LocalAppDimens.current.pad8),
         ) {
             Text(
                 "Join channels to learn more",
                 modifier = Modifier.fillMaxWidth(),
                 textAlign = TextAlign.Center,
-                fontSize = 12.sp,
+                fontSize = LocalAppDimens.current.font12,
                 color = Color.White.copy(alpha = 0.6f),
             )
-            Spacer(Modifier.height(8.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            Spacer(Modifier.height(LocalAppDimens.current.pad8))
+            Row(horizontalArrangement = Arrangement.spacedBy(LocalAppDimens.current.pad12)) {
                 // WhatsApp
                 Box(
                     modifier = Modifier
@@ -820,15 +821,15 @@ fun EarnMoneyScreen(
                                 )
                             )
                         }
-                        .padding(vertical = 12.dp),
+                        .padding(vertical = LocalAppDimens.current.pad12),
                     contentAlignment = Alignment.Center,
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text("💬", fontSize = 16.sp)
-                        Spacer(Modifier.width(6.dp))
+                        Text("💬", fontSize = LocalAppDimens.current.font16)
+                        Spacer(Modifier.width(LocalAppDimens.current.pad6))
                         Text(
                             "WhatsApp",
-                            fontSize = 14.sp,
+                            fontSize = LocalAppDimens.current.font14,
                             fontWeight = FontWeight.Bold,
                             color = Color.White,
                         )
@@ -847,15 +848,15 @@ fun EarnMoneyScreen(
                                 )
                             )
                         }
-                        .padding(vertical = 12.dp),
+                        .padding(vertical = LocalAppDimens.current.pad12),
                     contentAlignment = Alignment.Center,
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text("✈️", fontSize = 16.sp)
-                        Spacer(Modifier.width(6.dp))
+                        Text("✈️", fontSize = LocalAppDimens.current.font16)
+                        Spacer(Modifier.width(LocalAppDimens.current.pad6))
                         Text(
                             "Telegram",
-                            fontSize = 14.sp,
+                            fontSize = LocalAppDimens.current.font14,
                             fontWeight = FontWeight.Bold,
                             color = Color.White,
                         )
@@ -878,8 +879,8 @@ fun EarnMoneyScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .verticalScroll(rememberScrollState())
-                    .padding(horizontal = 16.dp)
-                    .padding(bottom = 32.dp),
+                    .padding(horizontal = LocalAppDimens.current.pad16)
+                    .padding(bottom = LocalAppDimens.current.pad32),
             ) {
                 // Header
                 Row(
@@ -889,7 +890,7 @@ fun EarnMoneyScreen(
                 ) {
                     Text(
                         "📋 Withdrawal Rules",
-                        fontSize = 20.sp,
+                        fontSize = LocalAppDimens.current.font20,
                         fontWeight = FontWeight.Bold,
                         color = Color.White,
                     )
@@ -898,7 +899,7 @@ fun EarnMoneyScreen(
                     }
                 }
 
-                Spacer(Modifier.height(16.dp))
+                Spacer(Modifier.height(LocalAppDimens.current.pad16))
 
                 ExpandableRulesContent()
             }
@@ -961,21 +962,21 @@ private fun ExpandableRulesContent() {
         ) {
             Box(
                 modifier = Modifier
-                    .clip(RoundedCornerShape(8.dp))
+                    .clip(RoundedCornerShape(LocalAppDimens.current.radius8))
                     .background(if (isHindi) Color(0xFF3A6BA5) else Color(0xFF2E5090))
                     .clickable { isHindi = !isHindi }
-                    .padding(horizontal = 12.dp, vertical = 6.dp),
+                    .padding(horizontal = LocalAppDimens.current.pad12, vertical = LocalAppDimens.current.pad6),
             ) {
                 Text(
                     if (isHindi) "हिंदी" else "English",
-                    fontSize = 12.sp,
+                    fontSize = LocalAppDimens.current.font12,
                     fontWeight = FontWeight.SemiBold,
                     color = Color.White,
                 )
             }
         }
 
-        Spacer(Modifier.height(12.dp))
+        Spacer(Modifier.height(LocalAppDimens.current.pad12))
 
         rulesData.forEachIndexed { index, rule ->
             ExpandableRuleCard(
@@ -984,7 +985,7 @@ private fun ExpandableRulesContent() {
                 index = index + 1,
             )
             if (index < rulesData.lastIndex) {
-                Spacer(Modifier.height(8.dp))
+                Spacer(Modifier.height(LocalAppDimens.current.pad8))
             }
         }
     }
@@ -1002,14 +1003,14 @@ private fun ExpandableRuleCard(title: String, content: String, index: Int) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(10.dp))
+            .clip(RoundedCornerShape(LocalAppDimens.current.radius10))
             .background(CardBlueLighter.copy(alpha = 0.6f))
             .clickable { expanded = !expanded },
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 14.dp, vertical = 12.dp),
+                .padding(horizontal = LocalAppDimens.current.pad14, vertical = LocalAppDimens.current.pad12),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Box(
@@ -1019,12 +1020,12 @@ private fun ExpandableRuleCard(title: String, content: String, index: Int) {
                     .background(GoldYellow),
                 contentAlignment = Alignment.Center,
             ) {
-                Text("$index", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.Black)
+                Text("$index", fontSize = LocalAppDimens.current.font12, fontWeight = FontWeight.Bold, color = Color.Black)
             }
-            Spacer(Modifier.width(10.dp))
+            Spacer(Modifier.width(LocalAppDimens.current.pad10))
             Text(
                 title,
-                fontSize = 14.sp,
+                fontSize = LocalAppDimens.current.font14,
                 fontWeight = FontWeight.SemiBold,
                 color = Color.White,
                 modifier = Modifier.weight(1f),
@@ -1048,10 +1049,10 @@ private fun ExpandableRuleCard(title: String, content: String, index: Int) {
         ) {
             Text(
                 content,
-                fontSize = 13.sp,
+                fontSize = LocalAppDimens.current.font13,
                 color = Color.White.copy(alpha = 0.7f),
                 lineHeight = 19.sp,
-                modifier = Modifier.padding(start = 14.dp, end = 14.dp, bottom = 14.dp),
+                modifier = Modifier.padding(start = LocalAppDimens.current.pad14, end = LocalAppDimens.current.pad14, bottom = LocalAppDimens.current.pad14),
             )
         }
     }

@@ -47,6 +47,7 @@ import com.cinevault.app.data.model.HomeSectionDto
 import com.cinevault.app.data.model.MovieDto
 import com.cinevault.app.data.model.WatchProgressDto
 import com.cinevault.app.ui.theme.CineVaultTheme
+import com.cinevault.app.ui.theme.LocalAppDimens
 
 /** Premium crown badge overlay — placed top-left on premium content cards. */
 @Composable
@@ -74,7 +75,7 @@ fun MovieCard(
             modifier = Modifier
                 .fillMaxWidth()
                 .aspectRatio(2f / 3f)
-                .clip(RoundedCornerShape(8.dp))
+                .clip(RoundedCornerShape(LocalAppDimens.current.radius8))
                 .background(CineVaultTheme.colors.surface),
         ) {
             AsyncImage(
@@ -106,14 +107,14 @@ fun MovieCard(
                 Surface(
                     modifier = Modifier
                         .align(Alignment.TopEnd)
-                        .padding(6.dp),
-                    shape = RoundedCornerShape(4.dp),
+                        .padding(LocalAppDimens.current.pad6),
+                    shape = RoundedCornerShape(LocalAppDimens.current.radius4),
                     color = Color.Black.copy(alpha = 0.6f),
                 ) {
                     Text(
                         langLabel,
-                        modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp),
-                        fontSize = 10.sp,
+                        modifier = Modifier.padding(horizontal = 5.dp, vertical = LocalAppDimens.current.padTiny),
+                        fontSize = LocalAppDimens.current.font10,
                         fontWeight = FontWeight.SemiBold,
                         color = Color.White,
                         letterSpacing = 0.3.sp,
@@ -126,13 +127,13 @@ fun MovieCard(
                 Surface(
                     modifier = Modifier
                         .align(Alignment.BottomStart)
-                        .padding(6.dp),
-                    shape = RoundedCornerShape(4.dp),
+                        .padding(LocalAppDimens.current.pad6),
+                    shape = RoundedCornerShape(LocalAppDimens.current.radius4),
                     color = Color.White.copy(alpha = 0.2f),
                 ) {
                     Text(
                         movie.videoQuality!!,
-                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
+                        modifier = Modifier.padding(horizontal = LocalAppDimens.current.pad4, vertical = LocalAppDimens.current.padTiny),
                         style = CineVaultTheme.typography.labelSmall,
                         fontWeight = FontWeight.Bold,
                         color = Color.White.copy(alpha = 0.9f),
@@ -146,13 +147,13 @@ fun MovieCard(
                 Surface(
                     modifier = Modifier
                         .align(Alignment.BottomEnd)
-                        .padding(6.dp),
-                    shape = RoundedCornerShape(4.dp),
+                        .padding(LocalAppDimens.current.pad6),
+                    shape = RoundedCornerShape(LocalAppDimens.current.radius4),
                     color = CineVaultTheme.colors.background.copy(alpha = 0.85f),
                 ) {
                     Text(
                         String.format("%.1f", displayRating),
-                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
+                        modifier = Modifier.padding(horizontal = LocalAppDimens.current.pad4, vertical = LocalAppDimens.current.padTiny),
                         style = CineVaultTheme.typography.labelSmall,
                         fontWeight = FontWeight.Bold,
                         color = CineVaultTheme.colors.ratingGold,
@@ -165,11 +166,11 @@ fun MovieCard(
                 PremiumBadgeOverlay(
                     modifier = Modifier
                         .align(Alignment.TopStart)
-                        .padding(4.dp),
+                        .padding(LocalAppDimens.current.pad4),
                 )
             }
         }
-        Spacer(Modifier.height(6.dp))
+        Spacer(Modifier.height(LocalAppDimens.current.pad6))
         Text(
             movie.title,
             style = CineVaultTheme.typography.bodySmall,
@@ -222,14 +223,14 @@ fun PlayButton(
     Button(
         onClick = onClick,
         modifier = modifier.height(44.dp),
-        shape = RoundedCornerShape(8.dp),
+        shape = RoundedCornerShape(LocalAppDimens.current.radius8),
         colors = ButtonDefaults.buttonColors(
             containerColor = CineVaultTheme.colors.accentGold,
             contentColor = CineVaultTheme.colors.background,
         ),
     ) {
         Icon(Icons.Filled.PlayArrow, contentDescription = null, modifier = Modifier.size(20.dp))
-        Spacer(Modifier.width(6.dp))
+        Spacer(Modifier.width(LocalAppDimens.current.pad6))
         Text(text, style = CineVaultTheme.typography.button)
     }
 }
@@ -247,7 +248,7 @@ fun GenreChip(
     ) {
         Text(
             label,
-            modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
+            modifier = Modifier.padding(horizontal = LocalAppDimens.current.pad14, vertical = LocalAppDimens.current.pad6),
             style = CineVaultTheme.typography.label,
             color = if (selected) CineVaultTheme.colors.background else CineVaultTheme.colors.textSecondary,
         )
@@ -257,7 +258,7 @@ fun GenreChip(
 @Composable
 fun ShimmerBox(
     modifier: Modifier = Modifier,
-    shape: RoundedCornerShape = RoundedCornerShape(8.dp),
+    shape: RoundedCornerShape = RoundedCornerShape(LocalAppDimens.current.radius8),
 ) {
     val transition = rememberInfiniteTransition(label = "shimmer")
     val translateAnim = transition.animateFloat(
@@ -293,9 +294,9 @@ fun ShimmerMovieCard(modifier: Modifier = Modifier, width: Dp = 130.dp) {
                 .fillMaxWidth()
                 .aspectRatio(2f / 3f),
         )
-        Spacer(Modifier.height(6.dp))
+        Spacer(Modifier.height(LocalAppDimens.current.pad6))
         ShimmerBox(modifier = Modifier.fillMaxWidth().height(14.dp))
-        Spacer(Modifier.height(4.dp))
+        Spacer(Modifier.height(LocalAppDimens.current.pad4))
         ShimmerBox(modifier = Modifier.width(50.dp).height(10.dp))
     }
 }
@@ -316,7 +317,7 @@ fun ErrorScreen(
             style = CineVaultTheme.typography.body,
             color = CineVaultTheme.colors.textSecondary,
         )
-        Spacer(Modifier.height(16.dp))
+        Spacer(Modifier.height(LocalAppDimens.current.pad16))
         GoldButton(text = "Retry", onClick = onRetry, modifier = Modifier.width(160.dp))
     }
 }
@@ -331,7 +332,7 @@ fun SectionHeader(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp),
+            .padding(horizontal = LocalAppDimens.current.pad16, vertical = LocalAppDimens.current.pad8),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -374,9 +375,9 @@ fun HorizontalMovieSection(
                 LazyRow(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 8.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    contentPadding = PaddingValues(horizontal = 8.dp)
+                        .padding(horizontal = LocalAppDimens.current.pad8),
+                    horizontalArrangement = Arrangement.spacedBy(LocalAppDimens.current.pad8),
+                    contentPadding = PaddingValues(horizontal = LocalAppDimens.current.pad8)
                 ) {
                     itemsIndexed(section.items.take(10)) { index, movie ->
                         TrendingMovieCard(
@@ -394,9 +395,9 @@ fun HorizontalMovieSection(
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 16.dp)
+                            .padding(horizontal = LocalAppDimens.current.pad16)
                             .aspectRatio(18f / 9f)
-                            .clip(RoundedCornerShape(16.dp))
+                            .clip(RoundedCornerShape(LocalAppDimens.current.radius16))
                             .background(CineVaultTheme.colors.surface)
                             .then(
                                 if (targetId != null) Modifier.clickable { onMovieClick(targetId) }
@@ -417,9 +418,9 @@ fun HorizontalMovieSection(
                 LazyRow(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 8.dp),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    contentPadding = PaddingValues(horizontal = 8.dp)
+                        .padding(horizontal = LocalAppDimens.current.pad8),
+                    horizontalArrangement = Arrangement.spacedBy(LocalAppDimens.current.pad12),
+                    contentPadding = PaddingValues(horizontal = LocalAppDimens.current.pad8)
                 ) {
                     items(section.items) { movie ->
                         LargeMovieCard(
@@ -434,9 +435,9 @@ fun HorizontalMovieSection(
                 LazyRow(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 8.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    contentPadding = PaddingValues(horizontal = 8.dp)
+                        .padding(horizontal = LocalAppDimens.current.pad8),
+                    horizontalArrangement = Arrangement.spacedBy(LocalAppDimens.current.pad8),
+                    contentPadding = PaddingValues(horizontal = LocalAppDimens.current.pad8)
                 ) {
                     items(section.items) { movie ->
                         SquareMovieCard(
@@ -466,7 +467,7 @@ fun SquareMovieCard(
             modifier = Modifier
                 .fillMaxWidth()
                 .aspectRatio(1f)
-                .clip(RoundedCornerShape(8.dp))
+                .clip(RoundedCornerShape(LocalAppDimens.current.radius8))
                 .background(CineVaultTheme.colors.surface)
         ) {
             AsyncImage(
@@ -482,14 +483,14 @@ fun SquareMovieCard(
                 Surface(
                     modifier = Modifier
                         .align(Alignment.TopEnd)
-                        .padding(6.dp),
-                    shape = RoundedCornerShape(4.dp),
+                        .padding(LocalAppDimens.current.pad6),
+                    shape = RoundedCornerShape(LocalAppDimens.current.radius4),
                     color = Color.Black.copy(alpha = 0.6f),
                 ) {
                     Text(
                         langLabel,
-                        modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp),
-                        fontSize = 10.sp,
+                        modifier = Modifier.padding(horizontal = 5.dp, vertical = LocalAppDimens.current.padTiny),
+                        fontSize = LocalAppDimens.current.font10,
                         fontWeight = FontWeight.SemiBold,
                         color = Color.White,
                         letterSpacing = 0.3.sp,
@@ -502,13 +503,13 @@ fun SquareMovieCard(
                 Surface(
                     modifier = Modifier
                         .align(Alignment.BottomStart)
-                        .padding(6.dp),
-                    shape = RoundedCornerShape(4.dp),
+                        .padding(LocalAppDimens.current.pad6),
+                    shape = RoundedCornerShape(LocalAppDimens.current.radius4),
                     color = Color.White.copy(alpha = 0.2f),
                 ) {
                     Text(
                         movie.videoQuality!!,
-                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
+                        modifier = Modifier.padding(horizontal = LocalAppDimens.current.pad4, vertical = LocalAppDimens.current.padTiny),
                         style = CineVaultTheme.typography.labelSmall,
                         fontWeight = FontWeight.Bold,
                         color = Color.White.copy(alpha = 0.9f),
@@ -522,13 +523,13 @@ fun SquareMovieCard(
                 Surface(
                     modifier = Modifier
                         .align(Alignment.BottomEnd)
-                        .padding(6.dp),
-                    shape = RoundedCornerShape(4.dp),
+                        .padding(LocalAppDimens.current.pad6),
+                    shape = RoundedCornerShape(LocalAppDimens.current.radius4),
                     color = CineVaultTheme.colors.background.copy(alpha = 0.85f),
                 ) {
                     Text(
                         String.format("%.1f", displayRating),
-                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
+                        modifier = Modifier.padding(horizontal = LocalAppDimens.current.pad4, vertical = LocalAppDimens.current.padTiny),
                         style = CineVaultTheme.typography.labelSmall,
                         fontWeight = FontWeight.Bold,
                         color = CineVaultTheme.colors.ratingGold,
@@ -541,12 +542,12 @@ fun SquareMovieCard(
                 PremiumBadgeOverlay(
                     modifier = Modifier
                         .align(Alignment.TopStart)
-                        .padding(4.dp),
+                        .padding(LocalAppDimens.current.pad4),
                 )
             }
         }
         
-        Spacer(Modifier.height(6.dp))
+        Spacer(Modifier.height(LocalAppDimens.current.pad6))
         Text(
             movie.title,
             style = CineVaultTheme.typography.bodySmall,
@@ -602,14 +603,14 @@ fun LargeMovieCard(
                 Surface(
                     modifier = Modifier
                         .align(Alignment.TopEnd)
-                        .padding(8.dp),
-                    shape = RoundedCornerShape(4.dp),
+                        .padding(LocalAppDimens.current.pad8),
+                    shape = RoundedCornerShape(LocalAppDimens.current.radius4),
                     color = Color.Black.copy(alpha = 0.6f),
                 ) {
                     Text(
                         langLabel,
-                        modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp),
-                        fontSize = 10.sp,
+                        modifier = Modifier.padding(horizontal = 5.dp, vertical = LocalAppDimens.current.padTiny),
+                        fontSize = LocalAppDimens.current.font10,
                         fontWeight = FontWeight.SemiBold,
                         color = Color.White,
                         letterSpacing = 0.3.sp,
@@ -622,13 +623,13 @@ fun LargeMovieCard(
                 Surface(
                     modifier = Modifier
                         .align(Alignment.BottomStart)
-                        .padding(8.dp),
-                    shape = RoundedCornerShape(6.dp),
+                        .padding(LocalAppDimens.current.pad8),
+                    shape = RoundedCornerShape(LocalAppDimens.current.radius6),
                     color = Color.White.copy(alpha = 0.2f),
                 ) {
                     Text(
                         movie.videoQuality!!,
-                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp),
+                        modifier = Modifier.padding(horizontal = LocalAppDimens.current.pad6, vertical = 3.dp),
                         style = CineVaultTheme.typography.labelSmall,
                         fontWeight = FontWeight.Bold,
                         color = Color.White.copy(alpha = 0.9f),
@@ -642,13 +643,13 @@ fun LargeMovieCard(
                 Surface(
                     modifier = Modifier
                         .align(Alignment.BottomEnd)
-                        .padding(8.dp),
-                    shape = RoundedCornerShape(6.dp),
+                        .padding(LocalAppDimens.current.pad8),
+                    shape = RoundedCornerShape(LocalAppDimens.current.radius6),
                     color = CineVaultTheme.colors.background.copy(alpha = 0.85f),
                 ) {
                     Text(
                         String.format("%.1f", displayRating),
-                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp),
+                        modifier = Modifier.padding(horizontal = LocalAppDimens.current.pad6, vertical = 3.dp),
                         style = CineVaultTheme.typography.labelSmall,
                         fontWeight = FontWeight.Bold,
                         color = CineVaultTheme.colors.ratingGold,
@@ -661,13 +662,13 @@ fun LargeMovieCard(
                 PremiumBadgeOverlay(
                     modifier = Modifier
                         .align(Alignment.TopStart)
-                        .padding(6.dp),
+                        .padding(LocalAppDimens.current.pad6),
                     size = 42.dp,
                 )
             }
         }
         
-        Spacer(Modifier.height(8.dp))
+        Spacer(Modifier.height(LocalAppDimens.current.pad8))
         Text(
             movie.title,
             style = CineVaultTheme.typography.bodySmall,
@@ -766,14 +767,14 @@ fun TrendingMovieCard(
                     Surface(
                         modifier = Modifier
                             .align(Alignment.TopEnd)
-                            .padding(6.dp),
-                        shape = RoundedCornerShape(4.dp),
+                            .padding(LocalAppDimens.current.pad6),
+                        shape = RoundedCornerShape(LocalAppDimens.current.radius4),
                         color = Color.Black.copy(alpha = 0.6f),
                     ) {
                         Text(
                             langLabel,
-                            modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp),
-                            fontSize = 10.sp,
+                            modifier = Modifier.padding(horizontal = 5.dp, vertical = LocalAppDimens.current.padTiny),
+                            fontSize = LocalAppDimens.current.font10,
                             fontWeight = FontWeight.SemiBold,
                             color = Color.White,
                             letterSpacing = 0.3.sp,
@@ -786,20 +787,20 @@ fun TrendingMovieCard(
                     PremiumBadgeOverlay(
                         modifier = Modifier
                             .align(Alignment.TopStart)
-                            .padding(4.dp),
+                            .padding(LocalAppDimens.current.pad4),
                         size = 36.dp,
                     )
                 }
             }
         }
 
-        Spacer(Modifier.height(8.dp))
+        Spacer(Modifier.height(LocalAppDimens.current.pad8))
 
         // Title — aligned under poster card, not under the ranking number
         Text(
             movie.title,
             modifier = Modifier.width(posterWidth),
-            fontSize = 13.sp,
+            fontSize = LocalAppDimens.current.font13,
             fontWeight = FontWeight.SemiBold,
             color = CineVaultTheme.colors.textPrimary,
             maxLines = 1,
@@ -810,7 +811,7 @@ fun TrendingMovieCard(
         // Watching count
         val watchCount = movie.viewCount ?: 0
         if (watchCount > 0) {
-            Spacer(Modifier.height(2.dp))
+            Spacer(Modifier.height(LocalAppDimens.current.padTiny))
             Row(
                 modifier = Modifier.width(posterWidth),
                 verticalAlignment = Alignment.CenterVertically,
@@ -822,10 +823,10 @@ fun TrendingMovieCard(
                         .clip(CircleShape)
                         .background(Color(0xFFE53935))
                 )
-                Spacer(Modifier.width(4.dp))
+                Spacer(Modifier.width(LocalAppDimens.current.pad4))
                 Text(
                     text = "${formatWatchCount(watchCount)} Watching Now",
-                    fontSize = 10.sp,
+                    fontSize = LocalAppDimens.current.font10,
                     fontWeight = FontWeight.Medium,
                     color = CineVaultTheme.colors.textSecondary,
                 )
@@ -861,7 +862,7 @@ fun ContinueWatchingCard(
             modifier = Modifier
                 .fillMaxWidth()
                 .aspectRatio(16f / 9f)
-                .clip(RoundedCornerShape(10.dp))
+                .clip(RoundedCornerShape(LocalAppDimens.current.radius10))
                 .background(CineVaultTheme.colors.surface)
         ) {
             AsyncImage(
@@ -890,7 +891,7 @@ fun ContinueWatchingCard(
                     Icons.Default.PlayArrow,
                     contentDescription = "Continue",
                     modifier = Modifier
-                        .padding(6.dp),
+                        .padding(LocalAppDimens.current.pad6),
                     tint = CineVaultTheme.colors.background,
                 )
             }
@@ -899,7 +900,7 @@ fun ContinueWatchingCard(
             Surface(
                 modifier = Modifier
                     .align(Alignment.TopEnd)
-                    .padding(4.dp)
+                    .padding(LocalAppDimens.current.pad4)
                     .size(24.dp),
                 shape = CircleShape,
                 color = Color.Black.copy(alpha = 0.6f),
@@ -908,7 +909,7 @@ fun ContinueWatchingCard(
                 Icon(
                     Icons.Default.Close,
                     contentDescription = "Remove",
-                    modifier = Modifier.padding(4.dp),
+                    modifier = Modifier.padding(LocalAppDimens.current.pad4),
                     tint = Color.White,
                 )
             }
@@ -926,11 +927,11 @@ fun ContinueWatchingCard(
             )
         }
 
-        Spacer(Modifier.height(6.dp))
+        Spacer(Modifier.height(LocalAppDimens.current.pad6))
 
         Text(
             item.contentTitle ?: "Unknown",
-            fontSize = 12.sp,
+            fontSize = LocalAppDimens.current.font12,
             fontWeight = FontWeight.SemiBold,
             color = CineVaultTheme.colors.textPrimary,
             maxLines = 1,
@@ -941,7 +942,7 @@ fun ContinueWatchingCard(
         if (!item.episodeTitle.isNullOrBlank()) {
             Text(
                 item.episodeTitle!!,
-                fontSize = 10.sp,
+                fontSize = LocalAppDimens.current.font10,
                 color = CineVaultTheme.colors.textSecondary,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
@@ -1036,7 +1037,7 @@ fun HomeTopBar(
         modifier = modifier
             .fillMaxWidth()
             .statusBarsPadding()
-            .padding(horizontal = 16.dp, vertical = 8.dp),
+            .padding(horizontal = LocalAppDimens.current.pad16, vertical = LocalAppDimens.current.pad8),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
     ) {

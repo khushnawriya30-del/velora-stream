@@ -53,6 +53,7 @@ import com.cinevault.app.ui.viewmodel.PremiumViewModel
 import com.cinevault.app.ui.viewmodel.ProfileViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
+import com.cinevault.app.ui.theme.LocalAppDimens
 
 // Premium text color – dark brown for strong contrast on gold card
 private val PremTextOnGold = Color(0xFF4A3000)
@@ -112,13 +113,13 @@ fun MeScreen(
 
         // ── Premium Exclusive Section ──
         if (uiState.premiumContent.isNotEmpty()) {
-            Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(LocalAppDimens.current.pad16))
             // Premium section header with crown badge
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 20.dp)
-                    .padding(top = 12.dp, bottom = 10.dp),
+                    .padding(horizontal = LocalAppDimens.current.pad20)
+                    .padding(top = LocalAppDimens.current.pad12, bottom = LocalAppDimens.current.pad10),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Image(
@@ -126,10 +127,10 @@ fun MeScreen(
                     contentDescription = "Premium",
                     modifier = Modifier.size(24.dp),
                 )
-                Spacer(Modifier.width(6.dp))
+                Spacer(Modifier.width(LocalAppDimens.current.pad6))
                 Text(
                     text = "Premium Exclusive",
-                    fontSize = 18.sp,
+                    fontSize = LocalAppDimens.current.font18,
                     fontWeight = FontWeight.Bold,
                     color = Color(0xFFFFD700),
                     letterSpacing = 0.5.sp,
@@ -142,30 +143,30 @@ fun MeScreen(
                     modifier = Modifier.size(22.dp),
                 )
             }
-            Spacer(Modifier.height(4.dp))
+            Spacer(Modifier.height(LocalAppDimens.current.pad4))
             LazyRow(
-                contentPadding = PaddingValues(horizontal = 20.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                contentPadding = PaddingValues(horizontal = LocalAppDimens.current.pad20),
+                horizontalArrangement = Arrangement.spacedBy(LocalAppDimens.current.pad12),
             ) {
                 items(uiState.premiumContent) { movie ->
                     MeMovieCard(movie = movie, onClick = { onMovieClick(movie.id) })
                 }
             }
-            Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(LocalAppDimens.current.pad16))
         }
 
         if (uiState.profiles.size > 1) {
-            Spacer(Modifier.height(4.dp))
+            Spacer(Modifier.height(LocalAppDimens.current.pad4))
             Text(
                 "Switch Profile",
                 style = CineVaultTheme.typography.labelSmall,
                 color = CineVaultTheme.colors.textSecondary,
-                modifier = Modifier.padding(horizontal = 20.dp),
+                modifier = Modifier.padding(horizontal = LocalAppDimens.current.pad20),
             )
-            Spacer(Modifier.height(10.dp))
+            Spacer(Modifier.height(LocalAppDimens.current.pad10))
             LazyRow(
-                contentPadding = PaddingValues(horizontal = 20.dp),
-                horizontalArrangement = Arrangement.spacedBy(14.dp),
+                contentPadding = PaddingValues(horizontal = LocalAppDimens.current.pad20),
+                horizontalArrangement = Arrangement.spacedBy(LocalAppDimens.current.pad14),
             ) {
                 items(uiState.profiles) { profile ->
                     MeProfileChip(
@@ -175,15 +176,15 @@ fun MeScreen(
                     )
                 }
             }
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(LocalAppDimens.current.pad12))
         } else {
-            Spacer(Modifier.height(2.dp))
+            Spacer(Modifier.height(LocalAppDimens.current.padTiny))
         }
 
         if (uiState.watchHistory.isNotEmpty()) {
             MeSectionHeader(icon = Icons.Filled.History, title = "Watch History", onSeeAll = null)
-            Spacer(Modifier.height(12.dp))
-            LazyRow(contentPadding = PaddingValues(horizontal = 20.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            Spacer(Modifier.height(LocalAppDimens.current.pad12))
+            LazyRow(contentPadding = PaddingValues(horizontal = LocalAppDimens.current.pad20), horizontalArrangement = Arrangement.spacedBy(LocalAppDimens.current.pad12)) {
                 items(uiState.watchHistory) { progress ->
                     MeWatchHistoryCard(
                         progress = progress,
@@ -206,7 +207,7 @@ fun MeScreen(
             title = "My Watchlist",
             onAddMore = onAddMoreWatchlist,
         )
-        Spacer(Modifier.height(12.dp))
+        Spacer(Modifier.height(LocalAppDimens.current.pad12))
         MeWatchlistSection(
             userMovies = uiState.watchlist,
             randomPool = uiState.randomContentPool,
@@ -221,7 +222,7 @@ fun MeScreen(
             title = "My Thematic Collection",
             onAddMore = onAddMoreCollection,
         )
-        Spacer(Modifier.height(12.dp))
+        Spacer(Modifier.height(LocalAppDimens.current.pad12))
         MeThematicCollectionSection(
             userMovies = uiState.thematicCollection,
             randomPool = uiState.randomContentPool,
@@ -232,8 +233,8 @@ fun MeScreen(
 
         if (uiState.likedMovies.isNotEmpty()) {
             MeSectionHeader(icon = Icons.Outlined.ThumbUp, title = "Liked Videos", onSeeAll = null)
-            Spacer(Modifier.height(12.dp))
-            LazyRow(contentPadding = PaddingValues(horizontal = 20.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            Spacer(Modifier.height(LocalAppDimens.current.pad12))
+            LazyRow(contentPadding = PaddingValues(horizontal = LocalAppDimens.current.pad20), horizontalArrangement = Arrangement.spacedBy(LocalAppDimens.current.pad12)) {
                 items(uiState.likedMovies) { movie ->
                     MeMovieCard(movie = movie, onClick = { onMovieClick(movie.id) })
                 }
@@ -258,7 +259,7 @@ private fun MePremiumHeader(
             .fillMaxWidth()
             .background(Brush.verticalGradient(colors = listOf(CineVaultTheme.colors.surface.copy(alpha = 0.9f), CineVaultTheme.colors.background)))
             .statusBarsPadding()
-            .padding(start = 20.dp, end = 20.dp, top = 16.dp, bottom = 6.dp),
+            .padding(start = LocalAppDimens.current.pad20, end = LocalAppDimens.current.pad20, top = LocalAppDimens.current.pad16, bottom = LocalAppDimens.current.pad6),
     ) {
         Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Box(
@@ -268,11 +269,11 @@ private fun MePremiumHeader(
             ) {
                 Text(
                     text = userName.take(1).uppercase().ifEmpty { "?" },
-                    style = CineVaultTheme.typography.sectionTitle.copy(fontSize = 24.sp, fontWeight = FontWeight.Bold),
+                    style = CineVaultTheme.typography.sectionTitle.copy(fontSize = LocalAppDimens.current.font24, fontWeight = FontWeight.Bold),
                     color = Color(0xFF999999),
                 )
             }
-            Spacer(Modifier.width(14.dp))
+            Spacer(Modifier.width(LocalAppDimens.current.pad14))
             Column(modifier = Modifier.weight(1f)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
@@ -284,7 +285,7 @@ private fun MePremiumHeader(
                         modifier = Modifier.weight(1f, fill = false),
                     )
                     if (isPremium) {
-                        Spacer(Modifier.width(6.dp))
+                        Spacer(Modifier.width(LocalAppDimens.current.pad6))
                         Image(
                             painter = painterResource(R.drawable.premium_badge),
                             contentDescription = "Premium Member",
@@ -308,9 +309,9 @@ private fun MePremiumHeader(
 
 @Composable
 private fun MeSectionHeader(icon: ImageVector, title: String, onSeeAll: (() -> Unit)?) {
-    Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp), verticalAlignment = Alignment.CenterVertically) {
+    Row(modifier = Modifier.fillMaxWidth().padding(horizontal = LocalAppDimens.current.pad20), verticalAlignment = Alignment.CenterVertically) {
         Icon(icon, contentDescription = null, tint = CineVaultTheme.colors.accentGold, modifier = Modifier.size(20.dp))
-        Spacer(Modifier.width(8.dp))
+        Spacer(Modifier.width(LocalAppDimens.current.pad8))
         Text(text = title, style = CineVaultTheme.typography.sectionTitle, color = CineVaultTheme.colors.textPrimary, modifier = Modifier.weight(1f))
         if (onSeeAll != null) {
             TextButton(onClick = onSeeAll) {
@@ -324,14 +325,14 @@ private fun MeSectionHeader(icon: ImageVector, title: String, onSeeAll: (() -> U
 @Composable
 private fun MeMovieCard(movie: MovieDto, onClick: () -> Unit) {
     Column(modifier = Modifier.width(110.dp).clickable(onClick = onClick)) {
-        Box(modifier = Modifier.fillMaxWidth().height(155.dp).clip(RoundedCornerShape(10.dp)).background(CineVaultTheme.colors.surface)) {
+        Box(modifier = Modifier.fillMaxWidth().height(155.dp).clip(RoundedCornerShape(LocalAppDimens.current.radius10)).background(CineVaultTheme.colors.surface)) {
             AsyncImage(model = movie.posterUrl, contentDescription = movie.title, modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
             if ((movie.rating ?: 0.0) > 0.0) {
-                Surface(modifier = Modifier.align(Alignment.TopEnd).padding(6.dp), shape = RoundedCornerShape(4.dp), color = Color(0xCC000000)) {
-                    Row(modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp), verticalAlignment = Alignment.CenterVertically) {
+                Surface(modifier = Modifier.align(Alignment.TopEnd).padding(LocalAppDimens.current.pad6), shape = RoundedCornerShape(LocalAppDimens.current.radius4), color = Color(0xCC000000)) {
+                    Row(modifier = Modifier.padding(horizontal = 5.dp, vertical = LocalAppDimens.current.padTiny), verticalAlignment = Alignment.CenterVertically) {
                         Icon(Icons.Filled.Star, contentDescription = null, tint = CineVaultTheme.colors.accentGold, modifier = Modifier.size(10.dp))
-                        Spacer(Modifier.width(2.dp))
-                        Text(String.format("%.1f", movie.rating), style = CineVaultTheme.typography.labelSmall.copy(fontSize = 9.sp), color = Color.White)
+                        Spacer(Modifier.width(LocalAppDimens.current.padTiny))
+                        Text(String.format("%.1f", movie.rating), style = CineVaultTheme.typography.labelSmall.copy(fontSize = LocalAppDimens.current.font9), color = Color.White)
                     }
                 }
             }
@@ -340,11 +341,11 @@ private fun MeMovieCard(movie: MovieDto, onClick: () -> Unit) {
                 Image(
                     painter = painterResource(R.drawable.premium_badge_small),
                     contentDescription = "Premium",
-                    modifier = Modifier.align(Alignment.TopStart).padding(4.dp).size(30.dp),
+                    modifier = Modifier.align(Alignment.TopStart).padding(LocalAppDimens.current.pad4).size(30.dp),
                 )
             }
         }
-        Spacer(Modifier.height(6.dp))
+        Spacer(Modifier.height(LocalAppDimens.current.pad6))
         Text(movie.title, style = CineVaultTheme.typography.labelSmall, color = CineVaultTheme.colors.textPrimary, maxLines = 2, overflow = TextOverflow.Ellipsis)
     }
 }
@@ -356,7 +357,7 @@ private fun MeWatchHistoryCard(progress: WatchProgressDto, onClick: () -> Unit) 
     val remainingMin = ((progress.totalDuration - progress.currentTime) / 60000).coerceAtLeast(0)
 
     Column(modifier = Modifier.width(150.dp).clickable(onClick = onClick)) {
-        Box(modifier = Modifier.fillMaxWidth().height(100.dp).clip(RoundedCornerShape(10.dp)).background(CineVaultTheme.colors.surface)) {
+        Box(modifier = Modifier.fillMaxWidth().height(100.dp).clip(RoundedCornerShape(LocalAppDimens.current.radius10)).background(CineVaultTheme.colors.surface)) {
             // Poster / thumbnail
             AsyncImage(model = progress.thumbnailUrl, contentDescription = null, modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
 
@@ -366,11 +367,11 @@ private fun MeWatchHistoryCard(progress: WatchProgressDto, onClick: () -> Unit) 
             // Completed badge
             if (progress.isCompleted) {
                 Surface(
-                    modifier = Modifier.align(Alignment.TopEnd).padding(4.dp),
-                    shape = RoundedCornerShape(4.dp),
+                    modifier = Modifier.align(Alignment.TopEnd).padding(LocalAppDimens.current.pad4),
+                    shape = RoundedCornerShape(LocalAppDimens.current.radius4),
                     color = Color(0xFF22C55E).copy(alpha = 0.9f),
                 ) {
-                    Text("Watched", style = CineVaultTheme.typography.labelSmall.copy(fontSize = 8.sp, fontWeight = FontWeight.SemiBold), color = Color.White, modifier = Modifier.padding(horizontal = 5.dp, vertical = 1.dp))
+                    Text("Watched", style = CineVaultTheme.typography.labelSmall.copy(fontSize = LocalAppDimens.current.font8, fontWeight = FontWeight.SemiBold), color = Color.White, modifier = Modifier.padding(horizontal = 5.dp, vertical = 1.dp))
                 }
             }
 
@@ -382,11 +383,11 @@ private fun MeWatchHistoryCard(progress: WatchProgressDto, onClick: () -> Unit) 
             // Watched / Remaining time overlay at bottom
             if (progress.totalDuration > 0 && !progress.isCompleted) {
                 Row(
-                    modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth().padding(horizontal = 6.dp, vertical = 4.dp),
+                    modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth().padding(horizontal = LocalAppDimens.current.pad6, vertical = LocalAppDimens.current.pad4),
                     horizontalArrangement = Arrangement.SpaceBetween,
                 ) {
-                    Text("${watchedMin}m watched", style = CineVaultTheme.typography.labelSmall.copy(fontSize = 8.sp), color = Color.White.copy(alpha = 0.9f))
-                    Text("${remainingMin}m left", style = CineVaultTheme.typography.labelSmall.copy(fontSize = 8.sp), color = CineVaultTheme.colors.accentGold)
+                    Text("${watchedMin}m watched", style = CineVaultTheme.typography.labelSmall.copy(fontSize = LocalAppDimens.current.font8), color = Color.White.copy(alpha = 0.9f))
+                    Text("${remainingMin}m left", style = CineVaultTheme.typography.labelSmall.copy(fontSize = LocalAppDimens.current.font8), color = CineVaultTheme.colors.accentGold)
                 }
             }
 
@@ -395,7 +396,7 @@ private fun MeWatchHistoryCard(progress: WatchProgressDto, onClick: () -> Unit) 
                 Box(modifier = Modifier.fillMaxHeight().fillMaxWidth(fraction).background(CineVaultTheme.colors.accentGold))
             }
         }
-        Spacer(Modifier.height(6.dp))
+        Spacer(Modifier.height(LocalAppDimens.current.pad6))
         Text(progress.contentTitle ?: "", style = CineVaultTheme.typography.labelSmall, color = CineVaultTheme.colors.textPrimary, maxLines = 1, overflow = TextOverflow.Ellipsis)
     }
 }
@@ -412,11 +413,11 @@ private fun MeProfileChip(profile: ProfileDto, isActive: Boolean, onClick: () ->
             if (profile.avatarUrl?.isNotBlank() == true) {
                 AsyncImage(model = profile.avatarUrl, contentDescription = profile.name, modifier = Modifier.fillMaxSize().clip(CircleShape))
             } else {
-                Text(profile.name.take(1).uppercase(), style = CineVaultTheme.typography.sectionTitle.copy(fontSize = 18.sp), color = if (isActive) CineVaultTheme.colors.accentGold else CineVaultTheme.colors.textSecondary)
+                Text(profile.name.take(1).uppercase(), style = CineVaultTheme.typography.sectionTitle.copy(fontSize = LocalAppDimens.current.font18), color = if (isActive) CineVaultTheme.colors.accentGold else CineVaultTheme.colors.textSecondary)
             }
         }
-        Spacer(Modifier.height(4.dp))
-        Text(profile.name, style = CineVaultTheme.typography.labelSmall.copy(fontSize = 10.sp), color = if (isActive) CineVaultTheme.colors.accentGold else CineVaultTheme.colors.textSecondary, maxLines = 1, overflow = TextOverflow.Ellipsis, textAlign = TextAlign.Center)
+        Spacer(Modifier.height(LocalAppDimens.current.pad4))
+        Text(profile.name, style = CineVaultTheme.typography.labelSmall.copy(fontSize = LocalAppDimens.current.font10), color = if (isActive) CineVaultTheme.colors.accentGold else CineVaultTheme.colors.textSecondary, maxLines = 1, overflow = TextOverflow.Ellipsis, textAlign = TextAlign.Center)
     }
 }
 
@@ -444,9 +445,9 @@ private fun MePremiumSection(
 
     Box(
         modifier = Modifier
-            .padding(horizontal = 10.dp)
+            .padding(horizontal = LocalAppDimens.current.pad10)
             .graphicsLayer { scaleX = scale; scaleY = scale }
-            .clip(RoundedCornerShape(16.dp))
+            .clip(RoundedCornerShape(LocalAppDimens.current.radius16))
             .clickable(
                 interactionSource = interactionSource,
                 indication = null,
@@ -468,7 +469,7 @@ private fun MePremiumSection(
             }
             val expiryAnnotated = buildAnnotatedString {
                 withStyle(SpanStyle(fontWeight = FontWeight.SemiBold)) { append("Your ") }
-                withStyle(SpanStyle(fontWeight = FontWeight.Bold, fontSize = 15.sp)) { append("Premium Valid") }
+                withStyle(SpanStyle(fontWeight = FontWeight.Bold, fontSize = LocalAppDimens.current.font15)) { append("Premium Valid") }
                 withStyle(SpanStyle(fontWeight = FontWeight.SemiBold)) { append(" Till ") }
                 withStyle(SpanStyle(fontWeight = FontWeight.Bold)) { append(formattedExpiry) }
             }
@@ -476,14 +477,14 @@ private fun MePremiumSection(
                 modifier = Modifier
                     .fillMaxWidth()
                     .matchParentSize()
-                    .padding(start = 16.dp, end = 16.dp, bottom = 50.dp),
+                    .padding(start = LocalAppDimens.current.pad16, end = LocalAppDimens.current.pad16, bottom = 50.dp),
                 verticalAlignment = Alignment.Bottom,
             ) {
                 Text(
                     text = expiryAnnotated,
-                    fontSize = 13.sp,
+                    fontSize = LocalAppDimens.current.font13,
                     color = PremTextOnGold,
-                    lineHeight = 16.sp,
+                    lineHeight = LocalAppDimens.current.lineHeight16,
                     maxLines = 1,
                     modifier = Modifier.weight(1f),
                 )
@@ -518,16 +519,16 @@ private fun DynamicPremiumSubscribeCard(
             modifier = Modifier
                 .align(Alignment.TopStart)
                 .fillMaxWidth(0.58f)
-                .padding(start = 20.dp, top = 18.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
+                .padding(start = LocalAppDimens.current.pad20, top = 18.dp),
+            verticalArrangement = Arrangement.spacedBy(LocalAppDimens.current.pad16),
         ) {
             if (offer?.bannerText?.isNotBlank() == true) {
                 Text(
                     text = offer.bannerText,
-                    fontSize = 15.sp,
+                    fontSize = LocalAppDimens.current.font15,
                     fontWeight = FontWeight.SemiBold,
                     color = Color.White.copy(alpha = 0.90f),
-                    lineHeight = 18.sp,
+                    lineHeight = LocalAppDimens.current.lineHeight18,
                     maxLines = 2,
                 )
             }
@@ -547,13 +548,13 @@ private fun DynamicPremiumSubscribeCard(
                         color = Color(0xFFF3E5AB),
                         lineHeight = 37.sp,
                     )
-                    Spacer(Modifier.width(6.dp))
+                    Spacer(Modifier.width(LocalAppDimens.current.pad6))
                     Text(
                         text = durationLabel,
                         fontSize = 19.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color.White,
-                        modifier = Modifier.padding(bottom = 6.dp),
+                        modifier = Modifier.padding(bottom = LocalAppDimens.current.pad6),
                     )
                 }
             }
@@ -634,7 +635,7 @@ private fun MeEarnMoneyCard(
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 4.dp)
+            .padding(horizontal = LocalAppDimens.current.pad16, vertical = LocalAppDimens.current.pad4)
             .clickable(onClick = onCardClick),
     ) {
         // Card background: gold border + dark blue inner, sharp rounded edges
@@ -644,13 +645,13 @@ private fun MeEarnMoneyCard(
                 .border(
                     width = 1.5.dp,
                     brush = Brush.linearGradient(listOf(Color(0xFFFFD54F), Color(0xFFFFAB00), Color(0xFFFFA000))),
-                    shape = RoundedCornerShape(10.dp),
+                    shape = RoundedCornerShape(LocalAppDimens.current.radius10),
                 )
                 .background(
                     Brush.linearGradient(listOf(Color(0xFF1A1A3E), Color(0xFF252560), Color(0xFF1E1E4A))),
-                    RoundedCornerShape(10.dp),
+                    RoundedCornerShape(LocalAppDimens.current.radius10),
                 )
-                .padding(horizontal = 12.dp, vertical = 10.dp),
+                .padding(horizontal = LocalAppDimens.current.pad12, vertical = LocalAppDimens.current.pad10),
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -669,7 +670,7 @@ private fun MeEarnMoneyCard(
                     contentScale = ContentScale.Fit,
                 )
 
-                Spacer(Modifier.width(10.dp))
+                Spacer(Modifier.width(LocalAppDimens.current.pad10))
 
                 // ── Text Section ──
                 Column(modifier = Modifier.weight(1f)) {
@@ -681,11 +682,11 @@ private fun MeEarnMoneyCard(
                                 append("₹${balance}.00")
                             }
                         },
-                        fontSize = 13.sp,
+                        fontSize = LocalAppDimens.current.font13,
                         fontWeight = FontWeight.Normal,
                         color = Color.White,
                     )
-                    Spacer(Modifier.height(2.dp))
+                    Spacer(Modifier.height(LocalAppDimens.current.padTiny))
                     if (!canWithdraw) {
                         // "Keep going to cash out ₹100" – bold, larger, highlighted, ₹100 animates
                         Text(
@@ -694,27 +695,27 @@ private fun MeEarnMoneyCard(
                                 withStyle(SpanStyle(
                                     fontWeight = FontWeight.ExtraBold,
                                     color = Color(0xFFFFD700),
-                                    fontSize = 16.sp,
+                                    fontSize = LocalAppDimens.current.font16,
                                 )) {
                                     append("₹${animatedThreshold.toInt()}")
                                 }
                                 append("!")
                             },
-                            fontSize = 13.sp,
+                            fontSize = LocalAppDimens.current.font13,
                             fontWeight = FontWeight.Bold,
                             color = Color(0xFFE0E0E0),
                         )
                     } else {
                         Text(
                             text = "Ready to withdraw! \uD83C\uDF89",
-                            fontSize = 14.sp,
+                            fontSize = LocalAppDimens.current.font14,
                             fontWeight = FontWeight.Bold,
                             color = Color(0xFF4CAF50),
                         )
                     }
                 }
 
-                Spacer(Modifier.width(6.dp))
+                Spacer(Modifier.width(LocalAppDimens.current.pad6))
 
                 // ── Withdraw Button (orange gradient + yellow border, always colored) ──
                 Box(
@@ -727,19 +728,19 @@ private fun MeEarnMoneyCard(
                         .border(
                             width = 2.dp,
                             brush = Brush.verticalGradient(listOf(Color(0xFFFFE082), Color(0xFFFFC107), Color(0xFFFFB300))),
-                            shape = RoundedCornerShape(8.dp),
+                            shape = RoundedCornerShape(LocalAppDimens.current.radius8),
                         )
                         .background(
                             Brush.verticalGradient(listOf(Color(0xFFFFB74D), Color(0xFFFF9800), Color(0xFFEF6C00))),
-                            RoundedCornerShape(8.dp),
+                            RoundedCornerShape(LocalAppDimens.current.radius8),
                         )
                         .clickable(onClick = onWithdrawClick)
-                        .padding(horizontal = 14.dp, vertical = 6.dp),
+                        .padding(horizontal = LocalAppDimens.current.pad14, vertical = LocalAppDimens.current.pad6),
                     contentAlignment = Alignment.Center,
                 ) {
                     Text(
                         text = "Withdraw",
-                        fontSize = 12.sp,
+                        fontSize = LocalAppDimens.current.font12,
                         fontWeight = FontWeight.Bold,
                         color = Color.White,
                     )
@@ -756,11 +757,11 @@ private fun MeEarnMoneyCard(
 @Composable
 private fun MeSectionHeaderWithAddMore(icon: ImageVector, title: String, onAddMore: () -> Unit) {
     Row(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp),
+        modifier = Modifier.fillMaxWidth().padding(horizontal = LocalAppDimens.current.pad20),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Icon(icon, contentDescription = null, tint = CineVaultTheme.colors.accentGold, modifier = Modifier.size(20.dp))
-        Spacer(Modifier.width(8.dp))
+        Spacer(Modifier.width(LocalAppDimens.current.pad8))
         Text(
             text = title,
             style = CineVaultTheme.typography.sectionTitle,
@@ -788,8 +789,8 @@ private fun MeWatchlistSection(
     if (userMovies.isNotEmpty()) {
         // ── User has content → static horizontal scroll, NO auto-loop ──
         LazyRow(
-            contentPadding = PaddingValues(horizontal = 20.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            contentPadding = PaddingValues(horizontal = LocalAppDimens.current.pad20),
+            horizontalArrangement = Arrangement.spacedBy(LocalAppDimens.current.pad12),
         ) {
             items(userMovies) { movie ->
                 MeWatchlistCard(movie = movie, onClick = { onMovieClick(movie.id) })
@@ -858,8 +859,8 @@ private fun MeAutoLoopWatchlist(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 20.dp),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
+            .padding(horizontal = LocalAppDimens.current.pad20),
+        horizontalArrangement = Arrangement.spacedBy(LocalAppDimens.current.pad12),
     ) {
         Box(
             modifier = Modifier
@@ -901,7 +902,7 @@ private fun MeWatchlistCard(movie: MovieDto, onClick: () -> Unit) {
             // Premium badge (top-left)
             if (movie.isEffectivelyPremium) {
                 PremiumBadgeOverlay(
-                    modifier = Modifier.align(Alignment.TopStart).padding(4.dp),
+                    modifier = Modifier.align(Alignment.TopStart).padding(LocalAppDimens.current.pad4),
                     size = 30.dp,
                 )
             } else {
@@ -909,13 +910,13 @@ private fun MeWatchlistCard(movie: MovieDto, onClick: () -> Unit) {
                 movie.videoQuality?.let { quality ->
                     if (quality.isNotBlank()) {
                         Surface(
-                            modifier = Modifier.align(Alignment.TopStart).padding(6.dp),
-                            shape = RoundedCornerShape(4.dp),
+                            modifier = Modifier.align(Alignment.TopStart).padding(LocalAppDimens.current.pad6),
+                            shape = RoundedCornerShape(LocalAppDimens.current.radius4),
                             color = CineVaultTheme.colors.accentGold.copy(alpha = 0.9f),
                         ) {
                             Text(
                                 text = quality.uppercase(),
-                                style = CineVaultTheme.typography.labelSmall.copy(fontSize = 8.sp, fontWeight = FontWeight.Bold),
+                                style = CineVaultTheme.typography.labelSmall.copy(fontSize = LocalAppDimens.current.font8, fontWeight = FontWeight.Bold),
                                 color = Color.Black,
                                 modifier = Modifier.padding(horizontal = 5.dp, vertical = 1.dp),
                             )
@@ -926,22 +927,22 @@ private fun MeWatchlistCard(movie: MovieDto, onClick: () -> Unit) {
             // Rating badge
             if ((movie.rating ?: 0.0) > 0.0) {
                 Surface(
-                    modifier = Modifier.align(Alignment.TopEnd).padding(6.dp),
-                    shape = RoundedCornerShape(4.dp),
+                    modifier = Modifier.align(Alignment.TopEnd).padding(LocalAppDimens.current.pad6),
+                    shape = RoundedCornerShape(LocalAppDimens.current.radius4),
                     color = Color(0xCC000000),
                 ) {
                     Row(
-                        modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp),
+                        modifier = Modifier.padding(horizontal = 5.dp, vertical = LocalAppDimens.current.padTiny),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Icon(Icons.Filled.Star, contentDescription = null, tint = CineVaultTheme.colors.accentGold, modifier = Modifier.size(10.dp))
-                        Spacer(Modifier.width(2.dp))
-                        Text(String.format("%.1f", movie.rating), style = CineVaultTheme.typography.labelSmall.copy(fontSize = 9.sp), color = Color.White)
+                        Spacer(Modifier.width(LocalAppDimens.current.padTiny))
+                        Text(String.format("%.1f", movie.rating), style = CineVaultTheme.typography.labelSmall.copy(fontSize = LocalAppDimens.current.font9), color = Color.White)
                     }
                 }
             }
         }
-        Spacer(Modifier.height(6.dp))
+        Spacer(Modifier.height(LocalAppDimens.current.pad6))
         Text(
             text = movie.title,
             style = CineVaultTheme.typography.labelSmall,
@@ -984,8 +985,8 @@ private fun MeStaticStackedCarousel(
     onMovieClick: (String) -> Unit,
 ) {
     LazyRow(
-        contentPadding = PaddingValues(horizontal = 20.dp),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        contentPadding = PaddingValues(horizontal = LocalAppDimens.current.pad20),
+        horizontalArrangement = Arrangement.spacedBy(LocalAppDimens.current.pad12),
     ) {
         items(movies) { movie ->
             MeStackedCardWithDepth(movie = movie, onClick = { onMovieClick(movie.id) })
@@ -1047,8 +1048,8 @@ private fun MeAutoLoopStackedCollection(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 20.dp),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
+            .padding(horizontal = LocalAppDimens.current.pad20),
+        horizontalArrangement = Arrangement.spacedBy(LocalAppDimens.current.pad12),
     ) {
         // Slot 1: stacked with depth
         Box(modifier = Modifier.weight(1f)) {
@@ -1168,17 +1169,17 @@ private fun MeStackedCardWithDepth(movie: MovieDto, onClick: () -> Unit) {
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier
                     .align(Alignment.BottomStart)
-                    .padding(horizontal = 8.dp, vertical = 8.dp),
+                    .padding(horizontal = LocalAppDimens.current.pad8, vertical = LocalAppDimens.current.pad8),
             )
             // Category tag
             Surface(
-                modifier = Modifier.align(Alignment.TopStart).padding(6.dp),
-                shape = RoundedCornerShape(4.dp),
+                modifier = Modifier.align(Alignment.TopStart).padding(LocalAppDimens.current.pad6),
+                shape = RoundedCornerShape(LocalAppDimens.current.radius4),
                 color = CineVaultTheme.colors.accentGold.copy(alpha = 0.85f),
             ) {
                 Text(
                     text = movie.contentType.replaceFirstChar { it.uppercase() },
-                    style = CineVaultTheme.typography.labelSmall.copy(fontSize = 8.sp, fontWeight = FontWeight.Bold),
+                    style = CineVaultTheme.typography.labelSmall.copy(fontSize = LocalAppDimens.current.font8, fontWeight = FontWeight.Bold),
                     color = Color.Black,
                     modifier = Modifier.padding(horizontal = 5.dp, vertical = 1.dp),
                 )
@@ -1196,8 +1197,8 @@ private fun MeEmptyCarouselPlaceholder(onAddMore: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 20.dp),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
+            .padding(horizontal = LocalAppDimens.current.pad20),
+        horizontalArrangement = Arrangement.spacedBy(LocalAppDimens.current.pad12),
     ) {
         Box(
             modifier = Modifier
@@ -1216,7 +1217,7 @@ private fun MeEmptyCarouselPlaceholder(onAddMore: () -> Unit) {
                     tint = CineVaultTheme.colors.textSecondary,
                     modifier = Modifier.size(36.dp),
                 )
-                Spacer(Modifier.height(8.dp))
+                Spacer(Modifier.height(LocalAppDimens.current.pad8))
                 Text(
                     text = "+ Add More",
                     style = CineVaultTheme.typography.labelSmall,

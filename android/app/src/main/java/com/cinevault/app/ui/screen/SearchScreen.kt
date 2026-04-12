@@ -37,6 +37,7 @@ import com.cinevault.app.data.model.PopularSearchDto
 import com.cinevault.app.ui.components.*
 import com.cinevault.app.ui.theme.CineVaultTheme
 import com.cinevault.app.ui.viewmodel.SearchViewModel
+import com.cinevault.app.ui.theme.LocalAppDimens
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -64,9 +65,9 @@ fun SearchScreen(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 8.dp),
+                .padding(horizontal = LocalAppDimens.current.pad12, vertical = LocalAppDimens.current.pad8),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            horizontalArrangement = Arrangement.spacedBy(LocalAppDimens.current.pad8),
         ) {
             OutlinedTextField(
                 value = uiState.query,
@@ -114,7 +115,7 @@ fun SearchScreen(
             Surface(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp),
+                    .padding(horizontal = LocalAppDimens.current.pad16),
                 shape = RoundedCornerShape(12.dp),
                 color = CineVaultTheme.colors.surface,
                 tonalElevation = 4.dp,
@@ -130,11 +131,11 @@ fun SearchScreen(
                                     viewModel.saveRecentSearch(context)
                                     focusManager.clearFocus()
                                 }
-                                .padding(horizontal = 16.dp, vertical = 12.dp),
+                                .padding(horizontal = LocalAppDimens.current.pad16, vertical = LocalAppDimens.current.pad12),
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
                             Icon(Icons.Filled.Search, contentDescription = null, modifier = Modifier.size(16.dp), tint = CineVaultTheme.colors.textSecondary)
-                            Spacer(Modifier.width(12.dp))
+                            Spacer(Modifier.width(LocalAppDimens.current.pad12))
                             Text(item.title, style = CineVaultTheme.typography.body, color = CineVaultTheme.colors.textPrimary)
                         }
                     }
@@ -155,9 +156,9 @@ fun SearchScreen(
             uiState.results.isNotEmpty() -> {
                 LazyVerticalGrid(
                     columns = GridCells.Fixed(3),
-                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                    contentPadding = PaddingValues(horizontal = LocalAppDimens.current.pad16, vertical = LocalAppDimens.current.pad8),
+                    horizontalArrangement = Arrangement.spacedBy(LocalAppDimens.current.pad10),
+                    verticalArrangement = Arrangement.spacedBy(LocalAppDimens.current.pad16),
                 ) {
                     items(uiState.results, key = { it.id }) { movie ->
                         SearchResultCard(
@@ -169,7 +170,7 @@ fun SearchScreen(
                         item {
                             LaunchedEffect(Unit) { viewModel.loadMore() }
                             Box(
-                                modifier = Modifier.fillMaxWidth().padding(16.dp),
+                                modifier = Modifier.fillMaxWidth().padding(LocalAppDimens.current.pad16),
                                 contentAlignment = Alignment.Center,
                             ) {
                                 CircularProgressIndicator(
@@ -195,7 +196,7 @@ fun SearchScreen(
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(horizontal = 16.dp, vertical = 8.dp),
+                                .padding(horizontal = LocalAppDimens.current.pad16, vertical = LocalAppDimens.current.pad8),
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
                             Text(
@@ -216,8 +217,8 @@ fun SearchScreen(
 
                         // Recent search chips
                         LazyRow(
-                            contentPadding = PaddingValues(horizontal = 16.dp),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            contentPadding = PaddingValues(horizontal = LocalAppDimens.current.pad16),
+                            horizontalArrangement = Arrangement.spacedBy(LocalAppDimens.current.pad8),
                         ) {
                             items(uiState.recentSearches) { query ->
                                 Surface(
@@ -229,11 +230,11 @@ fun SearchScreen(
                                     },
                                 ) {
                                     Row(
-                                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                                        modifier = Modifier.padding(horizontal = LocalAppDimens.current.pad12, vertical = LocalAppDimens.current.pad8),
                                         verticalAlignment = Alignment.CenterVertically,
                                     ) {
-                                        Text(query, style = CineVaultTheme.typography.body, color = CineVaultTheme.colors.textPrimary, fontSize = 13.sp)
-                                        Spacer(Modifier.width(6.dp))
+                                        Text(query, style = CineVaultTheme.typography.body, color = CineVaultTheme.colors.textPrimary, fontSize = LocalAppDimens.current.font13)
+                                        Spacer(Modifier.width(LocalAppDimens.current.pad6))
                                         Icon(
                                             Icons.Filled.Close,
                                             contentDescription = "Remove",
@@ -246,7 +247,7 @@ fun SearchScreen(
                                 }
                             }
                         }
-                        Spacer(Modifier.height(20.dp))
+                        Spacer(Modifier.height(LocalAppDimens.current.pad20))
                     }
 
                     // ── Most Popular Searches (Top 3) ──
@@ -255,13 +256,13 @@ fun SearchScreen(
                             "Most Popular Search",
                             style = CineVaultTheme.typography.sectionTitle,
                             color = CineVaultTheme.colors.textPrimary,
-                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                            modifier = Modifier.padding(horizontal = LocalAppDimens.current.pad16, vertical = LocalAppDimens.current.pad8),
                         )
-                        Spacer(Modifier.height(8.dp))
+                        Spacer(Modifier.height(LocalAppDimens.current.pad8))
 
                         LazyRow(
-                            contentPadding = PaddingValues(horizontal = 16.dp),
-                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            contentPadding = PaddingValues(horizontal = LocalAppDimens.current.pad16),
+                            horizontalArrangement = Arrangement.spacedBy(LocalAppDimens.current.pad12),
                         ) {
                             itemsIndexed(uiState.popularSearches.take(3)) { index, item ->
                                 PopularSearchCard(
@@ -273,12 +274,12 @@ fun SearchScreen(
                                 )
                             }
                         }
-                        Spacer(Modifier.height(24.dp))
+                        Spacer(Modifier.height(LocalAppDimens.current.pad24))
                     }
 
                     // ── Recommended / Trending Grid ──
                     if (uiState.recommendedContent.isNotEmpty()) {
-                        Spacer(Modifier.height(8.dp))
+                        Spacer(Modifier.height(LocalAppDimens.current.pad8))
 
                         // 2-column grid inline
                         val chunked = uiState.recommendedContent.chunked(2)
@@ -286,8 +287,8 @@ fun SearchScreen(
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(horizontal = 16.dp, vertical = 4.dp),
-                                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                                    .padding(horizontal = LocalAppDimens.current.pad16, vertical = LocalAppDimens.current.pad4),
+                                horizontalArrangement = Arrangement.spacedBy(LocalAppDimens.current.pad10),
                             ) {
                                 row.forEach { movie ->
                                     RecommendedContentCard(
@@ -361,18 +362,18 @@ private fun PopularSearchCard(
             Surface(
                 modifier = Modifier
                     .align(Alignment.TopStart)
-                    .padding(8.dp),
-                shape = RoundedCornerShape(6.dp),
+                    .padding(LocalAppDimens.current.pad8),
+                shape = RoundedCornerShape(LocalAppDimens.current.radius6),
                 color = rankColor,
             ) {
                 Text(
                     text = "TOP $rank",
                     style = CineVaultTheme.typography.labelSmall.copy(
-                        fontSize = 10.sp,
+                        fontSize = LocalAppDimens.current.font10,
                         fontWeight = FontWeight.ExtraBold,
                     ),
                     color = Color.White,
-                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                    modifier = Modifier.padding(horizontal = LocalAppDimens.current.pad8, vertical = LocalAppDimens.current.pad4),
                 )
             }
 
@@ -386,7 +387,7 @@ private fun PopularSearchCard(
                             colors = listOf(Color.Transparent, Color(0xDD000000)),
                         ),
                     )
-                    .padding(8.dp),
+                    .padding(LocalAppDimens.current.pad8),
             ) {
                 Column {
                     if (movie.rating != null && movie.rating > 0) {
@@ -408,7 +409,7 @@ private fun PopularSearchCard(
                 }
             }
         }
-        Spacer(Modifier.height(6.dp))
+        Spacer(Modifier.height(LocalAppDimens.current.pad6))
         Text(
             text = movie.title,
             style = CineVaultTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
@@ -431,16 +432,16 @@ private fun RecommendedContentCard(
 ) {
     Row(
         modifier = modifier
-            .clip(RoundedCornerShape(8.dp))
+            .clip(RoundedCornerShape(LocalAppDimens.current.radius8))
             .background(CineVaultTheme.colors.surface)
             .clickable(onClick = onClick)
-            .padding(6.dp),
+            .padding(LocalAppDimens.current.pad6),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Box(
             modifier = Modifier
                 .size(width = 50.dp, height = 70.dp)
-                .clip(RoundedCornerShape(6.dp))
+                .clip(RoundedCornerShape(LocalAppDimens.current.radius6))
                 .background(CineVaultTheme.colors.surface),
         ) {
             AsyncImage(
@@ -450,16 +451,16 @@ private fun RecommendedContentCard(
                 contentScale = ContentScale.Crop,
             )
         }
-        Spacer(Modifier.width(8.dp))
+        Spacer(Modifier.width(LocalAppDimens.current.pad8))
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = movie.title,
-                style = CineVaultTheme.typography.body.copy(fontWeight = FontWeight.SemiBold, fontSize = 12.sp),
+                style = CineVaultTheme.typography.body.copy(fontWeight = FontWeight.SemiBold, fontSize = LocalAppDimens.current.font12),
                 color = CineVaultTheme.colors.textPrimary,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
             )
-            Spacer(Modifier.height(2.dp))
+            Spacer(Modifier.height(LocalAppDimens.current.padTiny))
             Row(verticalAlignment = Alignment.CenterVertically) {
                 if ((movie.rating ?: 0.0) > 0.0) {
                     Text(
@@ -467,11 +468,11 @@ private fun RecommendedContentCard(
                         style = CineVaultTheme.typography.labelSmall,
                         color = CineVaultTheme.colors.accentGold,
                     )
-                    Spacer(Modifier.width(6.dp))
+                    Spacer(Modifier.width(LocalAppDimens.current.pad6))
                 }
                 Text(
                     movie.contentType.replaceFirstChar { it.uppercase() },
-                    style = CineVaultTheme.typography.labelSmall.copy(fontSize = 10.sp),
+                    style = CineVaultTheme.typography.labelSmall.copy(fontSize = LocalAppDimens.current.font10),
                     color = CineVaultTheme.colors.textSecondary,
                 )
             }
@@ -497,7 +498,7 @@ private fun SearchResultCard(
             modifier = Modifier
                 .fillMaxWidth()
                 .aspectRatio(2f / 3f)
-                .clip(RoundedCornerShape(8.dp))
+                .clip(RoundedCornerShape(LocalAppDimens.current.radius8))
                 .background(CineVaultTheme.colors.surface),
         ) {
             AsyncImage(
@@ -525,7 +526,7 @@ private fun SearchResultCard(
                 PremiumBadgeOverlay(
                     modifier = Modifier
                         .align(Alignment.TopStart)
-                        .padding(4.dp),
+                        .padding(LocalAppDimens.current.pad4),
                     size = 30.dp,
                 )
             }
@@ -534,15 +535,15 @@ private fun SearchResultCard(
             Surface(
                 modifier = Modifier
                     .align(Alignment.TopEnd)
-                    .padding(4.dp),
-                shape = RoundedCornerShape(4.dp),
+                    .padding(LocalAppDimens.current.pad4),
+                shape = RoundedCornerShape(LocalAppDimens.current.radius4),
                 color = CineVaultTheme.colors.accentGold.copy(alpha = 0.85f),
             ) {
                 Text(
                     text = movie.contentType.replaceFirstChar { it.uppercase() },
-                    style = CineVaultTheme.typography.labelSmall.copy(fontSize = 8.sp, fontWeight = FontWeight.Bold),
+                    style = CineVaultTheme.typography.labelSmall.copy(fontSize = LocalAppDimens.current.font8, fontWeight = FontWeight.Bold),
                     color = Color.Black,
-                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp),
+                    modifier = Modifier.padding(horizontal = LocalAppDimens.current.pad4, vertical = 1.dp),
                 )
             }
 
@@ -551,20 +552,20 @@ private fun SearchResultCard(
                 Row(
                     modifier = Modifier
                         .align(Alignment.BottomStart)
-                        .padding(6.dp),
+                        .padding(LocalAppDimens.current.pad6),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Icon(Icons.Filled.Star, contentDescription = null, tint = CineVaultTheme.colors.accentGold, modifier = Modifier.size(10.dp))
-                    Spacer(Modifier.width(2.dp))
+                    Spacer(Modifier.width(LocalAppDimens.current.padTiny))
                     Text(
                         String.format("%.1f", movie.rating),
-                        style = CineVaultTheme.typography.labelSmall.copy(fontSize = 9.sp),
+                        style = CineVaultTheme.typography.labelSmall.copy(fontSize = LocalAppDimens.current.font9),
                         color = Color.White,
                     )
                 }
             }
         }
-        Spacer(Modifier.height(6.dp))
+        Spacer(Modifier.height(LocalAppDimens.current.pad6))
         Text(
             text = movie.title,
             style = CineVaultTheme.typography.labelSmall,
@@ -580,11 +581,11 @@ private fun FilterSection(
     uiState: com.cinevault.app.ui.viewmodel.SearchUiState,
     viewModel: SearchViewModel,
 ) {
-    Column(modifier = Modifier.padding(horizontal = 16.dp)) {
+    Column(modifier = Modifier.padding(horizontal = LocalAppDimens.current.pad16)) {
         // Content type
         Text("Type", style = CineVaultTheme.typography.label, color = CineVaultTheme.colors.textSecondary)
-        Spacer(Modifier.height(6.dp))
-        LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Spacer(Modifier.height(LocalAppDimens.current.pad6))
+        LazyRow(horizontalArrangement = Arrangement.spacedBy(LocalAppDimens.current.pad8)) {
             val types = listOf("movie", "series", "documentary")
             items(types) { type ->
                 GenreChip(
@@ -595,13 +596,13 @@ private fun FilterSection(
             }
         }
 
-        Spacer(Modifier.height(12.dp))
+        Spacer(Modifier.height(LocalAppDimens.current.pad12))
 
         // Genres
         if (uiState.genres.isNotEmpty()) {
             Text("Genre", style = CineVaultTheme.typography.label, color = CineVaultTheme.colors.textSecondary)
-            Spacer(Modifier.height(6.dp))
-            LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Spacer(Modifier.height(LocalAppDimens.current.pad6))
+            LazyRow(horizontalArrangement = Arrangement.spacedBy(LocalAppDimens.current.pad8)) {
                 items(uiState.genres) { genre ->
                     GenreChip(
                         label = genre,
@@ -612,13 +613,13 @@ private fun FilterSection(
             }
         }
 
-        Spacer(Modifier.height(12.dp))
+        Spacer(Modifier.height(LocalAppDimens.current.pad12))
 
         // Languages
         if (uiState.languages.isNotEmpty()) {
             Text("Language", style = CineVaultTheme.typography.label, color = CineVaultTheme.colors.textSecondary)
-            Spacer(Modifier.height(6.dp))
-            LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Spacer(Modifier.height(LocalAppDimens.current.pad6))
+            LazyRow(horizontalArrangement = Arrangement.spacedBy(LocalAppDimens.current.pad8)) {
                 items(uiState.languages) { lang ->
                     GenreChip(
                         label = lang,
@@ -629,9 +630,9 @@ private fun FilterSection(
             }
         }
 
-        Spacer(Modifier.height(8.dp))
+        Spacer(Modifier.height(LocalAppDimens.current.pad8))
         @Suppress("DEPRECATION")
         Divider(color = CineVaultTheme.colors.border)
-        Spacer(Modifier.height(8.dp))
+        Spacer(Modifier.height(LocalAppDimens.current.pad8))
     }
 }

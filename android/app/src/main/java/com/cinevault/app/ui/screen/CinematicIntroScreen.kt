@@ -37,6 +37,7 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import com.cinevault.app.R
 import kotlinx.coroutines.delay
+import com.cinevault.app.ui.theme.LocalAppDimens
 
 private val IntroBlack = Color(0xFF000000)
 private val IntroGold = Color(0xFFD4AF37)
@@ -496,7 +497,7 @@ fun CinematicIntroScreen(
                     .graphicsLayer { translationY = nameTranslateY },
             )
 
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(LocalAppDimens.current.pad8))
 
             // ── Separator line ──
             Box(
@@ -512,13 +513,13 @@ fun CinematicIntroScreen(
                     )
             )
 
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(LocalAppDimens.current.pad12))
 
             // ── Tagline ──
             Text(
                 text = "P R E M I U M   S T R E A M I N G",
                 color = IntroGoldLight.copy(alpha = 0.65f),
-                fontSize = 11.sp,
+                fontSize = LocalAppDimens.current.font11,
                 fontWeight = FontWeight.Medium,
                 fontFamily = FontFamily.SansSerif,
                 letterSpacing = 4.sp,

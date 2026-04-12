@@ -29,6 +29,7 @@ import com.cinevault.app.ui.components.GoldButton
 import com.cinevault.app.ui.theme.CineVaultTheme
 import com.cinevault.app.ui.viewmodel.AuthViewModel
 import kotlinx.coroutines.delay
+import com.cinevault.app.ui.theme.LocalAppDimens
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -101,7 +102,7 @@ fun PhoneAuthScreen(
                 onNavigateBack()
             },
             modifier = Modifier
-                .padding(12.dp)
+                .padding(LocalAppDimens.current.pad12)
                 .align(Alignment.TopStart),
         ) {
             Icon(
@@ -115,7 +116,7 @@ fun PhoneAuthScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 24.dp),
+                .padding(horizontal = LocalAppDimens.current.pad24),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Spacer(Modifier.height(80.dp))
@@ -138,7 +139,7 @@ fun PhoneAuthScreen(
                 )
             }
 
-            Spacer(Modifier.height(20.dp))
+            Spacer(Modifier.height(LocalAppDimens.current.pad20))
 
             Text(
                 if (!otpSent) "Enter your mobile number" else "Verify your number",
@@ -146,7 +147,7 @@ fun PhoneAuthScreen(
                 color = CineVaultTheme.colors.textPrimary,
                 textAlign = TextAlign.Center,
             )
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(LocalAppDimens.current.pad8))
             Text(
                 if (!otpSent)
                     buildAnnotatedString { append("We'll send a 6-digit OTP via SMS to your mobile number") }
@@ -166,10 +167,10 @@ fun PhoneAuthScreen(
 
             Surface(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp),
+                shape = RoundedCornerShape(LocalAppDimens.current.radius16),
                 color = CineVaultTheme.colors.surface.copy(alpha = 0.6f),
             ) {
-                Column(modifier = Modifier.padding(24.dp)) {
+                Column(modifier = Modifier.padding(LocalAppDimens.current.pad24)) {
 
                     if (!otpSent) {
                         // ── STEP 1: Phone Number Entry ──────────────────
@@ -178,7 +179,7 @@ fun PhoneAuthScreen(
                             style = CineVaultTheme.typography.label,
                             color = CineVaultTheme.colors.textSecondary,
                         )
-                        Spacer(Modifier.height(8.dp))
+                        Spacer(Modifier.height(LocalAppDimens.current.pad8))
 
                         OutlinedTextField(
                             value = phoneNumber,
@@ -222,22 +223,22 @@ fun PhoneAuthScreen(
                         )
 
                         if (phoneNumber.isNotEmpty() && phoneNumber.length < 10) {
-                            Spacer(Modifier.height(4.dp))
+                            Spacer(Modifier.height(LocalAppDimens.current.pad4))
                             Text(
                                 "${phoneNumber.length}/10 digits",
-                                style = CineVaultTheme.typography.label.copy(fontSize = 11.sp),
+                                style = CineVaultTheme.typography.label.copy(fontSize = LocalAppDimens.current.font11),
                                 color = CineVaultTheme.colors.textSecondary,
                             )
                         }
 
-                        Spacer(Modifier.height(20.dp))
+                        Spacer(Modifier.height(LocalAppDimens.current.pad20))
 
                         if (error != null) {
                             Text(
                                 error!!,
                                 style = CineVaultTheme.typography.label,
                                 color = CineVaultTheme.colors.error,
-                                modifier = Modifier.padding(bottom = 8.dp),
+                                modifier = Modifier.padding(bottom = LocalAppDimens.current.pad8),
                             )
                         }
 
@@ -259,7 +260,7 @@ fun PhoneAuthScreen(
                             style = CineVaultTheme.typography.label,
                             color = CineVaultTheme.colors.textSecondary,
                         )
-                        Spacer(Modifier.height(8.dp))
+                        Spacer(Modifier.height(LocalAppDimens.current.pad8))
 
                         OutlinedTextField(
                             value = otpValue,
@@ -293,7 +294,7 @@ fun PhoneAuthScreen(
                             textStyle = LocalTextStyle.current.copy(
                                 letterSpacing = 8.sp,
                                 textAlign = TextAlign.Center,
-                                fontSize = 22.sp,
+                                fontSize = LocalAppDimens.current.font22,
                             ),
                             colors = OutlinedTextFieldDefaults.colors(
                                 focusedBorderColor = CineVaultTheme.colors.accentGold,
@@ -305,7 +306,7 @@ fun PhoneAuthScreen(
                             shape = RoundedCornerShape(12.dp),
                         )
 
-                        Spacer(Modifier.height(12.dp))
+                        Spacer(Modifier.height(LocalAppDimens.current.pad12))
 
                         Row(
                             modifier = Modifier.fillMaxWidth(),
@@ -341,14 +342,14 @@ fun PhoneAuthScreen(
                             }
                         }
 
-                        Spacer(Modifier.height(8.dp))
+                        Spacer(Modifier.height(LocalAppDimens.current.pad8))
 
                         if (error != null) {
                             Text(
                                 error!!,
                                 style = CineVaultTheme.typography.label,
                                 color = CineVaultTheme.colors.error,
-                                modifier = Modifier.padding(bottom = 8.dp),
+                                modifier = Modifier.padding(bottom = LocalAppDimens.current.pad8),
                             )
                         }
 
@@ -364,7 +365,7 @@ fun PhoneAuthScreen(
                             enabled = otpValue.length == 6,
                         )
 
-                        Spacer(Modifier.height(8.dp))
+                        Spacer(Modifier.height(LocalAppDimens.current.pad8))
 
                         TextButton(
                             onClick = {
@@ -385,11 +386,11 @@ fun PhoneAuthScreen(
                 }
             }
 
-            Spacer(Modifier.height(32.dp))
+            Spacer(Modifier.height(LocalAppDimens.current.pad32))
 
             Text(
                 "Only Indian mobile numbers (+91) supported.\nOTP sent via SMS.",
-                style = CineVaultTheme.typography.label.copy(fontSize = 12.sp),
+                style = CineVaultTheme.typography.label.copy(fontSize = LocalAppDimens.current.font12),
                 color = CineVaultTheme.colors.textSecondary.copy(alpha = 0.6f),
                 textAlign = TextAlign.Center,
             )

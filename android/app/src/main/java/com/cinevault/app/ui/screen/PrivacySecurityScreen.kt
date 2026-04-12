@@ -19,6 +19,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.cinevault.app.ui.theme.CineVaultTheme
 import com.cinevault.app.ui.viewmodel.SettingsViewModel
+import com.cinevault.app.ui.theme.LocalAppDimens
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -56,52 +57,52 @@ fun PrivacySecurityScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 20.dp),
+                .padding(horizontal = LocalAppDimens.current.pad20),
         ) {
-            Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(LocalAppDimens.current.pad16))
 
             // Session Management
-            Text("SESSION", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = CineVaultTheme.colors.textSecondary, letterSpacing = 1.sp)
-            Spacer(Modifier.height(8.dp))
+            Text("SESSION", fontSize = LocalAppDimens.current.font12, fontWeight = FontWeight.SemiBold, color = CineVaultTheme.colors.textSecondary, letterSpacing = 1.sp)
+            Spacer(Modifier.height(LocalAppDimens.current.pad8))
 
             Surface(shape = RoundedCornerShape(14.dp), color = CineVaultTheme.colors.surface, modifier = Modifier.fillMaxWidth()) {
                 Column {
                     // Log out all devices
                     TextButton(
                         onClick = { showLogoutAllDialog = true },
-                        modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
-                        contentPadding = PaddingValues(16.dp),
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = LocalAppDimens.current.pad4),
+                        contentPadding = PaddingValues(LocalAppDimens.current.pad16),
                     ) {
                         Icon(Icons.Default.PhonelinkErase, contentDescription = null, tint = CineVaultTheme.colors.accentGold, modifier = Modifier.size(24.dp))
-                        Spacer(Modifier.width(14.dp))
+                        Spacer(Modifier.width(LocalAppDimens.current.pad14))
                         Column(modifier = Modifier.weight(1f)) {
-                            Text("Log Out All Devices", fontSize = 15.sp, color = CineVaultTheme.colors.textPrimary, fontWeight = FontWeight.Medium)
-                            Spacer(Modifier.height(2.dp))
-                            Text("Sign out from all devices except this one", fontSize = 12.sp, color = CineVaultTheme.colors.textSecondary)
+                            Text("Log Out All Devices", fontSize = LocalAppDimens.current.font15, color = CineVaultTheme.colors.textPrimary, fontWeight = FontWeight.Medium)
+                            Spacer(Modifier.height(LocalAppDimens.current.padTiny))
+                            Text("Sign out from all devices except this one", fontSize = LocalAppDimens.current.font12, color = CineVaultTheme.colors.textSecondary)
                         }
                     }
                 }
             }
 
-            Spacer(Modifier.height(24.dp))
+            Spacer(Modifier.height(LocalAppDimens.current.pad24))
 
             // Danger Zone
-            Text("DANGER ZONE", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFFFF4444), letterSpacing = 1.sp)
-            Spacer(Modifier.height(8.dp))
+            Text("DANGER ZONE", fontSize = LocalAppDimens.current.font12, fontWeight = FontWeight.SemiBold, color = Color(0xFFFF4444), letterSpacing = 1.sp)
+            Spacer(Modifier.height(LocalAppDimens.current.pad8))
 
             Surface(shape = RoundedCornerShape(14.dp), color = Color(0xFFFF4444).copy(alpha = 0.06f), modifier = Modifier.fillMaxWidth()) {
                 TextButton(
                     onClick = { showDeleteDialog = true },
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
-                    contentPadding = PaddingValues(16.dp),
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = LocalAppDimens.current.pad4),
+                    contentPadding = PaddingValues(LocalAppDimens.current.pad16),
                     enabled = !uiState.isLoading,
                 ) {
                     Icon(Icons.Default.DeleteForever, contentDescription = null, tint = Color(0xFFFF4444), modifier = Modifier.size(24.dp))
-                    Spacer(Modifier.width(14.dp))
+                    Spacer(Modifier.width(LocalAppDimens.current.pad14))
                     Column(modifier = Modifier.weight(1f)) {
-                        Text("Delete Account", fontSize = 15.sp, color = Color(0xFFFF4444), fontWeight = FontWeight.Medium)
-                        Spacer(Modifier.height(2.dp))
-                        Text("Permanently delete your account and all data", fontSize = 12.sp, color = CineVaultTheme.colors.textSecondary)
+                        Text("Delete Account", fontSize = LocalAppDimens.current.font15, color = Color(0xFFFF4444), fontWeight = FontWeight.Medium)
+                        Spacer(Modifier.height(LocalAppDimens.current.padTiny))
+                        Text("Permanently delete your account and all data", fontSize = LocalAppDimens.current.font12, color = CineVaultTheme.colors.textSecondary)
                     }
                     if (uiState.isLoading) {
                         CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp, color = Color(0xFFFF4444))
@@ -110,8 +111,8 @@ fun PrivacySecurityScreen(
             }
 
             uiState.error?.let {
-                Spacer(Modifier.height(12.dp))
-                Text(it, color = Color(0xFFFF4444), fontSize = 13.sp)
+                Spacer(Modifier.height(LocalAppDimens.current.pad12))
+                Text(it, color = Color(0xFFFF4444), fontSize = LocalAppDimens.current.font13)
             }
         }
     }

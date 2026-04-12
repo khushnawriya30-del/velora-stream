@@ -36,14 +36,16 @@ fun CineVaultTheme(content: @Composable () -> Unit) {
         )
     }
 
-    CompositionLocalProvider(
-        LocalCineVaultColors provides CineVaultColors(),
-        LocalCineVaultTypography provides CineVaultTypography(),
-    ) {
-        MaterialTheme(
-            colorScheme = DarkColorScheme,
-            content = content,
-        )
+    ProvideAppDimens {
+        CompositionLocalProvider(
+            LocalCineVaultColors provides CineVaultColors(),
+            LocalCineVaultTypography provides CineVaultTypography(),
+        ) {
+            MaterialTheme(
+                colorScheme = DarkColorScheme,
+                content = content,
+            )
+        }
     }
 }
 

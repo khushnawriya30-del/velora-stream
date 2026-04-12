@@ -13,6 +13,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.cinevault.app.ui.theme.CineVaultTheme
+import com.cinevault.app.ui.theme.LocalAppDimens
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -36,10 +37,10 @@ fun PrivacyPolicyScreen(onBack: () -> Unit) {
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 20.dp, vertical = 16.dp),
+                .padding(horizontal = LocalAppDimens.current.pad20, vertical = LocalAppDimens.current.pad16),
         ) {
-            Text("Last updated: January 2025", fontSize = 12.sp, color = CineVaultTheme.colors.textSecondary)
-            Spacer(Modifier.height(16.dp))
+            Text("Last updated: January 2025", fontSize = LocalAppDimens.current.font12, color = CineVaultTheme.colors.textSecondary)
+            Spacer(Modifier.height(LocalAppDimens.current.pad16))
 
             PolicySection("1. Information We Collect", """
 We collect information you provide directly to us, including:
@@ -86,15 +87,15 @@ You have the right to:
 If you have any questions about this Privacy Policy, please contact us at veloraapp@gmail.com.
             """.trimIndent())
 
-            Spacer(Modifier.height(32.dp))
+            Spacer(Modifier.height(LocalAppDimens.current.pad32))
         }
     }
 }
 
 @Composable
 private fun PolicySection(title: String, body: String) {
-    Text(title, fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = CineVaultTheme.colors.textPrimary)
-    Spacer(Modifier.height(6.dp))
-    Text(body, fontSize = 14.sp, color = CineVaultTheme.colors.textSecondary, lineHeight = 20.sp)
-    Spacer(Modifier.height(20.dp))
+    Text(title, fontSize = LocalAppDimens.current.font16, fontWeight = FontWeight.SemiBold, color = CineVaultTheme.colors.textPrimary)
+    Spacer(Modifier.height(LocalAppDimens.current.pad6))
+    Text(body, fontSize = LocalAppDimens.current.font14, color = CineVaultTheme.colors.textSecondary, lineHeight = LocalAppDimens.current.lineHeight20)
+    Spacer(Modifier.height(LocalAppDimens.current.pad20))
 }

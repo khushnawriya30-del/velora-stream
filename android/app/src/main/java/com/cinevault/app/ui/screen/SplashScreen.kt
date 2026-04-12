@@ -17,6 +17,7 @@ import com.cinevault.app.ui.theme.CineVaultTheme
 import com.cinevault.app.ui.viewmodel.AuthViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.firstOrNull
+import com.cinevault.app.ui.theme.LocalAppDimens
 
 @Composable
 fun SplashScreen(
@@ -69,7 +70,7 @@ fun SplashScreen(
                 ),
                 color = CineVaultTheme.colors.accentGold,
             )
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(LocalAppDimens.current.pad12))
             Text(
                 text = "Premium Streaming Experience",
                 modifier = Modifier.alpha(taglineAnim),

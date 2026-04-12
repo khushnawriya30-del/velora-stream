@@ -22,6 +22,7 @@ import com.cinevault.app.ui.components.GoldButton
 import com.cinevault.app.ui.theme.CineVaultTheme
 import com.cinevault.app.ui.viewmodel.AuthViewModel
 import kotlinx.coroutines.launch
+import com.cinevault.app.ui.theme.LocalAppDimens
 
 data class OnboardingPage(val title: String, val subtitle: String, val icon: String)
 
@@ -65,7 +66,7 @@ fun OnboardingScreen(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                    .padding(horizontal = LocalAppDimens.current.pad16, vertical = LocalAppDimens.current.pad12),
                 horizontalArrangement = Arrangement.End,
             ) {
                 TextButton(onClick = {
@@ -90,8 +91,8 @@ fun OnboardingScreen(
 
             // Indicators
             Row(
-                modifier = Modifier.padding(16.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.padding(LocalAppDimens.current.pad16),
+                horizontalArrangement = Arrangement.spacedBy(LocalAppDimens.current.pad8),
             ) {
                 repeat(pages.size) { index ->
                     Box(
@@ -107,7 +108,7 @@ fun OnboardingScreen(
                 }
             }
 
-            Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(LocalAppDimens.current.pad16))
 
             // Button
             GoldButton(
@@ -120,7 +121,7 @@ fun OnboardingScreen(
                         scope.launch { pagerState.animateScrollToPage(pagerState.currentPage + 1) }
                     }
                 },
-                modifier = Modifier.padding(horizontal = 24.dp),
+                modifier = Modifier.padding(horizontal = LocalAppDimens.current.pad24),
             )
 
             Spacer(Modifier.height(40.dp))
@@ -133,7 +134,7 @@ private fun OnboardingPageContent(page: OnboardingPage) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(horizontal = 32.dp),
+            .padding(horizontal = LocalAppDimens.current.pad32),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
@@ -154,7 +155,7 @@ private fun OnboardingPageContent(page: OnboardingPage) {
             color = CineVaultTheme.colors.textPrimary,
             textAlign = TextAlign.Center,
         )
-        Spacer(Modifier.height(12.dp))
+        Spacer(Modifier.height(LocalAppDimens.current.pad12))
         Text(
             page.subtitle,
             style = CineVaultTheme.typography.body,

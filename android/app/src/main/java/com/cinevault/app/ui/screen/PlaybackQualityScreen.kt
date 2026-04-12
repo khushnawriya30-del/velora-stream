@@ -17,6 +17,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.cinevault.app.ui.theme.CineVaultTheme
 import com.cinevault.app.ui.viewmodel.SettingsViewModel
+import com.cinevault.app.ui.theme.LocalAppDimens
 
 private val QUALITY_OPTIONS = listOf("Auto", "1080p", "720p", "480p", "360p")
 
@@ -52,17 +53,17 @@ fun PlaybackQualityScreen(
             colors = TopAppBarDefaults.topAppBarColors(containerColor = CineVaultTheme.colors.background),
         )
 
-        Column(modifier = Modifier.padding(horizontal = 20.dp)) {
-            Spacer(Modifier.height(16.dp))
+        Column(modifier = Modifier.padding(horizontal = LocalAppDimens.current.pad20)) {
+            Spacer(Modifier.height(LocalAppDimens.current.pad16))
 
             Text(
                 "Select the default video playback quality. \"Auto\" adjusts quality based on your internet speed.",
-                fontSize = 13.sp,
+                fontSize = LocalAppDimens.current.font13,
                 color = CineVaultTheme.colors.textSecondary,
-                lineHeight = 18.sp,
+                lineHeight = LocalAppDimens.current.lineHeight18,
             )
 
-            Spacer(Modifier.height(20.dp))
+            Spacer(Modifier.height(LocalAppDimens.current.pad20))
 
             Surface(shape = RoundedCornerShape(14.dp), color = CineVaultTheme.colors.surface, modifier = Modifier.fillMaxWidth()) {
                 Column {
@@ -72,19 +73,19 @@ fun PlaybackQualityScreen(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clickable { viewModel.setPlaybackQuality(quality) }
-                                .padding(horizontal = 16.dp, vertical = 14.dp),
+                                .padding(horizontal = LocalAppDimens.current.pad16, vertical = LocalAppDimens.current.pad14),
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
                                     quality,
-                                    fontSize = 16.sp,
+                                    fontSize = LocalAppDimens.current.font16,
                                     fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
                                     color = if (isSelected) CineVaultTheme.colors.accentGold else CineVaultTheme.colors.textPrimary,
                                 )
                                 Text(
                                     qualitySubtitle(quality),
-                                    fontSize = 12.sp,
+                                    fontSize = LocalAppDimens.current.font12,
                                     color = if (quality == "1080p") CineVaultTheme.colors.accentGold.copy(alpha = 0.7f)
                                             else CineVaultTheme.colors.textSecondary,
                                 )
@@ -94,7 +95,7 @@ fun PlaybackQualityScreen(
                             }
                         }
                         if (index < QUALITY_OPTIONS.lastIndex) {
-                            HorizontalDivider(color = CineVaultTheme.colors.border.copy(alpha = 0.3f), modifier = Modifier.padding(start = 16.dp))
+                            HorizontalDivider(color = CineVaultTheme.colors.border.copy(alpha = 0.3f), modifier = Modifier.padding(start = LocalAppDimens.current.pad16))
                         }
                     }
                 }

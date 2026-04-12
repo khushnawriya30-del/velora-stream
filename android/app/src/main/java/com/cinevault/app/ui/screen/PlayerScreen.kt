@@ -74,6 +74,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.util.Locale
+import com.cinevault.app.ui.theme.LocalAppDimens
 
 // ===========================================================================
 // OBSIDIAN ULTRA - CineVault Premium Player (Blended Theme)
@@ -799,17 +800,17 @@ fun PlayerScreen(
                 exit = fadeOut() + slideOutVertically { -it },
                 modifier = Modifier
                     .align(Alignment.TopCenter)
-                    .padding(top = 14.dp),
+                    .padding(top = LocalAppDimens.current.pad14),
             ) {
                 Box(
                     modifier = Modifier
                         .background(AccentGrad, RoundedCornerShape(20.dp))
-                        .padding(horizontal = 18.dp, vertical = 6.dp),
+                        .padding(horizontal = 18.dp, vertical = LocalAppDimens.current.pad6),
                 ) {
                     Text(
                         "\u26A1 2\u00D7 Speed",
                         color = Color.White,
-                        fontSize = 13.sp,
+                        fontSize = LocalAppDimens.current.font13,
                         fontWeight = FontWeight.Bold,
                         letterSpacing = 1.sp,
                     )
@@ -831,9 +832,9 @@ fun PlayerScreen(
                     Text(
                         toastMessage ?: "",
                         color = Color.White,
-                        fontSize = 14.sp,
+                        fontSize = LocalAppDimens.current.font14,
                         fontWeight = FontWeight.Medium,
-                        modifier = Modifier.padding(horizontal = 22.dp, vertical = 12.dp),
+                        modifier = Modifier.padding(horizontal = 22.dp, vertical = LocalAppDimens.current.pad12),
                     )
                 }
             }
@@ -862,7 +863,7 @@ fun PlayerScreen(
                         },
                         modifier = Modifier
                             .align(Alignment.TopEnd)
-                            .padding(top = 24.dp, end = 24.dp)
+                            .padding(top = LocalAppDimens.current.pad24, end = LocalAppDimens.current.pad24)
                             .size(48.dp)
                             .background(Color.White.copy(alpha = 0.15f), CircleShape),
                     ) {
@@ -876,7 +877,7 @@ fun PlayerScreen(
                     Text(
                         "Tap ✕ to start watching",
                         color = Color.White.copy(alpha = 0.7f),
-                        fontSize = 14.sp,
+                        fontSize = LocalAppDimens.current.font14,
                         fontWeight = FontWeight.Medium,
                     )
                 }
@@ -930,7 +931,7 @@ fun PlayerScreen(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .align(Alignment.TopStart)
-                                .padding(horizontal = 16.dp, vertical = 12.dp),
+                                .padding(horizontal = LocalAppDimens.current.pad16, vertical = LocalAppDimens.current.pad12),
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
                             IconButton(onClick = {
@@ -968,14 +969,14 @@ fun PlayerScreen(
                             }
                             Box(
                                 modifier = Modifier
-                                    .padding(end = 12.dp)
+                                    .padding(end = LocalAppDimens.current.pad12)
                                     .background(AccentGrad, RoundedCornerShape(5.dp))
-                                    .padding(horizontal = 11.dp, vertical = 4.dp),
+                                    .padding(horizontal = 11.dp, vertical = LocalAppDimens.current.pad4),
                             ) {
                                 Text(
                                     qBadge,
                                     color = Color.White,
-                                    fontSize = 10.sp,
+                                    fontSize = LocalAppDimens.current.font10,
                                     fontWeight = FontWeight.Bold,
                                     letterSpacing = 1.5.sp,
                                 )
@@ -984,7 +985,7 @@ fun PlayerScreen(
                             Column(
                                 modifier = Modifier
                                     .weight(1f)
-                                    .padding(end = 8.dp),
+                                    .padding(end = LocalAppDimens.current.pad8),
                             ) {
                                 if (uiState.episodes.isNotEmpty()) {
                                     // Series: show "Episode X" only
@@ -1086,7 +1087,7 @@ fun PlayerScreen(
                                 .align(Alignment.BottomCenter)
                                 .fillMaxWidth()
                                 .padding(horizontal = 22.dp)
-                                .padding(bottom = 14.dp),
+                                .padding(bottom = LocalAppDimens.current.pad14),
                         ) {
                             // -- Progress Bar --
                             ObsidianProgressBar(
@@ -1109,30 +1110,30 @@ fun PlayerScreen(
                                 },
                             )
 
-                            Spacer(Modifier.height(6.dp))
+                            Spacer(Modifier.height(LocalAppDimens.current.pad6))
 
                             // -- Time display --
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(horizontal = 4.dp),
+                                    .padding(horizontal = LocalAppDimens.current.pad4),
                                 horizontalArrangement = Arrangement.SpaceBetween,
                             ) {
                                 Text(
                                     formatDuration(uiState.currentPosition),
-                                    fontSize = 12.sp,
+                                    fontSize = LocalAppDimens.current.font12,
                                     fontFamily = FontFamily.Monospace,
                                     color = Color.White,
                                 )
                                 Text(
                                     formatDuration(uiState.totalDuration),
-                                    fontSize = 12.sp,
+                                    fontSize = LocalAppDimens.current.font12,
                                     fontFamily = FontFamily.Monospace,
                                     color = TextDim,
                                 )
                             }
 
-                            Spacer(Modifier.height(10.dp))
+                            Spacer(Modifier.height(LocalAppDimens.current.pad10))
 
                             // -- Toolbar --
                             Row(
@@ -1192,17 +1193,17 @@ fun PlayerScreen(
                     contentAlignment = Alignment.Center,
                 ) {
                     Surface(
-                        shape = RoundedCornerShape(16.dp),
+                        shape = RoundedCornerShape(LocalAppDimens.current.radius16),
                         color = BackgroundDark.copy(alpha = 0.85f),
                         border = BorderStroke(1.dp, BorderSubtle),
                     ) {
                         Column(
-                            modifier = Modifier.padding(24.dp),
+                            modifier = Modifier.padding(LocalAppDimens.current.pad24),
                             horizontalAlignment = Alignment.CenterHorizontally,
                         ) {
                             Icon(Icons.Filled.LockOpen, contentDescription = "Tap to unlock", tint = CyanAccent, modifier = Modifier.size(36.dp))
-                            Spacer(Modifier.height(8.dp))
-                            Text("TAP TO UNLOCK", color = TextDim, fontSize = 11.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 2.sp)
+                            Spacer(Modifier.height(LocalAppDimens.current.pad8))
+                            Text("TAP TO UNLOCK", color = TextDim, fontSize = LocalAppDimens.current.font11, fontWeight = FontWeight.SemiBold, letterSpacing = 2.sp)
                         }
                     }
                 }
@@ -1262,7 +1263,7 @@ fun PlayerScreen(
                             }
                         },
                     )
-                    Spacer(Modifier.height(8.dp))
+                    Spacer(Modifier.height(LocalAppDimens.current.pad8))
                 }
             }
         }
@@ -1277,7 +1278,7 @@ fun PlayerScreen(
                         isSelected = uiState.playbackSpeed == speed,
                         onClick = { viewModel.setPlaybackSpeed(speed); showSpeedPopup = false; toastMessage = "Speed: ${speed}\u00D7" },
                     )
-                    Spacer(Modifier.height(6.dp))
+                    Spacer(Modifier.height(LocalAppDimens.current.pad6))
                 }
             }
         }
@@ -1306,7 +1307,7 @@ fun PlayerScreen(
                             toastMessage = "Audio: ${trackInfo.label}"
                         },
                     )
-                    Spacer(Modifier.height(6.dp))
+                    Spacer(Modifier.height(LocalAppDimens.current.pad6))
                 }
             }
         }
@@ -1316,8 +1317,8 @@ fun PlayerScreen(
             ObsidianSidePanel(title = "SELECT EPISODE", onDismiss = { showEpisodePopup = false }) {
                 LazyVerticalGrid(
                     columns = GridCells.Fixed(6),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp),
-                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                    horizontalArrangement = Arrangement.spacedBy(LocalAppDimens.current.pad10),
+                    verticalArrangement = Arrangement.spacedBy(LocalAppDimens.current.pad10),
                     modifier = Modifier.heightIn(max = 300.dp),
                 ) {
                     itemsIndexed(uiState.episodes) { index, episode ->
@@ -1326,7 +1327,7 @@ fun PlayerScreen(
                             modifier = Modifier
                                 .aspectRatio(1f)
                                 .clickable { viewModel.playEpisode(episode); showEpisodePopup = false },
-                            shape = RoundedCornerShape(10.dp),
+                            shape = RoundedCornerShape(LocalAppDimens.current.radius10),
                             color = if (isCurrent) CyanAccent.copy(alpha = 0.12f) else Color.White.copy(alpha = 0.04f),
                             border = BorderStroke(
                                 width = if (isCurrent) 2.dp else 0.5.dp,
@@ -1335,7 +1336,7 @@ fun PlayerScreen(
                         ) {
                             Box(contentAlignment = Alignment.Center) {
                                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                    Text("${episode.episodeNumber}", color = if (isCurrent) CyanAccent else Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                                    Text("${episode.episodeNumber}", color = if (isCurrent) CyanAccent else Color.White, fontSize = LocalAppDimens.current.font16, fontWeight = FontWeight.Bold)
                                     if (isCurrent) Icon(Icons.Filled.PlayArrow, contentDescription = null, tint = CyanAccent, modifier = Modifier.size(14.dp))
                                 }
                             }
@@ -1358,9 +1359,9 @@ fun PlayerScreen(
                     CircularProgressIndicator(
                         modifier = Modifier.size(48.dp),
                         color = GoldAccent,
-                        strokeWidth = 3.dp,
+                        strokeWidth = LocalAppDimens.current.strokeWidth,
                     )
-                    Spacer(Modifier.height(16.dp))
+                    Spacer(Modifier.height(LocalAppDimens.current.pad16))
                     Text(
                         text = "Switching to ${
                             when (uiState.selectedQuality) {
@@ -1376,7 +1377,7 @@ fun PlayerScreen(
                             }
                         }...",
                         color = Color.White,
-                        fontSize = 15.sp,
+                        fontSize = LocalAppDimens.current.font15,
                         fontWeight = FontWeight.Medium,
                     )
                 }
@@ -1394,24 +1395,24 @@ fun PlayerScreen(
                     .align(Alignment.BottomCenter)
                     .fillMaxWidth()
                     .background(Color.Black.copy(alpha = 0.80f))
-                    .padding(horizontal = 16.dp, vertical = 10.dp)
+                    .padding(horizontal = LocalAppDimens.current.pad16, vertical = LocalAppDimens.current.pad10)
                     .zIndex(80f),
             ) {
                 Column {
                     Text(
                         "This is a Premium Exclusive video",
                         color = GoldAccent,
-                        fontSize = 13.sp,
+                        fontSize = LocalAppDimens.current.font13,
                         fontWeight = FontWeight.Bold,
                     )
-                    Spacer(Modifier.height(2.dp))
+                    Spacer(Modifier.height(LocalAppDimens.current.padTiny))
                     val remainingMs = (previewLimitMs - uiState.currentPosition).coerceAtLeast(0)
                     val remainingMin = remainingMs / 60000
                     val remainingSec = (remainingMs % 60000) / 1000
                     Text(
                         "You have ${remainingMin}:${String.format("%02d", remainingSec)} of free watching left. Subscribe to Premium to watch the full video.",
                         color = Color.White.copy(alpha = 0.7f),
-                        fontSize = 11.sp,
+                        fontSize = LocalAppDimens.current.font11,
                         lineHeight = 15.sp,
                     )
                 }
@@ -1441,10 +1442,10 @@ fun PlayerScreen(
                     shadowElevation = 16.dp,
                     modifier = Modifier
                         .widthIn(max = 380.dp)
-                        .padding(24.dp),
+                        .padding(LocalAppDimens.current.pad24),
                 ) {
                     Column(
-                        modifier = Modifier.padding(24.dp),
+                        modifier = Modifier.padding(LocalAppDimens.current.pad24),
                         horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
                         Icon(
@@ -1453,23 +1454,23 @@ fun PlayerScreen(
                             tint = GoldAccent,
                             modifier = Modifier.size(48.dp),
                         )
-                        Spacer(Modifier.height(16.dp))
+                        Spacer(Modifier.height(LocalAppDimens.current.pad16))
                         Text(
                             "Free Preview Ended",
                             color = Color.White,
-                            fontSize = 20.sp,
+                            fontSize = LocalAppDimens.current.font20,
                             fontWeight = FontWeight.Bold,
                             textAlign = TextAlign.Center,
                         )
-                        Spacer(Modifier.height(10.dp))
+                        Spacer(Modifier.height(LocalAppDimens.current.pad10))
                         Text(
                             "The 10-minute free trial has ended.\nPlease subscribe to Premium to continue watching.",
                             color = Color.White.copy(alpha = 0.7f),
-                            fontSize = 14.sp,
+                            fontSize = LocalAppDimens.current.font14,
                             textAlign = TextAlign.Center,
-                            lineHeight = 20.sp,
+                            lineHeight = LocalAppDimens.current.lineHeight20,
                         )
-                        Spacer(Modifier.height(24.dp))
+                        Spacer(Modifier.height(LocalAppDimens.current.pad24))
                         // Subscribe button — navigate but keep dialog flag so it re-shows on return
                         Button(
                             onClick = {
@@ -1498,12 +1499,12 @@ fun PlayerScreen(
                                     "SUBSCRIBE NOW",
                                     color = Color.Black,
                                     fontWeight = FontWeight.ExtraBold,
-                                    fontSize = 14.sp,
+                                    fontSize = LocalAppDimens.current.font14,
                                     letterSpacing = 1.sp,
                                 )
                             }
                         }
-                        Spacer(Modifier.height(10.dp))
+                        Spacer(Modifier.height(LocalAppDimens.current.pad10))
                         // Close button
                         TextButton(
                             onClick = {
@@ -1518,7 +1519,7 @@ fun PlayerScreen(
                             Text(
                                 "Close",
                                 color = Color.White.copy(alpha = 0.6f),
-                                fontSize = 14.sp,
+                                fontSize = LocalAppDimens.current.font14,
                             )
                         }
                     }
@@ -1549,10 +1550,10 @@ fun PlayerScreen(
                     shadowElevation = 16.dp,
                     modifier = Modifier
                         .widthIn(max = 380.dp)
-                        .padding(24.dp),
+                        .padding(LocalAppDimens.current.pad24),
                 ) {
                     Column(
-                        modifier = Modifier.padding(24.dp),
+                        modifier = Modifier.padding(LocalAppDimens.current.pad24),
                         horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
                         Icon(
@@ -1561,23 +1562,23 @@ fun PlayerScreen(
                             tint = GoldAccent,
                             modifier = Modifier.size(48.dp),
                         )
-                        Spacer(Modifier.height(16.dp))
+                        Spacer(Modifier.height(LocalAppDimens.current.pad16))
                         Text(
                             "Premium Quality",
                             color = Color.White,
-                            fontSize = 20.sp,
+                            fontSize = LocalAppDimens.current.font20,
                             fontWeight = FontWeight.Bold,
                             textAlign = TextAlign.Center,
                         )
-                        Spacer(Modifier.height(10.dp))
+                        Spacer(Modifier.height(LocalAppDimens.current.pad10))
                         Text(
                             "1080p Full HD and above is available\nexclusively for Premium subscribers.",
                             color = Color.White.copy(alpha = 0.7f),
-                            fontSize = 14.sp,
+                            fontSize = LocalAppDimens.current.font14,
                             textAlign = TextAlign.Center,
-                            lineHeight = 20.sp,
+                            lineHeight = LocalAppDimens.current.lineHeight20,
                         )
-                        Spacer(Modifier.height(24.dp))
+                        Spacer(Modifier.height(LocalAppDimens.current.pad24))
                         Button(
                             onClick = {
                                 showPremiumQualityDialog = false
@@ -1605,19 +1606,19 @@ fun PlayerScreen(
                                     "SUBSCRIBE NOW",
                                     color = Color.Black,
                                     fontWeight = FontWeight.ExtraBold,
-                                    fontSize = 14.sp,
+                                    fontSize = LocalAppDimens.current.font14,
                                     letterSpacing = 1.sp,
                                 )
                             }
                         }
-                        Spacer(Modifier.height(10.dp))
+                        Spacer(Modifier.height(LocalAppDimens.current.pad10))
                         TextButton(
                             onClick = { showPremiumQualityDialog = false },
                         ) {
                             Text(
                                 "Close",
                                 color = Color.White.copy(alpha = 0.6f),
-                                fontSize = 14.sp,
+                                fontSize = LocalAppDimens.current.font14,
                             )
                         }
                     }
@@ -1674,7 +1675,7 @@ private fun ObsidianLoadingOverlay() {
                 Box(modifier = Modifier.size(20.dp).graphicsLayer { scaleX = corePulse; scaleY = corePulse }.clip(CircleShape).background(AccentGrad))
             }
             Spacer(Modifier.height(28.dp))
-            Text("LOADING", color = TextDim.copy(alpha = labelAlpha), fontSize = 11.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 4.sp)
+            Text("LOADING", color = TextDim.copy(alpha = labelAlpha), fontSize = LocalAppDimens.current.font11, fontWeight = FontWeight.SemiBold, letterSpacing = 4.sp)
             Spacer(Modifier.height(18.dp))
             Box(modifier = Modifier.width(180.dp).height(2.dp).clip(RoundedCornerShape(1.dp)).background(Color.White.copy(alpha = 0.08f))) {
                 val barOffset by infiniteTransition.animateFloat(-0.3f, 1.3f, animationSpec = infiniteRepeatable(tween(2000, easing = FastOutSlowInEasing), RepeatMode.Restart), label = "bar")
@@ -1701,8 +1702,8 @@ private fun ObsidianBufferingOverlay() {
                     drawArc(color = PurpleAccent, startAngle = 0f, sweepAngle = 110f, useCenter = false, style = Stroke(width = 2.5f.dp.toPx(), cap = StrokeCap.Round))
                 }
             }
-            Spacer(Modifier.height(16.dp))
-            Text("BUFFERING", color = TextDim, fontSize = 12.sp, fontWeight = FontWeight.Medium, letterSpacing = 3.sp)
+            Spacer(Modifier.height(LocalAppDimens.current.pad16))
+            Text("BUFFERING", color = TextDim, fontSize = LocalAppDimens.current.font12, fontWeight = FontWeight.Medium, letterSpacing = 3.sp)
         }
     }
 }
@@ -1714,13 +1715,13 @@ private fun ObsidianErrorOverlay(errorMessage: String, streamUrl: String?, onBac
     val errorPulse by infiniteTransition.animateFloat(0.95f, 1.05f, animationSpec = infiniteRepeatable(tween(2500), RepeatMode.Reverse), label = "errPulse")
 
     Box(modifier = Modifier.fillMaxSize().background(Color.Black), contentAlignment = Alignment.Center) {
-        Column(modifier = Modifier.padding(32.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+        Column(modifier = Modifier.padding(LocalAppDimens.current.pad32), horizontalAlignment = Alignment.CenterHorizontally) {
             Icon(Icons.Filled.Error, contentDescription = null, tint = Color(0xFFEF4444), modifier = Modifier.size(56.dp).graphicsLayer { scaleX = errorPulse; scaleY = errorPulse })
-            Spacer(Modifier.height(16.dp))
-            Text(errorMessage, color = Color.White, fontSize = 14.sp, textAlign = TextAlign.Center, lineHeight = 20.sp)
-            Spacer(Modifier.height(10.dp))
-            Text("URL: ${streamUrl?.take(80) ?: "none"}", color = TextDim.copy(alpha = 0.5f), fontSize = 10.sp, textAlign = TextAlign.Center, fontFamily = FontFamily.Monospace)
-            Spacer(Modifier.height(24.dp))
+            Spacer(Modifier.height(LocalAppDimens.current.pad16))
+            Text(errorMessage, color = Color.White, fontSize = LocalAppDimens.current.font14, textAlign = TextAlign.Center, lineHeight = LocalAppDimens.current.lineHeight20)
+            Spacer(Modifier.height(LocalAppDimens.current.pad10))
+            Text("URL: ${streamUrl?.take(80) ?: "none"}", color = TextDim.copy(alpha = 0.5f), fontSize = LocalAppDimens.current.font10, textAlign = TextAlign.Center, fontFamily = FontFamily.Monospace)
+            Spacer(Modifier.height(LocalAppDimens.current.pad24))
             Button(
                 onClick = onBack,
                 shape = RoundedCornerShape(50),
@@ -1728,7 +1729,7 @@ private fun ObsidianErrorOverlay(errorMessage: String, streamUrl: String?, onBac
                 contentPadding = PaddingValues(horizontal = 36.dp, vertical = 13.dp),
                 modifier = Modifier.background(AccentGrad, RoundedCornerShape(50)),
             ) {
-                Text("GO BACK", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp, letterSpacing = 2.sp)
+                Text("GO BACK", color = Color.White, fontWeight = FontWeight.Bold, fontSize = LocalAppDimens.current.font13, letterSpacing = 2.sp)
             }
         }
     }
@@ -1742,9 +1743,9 @@ private fun ObsidianGesturePanel(icon: ImageVector, value: Float, accentColor: C
         color = BackgroundDark.copy(alpha = 0.85f),
         border = BorderStroke(1.dp, BorderSubtle),
     ) {
-        Column(modifier = Modifier.padding(14.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+        Column(modifier = Modifier.padding(LocalAppDimens.current.pad14), horizontalAlignment = Alignment.CenterHorizontally) {
             Icon(icon, contentDescription = null, tint = accentColor, modifier = Modifier.size(22.dp))
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(LocalAppDimens.current.pad12))
             Box(modifier = Modifier.width(4.dp).height(100.dp).clip(RoundedCornerShape(2.dp)).background(Color.White.copy(alpha = 0.14f))) {
                 Box(
                     modifier = Modifier
@@ -1755,8 +1756,8 @@ private fun ObsidianGesturePanel(icon: ImageVector, value: Float, accentColor: C
                         .background(Brush.verticalGradient(listOf(accentColor, accentColor.copy(alpha = 0.5f)))),
                 )
             }
-            Spacer(Modifier.height(10.dp))
-            Text("${(value * 100).toInt()}%", color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Medium, fontFamily = FontFamily.Monospace)
+            Spacer(Modifier.height(LocalAppDimens.current.pad10))
+            Text("${(value * 100).toInt()}%", color = Color.White, fontSize = LocalAppDimens.current.font11, fontWeight = FontWeight.Medium, fontFamily = FontFamily.Monospace)
         }
     }
 }
@@ -1772,11 +1773,11 @@ private fun ObsidianSeekBubble(symbol: String, label: String) {
             modifier = Modifier.size(82.dp),
         ) {
             Box(contentAlignment = Alignment.Center) {
-                Text(symbol, fontSize = 28.sp, color = CyanAccent, fontWeight = FontWeight.Bold)
+                Text(symbol, fontSize = LocalAppDimens.current.font28, color = CyanAccent, fontWeight = FontWeight.Bold)
             }
         }
-        Spacer(Modifier.height(8.dp))
-        Text(label, color = CyanAccent, fontSize = 11.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 2.sp)
+        Spacer(Modifier.height(LocalAppDimens.current.pad8))
+        Text(label, color = CyanAccent, fontSize = LocalAppDimens.current.font11, fontWeight = FontWeight.SemiBold, letterSpacing = 2.sp)
     }
 }
 
@@ -1822,13 +1823,13 @@ private fun ObsidianProgressBar(currentPosition: Long, totalDuration: Long, buff
     ) {
         val trackH = if (isDragging) 8.dp else 4.dp
         // Track bg
-        Box(modifier = Modifier.fillMaxWidth().height(trackH).clip(RoundedCornerShape(4.dp)).background(Color.White.copy(alpha = 0.14f)))
+        Box(modifier = Modifier.fillMaxWidth().height(trackH).clip(RoundedCornerShape(LocalAppDimens.current.radius4)).background(Color.White.copy(alpha = 0.14f)))
         // Buffer
-        Box(modifier = Modifier.fillMaxWidth(bufferedFraction).height(trackH).clip(RoundedCornerShape(4.dp)).background(Color.White.copy(alpha = 0.22f)))
+        Box(modifier = Modifier.fillMaxWidth(bufferedFraction).height(trackH).clip(RoundedCornerShape(LocalAppDimens.current.radius4)).background(Color.White.copy(alpha = 0.22f)))
         // Played (gradient)
-        Box(modifier = Modifier.fillMaxWidth(displayFraction).height(trackH).clip(RoundedCornerShape(4.dp)).background(AccentGrad))
+        Box(modifier = Modifier.fillMaxWidth(displayFraction).height(trackH).clip(RoundedCornerShape(LocalAppDimens.current.radius4)).background(AccentGrad))
         // Glow
-        Box(modifier = Modifier.fillMaxWidth(displayFraction).height(12.dp).clip(RoundedCornerShape(4.dp)).background(Brush.horizontalGradient(listOf(CyanAccent.copy(alpha = 0.3f), PurpleAccent.copy(alpha = 0.3f)))).graphicsLayer { alpha = 0.6f })
+        Box(modifier = Modifier.fillMaxWidth(displayFraction).height(12.dp).clip(RoundedCornerShape(LocalAppDimens.current.radius4)).background(Brush.horizontalGradient(listOf(CyanAccent.copy(alpha = 0.3f), PurpleAccent.copy(alpha = 0.3f)))).graphicsLayer { alpha = 0.6f })
         // Ad marker dots (white dots on timeline like YouTube/MX Player)
         if (adMarkers.isNotEmpty()) {
             Canvas(modifier = Modifier.fillMaxWidth().height(trackH)) {
@@ -1870,12 +1871,12 @@ private fun ObsidianProgressBar(currentPosition: Long, totalDuration: Long, buff
 @Composable
 private fun ObsidianToolbarButton(icon: ImageVector, label: String, onClick: () -> Unit, enabled: Boolean = true) {
     Column(
-        modifier = Modifier.clip(RoundedCornerShape(10.dp)).clickable(enabled = enabled, onClick = onClick).padding(horizontal = 10.dp, vertical = 4.dp),
+        modifier = Modifier.clip(RoundedCornerShape(LocalAppDimens.current.radius10)).clickable(enabled = enabled, onClick = onClick).padding(horizontal = LocalAppDimens.current.pad10, vertical = LocalAppDimens.current.pad4),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Icon(icon, contentDescription = label, tint = if (enabled) Color.White else Color.White.copy(alpha = 0.3f), modifier = Modifier.size(20.dp))
         Spacer(Modifier.height(3.dp))
-        Text(label, color = if (enabled) Color.White.copy(alpha = 0.85f) else Color.White.copy(alpha = 0.3f), fontSize = 10.sp, fontWeight = FontWeight.Medium, maxLines = 1, letterSpacing = 0.5.sp)
+        Text(label, color = if (enabled) Color.White.copy(alpha = 0.85f) else Color.White.copy(alpha = 0.3f), fontSize = LocalAppDimens.current.font10, fontWeight = FontWeight.Medium, maxLines = 1, letterSpacing = 0.5.sp)
     }
 }
 
@@ -1899,14 +1900,14 @@ private fun ObsidianSidePanel(title: String, onDismiss: () -> Unit, content: @Co
             border = BorderStroke(1.dp, BorderSubtle),
             shadowElevation = 24.dp,
         ) {
-            Column(modifier = Modifier.padding(20.dp)) {
+            Column(modifier = Modifier.padding(LocalAppDimens.current.pad20)) {
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                    Text(title, color = TextDim, fontSize = 10.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 2.5.sp)
+                    Text(title, color = TextDim, fontSize = LocalAppDimens.current.font10, fontWeight = FontWeight.SemiBold, letterSpacing = 2.5.sp)
                     IconButton(onClick = onDismiss, modifier = Modifier.size(30.dp)) {
                         Icon(Icons.Filled.Close, contentDescription = "Close", tint = Color.White.copy(alpha = 0.5f), modifier = Modifier.size(18.dp))
                     }
                 }
-                Box(modifier = Modifier.fillMaxWidth().padding(vertical = 10.dp).height(1.dp).background(BorderSubtle))
+                Box(modifier = Modifier.fillMaxWidth().padding(vertical = LocalAppDimens.current.pad10).height(1.dp).background(BorderSubtle))
                 content()
             }
         }
@@ -1921,11 +1922,11 @@ private fun ObsidianMenuItem(label: String, subtitle: String? = null, isSelected
         shape = RoundedCornerShape(11.dp),
         color = if (isSelected) CyanAccent.copy(alpha = 0.08f) else Color.Transparent,
     ) {
-        Row(modifier = Modifier.padding(horizontal = 12.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
+        Row(modifier = Modifier.padding(horizontal = LocalAppDimens.current.pad12, vertical = LocalAppDimens.current.pad12), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
             Column(modifier = Modifier.weight(1f)) {
-                Text(label, fontSize = 14.sp, fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal, color = if (isSelected) CyanAccent else Color.White.copy(alpha = 0.85f))
+                Text(label, fontSize = LocalAppDimens.current.font14, fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal, color = if (isSelected) CyanAccent else Color.White.copy(alpha = 0.85f))
                 if (!subtitle.isNullOrBlank()) {
-                    Text(subtitle, fontSize = 11.sp, fontFamily = FontFamily.Monospace, color = TextDim)
+                    Text(subtitle, fontSize = LocalAppDimens.current.font11, fontFamily = FontFamily.Monospace, color = TextDim)
                 }
             }
             if (isSelected) {
@@ -2000,7 +2001,7 @@ private fun PremiumQualityItem(
             .border(width = 1.dp, brush = borderBrush, shape = RoundedCornerShape(14.dp))
             .background(cardBg, shape = RoundedCornerShape(14.dp))
             .clickable(interactionSource = interactionSource, indication = null, onClick = onClick)
-            .padding(horizontal = 14.dp, vertical = 13.dp),
+            .padding(horizontal = LocalAppDimens.current.pad14, vertical = 13.dp),
     ) {
         // Subtle glow for premium items
         if (isPremium && !isLocked) {
@@ -2034,7 +2035,7 @@ private fun PremiumQualityItem(
                 Box(
                     modifier = Modifier
                         .size(36.dp)
-                        .clip(RoundedCornerShape(10.dp))
+                        .clip(RoundedCornerShape(LocalAppDimens.current.radius10))
                         .background(
                             if (isPremium)
                                 Brush.linearGradient(listOf(PremiumGold.copy(alpha = 0.18f), PremiumGoldDark.copy(alpha = 0.08f)))
@@ -2060,13 +2061,13 @@ private fun PremiumQualityItem(
                     }
                 }
 
-                Spacer(Modifier.width(12.dp))
+                Spacer(Modifier.width(LocalAppDimens.current.pad12))
 
                 Column {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
                             text = label,
-                            fontSize = 14.sp,
+                            fontSize = LocalAppDimens.current.font14,
                             fontWeight = if (isSelected || isPremium) FontWeight.SemiBold else FontWeight.Normal,
                             color = when {
                                 isLocked -> Color.White.copy(alpha = 0.45f)
@@ -2077,11 +2078,11 @@ private fun PremiumQualityItem(
                             },
                         )
                         if (isPremium) {
-                            Spacer(Modifier.width(8.dp))
+                            Spacer(Modifier.width(LocalAppDimens.current.pad8))
                             // Premium pill badge
                             Box(
                                 modifier = Modifier
-                                    .clip(RoundedCornerShape(6.dp))
+                                    .clip(RoundedCornerShape(LocalAppDimens.current.radius6))
                                     .background(
                                         if (isLocked)
                                             Brush.linearGradient(listOf(PremiumGold.copy(alpha = 0.15f), PremiumGoldDark.copy(alpha = 0.1f)))
@@ -2091,13 +2092,13 @@ private fun PremiumQualityItem(
                                     .border(
                                         width = 0.5.dp,
                                         brush = Brush.linearGradient(listOf(PremiumGold.copy(alpha = 0.4f), PremiumGoldDark.copy(alpha = 0.2f))),
-                                        shape = RoundedCornerShape(6.dp),
+                                        shape = RoundedCornerShape(LocalAppDimens.current.radius6),
                                     )
-                                    .padding(horizontal = 8.dp, vertical = 2.dp),
+                                    .padding(horizontal = LocalAppDimens.current.pad8, vertical = LocalAppDimens.current.padTiny),
                             ) {
                                 Text(
                                     text = if (isLocked) "🔒 PREMIUM" else "✦ PREMIUM",
-                                    fontSize = 9.sp,
+                                    fontSize = LocalAppDimens.current.font9,
                                     fontWeight = FontWeight.Bold,
                                     color = if (isLocked) PremiumGold.copy(alpha = 0.6f) else PremiumGoldBright,
                                     letterSpacing = 1.sp,
@@ -2106,10 +2107,10 @@ private fun PremiumQualityItem(
                         }
                     }
                     if (subtitle.isNotBlank()) {
-                        Spacer(Modifier.height(2.dp))
+                        Spacer(Modifier.height(LocalAppDimens.current.padTiny))
                         Text(
                             text = subtitle,
-                            fontSize = 11.sp,
+                            fontSize = LocalAppDimens.current.font11,
                             color = when {
                                 isLocked -> TextDim.copy(alpha = 0.4f)
                                 isPremium -> PremiumGold.copy(alpha = 0.55f)

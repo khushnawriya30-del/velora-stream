@@ -23,6 +23,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.cinevault.app.ui.viewmodel.EarnMoneyViewModel
+import com.cinevault.app.ui.theme.LocalAppDimens
 
 // ── Color Palette (matches EarnMoneyScreen) ──
 private val DarkBlueBg = Color(0xFF0D1B3E)
@@ -107,32 +108,32 @@ fun WithdrawEarningScreen(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp)
+                    .padding(horizontal = LocalAppDimens.current.pad16)
                     .background(CardBlue, RoundedCornerShape(12.dp))
-                    .padding(4.dp),
+                    .padding(LocalAppDimens.current.pad4),
                 horizontalArrangement = Arrangement.SpaceEvenly,
             ) {
                 tabTitles.forEachIndexed { idx, label ->
                     Box(
                         modifier = Modifier
                             .weight(1f)
-                            .clip(RoundedCornerShape(10.dp))
+                            .clip(RoundedCornerShape(LocalAppDimens.current.radius10))
                             .background(if (selectedTab == idx) GoldAmber else Color.Transparent)
                             .clickable { selectedTab = idx }
-                            .padding(vertical = 10.dp),
+                            .padding(vertical = LocalAppDimens.current.pad10),
                         contentAlignment = Alignment.Center,
                     ) {
                         Text(
                             label,
                             fontWeight = FontWeight.SemiBold,
-                            fontSize = 13.sp,
+                            fontSize = LocalAppDimens.current.font13,
                             color = if (selectedTab == idx) Color.Black else Color.White.copy(alpha = 0.6f),
                         )
                     }
                 }
             }
 
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(LocalAppDimens.current.pad12))
 
             // ── Tab Content ──
             when (selectedTab) {
@@ -206,7 +207,7 @@ private fun BankDetailsTab(
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
-            .padding(horizontal = 16.dp),
+            .padding(horizontal = LocalAppDimens.current.pad16),
     ) {
         if (hasBankDetails && !isEditing) {
             // ── Saved Bank Details (Read-Only) ──
@@ -215,7 +216,7 @@ private fun BankDetailsTab(
                 onEditClick = onEditClick,
             )
 
-            Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(LocalAppDimens.current.pad16))
 
             // ── Withdraw Section ──
             if (state.withdrawSuccess) {
@@ -224,7 +225,7 @@ private fun BankDetailsTab(
                     modifier = Modifier
                         .fillMaxWidth()
                         .background(GreenProgress.copy(alpha = 0.15f), RoundedCornerShape(12.dp))
-                        .padding(24.dp),
+                        .padding(LocalAppDimens.current.pad24),
                     contentAlignment = Alignment.Center,
                 ) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -234,26 +235,26 @@ private fun BankDetailsTab(
                             tint = GreenProgress,
                             modifier = Modifier.size(48.dp),
                         )
-                        Spacer(Modifier.height(12.dp))
+                        Spacer(Modifier.height(LocalAppDimens.current.pad12))
                         Text(
                             "Withdrawal Request Submitted!",
-                            fontSize = 16.sp,
+                            fontSize = LocalAppDimens.current.font16,
                             fontWeight = FontWeight.Bold,
                             color = GreenProgress,
                             textAlign = TextAlign.Center,
                         )
-                        Spacer(Modifier.height(4.dp))
+                        Spacer(Modifier.height(LocalAppDimens.current.pad4))
                         Text(
                             "Your request will be processed in 2-5 business days.",
-                            fontSize = 13.sp,
+                            fontSize = LocalAppDimens.current.font13,
                             color = Color.White.copy(alpha = 0.6f),
                             textAlign = TextAlign.Center,
                         )
-                        Spacer(Modifier.height(16.dp))
+                        Spacer(Modifier.height(LocalAppDimens.current.pad16))
                         Button(
                             onClick = onClearWithdrawState,
                             colors = ButtonDefaults.buttonColors(containerColor = GoldAmber),
-                            shape = RoundedCornerShape(10.dp),
+                            shape = RoundedCornerShape(LocalAppDimens.current.radius10),
                         ) {
                             Text("Done", color = Color.Black, fontWeight = FontWeight.Bold)
                         }
@@ -283,13 +284,13 @@ private fun BankDetailsTab(
                             "Withdraw ₹$threshold",
                             color = Color.Black,
                             fontWeight = FontWeight.Bold,
-                            fontSize = 16.sp,
+                            fontSize = LocalAppDimens.current.font16,
                         )
                     }
                 }
                 if (state.withdrawError != null) {
-                    Spacer(Modifier.height(8.dp))
-                    Text(state.withdrawError!!, color = RedOrange, fontSize = 13.sp)
+                    Spacer(Modifier.height(LocalAppDimens.current.pad8))
+                    Text(state.withdrawError!!, color = RedOrange, fontSize = LocalAppDimens.current.font13)
                 }
             } else {
                 Box(
@@ -299,13 +300,13 @@ private fun BankDetailsTab(
                             Brush.horizontalGradient(listOf(CardBlueLighter, CardBlue)),
                             RoundedCornerShape(12.dp),
                         )
-                        .padding(16.dp),
+                        .padding(LocalAppDimens.current.pad16),
                     contentAlignment = Alignment.Center,
                 ) {
                     Text(
                         "Need ₹${state.amountNeeded} more to withdraw",
                         color = Color(0xFFFFAB00),
-                        fontSize = 14.sp,
+                        fontSize = LocalAppDimens.current.font14,
                         fontWeight = FontWeight.Medium,
                     )
                 }
@@ -331,7 +332,7 @@ private fun BankDetailsTab(
             )
         }
 
-        Spacer(Modifier.height(24.dp))
+        Spacer(Modifier.height(LocalAppDimens.current.pad24))
     }
 }
 
@@ -346,7 +347,7 @@ private fun WithdrawHistoryTab(
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
-            .padding(horizontal = 16.dp),
+            .padding(horizontal = LocalAppDimens.current.pad16),
     ) {
         if (state.withdrawals.isEmpty()) {
             Box(
@@ -363,16 +364,16 @@ private fun WithdrawHistoryTab(
                         tint = Color.White.copy(alpha = 0.3f),
                         modifier = Modifier.size(48.dp),
                     )
-                    Spacer(Modifier.height(12.dp))
+                    Spacer(Modifier.height(LocalAppDimens.current.pad12))
                     Text(
                         "No Record",
-                        fontSize = 16.sp,
+                        fontSize = LocalAppDimens.current.font16,
                         fontWeight = FontWeight.Medium,
                         color = Color.White.copy(alpha = 0.5f),
                     )
                     Text(
                         "No withdrawal record yet",
-                        fontSize = 12.sp,
+                        fontSize = LocalAppDimens.current.font12,
                         color = Color.White.copy(alpha = 0.3f),
                     )
                 }
@@ -380,30 +381,30 @@ private fun WithdrawHistoryTab(
         } else {
             Text(
                 "Withdrawal History",
-                fontSize = 16.sp,
+                fontSize = LocalAppDimens.current.font16,
                 fontWeight = FontWeight.Bold,
                 color = Color.White,
             )
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(LocalAppDimens.current.pad8))
             state.withdrawals.forEach { item ->
                 WithdrawalHistoryCard(item)
-                Spacer(Modifier.height(8.dp))
+                Spacer(Modifier.height(LocalAppDimens.current.pad8))
             }
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(vertical = 16.dp),
+                    .padding(vertical = LocalAppDimens.current.pad16),
                 contentAlignment = Alignment.Center,
             ) {
                 Text(
                     "— No More —",
-                    fontSize = 13.sp,
+                    fontSize = LocalAppDimens.current.font13,
                     color = Color.White.copy(alpha = 0.3f),
                 )
             }
         }
 
-        Spacer(Modifier.height(24.dp))
+        Spacer(Modifier.height(LocalAppDimens.current.pad24))
     }
 }
 
@@ -420,7 +421,7 @@ private fun SavedBankDetailsCard(
             .fillMaxWidth()
             .background(CardBlue, RoundedCornerShape(12.dp))
             .border(1.dp, GoldYellow.copy(alpha = 0.2f), RoundedCornerShape(12.dp))
-            .padding(16.dp),
+            .padding(LocalAppDimens.current.pad16),
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -434,10 +435,10 @@ private fun SavedBankDetailsCard(
                     tint = GoldYellow,
                     modifier = Modifier.size(22.dp),
                 )
-                Spacer(Modifier.width(8.dp))
+                Spacer(Modifier.width(LocalAppDimens.current.pad8))
                 Text(
                     "Saved Bank Details",
-                    fontSize = 16.sp,
+                    fontSize = LocalAppDimens.current.font16,
                     fontWeight = FontWeight.Bold,
                     color = Color.White,
                 )
@@ -447,7 +448,7 @@ private fun SavedBankDetailsCard(
             }
         }
 
-        Spacer(Modifier.height(12.dp))
+        Spacer(Modifier.height(LocalAppDimens.current.pad12))
 
         BankDetailRow("Bank Name", bankDetails.bankName)
         BankDetailRow("Account Number", bankDetails.accountNumber)
@@ -464,17 +465,17 @@ private fun BankDetailRow(label: String, value: String) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = 4.dp),
+                .padding(vertical = LocalAppDimens.current.pad4),
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
             Text(
                 label,
-                fontSize = 13.sp,
+                fontSize = LocalAppDimens.current.font13,
                 color = Color.White.copy(alpha = 0.5f),
             )
             Text(
                 value,
-                fontSize = 13.sp,
+                fontSize = LocalAppDimens.current.font13,
                 fontWeight = FontWeight.Medium,
                 color = Color.White,
             )
@@ -493,7 +494,7 @@ private fun EarningTab(
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
-            .padding(horizontal = 16.dp),
+            .padding(horizontal = LocalAppDimens.current.pad16),
     ) {
         if (state.earnings.isEmpty()) {
             Box(
@@ -510,10 +511,10 @@ private fun EarningTab(
                         tint = Color.White.copy(alpha = 0.3f),
                         modifier = Modifier.size(48.dp),
                     )
-                    Spacer(Modifier.height(12.dp))
+                    Spacer(Modifier.height(LocalAppDimens.current.pad12))
                     Text(
                         "No Earnings Yet",
-                        fontSize = 16.sp,
+                        fontSize = LocalAppDimens.current.font16,
                         fontWeight = FontWeight.Medium,
                         color = Color.White.copy(alpha = 0.5f),
                     )
@@ -522,30 +523,30 @@ private fun EarningTab(
         } else {
             Text(
                 "Earnings History",
-                fontSize = 16.sp,
+                fontSize = LocalAppDimens.current.font16,
                 fontWeight = FontWeight.Bold,
                 color = Color.White,
             )
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(LocalAppDimens.current.pad8))
             state.earnings.forEach { item ->
                 EarningHistoryCard(item)
-                Spacer(Modifier.height(8.dp))
+                Spacer(Modifier.height(LocalAppDimens.current.pad8))
             }
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(vertical = 16.dp),
+                    .padding(vertical = LocalAppDimens.current.pad16),
                 contentAlignment = Alignment.Center,
             ) {
                 Text(
                     "— No More —",
-                    fontSize = 13.sp,
+                    fontSize = LocalAppDimens.current.font13,
                     color = Color.White.copy(alpha = 0.3f),
                 )
             }
         }
 
-        Spacer(Modifier.height(24.dp))
+        Spacer(Modifier.height(LocalAppDimens.current.pad24))
     }
 }
 
@@ -578,7 +579,7 @@ private fun BankDetailsForm(
         modifier = Modifier
             .fillMaxWidth()
             .background(CardBlue, RoundedCornerShape(12.dp))
-            .padding(16.dp),
+            .padding(LocalAppDimens.current.pad16),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Icon(
@@ -587,42 +588,42 @@ private fun BankDetailsForm(
                 tint = GoldYellow,
                 modifier = Modifier.size(22.dp),
             )
-            Spacer(Modifier.width(8.dp))
+            Spacer(Modifier.width(LocalAppDimens.current.pad8))
             Text(
                 "Enter Bank Details",
-                fontSize = 18.sp,
+                fontSize = LocalAppDimens.current.font18,
                 fontWeight = FontWeight.Bold,
                 color = Color.White,
             )
         }
 
-        Spacer(Modifier.height(4.dp))
+        Spacer(Modifier.height(LocalAppDimens.current.pad4))
         Text(
             "Save your bank details once for all future withdrawals",
-            fontSize = 12.sp,
+            fontSize = LocalAppDimens.current.font12,
             color = Color.White.copy(alpha = 0.5f),
         )
 
-        Spacer(Modifier.height(16.dp))
+        Spacer(Modifier.height(LocalAppDimens.current.pad16))
 
         BankTextField("Bank Name", bankName, onBankNameChange, Icons.Default.AccountBalance, placeholder = "e.g. - State Bank of India")
-        Spacer(Modifier.height(10.dp))
+        Spacer(Modifier.height(LocalAppDimens.current.pad10))
         BankTextField("Account No.", accountNumber, onAccountNumberChange, Icons.Default.Numbers, KeyboardType.Number, placeholder = "e.g. - 123456789012")
-        Spacer(Modifier.height(10.dp))
+        Spacer(Modifier.height(LocalAppDimens.current.pad10))
         BankTextField("IFSC Code", ifscCode, onIfscCodeChange, Icons.Default.Code, placeholder = "e.g. - SBIN0000123")
-        Spacer(Modifier.height(10.dp))
+        Spacer(Modifier.height(LocalAppDimens.current.pad10))
         BankTextField("Account Holder Name", accountHolderName, onAccountHolderNameChange, Icons.Default.Person, placeholder = "e.g. - Rajesh Kumar")
-        Spacer(Modifier.height(10.dp))
+        Spacer(Modifier.height(LocalAppDimens.current.pad10))
         BankTextField("Phone Number", phoneNumber, onPhoneNumberChange, Icons.Default.Phone, KeyboardType.Phone, placeholder = "IN +91 | 00000 00000")
-        Spacer(Modifier.height(10.dp))
+        Spacer(Modifier.height(LocalAppDimens.current.pad10))
         BankTextField("Email", email, onEmailChange, Icons.Default.Email, KeyboardType.Email, placeholder = "Required")
 
         if (saveError != null) {
-            Spacer(Modifier.height(10.dp))
-            Text(saveError, color = RedOrange, fontSize = 13.sp)
+            Spacer(Modifier.height(LocalAppDimens.current.pad10))
+            Text(saveError, color = RedOrange, fontSize = LocalAppDimens.current.font13)
         }
 
-        Spacer(Modifier.height(16.dp))
+        Spacer(Modifier.height(LocalAppDimens.current.pad16))
 
         Button(
             onClick = onSave,
@@ -647,7 +648,7 @@ private fun BankDetailsForm(
                     "Save Details",
                     color = Color.Black,
                     fontWeight = FontWeight.Bold,
-                    fontSize = 15.sp,
+                    fontSize = LocalAppDimens.current.font15,
                 )
             }
         }
@@ -704,29 +705,29 @@ private fun WithdrawalHistoryCard(item: com.cinevault.app.data.model.WithdrawalH
         modifier = Modifier
             .fillMaxWidth()
             .background(CardBlueLighter, RoundedCornerShape(12.dp))
-            .padding(14.dp),
+            .padding(LocalAppDimens.current.pad14),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Icon(statusIcon, null, tint = statusColor, modifier = Modifier.size(28.dp))
-            Spacer(Modifier.width(12.dp))
+            Spacer(Modifier.width(LocalAppDimens.current.pad12))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     "₹${item.amount}",
-                    fontSize = 16.sp,
+                    fontSize = LocalAppDimens.current.font16,
                     fontWeight = FontWeight.Bold,
                     color = Color.White,
                 )
                 if (!item.bankName.isNullOrBlank()) {
                     Text(
                         "${item.bankName} - ${item.accountNumber?.takeLast(4) ?: ""}",
-                        fontSize = 12.sp,
+                        fontSize = LocalAppDimens.current.font12,
                         color = Color.White.copy(alpha = 0.5f),
                     )
                 }
                 if (item.status == "rejected" && !item.rejectionReason.isNullOrBlank()) {
                     Text(
                         item.rejectionReason!!,
-                        fontSize = 11.sp,
+                        fontSize = LocalAppDimens.current.font11,
                         color = RedOrange.copy(alpha = 0.8f),
                     )
                 }
@@ -734,13 +735,13 @@ private fun WithdrawalHistoryCard(item: com.cinevault.app.data.model.WithdrawalH
             Column(horizontalAlignment = Alignment.End) {
                 Text(
                     item.status.replaceFirstChar { it.uppercase() },
-                    fontSize = 12.sp,
+                    fontSize = LocalAppDimens.current.font12,
                     fontWeight = FontWeight.SemiBold,
                     color = statusColor,
                 )
                 Text(
                     formatDate(item.createdAt),
-                    fontSize = 11.sp,
+                    fontSize = LocalAppDimens.current.font11,
                     color = Color.White.copy(alpha = 0.4f),
                 )
             }
@@ -758,7 +759,7 @@ private fun EarningHistoryCard(item: com.cinevault.app.data.model.EarningItem) {
         modifier = Modifier
             .fillMaxWidth()
             .background(CardBlueLighter, RoundedCornerShape(12.dp))
-            .padding(14.dp),
+            .padding(LocalAppDimens.current.pad14),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Box(
@@ -770,23 +771,23 @@ private fun EarningHistoryCard(item: com.cinevault.app.data.model.EarningItem) {
             ) {
                 Icon(icon, null, tint = iconColor, modifier = Modifier.size(20.dp))
             }
-            Spacer(Modifier.width(12.dp))
+            Spacer(Modifier.width(LocalAppDimens.current.pad12))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     item.description,
-                    fontSize = 14.sp,
+                    fontSize = LocalAppDimens.current.font14,
                     fontWeight = FontWeight.Medium,
                     color = Color.White,
                 )
                 Text(
                     formatDate(item.createdAt),
-                    fontSize = 11.sp,
+                    fontSize = LocalAppDimens.current.font11,
                     color = Color.White.copy(alpha = 0.4f),
                 )
             }
             Text(
                 "+₹${item.amount}",
-                fontSize = 16.sp,
+                fontSize = LocalAppDimens.current.font16,
                 fontWeight = FontWeight.Bold,
                 color = GreenProgress,
             )

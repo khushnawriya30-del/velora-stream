@@ -17,6 +17,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.cinevault.app.ui.theme.CineVaultTheme
+import com.cinevault.app.ui.theme.LocalAppDimens
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -40,8 +41,8 @@ fun AboutCineVaultScreen(
             colors = TopAppBarDefaults.topAppBarColors(containerColor = CineVaultTheme.colors.background),
         )
 
-        Column(modifier = Modifier.padding(horizontal = 20.dp)) {
-            Spacer(Modifier.height(24.dp))
+        Column(modifier = Modifier.padding(horizontal = LocalAppDimens.current.pad20)) {
+            Spacer(Modifier.height(LocalAppDimens.current.pad24))
 
             // App logo + name
             Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
@@ -55,13 +56,13 @@ fun AboutCineVaultScreen(
                             Icon(Icons.Default.Movie, contentDescription = null, tint = CineVaultTheme.colors.accentGold, modifier = Modifier.size(36.dp))
                         }
                     }
-                    Spacer(Modifier.height(12.dp))
-                    Text("VELORA", fontSize = 22.sp, fontWeight = FontWeight.Bold, color = CineVaultTheme.colors.textPrimary)
-                    Text("Version 1.0.0", fontSize = 13.sp, color = CineVaultTheme.colors.textSecondary)
+                    Spacer(Modifier.height(LocalAppDimens.current.pad12))
+                    Text("VELORA", fontSize = LocalAppDimens.current.font22, fontWeight = FontWeight.Bold, color = CineVaultTheme.colors.textPrimary)
+                    Text("Version 1.0.0", fontSize = LocalAppDimens.current.font13, color = CineVaultTheme.colors.textSecondary)
                 }
             }
 
-            Spacer(Modifier.height(32.dp))
+            Spacer(Modifier.height(LocalAppDimens.current.pad32))
 
             Surface(shape = RoundedCornerShape(14.dp), color = CineVaultTheme.colors.surface, modifier = Modifier.fillMaxWidth()) {
                 Column {
@@ -71,7 +72,7 @@ fun AboutCineVaultScreen(
                 }
             }
 
-            Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(LocalAppDimens.current.pad16))
 
             Surface(shape = RoundedCornerShape(14.dp), color = CineVaultTheme.colors.surface, modifier = Modifier.fillMaxWidth()) {
                 Column {
@@ -81,11 +82,11 @@ fun AboutCineVaultScreen(
                 }
             }
 
-            Spacer(Modifier.height(32.dp))
+            Spacer(Modifier.height(LocalAppDimens.current.pad32))
 
             Text(
                 "\u00a9 2025 VELORA. All rights reserved.",
-                fontSize = 12.sp,
+                fontSize = LocalAppDimens.current.font12,
                 color = CineVaultTheme.colors.textSecondary,
                 modifier = Modifier.fillMaxWidth(),
             )
@@ -104,15 +105,15 @@ private fun AboutItem(
         modifier = Modifier
             .fillMaxWidth()
             .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
-            .padding(horizontal = 16.dp, vertical = 14.dp),
+            .padding(horizontal = LocalAppDimens.current.pad16, vertical = LocalAppDimens.current.pad14),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Icon(icon, contentDescription = null, tint = CineVaultTheme.colors.accentGold, modifier = Modifier.size(24.dp))
-        Spacer(Modifier.width(14.dp))
+        Spacer(Modifier.width(LocalAppDimens.current.pad14))
         Column(modifier = Modifier.weight(1f)) {
-            Text(label, fontSize = 15.sp, color = CineVaultTheme.colors.textPrimary)
+            Text(label, fontSize = LocalAppDimens.current.font15, color = CineVaultTheme.colors.textPrimary)
             if (subtitle != null) {
-                Text(subtitle, fontSize = 12.sp, color = CineVaultTheme.colors.textSecondary)
+                Text(subtitle, fontSize = LocalAppDimens.current.font12, color = CineVaultTheme.colors.textSecondary)
             }
         }
         if (onClick != null) {

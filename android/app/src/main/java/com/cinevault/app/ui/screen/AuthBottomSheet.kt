@@ -53,6 +53,7 @@ import java.util.concurrent.TimeUnit
 import androidx.compose.runtime.snapshotFlow
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import com.cinevault.app.ui.theme.LocalAppDimens
 
 private enum class AuthPage {
     MAIN, EMAIL_INPUT, EMAIL_OTP, PHONE_INPUT, PHONE_OTP
@@ -202,7 +203,7 @@ fun AuthBottomSheet(
             // Custom drag handle matching screenshot
             Box(
                 modifier = Modifier
-                    .padding(top = 12.dp, bottom = 8.dp)
+                    .padding(top = LocalAppDimens.current.pad12, bottom = LocalAppDimens.current.pad8)
                     .width(40.dp)
                     .height(4.dp)
                     .clip(RoundedCornerShape(2.dp))
@@ -378,7 +379,7 @@ private fun MainAuthPage(
                 error,
                 style = CineVaultTheme.typography.label,
                 color = CineVaultTheme.colors.error,
-                modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp),
+                modifier = Modifier.padding(horizontal = LocalAppDimens.current.pad24, vertical = LocalAppDimens.current.pad8),
             )
         }
 
@@ -405,7 +406,7 @@ private fun MainAuthPage(
             onClick = onEmailClick,
         )
 
-        HorizontalDivider(color = Color(0xFF333333), thickness = 0.5.dp, modifier = Modifier.padding(horizontal = 16.dp))
+        HorizontalDivider(color = Color(0xFF333333), thickness = 0.5.dp, modifier = Modifier.padding(horizontal = LocalAppDimens.current.pad16))
 
         // ── Continue with Google (always visible) ──
         LoginOptionRow(
@@ -422,17 +423,17 @@ private fun MainAuthPage(
             onClick = onGoogleClick,
         )
 
-        HorizontalDivider(color = Color(0xFF333333), thickness = 0.5.dp, modifier = Modifier.padding(horizontal = 16.dp))
+        HorizontalDivider(color = Color(0xFF333333), thickness = 0.5.dp, modifier = Modifier.padding(horizontal = LocalAppDimens.current.pad16))
 
         // Phone login temporarily disabled (Firebase Blaze billing required)
         // TODO: Re-enable when Firebase billing is set up
 
-        Spacer(Modifier.height(24.dp))
+        Spacer(Modifier.height(LocalAppDimens.current.pad24))
 
         // Terms text
-        TermsText(modifier = Modifier.padding(horizontal = 24.dp))
+        TermsText(modifier = Modifier.padding(horizontal = LocalAppDimens.current.pad24))
 
-        Spacer(Modifier.height(20.dp))
+        Spacer(Modifier.height(LocalAppDimens.current.pad20))
     }
 }
 
@@ -447,7 +448,7 @@ private fun LoginOptionRow(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
-            .padding(horizontal = 24.dp, vertical = 16.dp),
+            .padding(horizontal = LocalAppDimens.current.pad24, vertical = LocalAppDimens.current.pad16),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Box(
@@ -460,21 +461,21 @@ private fun LoginOptionRow(
             icon()
         }
 
-        Spacer(Modifier.width(16.dp))
+        Spacer(Modifier.width(LocalAppDimens.current.pad16))
 
         Column {
             Text(
                 title,
                 style = CineVaultTheme.typography.body.copy(
                     fontWeight = FontWeight.Medium,
-                    fontSize = 15.sp,
+                    fontSize = LocalAppDimens.current.font15,
                 ),
                 color = Color.White,
             )
             if (subtitle != null) {
                 Text(
                     subtitle,
-                    style = CineVaultTheme.typography.label.copy(fontSize = 13.sp),
+                    style = CineVaultTheme.typography.label.copy(fontSize = LocalAppDimens.current.font13),
                     color = Color(0xFF888888),
                 )
             }
@@ -509,7 +510,7 @@ private fun EmailInputPage(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp),
+                .padding(horizontal = LocalAppDimens.current.pad16),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             IconButton(onClick = onBack) {
@@ -521,12 +522,12 @@ private fun EmailInputPage(
             }
             Text(
                 "Sign up",
-                style = CineVaultTheme.typography.title.copy(fontSize = 20.sp),
+                style = CineVaultTheme.typography.title.copy(fontSize = LocalAppDimens.current.font20),
                 color = Color.White,
             )
         }
 
-        Spacer(Modifier.height(24.dp))
+        Spacer(Modifier.height(LocalAppDimens.current.pad24))
 
         // Email input
         OutlinedTextField(
@@ -534,7 +535,7 @@ private fun EmailInputPage(
             onValueChange = onEmailChange,
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 24.dp),
+                .padding(horizontal = LocalAppDimens.current.pad24),
             placeholder = {
                 Text("Email address", color = Color(0xFF666666))
             },
@@ -561,13 +562,13 @@ private fun EmailInputPage(
             shape = RoundedCornerShape(12.dp),
         )
 
-        Spacer(Modifier.height(20.dp))
+        Spacer(Modifier.height(LocalAppDimens.current.pad20))
 
         // Trusted device checkbox
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 24.dp)
+                .padding(horizontal = LocalAppDimens.current.pad24)
                 .clickable { onTrustedDeviceChange(!trustedDevice) },
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -577,13 +578,13 @@ private fun EmailInputPage(
                 tint = if (trustedDevice) Color(0xFF00BFA5) else Color(0xFF666666),
                 modifier = Modifier.size(24.dp),
             )
-            Spacer(Modifier.width(8.dp))
+            Spacer(Modifier.width(LocalAppDimens.current.pad8))
             Text(
                 "Mark this device as a trusted device",
-                style = CineVaultTheme.typography.body.copy(fontSize = 14.sp),
+                style = CineVaultTheme.typography.body.copy(fontSize = LocalAppDimens.current.font14),
                 color = Color.White,
             )
-            Spacer(Modifier.width(4.dp))
+            Spacer(Modifier.width(LocalAppDimens.current.pad4))
             Icon(
                 Icons.Filled.HelpOutline,
                 contentDescription = null,
@@ -592,7 +593,7 @@ private fun EmailInputPage(
             )
         }
 
-        Spacer(Modifier.height(20.dp))
+        Spacer(Modifier.height(LocalAppDimens.current.pad20))
 
         // Error
         if (error != null) {
@@ -600,7 +601,7 @@ private fun EmailInputPage(
                 error,
                 style = CineVaultTheme.typography.label,
                 color = CineVaultTheme.colors.error,
-                modifier = Modifier.padding(horizontal = 24.dp, vertical = 4.dp),
+                modifier = Modifier.padding(horizontal = LocalAppDimens.current.pad24, vertical = LocalAppDimens.current.pad4),
             )
         }
 
@@ -612,7 +613,7 @@ private fun EmailInputPage(
             },
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 24.dp)
+                .padding(horizontal = LocalAppDimens.current.pad24)
                 .height(50.dp),
             enabled = email.isNotBlank() && !isLoading,
             shape = RoundedCornerShape(12.dp),
@@ -630,18 +631,18 @@ private fun EmailInputPage(
                     strokeWidth = 2.dp,
                 )
             } else {
-                Text("Send OTP", fontSize = 15.sp)
+                Text("Send OTP", fontSize = LocalAppDimens.current.font15)
             }
         }
 
-        Spacer(Modifier.height(12.dp))
+        Spacer(Modifier.height(LocalAppDimens.current.pad12))
 
         // Authorize on Original Device
         Button(
             onClick = { /* Optional advanced feature */ },
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 24.dp)
+                .padding(horizontal = LocalAppDimens.current.pad24)
                 .height(50.dp),
             enabled = false,
             shape = RoundedCornerShape(12.dp),
@@ -652,15 +653,15 @@ private fun EmailInputPage(
                 disabledContentColor = Color(0xFF666666),
             ),
         ) {
-            Text("Authorize on Original Device", fontSize = 15.sp)
+            Text("Authorize on Original Device", fontSize = LocalAppDimens.current.font15)
         }
 
-        Spacer(Modifier.height(24.dp))
+        Spacer(Modifier.height(LocalAppDimens.current.pad24))
 
         // Terms
-        TermsText(modifier = Modifier.padding(horizontal = 24.dp))
+        TermsText(modifier = Modifier.padding(horizontal = LocalAppDimens.current.pad24))
 
-        Spacer(Modifier.height(20.dp))
+        Spacer(Modifier.height(LocalAppDimens.current.pad20))
     }
 }
 
@@ -692,7 +693,7 @@ private fun EmailOtpPage(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp),
+                .padding(horizontal = LocalAppDimens.current.pad16),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             IconButton(onClick = onBack) {
@@ -704,35 +705,35 @@ private fun EmailOtpPage(
             }
             Text(
                 "Verify OTP",
-                style = CineVaultTheme.typography.title.copy(fontSize = 20.sp),
+                style = CineVaultTheme.typography.title.copy(fontSize = LocalAppDimens.current.font20),
                 color = Color.White,
             )
         }
 
-        Spacer(Modifier.height(16.dp))
+        Spacer(Modifier.height(LocalAppDimens.current.pad16))
 
         Text(
             "Enter the 6-digit code sent to",
-            style = CineVaultTheme.typography.body.copy(fontSize = 14.sp),
+            style = CineVaultTheme.typography.body.copy(fontSize = LocalAppDimens.current.font14),
             color = Color(0xFF888888),
-            modifier = Modifier.padding(horizontal = 24.dp),
+            modifier = Modifier.padding(horizontal = LocalAppDimens.current.pad24),
         )
         Text(
             email,
-            style = CineVaultTheme.typography.body.copy(fontWeight = FontWeight.Bold, fontSize = 14.sp),
+            style = CineVaultTheme.typography.body.copy(fontWeight = FontWeight.Bold, fontSize = LocalAppDimens.current.font14),
             color = CineVaultTheme.colors.accentGold,
-            modifier = Modifier.padding(horizontal = 24.dp),
+            modifier = Modifier.padding(horizontal = LocalAppDimens.current.pad24),
         )
 
-        Spacer(Modifier.height(24.dp))
+        Spacer(Modifier.height(LocalAppDimens.current.pad24))
 
         // Dev OTP hint
         if (devOtp != null) {
             Text(
                 "Dev OTP: $devOtp",
-                style = CineVaultTheme.typography.label.copy(fontSize = 12.sp),
+                style = CineVaultTheme.typography.label.copy(fontSize = LocalAppDimens.current.font12),
                 color = CineVaultTheme.colors.accentGold,
-                modifier = Modifier.padding(horizontal = 24.dp, vertical = 4.dp),
+                modifier = Modifier.padding(horizontal = LocalAppDimens.current.pad24, vertical = LocalAppDimens.current.pad4),
             )
         }
 
@@ -745,7 +746,7 @@ private fun EmailOtpPage(
             },
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 24.dp),
+                .padding(horizontal = LocalAppDimens.current.pad24),
             placeholder = {
                 Text("• • • • • •", color = Color(0xFF666666), letterSpacing = 6.sp)
             },
@@ -763,7 +764,7 @@ private fun EmailOtpPage(
             textStyle = LocalTextStyle.current.copy(
                 letterSpacing = 8.sp,
                 textAlign = TextAlign.Center,
-                fontSize = 22.sp,
+                fontSize = LocalAppDimens.current.font22,
                 color = Color.White,
             ),
             colors = OutlinedTextFieldDefaults.colors(
@@ -776,7 +777,7 @@ private fun EmailOtpPage(
             shape = RoundedCornerShape(12.dp),
         )
 
-        Spacer(Modifier.height(12.dp))
+        Spacer(Modifier.height(LocalAppDimens.current.pad12))
 
         // Resend
         TextButton(
@@ -786,11 +787,11 @@ private fun EmailOtpPage(
             Text(
                 "Resend OTP",
                 color = CineVaultTheme.colors.accentGold,
-                fontSize = 14.sp,
+                fontSize = LocalAppDimens.current.font14,
             )
         }
 
-        Spacer(Modifier.height(8.dp))
+        Spacer(Modifier.height(LocalAppDimens.current.pad8))
 
         // Error
         if (error != null) {
@@ -798,7 +799,7 @@ private fun EmailOtpPage(
                 error,
                 style = CineVaultTheme.typography.label,
                 color = CineVaultTheme.colors.error,
-                modifier = Modifier.padding(horizontal = 24.dp, vertical = 4.dp),
+                modifier = Modifier.padding(horizontal = LocalAppDimens.current.pad24, vertical = LocalAppDimens.current.pad4),
             )
         }
 
@@ -810,7 +811,7 @@ private fun EmailOtpPage(
             },
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 24.dp)
+                .padding(horizontal = LocalAppDimens.current.pad24)
                 .height(50.dp),
             enabled = otp.length == 6 && !isLoading,
             shape = RoundedCornerShape(12.dp),
@@ -828,11 +829,11 @@ private fun EmailOtpPage(
                     strokeWidth = 2.dp,
                 )
             } else {
-                Text("Verify & Continue", fontSize = 15.sp, fontWeight = FontWeight.Bold)
+                Text("Verify & Continue", fontSize = LocalAppDimens.current.font15, fontWeight = FontWeight.Bold)
             }
         }
 
-        Spacer(Modifier.height(20.dp))
+        Spacer(Modifier.height(LocalAppDimens.current.pad20))
     }
 }
 
@@ -861,7 +862,7 @@ private fun PhoneInputPage(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp),
+                .padding(horizontal = LocalAppDimens.current.pad16),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             IconButton(onClick = onBack) {
@@ -873,20 +874,20 @@ private fun PhoneInputPage(
             }
             Text(
                 "Phone Login",
-                style = CineVaultTheme.typography.title.copy(fontSize = 20.sp),
+                style = CineVaultTheme.typography.title.copy(fontSize = LocalAppDimens.current.font20),
                 color = Color.White,
             )
         }
 
-        Spacer(Modifier.height(24.dp))
+        Spacer(Modifier.height(LocalAppDimens.current.pad24))
 
         Text(
             "Mobile Number",
             style = CineVaultTheme.typography.label,
             color = Color(0xFF888888),
-            modifier = Modifier.padding(horizontal = 24.dp),
+            modifier = Modifier.padding(horizontal = LocalAppDimens.current.pad24),
         )
-        Spacer(Modifier.height(8.dp))
+        Spacer(Modifier.height(LocalAppDimens.current.pad8))
 
         OutlinedTextField(
             value = phone,
@@ -896,7 +897,7 @@ private fun PhoneInputPage(
             },
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 24.dp),
+                .padding(horizontal = LocalAppDimens.current.pad24),
             singleLine = true,
             prefix = {
                 Text(
@@ -931,23 +932,23 @@ private fun PhoneInputPage(
         )
 
         if (phone.isNotEmpty() && phone.length < 10) {
-            Spacer(Modifier.height(4.dp))
+            Spacer(Modifier.height(LocalAppDimens.current.pad4))
             Text(
                 "${phone.length}/10 digits",
-                style = CineVaultTheme.typography.label.copy(fontSize = 11.sp),
+                style = CineVaultTheme.typography.label.copy(fontSize = LocalAppDimens.current.font11),
                 color = Color(0xFF666666),
-                modifier = Modifier.padding(horizontal = 24.dp),
+                modifier = Modifier.padding(horizontal = LocalAppDimens.current.pad24),
             )
         }
 
-        Spacer(Modifier.height(20.dp))
+        Spacer(Modifier.height(LocalAppDimens.current.pad20))
 
         if (error != null) {
             Text(
                 error,
                 style = CineVaultTheme.typography.label,
                 color = CineVaultTheme.colors.error,
-                modifier = Modifier.padding(horizontal = 24.dp, vertical = 4.dp),
+                modifier = Modifier.padding(horizontal = LocalAppDimens.current.pad24, vertical = LocalAppDimens.current.pad4),
             )
         }
 
@@ -958,7 +959,7 @@ private fun PhoneInputPage(
             },
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 24.dp)
+                .padding(horizontal = LocalAppDimens.current.pad24)
                 .height(50.dp),
             enabled = phone.length == 10 && phone[0].toString().matches(Regex("[6-9]")) && !isLoading,
             shape = RoundedCornerShape(12.dp),
@@ -976,11 +977,11 @@ private fun PhoneInputPage(
                     strokeWidth = 2.dp,
                 )
             } else {
-                Text("Send OTP", fontSize = 15.sp, fontWeight = FontWeight.Bold)
+                Text("Send OTP", fontSize = LocalAppDimens.current.font15, fontWeight = FontWeight.Bold)
             }
         }
 
-        Spacer(Modifier.height(20.dp))
+        Spacer(Modifier.height(LocalAppDimens.current.pad20))
     }
 }
 
@@ -1011,7 +1012,7 @@ private fun PhoneOtpPage(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp),
+                .padding(horizontal = LocalAppDimens.current.pad16),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             IconButton(onClick = onBack) {
@@ -1023,12 +1024,12 @@ private fun PhoneOtpPage(
             }
             Text(
                 "Verify OTP",
-                style = CineVaultTheme.typography.title.copy(fontSize = 20.sp),
+                style = CineVaultTheme.typography.title.copy(fontSize = LocalAppDimens.current.font20),
                 color = Color.White,
             )
         }
 
-        Spacer(Modifier.height(16.dp))
+        Spacer(Modifier.height(LocalAppDimens.current.pad16))
 
         Text(
             buildAnnotatedString {
@@ -1037,12 +1038,12 @@ private fun PhoneOtpPage(
                     append(phone)
                 }
             },
-            style = CineVaultTheme.typography.body.copy(fontSize = 14.sp),
+            style = CineVaultTheme.typography.body.copy(fontSize = LocalAppDimens.current.font14),
             color = Color(0xFF888888),
-            modifier = Modifier.padding(horizontal = 24.dp),
+            modifier = Modifier.padding(horizontal = LocalAppDimens.current.pad24),
         )
 
-        Spacer(Modifier.height(24.dp))
+        Spacer(Modifier.height(LocalAppDimens.current.pad24))
 
         OutlinedTextField(
             value = otp,
@@ -1052,7 +1053,7 @@ private fun PhoneOtpPage(
             },
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 24.dp),
+                .padding(horizontal = LocalAppDimens.current.pad24),
             placeholder = {
                 Text("• • • • • •", color = Color(0xFF666666), letterSpacing = 6.sp)
             },
@@ -1070,7 +1071,7 @@ private fun PhoneOtpPage(
             textStyle = LocalTextStyle.current.copy(
                 letterSpacing = 8.sp,
                 textAlign = TextAlign.Center,
-                fontSize = 22.sp,
+                fontSize = LocalAppDimens.current.font22,
                 color = Color.White,
             ),
             colors = OutlinedTextFieldDefaults.colors(
@@ -1083,7 +1084,7 @@ private fun PhoneOtpPage(
             shape = RoundedCornerShape(12.dp),
         )
 
-        Spacer(Modifier.height(12.dp))
+        Spacer(Modifier.height(LocalAppDimens.current.pad12))
 
         // Resend / Countdown
         Row(
@@ -1092,23 +1093,23 @@ private fun PhoneOtpPage(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             if (countdown > 0) {
-                Text("Resend OTP in ", color = Color(0xFF888888), fontSize = 14.sp)
-                Text("${countdown}s", color = CineVaultTheme.colors.accentGold, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                Text("Resend OTP in ", color = Color(0xFF888888), fontSize = LocalAppDimens.current.font14)
+                Text("${countdown}s", color = CineVaultTheme.colors.accentGold, fontWeight = FontWeight.Bold, fontSize = LocalAppDimens.current.font14)
             } else {
                 TextButton(onClick = onResend, enabled = !isLoading) {
-                    Text("Resend OTP", color = CineVaultTheme.colors.accentGold, fontSize = 14.sp)
+                    Text("Resend OTP", color = CineVaultTheme.colors.accentGold, fontSize = LocalAppDimens.current.font14)
                 }
             }
         }
 
-        Spacer(Modifier.height(8.dp))
+        Spacer(Modifier.height(LocalAppDimens.current.pad8))
 
         if (error != null) {
             Text(
                 error,
                 style = CineVaultTheme.typography.label,
                 color = CineVaultTheme.colors.error,
-                modifier = Modifier.padding(horizontal = 24.dp, vertical = 4.dp),
+                modifier = Modifier.padding(horizontal = LocalAppDimens.current.pad24, vertical = LocalAppDimens.current.pad4),
             )
         }
 
@@ -1119,7 +1120,7 @@ private fun PhoneOtpPage(
             },
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 24.dp)
+                .padding(horizontal = LocalAppDimens.current.pad24)
                 .height(50.dp),
             enabled = otp.length == 6 && !isLoading,
             shape = RoundedCornerShape(12.dp),
@@ -1137,20 +1138,20 @@ private fun PhoneOtpPage(
                     strokeWidth = 2.dp,
                 )
             } else {
-                Text("Verify & Continue", fontSize = 15.sp, fontWeight = FontWeight.Bold)
+                Text("Verify & Continue", fontSize = LocalAppDimens.current.font15, fontWeight = FontWeight.Bold)
             }
         }
 
-        Spacer(Modifier.height(12.dp))
+        Spacer(Modifier.height(LocalAppDimens.current.pad12))
 
         TextButton(
             onClick = onBack,
             modifier = Modifier.align(Alignment.CenterHorizontally),
         ) {
-            Text("Change mobile number", color = CineVaultTheme.colors.accentGold, fontSize = 14.sp)
+            Text("Change mobile number", color = CineVaultTheme.colors.accentGold, fontSize = LocalAppDimens.current.font14)
         }
 
-        Spacer(Modifier.height(20.dp))
+        Spacer(Modifier.height(LocalAppDimens.current.pad20))
     }
 }
 
@@ -1174,7 +1175,7 @@ private fun PhoneConfirmDialog(
         ) {
             Column(
                 modifier = Modifier
-                    .padding(32.dp)
+                    .padding(LocalAppDimens.current.pad32)
                     .fillMaxWidth(),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
@@ -1188,22 +1189,22 @@ private fun PhoneConfirmDialog(
                 ) {
                     Text(
                         name.firstOrNull()?.uppercase() ?: "U",
-                        fontSize = 28.sp,
+                        fontSize = LocalAppDimens.current.font28,
                         fontWeight = FontWeight.Bold,
                         color = Color.White,
                     )
                 }
 
-                Spacer(Modifier.height(16.dp))
+                Spacer(Modifier.height(LocalAppDimens.current.pad16))
 
                 // Masked phone number
                 Text(
                     maskPhone(phone),
-                    style = CineVaultTheme.typography.body.copy(fontSize = 16.sp),
+                    style = CineVaultTheme.typography.body.copy(fontSize = LocalAppDimens.current.font16),
                     color = Color.White,
                 )
 
-                Spacer(Modifier.height(24.dp))
+                Spacer(Modifier.height(LocalAppDimens.current.pad24))
 
                 // Continue button (gold)
                 Button(
@@ -1217,17 +1218,17 @@ private fun PhoneConfirmDialog(
                         contentColor = Color.Black,
                     ),
                 ) {
-                    Text("Continue", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                    Text("Continue", fontSize = LocalAppDimens.current.font16, fontWeight = FontWeight.Bold)
                 }
 
-                Spacer(Modifier.height(12.dp))
+                Spacer(Modifier.height(LocalAppDimens.current.pad12))
 
                 // Log into another account
                 TextButton(onClick = onDifferentAccount) {
                     Text(
                         "Log into another account",
                         color = Color(0xFF5599FF),
-                        fontSize = 14.sp,
+                        fontSize = LocalAppDimens.current.font14,
                         textDecoration = TextDecoration.Underline,
                     )
                 }
@@ -1258,7 +1259,7 @@ private fun TermsText(modifier: Modifier = Modifier) {
             }
         },
         modifier = modifier,
-        style = CineVaultTheme.typography.label.copy(fontSize = 12.sp),
+        style = CineVaultTheme.typography.label.copy(fontSize = LocalAppDimens.current.font12),
         textAlign = TextAlign.Center,
     )
 }

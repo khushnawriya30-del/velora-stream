@@ -20,6 +20,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.cinevault.app.ui.theme.CineVaultTheme
 import com.cinevault.app.ui.viewmodel.SettingsViewModel
+import com.cinevault.app.ui.theme.LocalAppDimens
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -50,9 +51,9 @@ fun AccountSettingsScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 20.dp),
+                .padding(horizontal = LocalAppDimens.current.pad20),
         ) {
-            Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(LocalAppDimens.current.pad16))
 
             // Profile Avatar
             Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
@@ -64,7 +65,7 @@ fun AccountSettingsScreen(
                     Box(contentAlignment = Alignment.Center) {
                         Text(
                             uiState.userName.take(1).uppercase(),
-                            fontSize = 32.sp,
+                            fontSize = LocalAppDimens.current.font32,
                             fontWeight = FontWeight.Bold,
                             color = CineVaultTheme.colors.accentGold,
                         )
@@ -72,7 +73,7 @@ fun AccountSettingsScreen(
                 }
             }
 
-            Spacer(Modifier.height(24.dp))
+            Spacer(Modifier.height(LocalAppDimens.current.pad24))
 
             // Name
             Surface(shape = RoundedCornerShape(14.dp), color = CineVaultTheme.colors.surface, modifier = Modifier.fillMaxWidth()) {
@@ -81,15 +82,15 @@ fun AccountSettingsScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clickable { showEditName = true }
-                            .padding(16.dp),
+                            .padding(LocalAppDimens.current.pad16),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Icon(Icons.Default.Person, contentDescription = null, tint = CineVaultTheme.colors.accentGold, modifier = Modifier.size(24.dp))
-                        Spacer(Modifier.width(14.dp))
+                        Spacer(Modifier.width(LocalAppDimens.current.pad14))
                         Column(modifier = Modifier.weight(1f)) {
-                            Text("Name", fontSize = 12.sp, color = CineVaultTheme.colors.textSecondary)
-                            Spacer(Modifier.height(2.dp))
-                            Text(uiState.userName.ifBlank { "Not set" }, fontSize = 16.sp, color = CineVaultTheme.colors.textPrimary)
+                            Text("Name", fontSize = LocalAppDimens.current.font12, color = CineVaultTheme.colors.textSecondary)
+                            Spacer(Modifier.height(LocalAppDimens.current.padTiny))
+                            Text(uiState.userName.ifBlank { "Not set" }, fontSize = LocalAppDimens.current.font16, color = CineVaultTheme.colors.textPrimary)
                         }
                         Icon(Icons.Default.Edit, contentDescription = null, tint = CineVaultTheme.colors.textSecondary, modifier = Modifier.size(18.dp))
                     }
@@ -97,34 +98,34 @@ fun AccountSettingsScreen(
 
                     // Email (read only)
                     Row(
-                        modifier = Modifier.fillMaxWidth().padding(16.dp),
+                        modifier = Modifier.fillMaxWidth().padding(LocalAppDimens.current.pad16),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Icon(Icons.Default.Email, contentDescription = null, tint = CineVaultTheme.colors.accentGold, modifier = Modifier.size(24.dp))
-                        Spacer(Modifier.width(14.dp))
+                        Spacer(Modifier.width(LocalAppDimens.current.pad14))
                         Column(modifier = Modifier.weight(1f)) {
-                            Text("Email", fontSize = 12.sp, color = CineVaultTheme.colors.textSecondary)
-                            Spacer(Modifier.height(2.dp))
-                            Text(uiState.userEmail, fontSize = 16.sp, color = CineVaultTheme.colors.textPrimary)
+                            Text("Email", fontSize = LocalAppDimens.current.font12, color = CineVaultTheme.colors.textSecondary)
+                            Spacer(Modifier.height(LocalAppDimens.current.padTiny))
+                            Text(uiState.userEmail, fontSize = LocalAppDimens.current.font16, color = CineVaultTheme.colors.textPrimary)
                         }
                     }
                 }
             }
 
-            Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(LocalAppDimens.current.pad16))
 
             // Account Info
             Surface(shape = RoundedCornerShape(14.dp), color = CineVaultTheme.colors.surface, modifier = Modifier.fillMaxWidth()) {
                 Row(
-                    modifier = Modifier.fillMaxWidth().padding(16.dp),
+                    modifier = Modifier.fillMaxWidth().padding(LocalAppDimens.current.pad16),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Icon(Icons.Default.Info, contentDescription = null, tint = CineVaultTheme.colors.accentGold, modifier = Modifier.size(24.dp))
-                    Spacer(Modifier.width(14.dp))
+                    Spacer(Modifier.width(LocalAppDimens.current.pad14))
                     Column(modifier = Modifier.weight(1f)) {
-                        Text("Account Type", fontSize = 12.sp, color = CineVaultTheme.colors.textSecondary)
-                        Spacer(Modifier.height(2.dp))
-                        Text("Standard", fontSize = 16.sp, color = CineVaultTheme.colors.textPrimary)
+                        Text("Account Type", fontSize = LocalAppDimens.current.font12, color = CineVaultTheme.colors.textSecondary)
+                        Spacer(Modifier.height(LocalAppDimens.current.padTiny))
+                        Text("Standard", fontSize = LocalAppDimens.current.font16, color = CineVaultTheme.colors.textPrimary)
                     }
                 }
             }

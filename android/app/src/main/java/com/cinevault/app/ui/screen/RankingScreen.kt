@@ -36,6 +36,7 @@ import com.cinevault.app.data.model.MovieDto
 import com.cinevault.app.ui.theme.CineVaultTheme
 import com.cinevault.app.ui.viewmodel.RankingViewModel
 import kotlinx.coroutines.launch
+import com.cinevault.app.ui.theme.LocalAppDimens
 
 // ═══════════════════════════════════════════════════════════════
 // RANKING SCREEN — Download Rank / Rating Rank
@@ -63,7 +64,7 @@ fun RankingScreen(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 8.dp, vertical = 12.dp),
+                .padding(horizontal = LocalAppDimens.current.pad8, vertical = LocalAppDimens.current.pad12),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             IconButton(onClick = onBack) {
@@ -80,7 +81,7 @@ fun RankingScreen(
                     selected = rankTypePager.currentPage == 0,
                     onClick = { scope.launch { rankTypePager.animateScrollToPage(0) } },
                 )
-                Spacer(Modifier.width(16.dp))
+                Spacer(Modifier.width(LocalAppDimens.current.pad16))
                 RankTypeTab(
                     label = "Rating Rank",
                     selected = rankTypePager.currentPage == 1,
@@ -109,7 +110,7 @@ fun RankingScreen(
                         Text(
                             label,
                             fontWeight = if (uiState.selectedContentType == type) FontWeight.Bold else FontWeight.Normal,
-                            fontSize = 13.sp,
+                            fontSize = LocalAppDimens.current.font13,
                         )
                     },
                     selectedContentColor = CineVaultTheme.colors.textPrimary,
@@ -121,14 +122,14 @@ fun RankingScreen(
         // ── Genre Chips ──
         val genres = listOf("Action", "Comedy", "Mystery", "Drama", "Erotic", "Thriller", "Horror", "Romance", "Documentary", "Cartoon", "Science fiction", "Others")
         LazyRow(
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(LocalAppDimens.current.pad8),
+            contentPadding = PaddingValues(horizontal = LocalAppDimens.current.pad12, vertical = LocalAppDimens.current.pad8),
         ) {
             items(genres) { genre ->
                 val selected = uiState.selectedGenre == genre
                 Text(
                     text = genre,
-                    fontSize = 12.sp,
+                    fontSize = LocalAppDimens.current.font12,
                     fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
                     color = if (selected) Color.Black else CineVaultTheme.colors.textPrimary,
                     modifier = Modifier
@@ -136,7 +137,7 @@ fun RankingScreen(
                         .background(if (selected) CineVaultTheme.colors.accentGold else Color.Transparent)
                         .border(1.dp, if (selected) Color.Transparent else Color(0xFF3A3A3A), RoundedCornerShape(20.dp))
                         .clickable { viewModel.setGenre(genre) }
-                        .padding(horizontal = 14.dp, vertical = 8.dp),
+                        .padding(horizontal = LocalAppDimens.current.pad14, vertical = LocalAppDimens.current.pad8),
                 )
             }
         }
@@ -179,12 +180,12 @@ private fun RankTypeTab(
     val emoji = if (label.contains("Download")) "🔥" else "🔥"
     Text(
         text = "$emoji $label $emoji",
-        fontSize = 14.sp,
+        fontSize = LocalAppDimens.current.font14,
         fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
         color = if (selected) CineVaultTheme.colors.accentGold else CineVaultTheme.colors.textMuted,
         modifier = Modifier
             .clickable(onClick = onClick)
-            .padding(horizontal = 4.dp, vertical = 4.dp),
+            .padding(horizontal = LocalAppDimens.current.pad4, vertical = LocalAppDimens.current.pad4),
     )
 }
 
@@ -199,7 +200,7 @@ private fun RankingContent(
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(bottom = 24.dp),
+        contentPadding = PaddingValues(bottom = LocalAppDimens.current.pad24),
     ) {
         // Top 3 Podium
         if (items.size >= 3) {
@@ -251,7 +252,7 @@ private fun PodiumSection(
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 8.dp, vertical = 12.dp)
+            .padding(horizontal = LocalAppDimens.current.pad8, vertical = LocalAppDimens.current.pad12)
             .drawBehind {
                 // Subtle gold glow behind podium
                 drawCircle(
@@ -306,16 +307,16 @@ private fun PodiumSection(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceEvenly,
     ) {
-        Text("2", fontSize = 28.sp, fontWeight = FontWeight.Bold, color = CineVaultTheme.colors.textMuted.copy(alpha = 0.4f), textAlign = TextAlign.Center, modifier = Modifier.weight(1f))
+        Text("2", fontSize = LocalAppDimens.current.font28, fontWeight = FontWeight.Bold, color = CineVaultTheme.colors.textMuted.copy(alpha = 0.4f), textAlign = TextAlign.Center, modifier = Modifier.weight(1f))
         Row(
             modifier = Modifier.weight(1f),
             horizontalArrangement = Arrangement.Center,
         ) {
-            Text("👏", fontSize = 16.sp)
-            Text("1", fontSize = 28.sp, fontWeight = FontWeight.Bold, color = CineVaultTheme.colors.accentGold.copy(alpha = 0.4f))
-            Text("👏", fontSize = 16.sp)
+            Text("👏", fontSize = LocalAppDimens.current.font16)
+            Text("1", fontSize = LocalAppDimens.current.font28, fontWeight = FontWeight.Bold, color = CineVaultTheme.colors.accentGold.copy(alpha = 0.4f))
+            Text("👏", fontSize = LocalAppDimens.current.font16)
         }
-        Text("3", fontSize = 28.sp, fontWeight = FontWeight.Bold, color = CineVaultTheme.colors.textMuted.copy(alpha = 0.4f), textAlign = TextAlign.Center, modifier = Modifier.weight(1f))
+        Text("3", fontSize = LocalAppDimens.current.font28, fontWeight = FontWeight.Bold, color = CineVaultTheme.colors.textMuted.copy(alpha = 0.4f), textAlign = TextAlign.Center, modifier = Modifier.weight(1f))
     }
 }
 
@@ -346,11 +347,11 @@ private fun PodiumCard(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(posterHeight)
-                    .clip(RoundedCornerShape(8.dp))
+                    .clip(RoundedCornerShape(LocalAppDimens.current.radius8))
                     .border(
                         width = if (isFirst) 2.dp else 1.dp,
                         color = borderColor.copy(alpha = 0.6f),
-                        shape = RoundedCornerShape(8.dp),
+                        shape = RoundedCornerShape(LocalAppDimens.current.radius8),
                     ),
                 contentScale = ContentScale.Crop,
             )
@@ -368,22 +369,22 @@ private fun PodiumCard(
                         shape = RoundedCornerShape(12.dp),
                     )
                     .border(1.dp, borderColor.copy(alpha = 0.3f), RoundedCornerShape(12.dp))
-                    .padding(horizontal = 12.dp, vertical = 2.dp),
+                    .padding(horizontal = LocalAppDimens.current.pad12, vertical = LocalAppDimens.current.padTiny),
             ) {
                 Text(
                     "TOP $rank",
-                    fontSize = 10.sp,
+                    fontSize = LocalAppDimens.current.font10,
                     fontWeight = FontWeight.ExtraBold,
                     color = if (isFirst) Color.Black else CineVaultTheme.colors.textPrimary,
                 )
             }
         }
 
-        Spacer(Modifier.height(16.dp))
+        Spacer(Modifier.height(LocalAppDimens.current.pad16))
 
         Text(
             text = movie.title,
-            fontSize = 11.sp,
+            fontSize = LocalAppDimens.current.font11,
             fontWeight = FontWeight.Medium,
             color = CineVaultTheme.colors.textPrimary,
             maxLines = 2,
@@ -407,7 +408,7 @@ private fun RankingListItem(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 10.dp),
+            .padding(horizontal = LocalAppDimens.current.pad16, vertical = LocalAppDimens.current.pad10),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         // Rank number with bar chart icon
@@ -417,7 +418,7 @@ private fun RankingListItem(
         ) {
             Text(
                 "$rank",
-                fontSize = 16.sp,
+                fontSize = LocalAppDimens.current.font16,
                 fontWeight = FontWeight.Bold,
                 color = CineVaultTheme.colors.textMuted,
             )
@@ -429,7 +430,7 @@ private fun RankingListItem(
             )
         }
 
-        Spacer(Modifier.width(12.dp))
+        Spacer(Modifier.width(LocalAppDimens.current.pad12))
 
         // Poster
         AsyncImage(
@@ -438,11 +439,11 @@ private fun RankingListItem(
             modifier = Modifier
                 .width(80.dp)
                 .height(110.dp)
-                .clip(RoundedCornerShape(6.dp)),
+                .clip(RoundedCornerShape(LocalAppDimens.current.radius6)),
             contentScale = ContentScale.Crop,
         )
 
-        Spacer(Modifier.width(12.dp))
+        Spacer(Modifier.width(LocalAppDimens.current.pad12))
 
         // Info
         Column(modifier = Modifier.weight(1f)) {
@@ -454,7 +455,7 @@ private fun RankingListItem(
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
             )
-            Spacer(Modifier.height(4.dp))
+            Spacer(Modifier.height(LocalAppDimens.current.pad4))
 
             val infoLine = buildList {
                 movie.starRating?.takeIf { it > 0 }?.let { add(String.format("%.1f", it)) }
@@ -472,7 +473,7 @@ private fun RankingListItem(
                     maxLines = 1,
                 )
             }
-            Spacer(Modifier.height(4.dp))
+            Spacer(Modifier.height(LocalAppDimens.current.pad4))
 
             movie.synopsis?.let { desc ->
                 Text(
@@ -481,7 +482,7 @@ private fun RankingListItem(
                     color = CineVaultTheme.colors.textSecondary,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
-                    lineHeight = 16.sp,
+                    lineHeight = LocalAppDimens.current.lineHeight16,
                 )
             }
         }

@@ -21,6 +21,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.cinevault.app.ui.theme.CineVaultTheme
 import com.cinevault.app.ui.viewmodel.AuthViewModel
+import com.cinevault.app.ui.theme.LocalAppDimens
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -89,9 +90,9 @@ fun SettingsScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 20.dp),
+                .padding(horizontal = LocalAppDimens.current.pad20),
         ) {
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(LocalAppDimens.current.pad8))
 
             SettingsGroupHeader("Account")
             Surface(shape = RoundedCornerShape(14.dp), color = CineVaultTheme.colors.surface, modifier = Modifier.fillMaxWidth()) {
@@ -104,7 +105,7 @@ fun SettingsScreen(
                 }
             }
 
-            Spacer(Modifier.height(20.dp))
+            Spacer(Modifier.height(LocalAppDimens.current.pad20))
 
             SettingsGroupHeader("Premium")
             Surface(shape = RoundedCornerShape(14.dp), color = CineVaultTheme.colors.surface, modifier = Modifier.fillMaxWidth()) {
@@ -113,7 +114,7 @@ fun SettingsScreen(
                 }
             }
 
-            Spacer(Modifier.height(20.dp))
+            Spacer(Modifier.height(LocalAppDimens.current.pad20))
 
             SettingsGroupHeader("Devices")
             Surface(shape = RoundedCornerShape(14.dp), color = CineVaultTheme.colors.surface, modifier = Modifier.fillMaxWidth()) {
@@ -122,7 +123,7 @@ fun SettingsScreen(
                 }
             }
 
-            Spacer(Modifier.height(20.dp))
+            Spacer(Modifier.height(LocalAppDimens.current.pad20))
 
             SettingsGroupHeader("Preferences")
             Surface(shape = RoundedCornerShape(14.dp), color = CineVaultTheme.colors.surface, modifier = Modifier.fillMaxWidth()) {
@@ -137,7 +138,7 @@ fun SettingsScreen(
                 }
             }
 
-            Spacer(Modifier.height(20.dp))
+            Spacer(Modifier.height(LocalAppDimens.current.pad20))
 
             SettingsGroupHeader("About")
             Surface(shape = RoundedCornerShape(14.dp), color = CineVaultTheme.colors.surface, modifier = Modifier.fillMaxWidth()) {
@@ -150,7 +151,7 @@ fun SettingsScreen(
                 }
             }
 
-            Spacer(Modifier.height(32.dp))
+            Spacer(Modifier.height(LocalAppDimens.current.pad32))
 
             SettingsGroupHeader("Account Actions")
             Surface(shape = RoundedCornerShape(14.dp), color = CineVaultTheme.colors.surface, modifier = Modifier.fillMaxWidth()) {
@@ -162,11 +163,11 @@ fun SettingsScreen(
                 )
             }
 
-            Spacer(Modifier.height(32.dp))
+            Spacer(Modifier.height(LocalAppDimens.current.pad32))
 
             Text(
                 "VELORA v1.0.0",
-                style = CineVaultTheme.typography.labelSmall.copy(fontSize = 12.sp),
+                style = CineVaultTheme.typography.labelSmall.copy(fontSize = LocalAppDimens.current.font12),
                 color = CineVaultTheme.colors.textSecondary,
                 modifier = Modifier.align(Alignment.CenterHorizontally),
             )
@@ -181,7 +182,7 @@ private fun SettingsGroupHeader(title: String) {
         text = title.uppercase(),
         style = CineVaultTheme.typography.labelSmall,
         color = CineVaultTheme.colors.textSecondary,
-        modifier = Modifier.padding(start = 4.dp, bottom = 8.dp),
+        modifier = Modifier.padding(start = LocalAppDimens.current.pad4, bottom = LocalAppDimens.current.pad8),
     )
 }
 
@@ -196,18 +197,18 @@ private fun SettingsRowItem(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 14.dp),
+            .padding(horizontal = LocalAppDimens.current.pad16, vertical = LocalAppDimens.current.pad14),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Box(
             modifier = Modifier
                 .size(36.dp)
-                .background(CineVaultTheme.colors.accentGold.copy(alpha = 0.08f), RoundedCornerShape(8.dp)),
+                .background(CineVaultTheme.colors.accentGold.copy(alpha = 0.08f), RoundedCornerShape(LocalAppDimens.current.radius8)),
             contentAlignment = Alignment.Center,
         ) {
             Icon(icon, contentDescription = null, tint = tint, modifier = Modifier.size(20.dp))
         }
-        Spacer(Modifier.width(14.dp))
+        Spacer(Modifier.width(LocalAppDimens.current.pad14))
         Text(text = title, style = CineVaultTheme.typography.body, color = tint, modifier = Modifier.weight(1f))
         Icon(Icons.Filled.ChevronRight, contentDescription = null, tint = CineVaultTheme.colors.textSecondary, modifier = Modifier.size(20.dp))
     }

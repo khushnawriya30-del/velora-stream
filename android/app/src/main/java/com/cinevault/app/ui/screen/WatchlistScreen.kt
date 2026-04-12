@@ -18,6 +18,7 @@ import com.cinevault.app.data.local.SessionManager
 import com.cinevault.app.ui.components.*
 import com.cinevault.app.ui.theme.CineVaultTheme
 import com.cinevault.app.ui.viewmodel.ProfileViewModel
+import com.cinevault.app.ui.theme.LocalAppDimens
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -60,7 +61,7 @@ fun WatchlistScreen(
                             style = CineVaultTheme.typography.body,
                             color = CineVaultTheme.colors.textSecondary,
                         )
-                        Spacer(Modifier.height(8.dp))
+                        Spacer(Modifier.height(LocalAppDimens.current.pad8))
                         Text(
                             "Save movies and series to watch later",
                             style = CineVaultTheme.typography.bodySmall,
@@ -72,9 +73,9 @@ fun WatchlistScreen(
             else -> {
                 LazyVerticalGrid(
                     columns = GridCells.Fixed(3),
-                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                    contentPadding = PaddingValues(horizontal = LocalAppDimens.current.pad16, vertical = LocalAppDimens.current.pad8),
+                    horizontalArrangement = Arrangement.spacedBy(LocalAppDimens.current.pad10),
+                    verticalArrangement = Arrangement.spacedBy(LocalAppDimens.current.pad16),
                 ) {
                     items(uiState.watchlist, key = { it.id }) { movie ->
                         MovieCard(

@@ -29,6 +29,7 @@ import coil.compose.AsyncImage
 import com.cinevault.app.data.model.MovieDto
 import com.cinevault.app.ui.theme.CineVaultTheme
 import com.cinevault.app.ui.viewmodel.AddMoreViewModel
+import com.cinevault.app.ui.theme.LocalAppDimens
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -68,7 +69,7 @@ fun AddMoreScreen(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 8.dp, vertical = 8.dp),
+                .padding(horizontal = LocalAppDimens.current.pad8, vertical = LocalAppDimens.current.pad8),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             IconButton(onClick = onBack) {
@@ -88,7 +89,7 @@ fun AddMoreScreen(
             onValueChange = { viewModel.onSearchQueryChange(it) },
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 4.dp),
+                .padding(horizontal = LocalAppDimens.current.pad16, vertical = LocalAppDimens.current.pad4),
             placeholder = {
                 Text("Search content...", color = CineVaultTheme.colors.textSecondary)
             },
@@ -115,7 +116,7 @@ fun AddMoreScreen(
             ),
         )
 
-        Spacer(Modifier.height(8.dp))
+        Spacer(Modifier.height(LocalAppDimens.current.pad8))
 
         // Content list
         if (uiState.isLoading && uiState.allContent.isEmpty()) {
@@ -125,8 +126,8 @@ fun AddMoreScreen(
         } else {
             LazyColumn(
                 state = listState,
-                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
+                contentPadding = PaddingValues(horizontal = LocalAppDimens.current.pad16, vertical = LocalAppDimens.current.pad4),
+                verticalArrangement = Arrangement.spacedBy(LocalAppDimens.current.pad8),
             ) {
                 val filtered = uiState.filteredContent
                 items(filtered, key = { it.id }) { movie ->
@@ -142,7 +143,7 @@ fun AddMoreScreen(
                 if (uiState.isLoading && uiState.allContent.isNotEmpty()) {
                     item {
                         Box(
-                            modifier = Modifier.fillMaxWidth().padding(16.dp),
+                            modifier = Modifier.fillMaxWidth().padding(LocalAppDimens.current.pad16),
                             contentAlignment = Alignment.Center,
                         ) {
                             CircularProgressIndicator(
@@ -168,16 +169,16 @@ private fun AddMoreContentItem(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(10.dp))
+            .clip(RoundedCornerShape(LocalAppDimens.current.radius10))
             .background(CineVaultTheme.colors.surface)
-            .padding(8.dp),
+            .padding(LocalAppDimens.current.pad8),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         // Poster
         Box(
             modifier = Modifier
                 .size(width = 60.dp, height = 85.dp)
-                .clip(RoundedCornerShape(8.dp))
+                .clip(RoundedCornerShape(LocalAppDimens.current.radius8))
                 .background(CineVaultTheme.colors.surface),
         ) {
             AsyncImage(
@@ -188,7 +189,7 @@ private fun AddMoreContentItem(
             )
         }
 
-        Spacer(Modifier.width(12.dp))
+        Spacer(Modifier.width(LocalAppDimens.current.pad12))
 
         // Title + info
         Column(modifier = Modifier.weight(1f)) {
@@ -199,18 +200,18 @@ private fun AddMoreContentItem(
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
             )
-            Spacer(Modifier.height(4.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Spacer(Modifier.height(LocalAppDimens.current.pad4))
+            Row(horizontalArrangement = Arrangement.spacedBy(LocalAppDimens.current.pad8)) {
                 movie.contentType.let { type ->
                     Surface(
-                        shape = RoundedCornerShape(4.dp),
+                        shape = RoundedCornerShape(LocalAppDimens.current.radius4),
                         color = CineVaultTheme.colors.accentGold.copy(alpha = 0.15f),
                     ) {
                         Text(
                             text = type.replaceFirstChar { it.uppercase() },
-                            style = CineVaultTheme.typography.labelSmall.copy(fontSize = 9.sp),
+                            style = CineVaultTheme.typography.labelSmall.copy(fontSize = LocalAppDimens.current.font9),
                             color = CineVaultTheme.colors.accentGold,
-                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                            modifier = Modifier.padding(horizontal = LocalAppDimens.current.pad6, vertical = LocalAppDimens.current.padTiny),
                         )
                     }
                 }
@@ -229,7 +230,7 @@ private fun AddMoreContentItem(
                             tint = CineVaultTheme.colors.accentGold,
                             modifier = Modifier.size(12.dp),
                         )
-                        Spacer(Modifier.width(2.dp))
+                        Spacer(Modifier.width(LocalAppDimens.current.padTiny))
                         Text(
                             text = String.format("%.1f", movie.rating),
                             style = CineVaultTheme.typography.labelSmall,
@@ -240,7 +241,7 @@ private fun AddMoreContentItem(
             }
         }
 
-        Spacer(Modifier.width(8.dp))
+        Spacer(Modifier.width(LocalAppDimens.current.pad8))
 
         // Add/Remove button
         IconButton(

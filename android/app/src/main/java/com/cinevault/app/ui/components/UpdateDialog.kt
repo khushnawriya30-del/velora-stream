@@ -31,6 +31,7 @@ import kotlinx.coroutines.withContext
 import java.io.File
 import java.net.HttpURLConnection
 import java.net.URL
+import com.cinevault.app.ui.theme.LocalAppDimens
 
 @Composable
 fun UpdateDialog(info: AppVersionResponse, onDismiss: () -> Unit, onInstallClicked: (versionCode: Int) -> Unit = {}) {
@@ -155,31 +156,31 @@ fun UpdateDialog(info: AppVersionResponse, onDismiss: () -> Unit, onInstallClick
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(Color(0xFF1E1E1E), RoundedCornerShape(16.dp))
-                .padding(24.dp)
+                .background(Color(0xFF1E1E1E), RoundedCornerShape(LocalAppDimens.current.radius16))
+                .padding(LocalAppDimens.current.pad24)
         ) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(
                     text = "New Update Available!",
-                    fontSize = 20.sp,
+                    fontSize = LocalAppDimens.current.font20,
                     fontWeight = FontWeight.Bold,
                     color = Color.White
                 )
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(LocalAppDimens.current.pad8))
                 Text(
                     text = "Version ${info.versionName} is ready to install.",
-                    fontSize = 14.sp,
+                    fontSize = LocalAppDimens.current.font14,
                     color = Color(0xFFB0B0B0)
                 )
                 if (!info.releaseNotes.isNullOrBlank()) {
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(LocalAppDimens.current.pad8))
                     Text(
                         text = info.releaseNotes,
-                        fontSize = 13.sp,
+                        fontSize = LocalAppDimens.current.font13,
                         color = Color(0xFF9A9A9A)
                     )
                 }
-                Spacer(modifier = Modifier.height(20.dp))
+                Spacer(modifier = Modifier.height(LocalAppDimens.current.pad20))
 
                 when {
                     isDownloadComplete -> {
@@ -187,9 +188,9 @@ fun UpdateDialog(info: AppVersionResponse, onDismiss: () -> Unit, onInstallClick
                             text = "Download complete!",
                             color = Color(0xFF4CAF50),
                             fontWeight = FontWeight.SemiBold,
-                            fontSize = 14.sp
+                            fontSize = LocalAppDimens.current.font14
                         )
-                        Spacer(modifier = Modifier.height(12.dp))
+                        Spacer(modifier = Modifier.height(LocalAppDimens.current.pad12))
                         Button(
                             onClick = {
                                 onInstallClicked(info.versionCode)
@@ -197,7 +198,7 @@ fun UpdateDialog(info: AppVersionResponse, onDismiss: () -> Unit, onInstallClick
                             },
                             modifier = Modifier.fillMaxWidth(),
                             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50)),
-                            shape = RoundedCornerShape(8.dp)
+                            shape = RoundedCornerShape(LocalAppDimens.current.radius8)
                         ) {
                             Text("Install Now", fontWeight = FontWeight.Bold, color = Color.White)
                         }
@@ -206,19 +207,19 @@ fun UpdateDialog(info: AppVersionResponse, onDismiss: () -> Unit, onInstallClick
                         Text(
                             text = downloadError!!,
                             color = Color(0xFFFF6B6B),
-                            fontSize = 13.sp
+                            fontSize = LocalAppDimens.current.font13
                         )
-                        Spacer(modifier = Modifier.height(12.dp))
+                        Spacer(modifier = Modifier.height(LocalAppDimens.current.pad12))
                         Button(
                             onClick = { startDownload() },
                             modifier = Modifier.fillMaxWidth(),
                             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE50914)),
-                            shape = RoundedCornerShape(8.dp)
+                            shape = RoundedCornerShape(LocalAppDimens.current.radius8)
                         ) {
                             Text("Retry Download", fontWeight = FontWeight.Bold, color = Color.White)
                         }
                         if (!info.forceUpdate) {
-                            Spacer(modifier = Modifier.height(8.dp))
+                            Spacer(modifier = Modifier.height(LocalAppDimens.current.pad8))
                             TextButton(onClick = onDismiss) {
                                 Text("Skip for Now", color = Color(0xFF9A9A9A))
                             }
@@ -228,13 +229,13 @@ fun UpdateDialog(info: AppVersionResponse, onDismiss: () -> Unit, onInstallClick
                         CircularProgressIndicator(
                             modifier = Modifier.size(28.dp),
                             color = Color(0xFFE50914),
-                            strokeWidth = 3.dp,
+                            strokeWidth = LocalAppDimens.current.strokeWidth,
                         )
-                        Spacer(modifier = Modifier.height(8.dp))
+                        Spacer(modifier = Modifier.height(LocalAppDimens.current.pad8))
                         Text(
                             text = "Preparing download...",
                             color = Color(0xFFB0B0B0),
-                            fontSize = 13.sp
+                            fontSize = LocalAppDimens.current.font13
                         )
                     }
                     isDownloading -> {
@@ -253,11 +254,11 @@ fun UpdateDialog(info: AppVersionResponse, onDismiss: () -> Unit, onInstallClick
                                 trackColor = Color(0xFF333333),
                             )
                         }
-                        Spacer(modifier = Modifier.height(8.dp))
+                        Spacer(modifier = Modifier.height(LocalAppDimens.current.pad8))
                         Text(
                             text = if (progress < 0f) "Downloading..." else "Downloading... ${(animatedProgress * 100).toInt()}%",
                             color = Color(0xFFB0B0B0),
-                            fontSize = 13.sp
+                            fontSize = LocalAppDimens.current.font13
                         )
                     }
                     else -> {
@@ -265,12 +266,12 @@ fun UpdateDialog(info: AppVersionResponse, onDismiss: () -> Unit, onInstallClick
                             onClick = { startDownload() },
                             modifier = Modifier.fillMaxWidth(),
                             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE50914)),
-                            shape = RoundedCornerShape(8.dp)
+                            shape = RoundedCornerShape(LocalAppDimens.current.radius8)
                         ) {
                             Text("Update Now", fontWeight = FontWeight.Bold, color = Color.White)
                         }
                         if (!info.forceUpdate) {
-                            Spacer(modifier = Modifier.height(8.dp))
+                            Spacer(modifier = Modifier.height(LocalAppDimens.current.pad8))
                             TextButton(onClick = onDismiss) {
                                 Text("Skip for Now", color = Color(0xFF9A9A9A))
                             }

@@ -34,6 +34,7 @@ import com.cinevault.app.ui.components.GoldButton
 import com.cinevault.app.ui.theme.CineVaultTheme
 import com.cinevault.app.ui.viewmodel.AuthViewModel
 import com.cinevault.app.util.launchGoogleWebSignIn
+import com.cinevault.app.ui.theme.LocalAppDimens
 
 @Composable
 fun RegisterScreen(
@@ -77,7 +78,7 @@ fun RegisterScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 24.dp),
+                .padding(horizontal = LocalAppDimens.current.pad24),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Spacer(Modifier.height(60.dp))
@@ -85,12 +86,12 @@ fun RegisterScreen(
             Text(
                 "VELORA",
                 style = CineVaultTheme.typography.heroTitle.copy(
-                    fontSize = 32.sp,
+                    fontSize = LocalAppDimens.current.font32,
                     letterSpacing = 6.sp,
                 ),
                 color = CineVaultTheme.colors.accentGold,
             )
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(LocalAppDimens.current.pad8))
             Text(
                 "Create your account",
                 style = CineVaultTheme.typography.body,
@@ -101,10 +102,10 @@ fun RegisterScreen(
 
             Surface(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp),
+                shape = RoundedCornerShape(LocalAppDimens.current.radius16),
                 color = CineVaultTheme.colors.surface.copy(alpha = 0.6f),
             ) {
-                Column(modifier = Modifier.padding(24.dp)) {
+                Column(modifier = Modifier.padding(LocalAppDimens.current.pad24)) {
                     CineVaultTextField(
                         value = name,
                         onValueChange = { name = it },
@@ -115,7 +116,7 @@ fun RegisterScreen(
                         ),
                     )
 
-                    Spacer(Modifier.height(14.dp))
+                    Spacer(Modifier.height(LocalAppDimens.current.pad14))
 
                     CineVaultTextField(
                         value = email,
@@ -130,7 +131,7 @@ fun RegisterScreen(
                         ),
                     )
 
-                    Spacer(Modifier.height(14.dp))
+                    Spacer(Modifier.height(LocalAppDimens.current.pad14))
 
                     CineVaultTextField(
                         value = password,
@@ -156,7 +157,7 @@ fun RegisterScreen(
                         },
                     )
 
-                    Spacer(Modifier.height(14.dp))
+                    Spacer(Modifier.height(LocalAppDimens.current.pad14))
 
                     CineVaultTextField(
                         value = confirmPassword,
@@ -175,14 +176,14 @@ fun RegisterScreen(
                         ),
                     )
 
-                    Spacer(Modifier.height(20.dp))
+                    Spacer(Modifier.height(LocalAppDimens.current.pad20))
 
                     if (uiState.error != null) {
                         Text(
                             uiState.error!!,
                             style = CineVaultTheme.typography.label,
                             color = CineVaultTheme.colors.error,
-                            modifier = Modifier.padding(bottom = 8.dp),
+                            modifier = Modifier.padding(bottom = LocalAppDimens.current.pad8),
                         )
                     }
 
@@ -194,7 +195,7 @@ fun RegisterScreen(
                 }
             }
 
-            Spacer(Modifier.height(24.dp))
+            Spacer(Modifier.height(LocalAppDimens.current.pad24))
 
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
@@ -211,7 +212,7 @@ fun RegisterScreen(
                 }
             }
 
-            Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(LocalAppDimens.current.pad16))
 
             // OR divider
             Row(
@@ -227,7 +228,7 @@ fun RegisterScreen(
                 HorizontalDivider(modifier = Modifier.weight(1f), color = CineVaultTheme.colors.textSecondary.copy(alpha = 0.3f))
             }
 
-            Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(LocalAppDimens.current.pad16))
 
             // Sign Up with Google
             Button(
@@ -255,16 +256,16 @@ fun RegisterScreen(
                         tint = Color.Unspecified,
                         modifier = Modifier.size(20.dp),
                     )
-                    Spacer(Modifier.width(12.dp))
+                    Spacer(Modifier.width(LocalAppDimens.current.pad12))
                     Text(
                         "Sign up with Google",
-                        style = CineVaultTheme.typography.body.copy(fontSize = 15.sp),
+                        style = CineVaultTheme.typography.body.copy(fontSize = LocalAppDimens.current.font15),
                         color = Color(0xFF1F1F1F),
                     )
                 }
             }
 
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(LocalAppDimens.current.pad12))
 
             // Phone login temporarily disabled (Firebase Blaze billing required)
             // TODO: Re-enable when Firebase billing is set up

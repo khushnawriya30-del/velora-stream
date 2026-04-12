@@ -29,6 +29,7 @@ import coil.compose.AsyncImage
 import com.cinevault.app.data.model.WatchProgressDto
 import com.cinevault.app.ui.theme.CineVaultTheme
 import com.cinevault.app.ui.viewmodel.ProfileViewModel
+import com.cinevault.app.ui.theme.LocalAppDimens
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -85,7 +86,7 @@ fun WatchHistoryScreen(
             ) {
                 CircularProgressIndicator(
                     color = CineVaultTheme.colors.accentGold,
-                    strokeWidth = 3.dp
+                    strokeWidth = LocalAppDimens.current.strokeWidth
                 )
             }
         } else if (uiState.watchHistory.isEmpty()) {
@@ -95,7 +96,7 @@ fun WatchHistoryScreen(
             ) {
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(LocalAppDimens.current.pad16),
                     modifier = Modifier.padding(40.dp)
                 ) {
                     Surface(
@@ -114,23 +115,23 @@ fun WatchHistoryScreen(
                     }
                     Text(
                         "No Watch History",
-                        fontSize = 20.sp,
+                        fontSize = LocalAppDimens.current.font20,
                         fontWeight = FontWeight.Bold,
                         color = CineVaultTheme.colors.textPrimary,
                     )
                     Text(
                         "Movies and shows you've watched\nwill appear here.",
-                        fontSize = 14.sp,
+                        fontSize = LocalAppDimens.current.font14,
                         color = CineVaultTheme.colors.textSecondary,
                         textAlign = TextAlign.Center,
-                        lineHeight = 22.sp
+                        lineHeight = LocalAppDimens.current.lineHeight22
                     )
                 }
             }
         } else {
             LazyColumn(
-                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
+                contentPadding = PaddingValues(horizontal = LocalAppDimens.current.pad16, vertical = LocalAppDimens.current.pad12),
+                verticalArrangement = Arrangement.spacedBy(LocalAppDimens.current.pad10)
             ) {
                 items(uiState.watchHistory) { progress ->
                     WatchHistoryItem(
@@ -145,7 +146,7 @@ fun WatchHistoryScreen(
                         onDelete = { progress.id?.let { viewModel.deleteHistoryItem(it) } },
                     )
                 }
-                item { Spacer(modifier = Modifier.height(20.dp)) }
+                item { Spacer(modifier = Modifier.height(LocalAppDimens.current.pad20)) }
             }
         }
     }
@@ -163,8 +164,8 @@ private fun WatchHistoryItem(
             .clip(RoundedCornerShape(14.dp))
             .background(CineVaultTheme.colors.surface)
             .clickable(onClick = onClick)
-            .padding(10.dp),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
+            .padding(LocalAppDimens.current.pad10),
+        horizontalArrangement = Arrangement.spacedBy(LocalAppDimens.current.pad12),
         verticalAlignment = Alignment.CenterVertically
     ) {
         // Thumbnail with progress bar
@@ -172,7 +173,7 @@ private fun WatchHistoryItem(
             modifier = Modifier
                 .width(130.dp)
                 .height(76.dp)
-                .clip(RoundedCornerShape(10.dp))
+                .clip(RoundedCornerShape(LocalAppDimens.current.radius10))
                 .background(CineVaultTheme.colors.background)
         ) {
             AsyncImage(
@@ -218,11 +219,11 @@ private fun WatchHistoryItem(
         // Info
         Column(
             modifier = Modifier.weight(1f),
-            verticalArrangement = Arrangement.spacedBy(4.dp)
+            verticalArrangement = Arrangement.spacedBy(LocalAppDimens.current.pad4)
         ) {
             Text(
                 progress.contentTitle ?: progress.episodeTitle ?: "Unknown",
-                fontSize = 14.sp,
+                fontSize = LocalAppDimens.current.font14,
                 fontWeight = FontWeight.SemiBold,
                 color = CineVaultTheme.colors.textPrimary,
                 maxLines = 2,
@@ -233,13 +234,13 @@ private fun WatchHistoryItem(
             val remainingMin = ((progress.duration - progress.position) / 60).coerceAtLeast(0)
             Text(
                 "${watchedMin}m / ${totalMin}m watched",
-                fontSize = 12.sp,
+                fontSize = LocalAppDimens.current.font12,
                 color = CineVaultTheme.colors.textSecondary,
             )
             if (remainingMin > 0) {
                 Text(
                     "${remainingMin}m remaining",
-                    fontSize = 11.sp,
+                    fontSize = LocalAppDimens.current.font11,
                     color = CineVaultTheme.colors.accentGold,
                 )
             }

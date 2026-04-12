@@ -61,6 +61,7 @@ import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import androidx.media3.ui.PlayerView
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import com.cinevault.app.ui.theme.LocalAppDimens
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -118,7 +119,7 @@ fun MovieDetailScreen(
         ) {
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier.padding(16.dp)
+                modifier = Modifier.padding(LocalAppDimens.current.pad16)
             ) {
                 IconButton(
                     onClick = onBack,
@@ -134,21 +135,21 @@ fun MovieDetailScreen(
                         modifier = Modifier.size(20.dp)
                     )
                 }
-                Spacer(modifier = Modifier.height(20.dp))
+                Spacer(modifier = Modifier.height(LocalAppDimens.current.pad20))
                 Text(
                     "Failed to Load Movie",
-                    fontSize = 18.sp,
+                    fontSize = LocalAppDimens.current.font18,
                     fontWeight = FontWeight.Bold,
                     color = CineVaultTheme.colors.textPrimary
                 )
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(LocalAppDimens.current.pad8))
                 Text(
                     uiState.error ?: "Unknown error occurred",
-                    fontSize = 14.sp,
+                    fontSize = LocalAppDimens.current.font14,
                     color = CineVaultTheme.colors.textSecondary,
                     textAlign = TextAlign.Center
                 )
-                Spacer(modifier = Modifier.height(20.dp))
+                Spacer(modifier = Modifier.height(LocalAppDimens.current.pad20))
                 Button(
                     onClick = onBack,
                     colors = ButtonDefaults.buttonColors(
@@ -230,12 +231,12 @@ fun MovieDetailScreen(
                 Box(
                     modifier = Modifier
                         .align(Alignment.Center)
-                        .padding(horizontal = 24.dp, vertical = 16.dp)
+                        .padding(horizontal = LocalAppDimens.current.pad24, vertical = LocalAppDimens.current.pad16)
                         .fillMaxWidth()
                         .height(200.dp)
-                        .clip(RoundedCornerShape(16.dp))
+                        .clip(RoundedCornerShape(LocalAppDimens.current.radius16))
                         .background(Color.Black)
-                        .border(1.dp, Color.White.copy(alpha = 0.1f), RoundedCornerShape(16.dp))
+                        .border(1.dp, Color.White.copy(alpha = 0.1f), RoundedCornerShape(LocalAppDimens.current.radius16))
                 ) {
                     TrailerPlayer(
                         trailerUrl = movie.trailerUrl!!,
@@ -281,7 +282,7 @@ fun MovieDetailScreen(
                     onClick = handleBack,
                     modifier = Modifier
                         .statusBarsPadding()
-                        .padding(start = 12.dp, top = 8.dp)
+                        .padding(start = LocalAppDimens.current.pad12, top = LocalAppDimens.current.pad8)
                         .align(Alignment.TopStart)
                         .background(Color.Black.copy(alpha = 0.5f), CircleShape)
                         .size(40.dp)
@@ -299,27 +300,27 @@ fun MovieDetailScreen(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 20.dp, vertical = 12.dp)
+                    .padding(horizontal = LocalAppDimens.current.pad20, vertical = LocalAppDimens.current.pad12)
             ) {
                 if (!movie.rankingLabel.isNullOrBlank()) {
                     Text(
                         movie.rankingLabel!!,
-                        fontSize = 12.sp,
+                        fontSize = LocalAppDimens.current.font12,
                         fontWeight = FontWeight.SemiBold,
                         color = CineVaultTheme.colors.accentGold.copy(alpha = 0.7f),
                         letterSpacing = 0.5.sp
                     )
-                    Spacer(modifier = Modifier.height(6.dp))
+                    Spacer(modifier = Modifier.height(LocalAppDimens.current.pad6))
                 }
                 Text(
                     movie.title,
-                    fontSize = 28.sp,
+                    fontSize = LocalAppDimens.current.font28,
                     fontWeight = FontWeight.Bold,
                     color = Color.White,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis
                 )
-                Spacer(modifier = Modifier.height(10.dp))
+                Spacer(modifier = Modifier.height(LocalAppDimens.current.pad10))
                 MovieMetaChips(movie, isContentPremium = movie.isEffectivelyPremium)
             }
         } else {
@@ -375,7 +376,7 @@ fun MovieDetailScreen(
                     onClick = handleBack,
                     modifier = Modifier
                         .statusBarsPadding()
-                        .padding(start = 12.dp, top = 8.dp)
+                        .padding(start = LocalAppDimens.current.pad12, top = LocalAppDimens.current.pad8)
                         .align(Alignment.TopStart)
                         .background(Color.Black.copy(alpha = 0.5f), CircleShape)
                         .size(40.dp)
@@ -393,27 +394,27 @@ fun MovieDetailScreen(
                     modifier = Modifier
                         .align(Alignment.BottomStart)
                         .fillMaxWidth()
-                        .padding(horizontal = 20.dp, vertical = 16.dp)
+                        .padding(horizontal = LocalAppDimens.current.pad20, vertical = LocalAppDimens.current.pad16)
                 ) {
                     if (!movie.rankingLabel.isNullOrBlank()) {
                         Text(
                             movie.rankingLabel!!,
-                            fontSize = 12.sp,
+                            fontSize = LocalAppDimens.current.font12,
                             fontWeight = FontWeight.SemiBold,
                             color = CineVaultTheme.colors.accentGold.copy(alpha = 0.7f),
                             letterSpacing = 0.5.sp
                         )
-                        Spacer(modifier = Modifier.height(8.dp))
+                        Spacer(modifier = Modifier.height(LocalAppDimens.current.pad8))
                     }
                     Text(
                         movie.title,
-                        fontSize = 28.sp,
+                        fontSize = LocalAppDimens.current.font28,
                         fontWeight = FontWeight.Bold,
                         color = Color.White,
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis
                     )
-                    Spacer(modifier = Modifier.height(10.dp))
+                    Spacer(modifier = Modifier.height(LocalAppDimens.current.pad10))
                     MovieMetaChips(movie, isContentPremium = movie.isEffectivelyPremium)
                 }
             }
@@ -423,9 +424,9 @@ fun MovieDetailScreen(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 20.dp)
+                .padding(horizontal = LocalAppDimens.current.pad20)
         ) {
-            Spacer(modifier = Modifier.height(4.dp))
+            Spacer(modifier = Modifier.height(LocalAppDimens.current.pad4))
 
             // IMDb Rating + Season Selector row
             val starRating = movie.starRating ?: movie.rating ?: 0.0
@@ -436,23 +437,23 @@ fun MovieDetailScreen(
                 ) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        horizontalArrangement = Arrangement.spacedBy(LocalAppDimens.current.pad8)
                     ) {
                         Surface(
-                            shape = RoundedCornerShape(4.dp),
+                            shape = RoundedCornerShape(LocalAppDimens.current.radius4),
                             color = Color(0xFFE6B91E)
                         ) {
                             Text(
                                 "IMDb",
-                                fontSize = 13.sp,
+                                fontSize = LocalAppDimens.current.font13,
                                 fontWeight = FontWeight.ExtraBold,
                                 color = Color.Black,
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                                modifier = Modifier.padding(horizontal = LocalAppDimens.current.pad8, vertical = 3.dp)
                             )
                         }
                         Text(
                             String.format("%.1f", starRating),
-                            fontSize = 15.sp,
+                            fontSize = LocalAppDimens.current.font15,
                             fontWeight = FontWeight.Bold,
                             color = Color.White
                         )
@@ -482,7 +483,7 @@ fun MovieDetailScreen(
                         )
                     }
                 }
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(LocalAppDimens.current.pad16))
             }
 
             // ── Premium WATCH NOW / RESUME WATCHING button (hidden for upcoming) ──
@@ -536,14 +537,14 @@ fun MovieDetailScreen(
                             tint = Color.Black,
                             modifier = Modifier.size(26.dp)
                         )
-                        Spacer(modifier = Modifier.width(8.dp))
+                        Spacer(modifier = Modifier.width(LocalAppDimens.current.pad8))
                         Text(
                             when {
                                 isContentPremium && !isUserPremium && !isSeries -> "FREE PREVIEW"
                                 hasProgress -> "RESUME WATCHING"
                                 else -> "WATCH NOW"
                             },
-                            fontSize = 15.sp,
+                            fontSize = LocalAppDimens.current.font15,
                             fontWeight = FontWeight.ExtraBold,
                             color = Color.Black,
                             letterSpacing = 1.sp
@@ -554,7 +555,7 @@ fun MovieDetailScreen(
 
             // Resume progress indicator
             if (hasProgress) {
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(LocalAppDimens.current.pad8))
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically
@@ -568,18 +569,18 @@ fun MovieDetailScreen(
                         color = CineVaultTheme.colors.accentGold,
                         trackColor = Color.White.copy(alpha = 0.15f),
                     )
-                    Spacer(modifier = Modifier.width(10.dp))
+                    Spacer(modifier = Modifier.width(LocalAppDimens.current.pad10))
                     val remainingMin = ((watchProgress!!.totalDuration - watchProgress.currentTime) / 60000).coerceAtLeast(1)
                     Text(
                         "${remainingMin} min left",
-                        fontSize = 11.sp,
+                        fontSize = LocalAppDimens.current.font11,
                         color = CineVaultTheme.colors.textSecondary
                     )
                 }
             }
             } // end if (!isUpcoming)
 
-            Spacer(modifier = Modifier.height(14.dp))
+            Spacer(modifier = Modifier.height(LocalAppDimens.current.pad14))
 
             // ── Premium Action buttons ──
             Row(
@@ -624,7 +625,7 @@ fun MovieDetailScreen(
                 )
             }
 
-            Spacer(modifier = Modifier.height(4.dp))
+            Spacer(modifier = Modifier.height(LocalAppDimens.current.pad4))
         }
 
         // ── Episodes Section (for series content, hidden for upcoming) ──
@@ -662,24 +663,24 @@ fun MovieDetailScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .background(CineVaultTheme.colors.background)
-                .padding(horizontal = 16.dp)
+                .padding(horizontal = LocalAppDimens.current.pad16)
         ) {
             listOf("DETAILS", "COMMENTS").forEachIndexed { index, title ->
                 Column(
                     modifier = Modifier
                         .weight(1f)
                         .clickable { selectedTab = index }
-                        .padding(vertical = 14.dp),
+                        .padding(vertical = LocalAppDimens.current.pad14),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
                         title,
-                        fontSize = 12.sp,
+                        fontSize = LocalAppDimens.current.font12,
                         fontWeight = if (selectedTab == index) FontWeight.Bold else FontWeight.Normal,
                         color = if (selectedTab == index) CineVaultTheme.colors.accentGold else CineVaultTheme.colors.textSecondary,
                         letterSpacing = 0.5.sp
                     )
-                    Spacer(modifier = Modifier.height(6.dp))
+                    Spacer(modifier = Modifier.height(LocalAppDimens.current.pad6))
                     if (selectedTab == index) {
                         Box(
                             modifier = Modifier
@@ -735,8 +736,8 @@ private fun MovieMetaChips(movie: MovieDto, isContentPremium: Boolean = false) {
     }
     if (isContentPremium || metaParts.isNotEmpty()) {
         FlowRow(
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            horizontalArrangement = Arrangement.spacedBy(LocalAppDimens.current.pad8),
+            verticalArrangement = Arrangement.spacedBy(LocalAppDimens.current.pad8)
         ) {
             // Premium Exclusive badge first (PNG)
             if (isContentPremium) {
@@ -749,16 +750,16 @@ private fun MovieMetaChips(movie: MovieDto, isContentPremium: Boolean = false) {
             }
             metaParts.forEach { part ->
                 Surface(
-                    shape = RoundedCornerShape(6.dp),
+                    shape = RoundedCornerShape(LocalAppDimens.current.radius6),
                     color = Color.White.copy(alpha = 0.1f),
                     border = BorderStroke(0.5.dp, Color.White.copy(alpha = 0.2f)),
                 ) {
                     Text(
                         part,
-                        fontSize = 11.sp,
+                        fontSize = LocalAppDimens.current.font11,
                         fontWeight = FontWeight.Medium,
                         color = Color.White.copy(alpha = 0.85f),
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+                        modifier = Modifier.padding(horizontal = LocalAppDimens.current.pad10, vertical = 5.dp),
                         maxLines = 1
                     )
                 }
@@ -800,7 +801,7 @@ private fun PremiumActionButton(
                 indication = null,
                 onClick = onClick
             )
-            .padding(vertical = 8.dp, horizontal = 12.dp),
+            .padding(vertical = LocalAppDimens.current.pad8, horizontal = LocalAppDimens.current.pad12),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
@@ -822,9 +823,9 @@ private fun PremiumActionButton(
                 modifier = Modifier.size(22.dp)
             )
         }
-        Spacer(modifier = Modifier.height(6.dp))
+        Spacer(modifier = Modifier.height(LocalAppDimens.current.pad6))
         Text(
-            label, fontSize = 10.sp, fontWeight = FontWeight.Medium,
+            label, fontSize = LocalAppDimens.current.font10, fontWeight = FontWeight.Medium,
             color = textColor,
             maxLines = 1, overflow = TextOverflow.Ellipsis
         )
@@ -873,7 +874,7 @@ private fun PremiumLikeButton(
                 indication = null,
                 onClick = onClick
             )
-            .padding(vertical = 8.dp, horizontal = 12.dp),
+            .padding(vertical = LocalAppDimens.current.pad8, horizontal = LocalAppDimens.current.pad12),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
@@ -914,9 +915,9 @@ private fun PremiumLikeButton(
                 )
             }
         }
-        Spacer(modifier = Modifier.height(6.dp))
+        Spacer(modifier = Modifier.height(LocalAppDimens.current.pad6))
         Text(
-            "Like", fontSize = 10.sp, fontWeight = FontWeight.Medium,
+            "Like", fontSize = LocalAppDimens.current.font10, fontWeight = FontWeight.Medium,
             color = if (isLiked) CineVaultTheme.colors.accentGold else CineVaultTheme.colors.textSecondary,
             maxLines = 1, overflow = TextOverflow.Ellipsis
         )
@@ -926,25 +927,25 @@ private fun PremiumLikeButton(
 @Composable
 private fun DetailsTabContent(movie: MovieDto) {
     Column(
-        modifier = Modifier.fillMaxWidth().padding(16.dp)
+        modifier = Modifier.fillMaxWidth().padding(LocalAppDimens.current.pad16)
     ) {
         if (movie.description != null) {
             Text(
                 movie.description!!,
-                fontSize = 13.sp, lineHeight = 20.sp,
+                fontSize = LocalAppDimens.current.font13, lineHeight = LocalAppDimens.current.lineHeight20,
                 color = CineVaultTheme.colors.textSecondary,
-                modifier = Modifier.padding(bottom = 16.dp)
+                modifier = Modifier.padding(bottom = LocalAppDimens.current.pad16)
             )
         }
         if (!movie.cast.isNullOrEmpty()) {
             Text(
                 "CAST & CREW",
-                fontSize = 13.sp, fontWeight = FontWeight.Bold,
+                fontSize = LocalAppDimens.current.font13, fontWeight = FontWeight.Bold,
                 color = CineVaultTheme.colors.textPrimary,
                 letterSpacing = 0.5.sp,
-                modifier = Modifier.padding(bottom = 12.dp)
+                modifier = Modifier.padding(bottom = LocalAppDimens.current.pad12)
             )
-            LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            LazyRow(horizontalArrangement = Arrangement.spacedBy(LocalAppDimens.current.pad12)) {
                 items(movie.cast!!.size) { index ->
                     CastCardWidget(name = movie.cast!![index].name, photoUrl = movie.cast!![index].photoUrl)
                 }
@@ -962,8 +963,8 @@ private fun CastCardWidget(name: String, photoUrl: String? = null) {
         Box(
             modifier = Modifier
                 .size(70.dp)
-                .background(CineVaultTheme.colors.surface, RoundedCornerShape(6.dp))
-                .clip(RoundedCornerShape(6.dp)),
+                .background(CineVaultTheme.colors.surface, RoundedCornerShape(LocalAppDimens.current.radius6))
+                .clip(RoundedCornerShape(LocalAppDimens.current.radius6)),
             contentAlignment = Alignment.Center
         ) {
             if (!photoUrl.isNullOrBlank()) {
@@ -973,9 +974,9 @@ private fun CastCardWidget(name: String, photoUrl: String? = null) {
             }
         }
         Text(
-            name, fontSize = 11.sp, fontWeight = FontWeight.Medium,
+            name, fontSize = LocalAppDimens.current.font11, fontWeight = FontWeight.Medium,
             color = CineVaultTheme.colors.textPrimary,
-            modifier = Modifier.padding(top = 8.dp),
+            modifier = Modifier.padding(top = LocalAppDimens.current.pad8),
             maxLines = 2, overflow = TextOverflow.Ellipsis, textAlign = TextAlign.Center
         )
     }
@@ -984,10 +985,10 @@ private fun CastCardWidget(name: String, photoUrl: String? = null) {
 @Composable
 private fun CommentsTabContent() {
     Box(
-        modifier = Modifier.fillMaxWidth().height(150.dp).padding(16.dp),
+        modifier = Modifier.fillMaxWidth().height(150.dp).padding(LocalAppDimens.current.pad16),
         contentAlignment = Alignment.Center
     ) {
-        Text("No comments yet", color = CineVaultTheme.colors.textSecondary, fontSize = 14.sp)
+        Text("No comments yet", color = CineVaultTheme.colors.textSecondary, fontSize = LocalAppDimens.current.font14)
     }
 }
 
@@ -1017,14 +1018,14 @@ private fun EpisodesSection(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 20.dp, vertical = 8.dp),
+                .padding(horizontal = LocalAppDimens.current.pad20, vertical = LocalAppDimens.current.pad8),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Column(modifier = Modifier.weight(1f, fill = false)) {
                 Text(
                     "EPISODES",
-                    fontSize = 11.sp,
+                    fontSize = LocalAppDimens.current.font11,
                     fontWeight = FontWeight.Bold,
                     color = CineVaultTheme.colors.textSecondary,
                     letterSpacing = 1.sp
@@ -1032,7 +1033,7 @@ private fun EpisodesSection(
                 Spacer(modifier = Modifier.height(3.dp))
                 Text(
                     "Season ${selectedSeason?.seasonNumber ?: 1} \u2022 $episodeCount Episodes",
-                    fontSize = 15.sp,
+                    fontSize = LocalAppDimens.current.font15,
                     fontWeight = FontWeight.Bold,
                     color = CineVaultTheme.colors.textPrimary,
                     maxLines = 1,
@@ -1044,7 +1045,7 @@ private fun EpisodesSection(
                     Text(
                         "More Season",
                         color = CineVaultTheme.colors.accentGold,
-                        fontSize = 13.sp,
+                        fontSize = LocalAppDimens.current.font13,
                         fontWeight = FontWeight.SemiBold
                     )
                     Icon(
@@ -1062,7 +1063,7 @@ private fun EpisodesSection(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 20.dp, vertical = 12.dp),
+                    .padding(horizontal = LocalAppDimens.current.pad20, vertical = LocalAppDimens.current.pad12),
                 contentAlignment = Alignment.Center
             ) {
                 CircularProgressIndicator(
@@ -1073,8 +1074,8 @@ private fun EpisodesSection(
             }
         } else {
             LazyRow(
-                contentPadding = PaddingValues(horizontal = 16.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                contentPadding = PaddingValues(horizontal = LocalAppDimens.current.pad16),
+                horizontalArrangement = Arrangement.spacedBy(LocalAppDimens.current.pad12)
             ) {
                 items(episodes) { episode ->
                     val epIndex = episodes.indexOf(episode)
@@ -1090,7 +1091,7 @@ private fun EpisodesSection(
             }
         }
 
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(LocalAppDimens.current.pad8))
     }
 }
 
@@ -1103,16 +1104,16 @@ private fun EpisodeCard(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
-            .padding(horizontal = 20.dp, vertical = 8.dp),
+            .padding(horizontal = LocalAppDimens.current.pad20, vertical = LocalAppDimens.current.pad8),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
+        horizontalArrangement = Arrangement.spacedBy(LocalAppDimens.current.pad12)
     ) {
         // Thumbnail
         Box(
             modifier = Modifier
                 .width(120.dp)
                 .height(68.dp)
-                .clip(RoundedCornerShape(8.dp))
+                .clip(RoundedCornerShape(LocalAppDimens.current.radius8))
                 .background(CineVaultTheme.colors.surface),
             contentAlignment = Alignment.Center
         ) {
@@ -1135,13 +1136,13 @@ private fun EpisodeCard(
             Box(
                 modifier = Modifier
                     .align(Alignment.BottomStart)
-                    .padding(4.dp)
-                    .background(Color.Black.copy(alpha = 0.7f), RoundedCornerShape(4.dp))
-                    .padding(horizontal = 6.dp, vertical = 2.dp)
+                    .padding(LocalAppDimens.current.pad4)
+                    .background(Color.Black.copy(alpha = 0.7f), RoundedCornerShape(LocalAppDimens.current.radius4))
+                    .padding(horizontal = LocalAppDimens.current.pad6, vertical = LocalAppDimens.current.padTiny)
             ) {
                 Text(
                     "E${episode.episodeNumber}",
-                    fontSize = 10.sp,
+                    fontSize = LocalAppDimens.current.font10,
                     fontWeight = FontWeight.Bold,
                     color = Color.White
                 )
@@ -1166,27 +1167,27 @@ private fun EpisodeCard(
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 "Episode ${episode.episodeNumber}",
-                fontSize = 14.sp,
+                fontSize = LocalAppDimens.current.font14,
                 fontWeight = FontWeight.Medium,
                 color = CineVaultTheme.colors.textPrimary,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis
             )
-            Spacer(modifier = Modifier.height(4.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Spacer(modifier = Modifier.height(LocalAppDimens.current.pad4))
+            Row(horizontalArrangement = Arrangement.spacedBy(LocalAppDimens.current.pad8)) {
                 episode.duration?.let {
                     Text(
                         "${it} min",
-                        fontSize = 11.sp,
+                        fontSize = LocalAppDimens.current.font11,
                         color = CineVaultTheme.colors.textMuted
                     )
                 }
             }
             if (!episode.synopsis.isNullOrBlank()) {
-                Spacer(modifier = Modifier.height(4.dp))
+                Spacer(modifier = Modifier.height(LocalAppDimens.current.pad4))
                 Text(
                     episode.synopsis!!,
-                    fontSize = 11.sp,
+                    fontSize = LocalAppDimens.current.font11,
                     color = CineVaultTheme.colors.textSecondary,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
@@ -1205,18 +1206,18 @@ private fun SeasonDropdownBadge(
     onClick: () -> Unit,
 ) {
     Surface(
-        shape = RoundedCornerShape(6.dp),
+        shape = RoundedCornerShape(LocalAppDimens.current.radius6),
         color = Color.White.copy(alpha = 0.14f),
         modifier = Modifier.clickable(onClick = onClick)
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+            modifier = Modifier.padding(horizontal = LocalAppDimens.current.pad10, vertical = LocalAppDimens.current.pad6),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(2.dp)
+            horizontalArrangement = Arrangement.spacedBy(LocalAppDimens.current.padTiny)
         ) {
             Text(
                 seasonName,
-                fontSize = 13.sp,
+                fontSize = LocalAppDimens.current.font13,
                 fontWeight = FontWeight.SemiBold,
                 color = CineVaultTheme.colors.accentGold
             )
@@ -1248,7 +1249,7 @@ private fun HorizontalEpisodeCard(
             modifier = Modifier
                 .width(160.dp)
                 .height(90.dp)
-                .clip(RoundedCornerShape(10.dp))
+                .clip(RoundedCornerShape(LocalAppDimens.current.radius10))
                 .background(CineVaultTheme.colors.surface),
             contentAlignment = Alignment.Center
         ) {
@@ -1305,12 +1306,12 @@ private fun HorizontalEpisodeCard(
                 modifier = Modifier
                     .align(Alignment.TopStart)
                     .padding(5.dp)
-                    .background(CineVaultTheme.colors.accentGold, RoundedCornerShape(4.dp))
-                    .padding(horizontal = 5.dp, vertical = 2.dp)
+                    .background(CineVaultTheme.colors.accentGold, RoundedCornerShape(LocalAppDimens.current.radius4))
+                    .padding(horizontal = 5.dp, vertical = LocalAppDimens.current.padTiny)
             ) {
                 Text(
                     "E${episode.episodeNumber}",
-                    fontSize = 10.sp,
+                    fontSize = LocalAppDimens.current.font10,
                     fontWeight = FontWeight.Bold,
                     color = Color.Black
                 )
@@ -1321,7 +1322,7 @@ private fun HorizontalEpisodeCard(
                 PremiumBadgeOverlay(
                     modifier = Modifier
                         .align(Alignment.TopEnd)
-                        .padding(4.dp),
+                        .padding(LocalAppDimens.current.pad4),
                     size = 26.dp
                 )
             }
@@ -1332,12 +1333,12 @@ private fun HorizontalEpisodeCard(
                     modifier = Modifier
                         .align(Alignment.BottomEnd)
                         .padding(5.dp)
-                        .background(Color.Black.copy(alpha = 0.78f), RoundedCornerShape(4.dp))
-                        .padding(horizontal = 5.dp, vertical = 2.dp)
+                        .background(Color.Black.copy(alpha = 0.78f), RoundedCornerShape(LocalAppDimens.current.radius4))
+                        .padding(horizontal = 5.dp, vertical = LocalAppDimens.current.padTiny)
                 ) {
                     Text(
                         formatEpisodeDuration(dur),
-                        fontSize = 10.sp,
+                        fontSize = LocalAppDimens.current.font10,
                         fontWeight = FontWeight.SemiBold,
                         color = Color.White
                     )
@@ -1348,7 +1349,7 @@ private fun HorizontalEpisodeCard(
         Spacer(modifier = Modifier.height(7.dp))
         Text(
             "Episode ${episode.episodeNumber}",
-            fontSize = 12.sp,
+            fontSize = LocalAppDimens.current.font12,
             fontWeight = FontWeight.Bold,
             color = CineVaultTheme.colors.textPrimary,
             maxLines = 1
@@ -1385,7 +1386,7 @@ private fun MoreSeasonsBottomSheet(
         dragHandle = {
             Box(
                 modifier = Modifier
-                    .padding(vertical = 12.dp)
+                    .padding(vertical = LocalAppDimens.current.pad12)
                     .width(40.dp)
                     .height(4.dp)
                     .background(Color.White.copy(alpha = 0.3f), RoundedCornerShape(2.dp))
@@ -1396,26 +1397,26 @@ private fun MoreSeasonsBottomSheet(
             modifier = Modifier
                 .fillMaxWidth()
                 .navigationBarsPadding()
-                .padding(bottom = 20.dp)
+                .padding(bottom = LocalAppDimens.current.pad20)
         ) {
             Text(
                 "SELECT SEASON",
-                fontSize = 11.sp,
+                fontSize = LocalAppDimens.current.font11,
                 fontWeight = FontWeight.Bold,
                 color = CineVaultTheme.colors.textSecondary,
                 letterSpacing = 1.sp,
-                modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp)
+                modifier = Modifier.padding(horizontal = LocalAppDimens.current.pad20, vertical = LocalAppDimens.current.pad4)
             )
 
             // Season tabs
             LazyRow(
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                modifier = Modifier.padding(horizontal = LocalAppDimens.current.pad16, vertical = LocalAppDimens.current.pad10),
+                horizontalArrangement = Arrangement.spacedBy(LocalAppDimens.current.pad8)
             ) {
                 items(seasons) { season ->
                     val isSelected = season.id == sheetSelectedId
                     Surface(
-                        shape = RoundedCornerShape(8.dp),
+                        shape = RoundedCornerShape(LocalAppDimens.current.radius8),
                         color = if (isSelected) CineVaultTheme.colors.accentGold
                                 else Color.White.copy(alpha = 0.08f),
                         modifier = Modifier.clickable {
@@ -1425,11 +1426,11 @@ private fun MoreSeasonsBottomSheet(
                     ) {
                         Text(
                             season.title ?: "Season ${season.seasonNumber}",
-                            fontSize = 13.sp,
+                            fontSize = LocalAppDimens.current.font13,
                             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
                             color = if (isSelected) Color.Black
                                     else CineVaultTheme.colors.textSecondary,
-                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp)
+                            modifier = Modifier.padding(horizontal = LocalAppDimens.current.pad16, vertical = LocalAppDimens.current.pad10)
                         )
                     }
                 }
@@ -1437,7 +1438,7 @@ private fun MoreSeasonsBottomSheet(
 
             @Suppress("DEPRECATION")
             Divider(color = Color.White.copy(alpha = 0.08f), thickness = 0.5.dp)
-            Spacer(modifier = Modifier.height(14.dp))
+            Spacer(modifier = Modifier.height(LocalAppDimens.current.pad14))
 
             // Episode squares for the visible season
             val currentSeason = seasons.find { it.id == sheetSelectedId }
@@ -1448,14 +1449,14 @@ private fun MoreSeasonsBottomSheet(
             if (displayCount > 0) {
                 Text(
                     "${currentSeason?.title ?: "Season ${currentSeason?.seasonNumber ?: 1}"} \u00b7 $displayCount Episodes",
-                    fontSize = 14.sp,
+                    fontSize = LocalAppDimens.current.font14,
                     fontWeight = FontWeight.SemiBold,
                     color = CineVaultTheme.colors.textPrimary,
-                    modifier = Modifier.padding(start = 20.dp, end = 20.dp, bottom = 10.dp)
+                    modifier = Modifier.padding(start = LocalAppDimens.current.pad20, end = LocalAppDimens.current.pad20, bottom = LocalAppDimens.current.pad10)
                 )
                 LazyRow(
-                    contentPadding = PaddingValues(horizontal = 16.dp),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    contentPadding = PaddingValues(horizontal = LocalAppDimens.current.pad16),
+                    horizontalArrangement = Arrangement.spacedBy(LocalAppDimens.current.pad10)
                 ) {
                     if (currentEpisodes.isNotEmpty()) {
                         items(currentEpisodes) { ep ->
@@ -1487,7 +1488,7 @@ private fun EpisodeNumberSquare(
     onClick: () -> Unit,
 ) {
     Surface(
-        shape = RoundedCornerShape(8.dp),
+        shape = RoundedCornerShape(LocalAppDimens.current.radius8),
         color = if (isLoaded) Color.White.copy(alpha = 0.1f) else Color.White.copy(alpha = 0.05f),
         modifier = Modifier
             .size(52.dp)
@@ -1496,7 +1497,7 @@ private fun EpisodeNumberSquare(
         Box(contentAlignment = Alignment.Center) {
             Text(
                 number.toString(),
-                fontSize = 16.sp,
+                fontSize = LocalAppDimens.current.font16,
                 fontWeight = FontWeight.Bold,
                 color = if (isLoaded) CineVaultTheme.colors.textPrimary
                         else CineVaultTheme.colors.textMuted
@@ -1654,18 +1655,18 @@ function doSpeed(r){if(player)player.setPlaybackRate(r);}
         // 2x speed indicator
         if (is2x) {
             Surface(
-                shape = RoundedCornerShape(16.dp),
+                shape = RoundedCornerShape(LocalAppDimens.current.radius16),
                 color = Color.Black.copy(alpha = 0.7f),
                 modifier = Modifier
                     .align(Alignment.TopCenter)
-                    .padding(top = 8.dp)
+                    .padding(top = LocalAppDimens.current.pad8)
             ) {
                 Text(
                     "⚡ 2x",
                     color = Color.White,
-                    fontSize = 13.sp,
+                    fontSize = LocalAppDimens.current.font13,
                     fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 5.dp)
+                    modifier = Modifier.padding(horizontal = LocalAppDimens.current.pad14, vertical = 5.dp)
                 )
             }
         }
@@ -1681,7 +1682,7 @@ function doSpeed(r){if(player)player.setPlaybackRate(r);}
             },
             modifier = Modifier
                 .align(Alignment.BottomEnd)
-                .padding(end = 8.dp, bottom = 8.dp)
+                .padding(end = LocalAppDimens.current.pad8, bottom = LocalAppDimens.current.pad8)
                 .size(32.dp)
                 .background(Color.Black.copy(alpha = 0.6f), CircleShape)
         ) {
@@ -1835,18 +1836,18 @@ private fun ExoTrailerPlayer(
         // 2x speed indicator
         if (is2x) {
             Surface(
-                shape = RoundedCornerShape(16.dp),
+                shape = RoundedCornerShape(LocalAppDimens.current.radius16),
                 color = Color.Black.copy(alpha = 0.7f),
                 modifier = Modifier
                     .align(Alignment.TopCenter)
-                    .padding(top = 12.dp)
+                    .padding(top = LocalAppDimens.current.pad12)
             ) {
                 Text(
                     "2x",
                     color = Color.White,
-                    fontSize = 14.sp,
+                    fontSize = LocalAppDimens.current.font14,
                     fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)
+                    modifier = Modifier.padding(horizontal = LocalAppDimens.current.pad16, vertical = LocalAppDimens.current.pad6)
                 )
             }
         }

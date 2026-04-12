@@ -23,6 +23,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.cinevault.app.ui.components.GoldButton
 import com.cinevault.app.ui.theme.CineVaultTheme
 import com.cinevault.app.ui.viewmodel.SettingsViewModel
+import com.cinevault.app.ui.theme.LocalAppDimens
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -67,7 +68,7 @@ fun ForgotPasswordScreen(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 24.dp),
+                    .padding(horizontal = LocalAppDimens.current.pad24),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 Spacer(Modifier.height(40.dp))
@@ -75,23 +76,23 @@ fun ForgotPasswordScreen(
                 when {
                     uiState.passwordResetSuccess -> {
                         Text("Password Reset!", style = CineVaultTheme.typography.displayLarge, color = CineVaultTheme.colors.textPrimary)
-                        Spacer(Modifier.height(12.dp))
+                        Spacer(Modifier.height(LocalAppDimens.current.pad12))
                         Text("Your password has been reset successfully. Redirecting to sign in...", style = CineVaultTheme.typography.body, color = CineVaultTheme.colors.textSecondary, textAlign = TextAlign.Center)
                     }
 
                     uiState.otpVerified -> {
                         // Step 3: New Password
                         Text("New Password", style = CineVaultTheme.typography.displayLarge, color = CineVaultTheme.colors.textPrimary)
-                        Spacer(Modifier.height(8.dp))
+                        Spacer(Modifier.height(LocalAppDimens.current.pad8))
                         Text("Enter your new password.", style = CineVaultTheme.typography.body, color = CineVaultTheme.colors.textSecondary, textAlign = TextAlign.Center)
-                        Spacer(Modifier.height(32.dp))
-                        Surface(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp), color = CineVaultTheme.colors.surface.copy(alpha = 0.6f)) {
-                            Column(modifier = Modifier.padding(24.dp)) {
+                        Spacer(Modifier.height(LocalAppDimens.current.pad32))
+                        Surface(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(LocalAppDimens.current.radius16), color = CineVaultTheme.colors.surface.copy(alpha = 0.6f)) {
+                            Column(modifier = Modifier.padding(LocalAppDimens.current.pad24)) {
                                 CineVaultTextField(value = newPassword, onValueChange = { newPassword = it }, label = "New Password", visualTransformation = PasswordVisualTransformation(), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Next))
-                                Spacer(Modifier.height(12.dp))
+                                Spacer(Modifier.height(LocalAppDimens.current.pad12))
                                 CineVaultTextField(value = confirmPassword, onValueChange = { confirmPassword = it }, label = "Confirm Password", visualTransformation = PasswordVisualTransformation(), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Done), keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus(); uiState.resetToken?.let { viewModel.resetPasswordWithToken(it, newPassword, confirmPassword) } }))
-                                Spacer(Modifier.height(16.dp))
-                                uiState.error?.let { Text(it, style = CineVaultTheme.typography.label, color = CineVaultTheme.colors.error, modifier = Modifier.padding(bottom = 8.dp)) }
+                                Spacer(Modifier.height(LocalAppDimens.current.pad16))
+                                uiState.error?.let { Text(it, style = CineVaultTheme.typography.label, color = CineVaultTheme.colors.error, modifier = Modifier.padding(bottom = LocalAppDimens.current.pad8)) }
                                 GoldButton(text = "Reset Password", onClick = { uiState.resetToken?.let { viewModel.resetPasswordWithToken(it, newPassword, confirmPassword) } }, isLoading = uiState.isLoading)
                             }
                         }
@@ -100,11 +101,11 @@ fun ForgotPasswordScreen(
                     uiState.otpSent -> {
                         // Step 2: OTP Input
                         Text("Enter OTP", style = CineVaultTheme.typography.displayLarge, color = CineVaultTheme.colors.textPrimary)
-                        Spacer(Modifier.height(8.dp))
+                        Spacer(Modifier.height(LocalAppDimens.current.pad8))
                         Text("We've sent a 6-digit code to $email", style = CineVaultTheme.typography.body, color = CineVaultTheme.colors.textSecondary, textAlign = TextAlign.Center)
-                        Spacer(Modifier.height(32.dp))
-                        Surface(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp), color = CineVaultTheme.colors.surface.copy(alpha = 0.6f)) {
-                            Column(modifier = Modifier.padding(24.dp)) {
+                        Spacer(Modifier.height(LocalAppDimens.current.pad32))
+                        Surface(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(LocalAppDimens.current.radius16), color = CineVaultTheme.colors.surface.copy(alpha = 0.6f)) {
+                            Column(modifier = Modifier.padding(LocalAppDimens.current.pad24)) {
                                 CineVaultTextField(
                                     value = otp,
                                     onValueChange = { if (it.length <= 6 && it.all { c -> c.isDigit() }) otp = it },
@@ -112,12 +113,12 @@ fun ForgotPasswordScreen(
                                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Done),
                                     keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus(); viewModel.verifyOtp(email, otp) }),
                                 )
-                                Spacer(Modifier.height(16.dp))
-                                uiState.error?.let { Text(it, style = CineVaultTheme.typography.label, color = CineVaultTheme.colors.error, modifier = Modifier.padding(bottom = 8.dp)) }
+                                Spacer(Modifier.height(LocalAppDimens.current.pad16))
+                                uiState.error?.let { Text(it, style = CineVaultTheme.typography.label, color = CineVaultTheme.colors.error, modifier = Modifier.padding(bottom = LocalAppDimens.current.pad8)) }
                                 GoldButton(text = "Verify OTP", onClick = { viewModel.verifyOtp(email, otp) }, isLoading = uiState.isLoading)
-                                Spacer(Modifier.height(12.dp))
+                                Spacer(Modifier.height(LocalAppDimens.current.pad12))
                                 TextButton(onClick = { viewModel.sendOtp(email) }, modifier = Modifier.align(Alignment.CenterHorizontally)) {
-                                    Text("Resend OTP", color = CineVaultTheme.colors.accentGold, fontSize = 14.sp)
+                                    Text("Resend OTP", color = CineVaultTheme.colors.accentGold, fontSize = LocalAppDimens.current.font14)
                                 }
                             }
                         }
@@ -126,11 +127,11 @@ fun ForgotPasswordScreen(
                     else -> {
                         // Step 1: Email input
                         Text("Reset Password", style = CineVaultTheme.typography.displayLarge, color = CineVaultTheme.colors.textPrimary)
-                        Spacer(Modifier.height(8.dp))
+                        Spacer(Modifier.height(LocalAppDimens.current.pad8))
                         Text("Enter your email address and we'll send you a verification code.", style = CineVaultTheme.typography.body, color = CineVaultTheme.colors.textSecondary, textAlign = TextAlign.Center)
-                        Spacer(Modifier.height(32.dp))
-                        Surface(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp), color = CineVaultTheme.colors.surface.copy(alpha = 0.6f)) {
-                            Column(modifier = Modifier.padding(24.dp)) {
+                        Spacer(Modifier.height(LocalAppDimens.current.pad32))
+                        Surface(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(LocalAppDimens.current.radius16), color = CineVaultTheme.colors.surface.copy(alpha = 0.6f)) {
+                            Column(modifier = Modifier.padding(LocalAppDimens.current.pad24)) {
                                 CineVaultTextField(
                                     value = email,
                                     onValueChange = { email = it },
@@ -138,8 +139,8 @@ fun ForgotPasswordScreen(
                                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email, imeAction = ImeAction.Done),
                                     keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus(); viewModel.sendOtp(email) }),
                                 )
-                                Spacer(Modifier.height(20.dp))
-                                uiState.error?.let { Text(it, style = CineVaultTheme.typography.label, color = CineVaultTheme.colors.error, modifier = Modifier.padding(bottom = 8.dp)) }
+                                Spacer(Modifier.height(LocalAppDimens.current.pad20))
+                                uiState.error?.let { Text(it, style = CineVaultTheme.typography.label, color = CineVaultTheme.colors.error, modifier = Modifier.padding(bottom = LocalAppDimens.current.pad8)) }
                                 GoldButton(text = "Send Verification Code", onClick = { viewModel.sendOtp(email) }, isLoading = uiState.isLoading)
                             }
                         }

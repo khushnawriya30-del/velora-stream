@@ -37,6 +37,7 @@ import com.cinevault.app.ui.components.PremiumBadgeOverlay
 import com.cinevault.app.ui.theme.CineVaultTheme
 import com.cinevault.app.ui.viewmodel.FindUiState
 import com.cinevault.app.ui.viewmodel.FindViewModel
+import com.cinevault.app.ui.theme.LocalAppDimens
 
 // ═══════════════════════════════════════════════════════════════
 // FIND SCREEN — Premium OTT Discover UI
@@ -103,9 +104,9 @@ fun FindScreen(
             LazyVerticalGrid(
                 columns = GridCells.Fixed(3),
                 state = gridState,
-                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
+                contentPadding = PaddingValues(horizontal = LocalAppDimens.current.pad12, vertical = LocalAppDimens.current.pad8),
+                horizontalArrangement = Arrangement.spacedBy(LocalAppDimens.current.pad8),
+                verticalArrangement = Arrangement.spacedBy(LocalAppDimens.current.pad12),
                 modifier = Modifier.fillMaxSize(),
             ) {
                 items(uiState.results, key = { it.id }) { movie ->
@@ -118,7 +119,7 @@ fun FindScreen(
                     item(span = { GridItemSpan(3) }) {
                         LaunchedEffect(Unit) { viewModel.loadMore() }
                         Box(
-                            modifier = Modifier.fillMaxWidth().padding(16.dp),
+                            modifier = Modifier.fillMaxWidth().padding(LocalAppDimens.current.pad16),
                             contentAlignment = Alignment.Center,
                         ) {
                             CircularProgressIndicator(
@@ -158,12 +159,12 @@ private fun FindSearchBar(
         onValueChange = onQueryChange,
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 10.dp),
+            .padding(horizontal = LocalAppDimens.current.pad16, vertical = LocalAppDimens.current.pad10),
         placeholder = {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Filled.Search, contentDescription = null, tint = CineVaultTheme.colors.textMuted, modifier = Modifier.size(18.dp))
-                Spacer(Modifier.width(8.dp))
-                Text("Search movies, series...", color = CineVaultTheme.colors.textMuted, fontSize = 14.sp)
+                Spacer(Modifier.width(LocalAppDimens.current.pad8))
+                Text("Search movies, series...", color = CineVaultTheme.colors.textMuted, fontSize = LocalAppDimens.current.font14)
             }
         },
         leadingIcon = if (query.isNotEmpty()) {
@@ -189,7 +190,7 @@ private fun FindSearchBar(
             focusedTextColor = CineVaultTheme.colors.textPrimary,
             unfocusedTextColor = CineVaultTheme.colors.textPrimary,
         ),
-        textStyle = CineVaultTheme.typography.body.copy(fontSize = 14.sp),
+        textStyle = CineVaultTheme.typography.body.copy(fontSize = LocalAppDimens.current.font14),
     )
 }
 
@@ -205,7 +206,7 @@ private fun AutocompleteOverlay(
     Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp),
+            .padding(horizontal = LocalAppDimens.current.pad16),
         shape = RoundedCornerShape(12.dp),
         color = Color(0xFF2A2A2A),
         tonalElevation = 8.dp,
@@ -217,11 +218,11 @@ private fun AutocompleteOverlay(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clickable { onSelect(item.title) }
-                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                        .padding(horizontal = LocalAppDimens.current.pad16, vertical = LocalAppDimens.current.pad12),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Icon(Icons.Filled.Search, contentDescription = null, modifier = Modifier.size(16.dp), tint = CineVaultTheme.colors.textMuted)
-                    Spacer(Modifier.width(12.dp))
+                    Spacer(Modifier.width(LocalAppDimens.current.pad12))
                     Text(item.title, style = CineVaultTheme.typography.body, color = CineVaultTheme.colors.textPrimary)
                 }
             }
@@ -241,9 +242,9 @@ private fun FilterChipsSection(
     Column {
         // ── Content Type Row ──
         LazyRow(
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            contentPadding = PaddingValues(horizontal = 12.dp),
-            modifier = Modifier.padding(bottom = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(LocalAppDimens.current.pad8),
+            contentPadding = PaddingValues(horizontal = LocalAppDimens.current.pad12),
+            modifier = Modifier.padding(bottom = LocalAppDimens.current.pad8),
         ) {
             item {
                 FindFilterChip(
@@ -282,9 +283,9 @@ private fun FilterChipsSection(
         // ── Genre Row ──
         val allGenres = listOf("Action", "Comedy", "Mystery", "Romance", "Crime", "Drama", "Documentary", "Erotic", "Thriller", "Horror", "Sci-Fi", "Adventure", "Animation", "Cartoon", "Science fiction", "Others")
         LazyRow(
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            contentPadding = PaddingValues(horizontal = 12.dp),
-            modifier = Modifier.padding(bottom = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(LocalAppDimens.current.pad8),
+            contentPadding = PaddingValues(horizontal = LocalAppDimens.current.pad12),
+            modifier = Modifier.padding(bottom = LocalAppDimens.current.pad8),
         ) {
             item {
                 FindFilterChip(
@@ -337,9 +338,9 @@ private fun FilterChipsSection(
             "Crunchyroll", "HBO Max", "SonyLIV", "ZEE5", "Apple TV+", "MX Player",
         )
         LazyRow(
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            contentPadding = PaddingValues(horizontal = 12.dp),
-            modifier = Modifier.padding(bottom = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(LocalAppDimens.current.pad8),
+            contentPadding = PaddingValues(horizontal = LocalAppDimens.current.pad12),
+            modifier = Modifier.padding(bottom = LocalAppDimens.current.pad8),
         ) {
             items(platformNames) { platform ->
                 val isAll = platform == "All Platform"
@@ -358,19 +359,19 @@ private fun FilterChipsSection(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 4.dp),
+                .padding(horizontal = LocalAppDimens.current.pad12, vertical = LocalAppDimens.current.pad4),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Row(
                 modifier = Modifier
-                    .clip(RoundedCornerShape(8.dp))
+                    .clip(RoundedCornerShape(LocalAppDimens.current.radius8))
                     .clickable { viewModel.toggleMoreFilters() }
-                    .padding(horizontal = 8.dp, vertical = 6.dp),
+                    .padding(horizontal = LocalAppDimens.current.pad8, vertical = LocalAppDimens.current.pad6),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Icon(Icons.Filled.Tune, contentDescription = null, tint = CineVaultTheme.colors.textSecondary, modifier = Modifier.size(16.dp))
-                Spacer(Modifier.width(6.dp))
+                Spacer(Modifier.width(LocalAppDimens.current.pad6))
                 Text("More Filters", style = CineVaultTheme.typography.bodySmall, color = CineVaultTheme.colors.textSecondary)
                 Icon(
                     if (uiState.showMoreFilters) Icons.Filled.KeyboardArrowUp else Icons.Filled.KeyboardArrowDown,
@@ -421,11 +422,11 @@ private fun SortDropdown(
                 .clip(RoundedCornerShape(20.dp))
                 .border(1.dp, Color(0xFF3A3A3A), RoundedCornerShape(20.dp))
                 .clickable { expanded = true }
-                .padding(horizontal = 12.dp, vertical = 6.dp),
+                .padding(horizontal = LocalAppDimens.current.pad12, vertical = LocalAppDimens.current.pad6),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Icon(Icons.Filled.SwapVert, contentDescription = null, tint = CineVaultTheme.colors.textSecondary, modifier = Modifier.size(14.dp))
-            Spacer(Modifier.width(4.dp))
+            Spacer(Modifier.width(LocalAppDimens.current.pad4))
             Text(currentLabel, style = CineVaultTheme.typography.bodySmall, color = CineVaultTheme.colors.textSecondary)
             Icon(Icons.Filled.KeyboardArrowDown, contentDescription = null, tint = CineVaultTheme.colors.textSecondary, modifier = Modifier.size(14.dp))
         }
@@ -440,7 +441,7 @@ private fun SortDropdown(
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(label, color = if (selectedSort == value) CineVaultTheme.colors.accentGold else CineVaultTheme.colors.textPrimary)
                             if (selectedSort == value) {
-                                Spacer(Modifier.width(8.dp))
+                                Spacer(Modifier.width(LocalAppDimens.current.pad8))
                                 Icon(Icons.Filled.Check, contentDescription = null, tint = CineVaultTheme.colors.accentGold, modifier = Modifier.size(16.dp))
                             }
                         }
@@ -464,15 +465,15 @@ private fun MoreFiltersPanel(
     uiState: FindUiState,
     viewModel: FindViewModel,
 ) {
-    Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)) {
+    Column(modifier = Modifier.padding(horizontal = LocalAppDimens.current.pad12, vertical = LocalAppDimens.current.pad4)) {
         // ── Language ──
-        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(bottom = 6.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(bottom = LocalAppDimens.current.pad6)) {
             Icon(Icons.Filled.Language, contentDescription = null, tint = CineVaultTheme.colors.textMuted, modifier = Modifier.size(14.dp))
-            Spacer(Modifier.width(6.dp))
+            Spacer(Modifier.width(LocalAppDimens.current.pad6))
             Text("Language", style = CineVaultTheme.typography.bodySmall, color = CineVaultTheme.colors.textMuted)
         }
         val defaultLanguages = listOf("Hindi", "English", "Tamil", "Telugu", "Malayalam", "Marathi", "Kannada", "Punjabi", "Korean", "Japanese")
-        LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(bottom = 10.dp)) {
+        LazyRow(horizontalArrangement = Arrangement.spacedBy(LocalAppDimens.current.pad8), modifier = Modifier.padding(bottom = LocalAppDimens.current.pad10)) {
             items(defaultLanguages) { lang ->
                 SmallFilterChip(
                     label = lang,
@@ -483,14 +484,14 @@ private fun MoreFiltersPanel(
         }
 
         // ── Region ──
-        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(bottom = 6.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(bottom = LocalAppDimens.current.pad6)) {
             Icon(Icons.Filled.LocationOn, contentDescription = null, tint = CineVaultTheme.colors.textMuted, modifier = Modifier.size(14.dp))
-            Spacer(Modifier.width(6.dp))
+            Spacer(Modifier.width(LocalAppDimens.current.pad6))
             Text("Region", style = CineVaultTheme.typography.bodySmall, color = CineVaultTheme.colors.textMuted)
         }
         val regions = listOf("India", "Korea", "Thailand", "Russia", "Europe", "Other")
         val regionFlags = mapOf("India" to "\uD83C\uDDEE\uD83C\uDDF3", "Korea" to "\uD83C\uDDF0\uD83C\uDDF7", "Thailand" to "\uD83C\uDDF9\uD83C\uDDED", "Russia" to "\uD83C\uDDF7\uD83C\uDDFA", "Europe" to "\uD83C\uDDEA\uD83C\uDDFA")
-        LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(bottom = 10.dp)) {
+        LazyRow(horizontalArrangement = Arrangement.spacedBy(LocalAppDimens.current.pad8), modifier = Modifier.padding(bottom = LocalAppDimens.current.pad10)) {
             items(regions) { region ->
                 SmallFilterChip(
                     label = "${regionFlags[region] ?: "🌍"} $region",
@@ -501,13 +502,13 @@ private fun MoreFiltersPanel(
         }
 
         // ── Released Year ──
-        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(bottom = 6.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(bottom = LocalAppDimens.current.pad6)) {
             Icon(Icons.Filled.CalendarToday, contentDescription = null, tint = CineVaultTheme.colors.textMuted, modifier = Modifier.size(14.dp))
-            Spacer(Modifier.width(6.dp))
+            Spacer(Modifier.width(LocalAppDimens.current.pad6))
             Text("Released", style = CineVaultTheme.typography.bodySmall, color = CineVaultTheme.colors.textMuted)
         }
         val defaultYears = listOf("All") + (2026 downTo 2015).map { it.toString() }
-        LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(bottom = 8.dp)) {
+        LazyRow(horizontalArrangement = Arrangement.spacedBy(LocalAppDimens.current.pad8), modifier = Modifier.padding(bottom = LocalAppDimens.current.pad8)) {
             items(defaultYears) { yearStr ->
                 val yearVal = yearStr.toIntOrNull()
                 SmallFilterChip(
@@ -559,14 +560,14 @@ private fun FindFilterChip(
                 shape = RoundedCornerShape(12.dp),
             )
             .clickable(onClick = onClick)
-            .padding(horizontal = 14.dp),
+            .padding(horizontal = LocalAppDimens.current.pad14),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         if (icon != null) {
             icon()
-            Spacer(Modifier.width(6.dp))
+            Spacer(Modifier.width(LocalAppDimens.current.pad6))
         }
-        Text(label, fontSize = 13.sp, fontWeight = if (selected && isGold) FontWeight.Bold else FontWeight.Medium, color = textColor, maxLines = 1)
+        Text(label, fontSize = LocalAppDimens.current.font13, fontWeight = if (selected && isGold) FontWeight.Bold else FontWeight.Medium, color = textColor, maxLines = 1)
     }
 }
 
@@ -600,7 +601,7 @@ private fun PlatformChip(
                 shape = RoundedCornerShape(12.dp),
             )
             .clickable(onClick = onClick)
-            .padding(horizontal = 14.dp),
+            .padding(horizontal = LocalAppDimens.current.pad14),
         contentAlignment = Alignment.Center,
     ) {
         if (logoRes != null) {
@@ -615,7 +616,7 @@ private fun PlatformChip(
         } else {
             Text(
                 label,
-                fontSize = 13.sp,
+                fontSize = LocalAppDimens.current.font13,
                 fontWeight = if (selected && isGold) FontWeight.Bold else FontWeight.SemiBold,
                 color = if (selected && isGold) CineVaultTheme.colors.accentGold else if (selected) CineVaultTheme.colors.accentGold else CineVaultTheme.colors.textPrimary,
                 maxLines = 1,
@@ -632,19 +633,19 @@ private fun SmallFilterChip(
 ) {
     Text(
         text = label,
-        fontSize = 11.sp,
+        fontSize = LocalAppDimens.current.font11,
         fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
         color = if (selected) CineVaultTheme.colors.accentGold else CineVaultTheme.colors.textSecondary,
         modifier = Modifier
-            .clip(RoundedCornerShape(16.dp))
+            .clip(RoundedCornerShape(LocalAppDimens.current.radius16))
             .background(if (selected) Color(0xFF3A3A3A) else Color.Transparent)
             .border(
                 width = 1.dp,
                 color = if (selected) CineVaultTheme.colors.accentGold.copy(alpha = 0.5f) else Color(0xFF3A3A3A),
-                shape = RoundedCornerShape(16.dp),
+                shape = RoundedCornerShape(LocalAppDimens.current.radius16),
             )
             .clickable(onClick = onClick)
-            .padding(horizontal = 12.dp, vertical = 6.dp),
+            .padding(horizontal = LocalAppDimens.current.pad12, vertical = LocalAppDimens.current.pad6),
         maxLines = 1,
     )
 }
@@ -660,14 +661,14 @@ private fun FindMovieCard(
 ) {
     Column(
         modifier = Modifier
-            .clip(RoundedCornerShape(8.dp))
+            .clip(RoundedCornerShape(LocalAppDimens.current.radius8))
             .clickable(onClick = onClick),
     ) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .aspectRatio(2f / 3f)
-                .clip(RoundedCornerShape(8.dp))
+                .clip(RoundedCornerShape(LocalAppDimens.current.radius8))
                 .background(Color(0xFF2A2A2A)),
         ) {
             AsyncImage(
@@ -682,7 +683,7 @@ private fun FindMovieCard(
                 PremiumBadgeOverlay(
                     modifier = Modifier
                         .align(Alignment.TopStart)
-                        .padding(4.dp),
+                        .padding(LocalAppDimens.current.pad4),
                     size = 30.dp,
                 )
             }
@@ -692,12 +693,12 @@ private fun FindMovieCard(
             if (!langLabel.isNullOrEmpty()) {
                 Text(
                     text = langLabel,
-                    fontSize = 9.sp,
+                    fontSize = LocalAppDimens.current.font9,
                     fontWeight = FontWeight.Bold,
                     color = Color.White,
                     modifier = Modifier
                         .align(Alignment.TopEnd)
-                        .padding(4.dp)
+                        .padding(LocalAppDimens.current.pad4)
                         .background(
                             when {
                                 langLabel.contains("MULTI") -> Color(0xFF9B59B6)
@@ -708,7 +709,7 @@ private fun FindMovieCard(
                             },
                             RoundedCornerShape(3.dp),
                         )
-                        .padding(horizontal = 4.dp, vertical = 1.dp),
+                        .padding(horizontal = LocalAppDimens.current.pad4, vertical = 1.dp),
                 )
             }
 
@@ -734,9 +735,9 @@ private fun FindMovieCard(
                     color = Color.White,
                     modifier = Modifier
                         .align(Alignment.BottomStart)
-                        .padding(4.dp)
+                        .padding(LocalAppDimens.current.pad4)
                         .background(Color(0xFF333333).copy(alpha = 0.8f), RoundedCornerShape(3.dp))
-                        .padding(horizontal = 4.dp, vertical = 1.dp),
+                        .padding(horizontal = LocalAppDimens.current.pad4, vertical = 1.dp),
                 )
             }
 
@@ -745,12 +746,12 @@ private fun FindMovieCard(
             if (ratingVal != null) {
                 Text(
                     text = String.format("%.1f", ratingVal),
-                    fontSize = 8.sp,
+                    fontSize = LocalAppDimens.current.font8,
                     fontWeight = FontWeight.Bold,
                     color = CineVaultTheme.colors.accentGold,
                     modifier = Modifier
                         .align(Alignment.BottomEnd)
-                        .padding(4.dp),
+                        .padding(LocalAppDimens.current.pad4),
                 )
             }
         }
@@ -762,8 +763,8 @@ private fun FindMovieCard(
             color = CineVaultTheme.colors.textPrimary,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.padding(top = 4.dp),
-            fontSize = 11.sp,
+            modifier = Modifier.padding(top = LocalAppDimens.current.pad4),
+            fontSize = LocalAppDimens.current.font11,
         )
     }
 }

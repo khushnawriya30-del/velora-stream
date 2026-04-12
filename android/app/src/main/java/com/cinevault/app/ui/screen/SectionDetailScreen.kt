@@ -26,6 +26,7 @@ import coil.compose.AsyncImage
 import com.cinevault.app.data.model.MovieDto
 import com.cinevault.app.ui.components.PremiumBadgeOverlay
 import com.cinevault.app.ui.theme.CineVaultTheme
+import com.cinevault.app.ui.theme.LocalAppDimens
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -43,12 +44,12 @@ fun SectionDetailScreen(
                     Column {
                         Text(
                             sectionTitle,
-                            fontSize = 20.sp,
+                            fontSize = LocalAppDimens.current.font20,
                             fontWeight = FontWeight.Bold,
                             color = CineVaultTheme.colors.textPrimary,
                         )
                         // Gold underline
-                        Spacer(modifier = Modifier.height(2.dp))
+                        Spacer(modifier = Modifier.height(LocalAppDimens.current.padTiny))
                         Box(
                             modifier = Modifier
                                 .width(40.dp)
@@ -83,7 +84,7 @@ fun SectionDetailScreen(
                 Text(
                     "No content available",
                     color = CineVaultTheme.colors.textSecondary,
-                    fontSize = 16.sp,
+                    fontSize = LocalAppDimens.current.font16,
                 )
             }
         } else {
@@ -92,9 +93,9 @@ fun SectionDetailScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(paddingValues),
-                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
+                contentPadding = PaddingValues(horizontal = LocalAppDimens.current.pad16, vertical = LocalAppDimens.current.pad8),
+                horizontalArrangement = Arrangement.spacedBy(LocalAppDimens.current.pad10),
+                verticalArrangement = Arrangement.spacedBy(LocalAppDimens.current.pad16),
             ) {
                 items(movies) { movie ->
                     GridMovieCard(
@@ -121,7 +122,7 @@ private fun GridMovieCard(
             modifier = Modifier
                 .fillMaxWidth()
                 .aspectRatio(2f / 3f)
-                .clip(RoundedCornerShape(10.dp))
+                .clip(RoundedCornerShape(LocalAppDimens.current.radius10))
                 .background(CineVaultTheme.colors.surface)
         ) {
             AsyncImage(
@@ -153,14 +154,14 @@ private fun GridMovieCard(
                 Surface(
                     modifier = Modifier
                         .align(Alignment.TopEnd)
-                        .padding(6.dp),
-                    shape = RoundedCornerShape(4.dp),
+                        .padding(LocalAppDimens.current.pad6),
+                    shape = RoundedCornerShape(LocalAppDimens.current.radius4),
                     color = Color.Black.copy(alpha = 0.6f),
                 ) {
                     Text(
                         langLabel,
-                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
-                        fontSize = 10.sp,
+                        modifier = Modifier.padding(horizontal = LocalAppDimens.current.pad4, vertical = LocalAppDimens.current.padTiny),
+                        fontSize = LocalAppDimens.current.font10,
                         fontWeight = FontWeight.SemiBold,
                         color = Color.White,
                         letterSpacing = 0.3.sp,
@@ -173,7 +174,7 @@ private fun GridMovieCard(
                 PremiumBadgeOverlay(
                     modifier = Modifier
                         .align(Alignment.TopStart)
-                        .padding(4.dp),
+                        .padding(LocalAppDimens.current.pad4),
                     size = 32.dp
                 )
             } else if (!movie.contentRating.isNullOrEmpty()) {
@@ -181,13 +182,13 @@ private fun GridMovieCard(
                 Surface(
                     modifier = Modifier
                         .align(Alignment.TopStart)
-                        .padding(6.dp),
-                    shape = RoundedCornerShape(4.dp),
+                        .padding(LocalAppDimens.current.pad6),
+                    shape = RoundedCornerShape(LocalAppDimens.current.radius4),
                     color = Color.White.copy(alpha = 0.2f),
                 ) {
                     Text(
                         movie.contentRating!!,
-                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
+                        modifier = Modifier.padding(horizontal = LocalAppDimens.current.pad4, vertical = LocalAppDimens.current.padTiny),
                         fontSize = 7.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color.White.copy(alpha = 0.9f),
@@ -200,13 +201,13 @@ private fun GridMovieCard(
                 Surface(
                     modifier = Modifier
                         .align(Alignment.BottomStart)
-                        .padding(6.dp),
-                    shape = RoundedCornerShape(4.dp),
+                        .padding(LocalAppDimens.current.pad6),
+                    shape = RoundedCornerShape(LocalAppDimens.current.radius4),
                     color = Color.White.copy(alpha = 0.2f),
                 ) {
                     Text(
                         movie.videoQuality!!,
-                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
+                        modifier = Modifier.padding(horizontal = LocalAppDimens.current.pad4, vertical = LocalAppDimens.current.padTiny),
                         fontSize = 7.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color.White.copy(alpha = 0.9f),
@@ -220,14 +221,14 @@ private fun GridMovieCard(
                 Surface(
                     modifier = Modifier
                         .align(Alignment.BottomEnd)
-                        .padding(6.dp),
-                    shape = RoundedCornerShape(4.dp),
+                        .padding(LocalAppDimens.current.pad6),
+                    shape = RoundedCornerShape(LocalAppDimens.current.radius4),
                     color = CineVaultTheme.colors.background.copy(alpha = 0.85f),
                 ) {
                     Text(
                         String.format("%.1f", displayRating),
-                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
-                        fontSize = 10.sp,
+                        modifier = Modifier.padding(horizontal = LocalAppDimens.current.pad4, vertical = LocalAppDimens.current.padTiny),
+                        fontSize = LocalAppDimens.current.font10,
                         fontWeight = FontWeight.Bold,
                         color = CineVaultTheme.colors.ratingGold,
                     )
@@ -235,10 +236,10 @@ private fun GridMovieCard(
             }
         }
 
-        Spacer(Modifier.height(6.dp))
+        Spacer(Modifier.height(LocalAppDimens.current.pad6))
         Text(
             movie.title,
-            fontSize = 12.sp,
+            fontSize = LocalAppDimens.current.font12,
             fontWeight = FontWeight.SemiBold,
             color = CineVaultTheme.colors.textPrimary,
             maxLines = 2,

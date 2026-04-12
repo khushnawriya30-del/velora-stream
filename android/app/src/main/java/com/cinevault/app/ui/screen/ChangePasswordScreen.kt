@@ -25,6 +25,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.cinevault.app.ui.theme.CineVaultTheme
 import com.cinevault.app.ui.viewmodel.SettingsViewModel
+import com.cinevault.app.ui.theme.LocalAppDimens
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -68,9 +69,9 @@ fun ChangePasswordScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 24.dp),
+                .padding(horizontal = LocalAppDimens.current.pad24),
         ) {
-            Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(LocalAppDimens.current.pad16))
 
             if (uiState.changePasswordSuccess) {
                 Surface(
@@ -81,11 +82,11 @@ fun ChangePasswordScreen(
                     Text(
                         "Password changed successfully!",
                         color = CineVaultTheme.colors.accentGold,
-                        modifier = Modifier.padding(16.dp),
-                        fontSize = 14.sp,
+                        modifier = Modifier.padding(LocalAppDimens.current.pad16),
+                        fontSize = LocalAppDimens.current.font14,
                     )
                 }
-                Spacer(Modifier.height(16.dp))
+                Spacer(Modifier.height(LocalAppDimens.current.pad16))
             }
 
             uiState.error?.let { error ->
@@ -94,25 +95,25 @@ fun ChangePasswordScreen(
                     color = CineVaultTheme.colors.error.copy(alpha = 0.15f),
                     modifier = Modifier.fillMaxWidth(),
                 ) {
-                    Text(error, color = CineVaultTheme.colors.error, modifier = Modifier.padding(16.dp), fontSize = 14.sp)
+                    Text(error, color = CineVaultTheme.colors.error, modifier = Modifier.padding(LocalAppDimens.current.pad16), fontSize = LocalAppDimens.current.font14)
                 }
-                Spacer(Modifier.height(16.dp))
+                Spacer(Modifier.height(LocalAppDimens.current.pad16))
             }
 
             Surface(
-                shape = RoundedCornerShape(16.dp),
+                shape = RoundedCornerShape(LocalAppDimens.current.radius16),
                 color = CineVaultTheme.colors.surface,
                 modifier = Modifier.fillMaxWidth(),
             ) {
-                Column(modifier = Modifier.padding(20.dp)) {
+                Column(modifier = Modifier.padding(LocalAppDimens.current.pad20)) {
                     PasswordField("Current Password", currentPassword, { currentPassword = it }, showCurrent, { showCurrent = !showCurrent }, ImeAction.Next)
-                    Spacer(Modifier.height(16.dp))
+                    Spacer(Modifier.height(LocalAppDimens.current.pad16))
                     PasswordField("New Password", newPassword, { newPassword = it }, showNew, { showNew = !showNew }, ImeAction.Next)
-                    Spacer(Modifier.height(4.dp))
+                    Spacer(Modifier.height(LocalAppDimens.current.pad4))
                     PasswordStrengthIndicator(newPassword)
-                    Spacer(Modifier.height(16.dp))
+                    Spacer(Modifier.height(LocalAppDimens.current.pad16))
                     PasswordField("Confirm New Password", confirmPassword, { confirmPassword = it }, showConfirm, { showConfirm = !showConfirm }, ImeAction.Done)
-                    Spacer(Modifier.height(24.dp))
+                    Spacer(Modifier.height(LocalAppDimens.current.pad24))
 
                     Button(
                         onClick = {
@@ -127,7 +128,7 @@ fun ChangePasswordScreen(
                         if (uiState.isLoading) {
                             CircularProgressIndicator(color = CineVaultTheme.colors.background, strokeWidth = 2.dp, modifier = Modifier.size(20.dp))
                         } else {
-                            Text("Change Password", color = CineVaultTheme.colors.background, fontSize = 16.sp)
+                            Text("Change Password", color = CineVaultTheme.colors.background, fontSize = LocalAppDimens.current.font16)
                         }
                     }
                 }
@@ -189,7 +190,7 @@ private fun PasswordStrengthIndicator(password: String) {
                     .background(if (i < score) color else CineVaultTheme.colors.border, RoundedCornerShape(2.dp))
             )
         }
-        Spacer(Modifier.width(8.dp))
-        Text(label, fontSize = 11.sp, color = color)
+        Spacer(Modifier.width(LocalAppDimens.current.pad8))
+        Text(label, fontSize = LocalAppDimens.current.font11, color = color)
     }
 }

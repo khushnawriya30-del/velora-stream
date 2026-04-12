@@ -35,6 +35,7 @@ import com.cinevault.app.ui.components.GoldButton
 import com.cinevault.app.ui.theme.CineVaultTheme
 import com.cinevault.app.ui.viewmodel.AuthViewModel
 import com.cinevault.app.util.launchGoogleWebSignIn
+import com.cinevault.app.ui.theme.LocalAppDimens
 
 @Composable
 fun LoginScreen(
@@ -81,7 +82,7 @@ fun LoginScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 24.dp),
+                .padding(horizontal = LocalAppDimens.current.pad24),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Spacer(Modifier.height(80.dp))
@@ -89,12 +90,12 @@ fun LoginScreen(
             Text(
                 "VELORA",
                 style = CineVaultTheme.typography.heroTitle.copy(
-                    fontSize = 32.sp,
+                    fontSize = LocalAppDimens.current.font32,
                     letterSpacing = 6.sp,
                 ),
                 color = CineVaultTheme.colors.accentGold,
             )
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(LocalAppDimens.current.pad8))
             Text(
                 "Sign in to continue",
                 style = CineVaultTheme.typography.body,
@@ -106,11 +107,11 @@ fun LoginScreen(
             // Frosted glass card
             Surface(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp),
+                shape = RoundedCornerShape(LocalAppDimens.current.radius16),
                 color = CineVaultTheme.colors.surface.copy(alpha = 0.6f),
                 tonalElevation = 0.dp,
             ) {
-                Column(modifier = Modifier.padding(24.dp)) {
+                Column(modifier = Modifier.padding(LocalAppDimens.current.pad24)) {
                     CineVaultTextField(
                         value = email,
                         onValueChange = { email = it },
@@ -124,7 +125,7 @@ fun LoginScreen(
                         ),
                     )
 
-                    Spacer(Modifier.height(16.dp))
+                    Spacer(Modifier.height(LocalAppDimens.current.pad16))
 
                     CineVaultTextField(
                         value = password,
@@ -153,7 +154,7 @@ fun LoginScreen(
                         },
                     )
 
-                    Spacer(Modifier.height(8.dp))
+                    Spacer(Modifier.height(LocalAppDimens.current.pad8))
 
                     TextButton(
                         onClick = onNavigateToForgotPassword,
@@ -166,7 +167,7 @@ fun LoginScreen(
                         )
                     }
 
-                    Spacer(Modifier.height(16.dp))
+                    Spacer(Modifier.height(LocalAppDimens.current.pad16))
 
                     // Error
                     if (uiState.error != null) {
@@ -174,7 +175,7 @@ fun LoginScreen(
                             uiState.error!!,
                             style = CineVaultTheme.typography.label,
                             color = CineVaultTheme.colors.error,
-                            modifier = Modifier.padding(bottom = 8.dp),
+                            modifier = Modifier.padding(bottom = LocalAppDimens.current.pad8),
                         )
                     }
 
@@ -186,7 +187,7 @@ fun LoginScreen(
                 }
             }
 
-            Spacer(Modifier.height(24.dp))
+            Spacer(Modifier.height(LocalAppDimens.current.pad24))
 
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
@@ -203,7 +204,7 @@ fun LoginScreen(
                 }
             }
 
-            Spacer(Modifier.height(24.dp))
+            Spacer(Modifier.height(LocalAppDimens.current.pad24))
 
             // Divider
             Row(
@@ -219,7 +220,7 @@ fun LoginScreen(
                 HorizontalDivider(modifier = Modifier.weight(1f), color = CineVaultTheme.colors.textSecondary.copy(alpha = 0.3f))
             }
 
-            Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(LocalAppDimens.current.pad16))
 
             // Google Sign-In button
             Button(
@@ -245,16 +246,16 @@ fun LoginScreen(
                         tint = Color.Unspecified,
                         modifier = Modifier.size(20.dp),
                     )
-                    Spacer(Modifier.width(12.dp))
+                    Spacer(Modifier.width(LocalAppDimens.current.pad12))
                     Text(
                         "Continue with Google",
-                        style = CineVaultTheme.typography.body.copy(fontSize = 15.sp),
+                        style = CineVaultTheme.typography.body.copy(fontSize = LocalAppDimens.current.font15),
                         color = Color(0xFF1F1F1F),
                     )
                 }
             }
 
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(LocalAppDimens.current.pad12))
 
             // Phone login temporarily disabled (Firebase Blaze billing required)
             // TODO: Re-enable when Firebase billing is set up
