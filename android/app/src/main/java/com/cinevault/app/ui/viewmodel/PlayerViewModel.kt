@@ -432,6 +432,18 @@ class PlayerViewModel @Inject constructor(
         currentEpisodeId = episode.id
         resetAdSchedule()
         viewModelScope.launch {
+            // Re-detect free preview per episode: free user + premium episode = free preview
+            val isPremiumUser = sessionManager.isPremium.firstOrNull() ?: false
+            if (!isPremiumUser && episode.isPremium) {
+                isFreePreview = true
+                _uiState.update { it.copy(isFreePreview = true) }
+                Log.d("CineVaultPlayer", "playEpisode: premium episode for free user — enabling free preview")
+            } else if (!isPremiumUser && !episode.isPremium) {
+                // Non-premium episode: disable free preview
+                isFreePreview = false
+                _uiState.update { it.copy(isFreePreview = false) }
+            }
+
             // Track unique episode view (fire and forget)
             launch { contentRepository.trackEpisodeView(episode.id) }
             _uiState.update {
@@ -678,6 +690,11 @@ class PlayerViewModel @Inject constructor(
     override fun onCleared() {
         super.onCleared()
         progressJob?.cancel()
+        // Don't save watch history during free preview — prevent resume bypass
+        if (isFreePreview) {
+            Log.d("CineVaultPlayer", "onCleared: free preview — skipping final save")
+            return
+        }
         // Final save using the persistent scope
         val state = _uiState.value
         if (state.totalDuration > 0 && state.currentPosition > 0) {

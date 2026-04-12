@@ -232,6 +232,10 @@ fun PlayerScreen(
             // Dismiss cross icon and start playing
             showAdCrossIcon = false
             viewModel.markPreRollDone()
+            // Free preview: always start from 0 after ad
+            if (previewActive) {
+                exoPlayer.seekTo(0L)
+            }
             exoPlayer.play()
             return@BackHandler
         }
@@ -850,6 +854,10 @@ fun PlayerScreen(
                         onClick = {
                             showAdCrossIcon = false
                             viewModel.markPreRollDone()
+                            // Free preview: always reset to 0 after ad — no resume bypass
+                            if (previewActive) {
+                                exoPlayer.seekTo(0L)
+                            }
                             exoPlayer.play()
                         },
                         modifier = Modifier
