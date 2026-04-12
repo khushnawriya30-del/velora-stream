@@ -11,7 +11,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
@@ -21,7 +20,6 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.tv.foundation.lazy.grid.TvGridCells
 import androidx.tv.foundation.lazy.grid.TvLazyVerticalGrid
@@ -43,6 +41,7 @@ fun SearchScreen(
 ) {
     val state by viewModel.state.collectAsState()
     val searchFocusRequester = remember { FocusRequester() }
+    val d = LocalTvDimens.current
 
     LaunchedEffect(Unit) {
         searchFocusRequester.requestFocus()
@@ -52,7 +51,7 @@ fun SearchScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(TvBackground)
-            .padding(horizontal = 48.dp, vertical = 24.dp)
+            .padding(horizontal = d.screenPadH, vertical = d.screenPadV)
             .onPreviewKeyEvent {
                 if (it.key == Key.Back && it.type == KeyEventType.KeyUp) {
                     onBack()
@@ -60,7 +59,6 @@ fun SearchScreen(
                 } else false
             },
     ) {
-        // Search bar
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
@@ -73,27 +71,27 @@ fun SearchScreen(
                     focusedContainerColor = TvPrimary,
                 ),
             ) {
-                Text("← Back", fontSize = 14.sp)
+                Text("\u2190 Back", fontSize = d.fontBody)
             }
 
-            Spacer(modifier = Modifier.width(16.dp))
+            Spacer(modifier = Modifier.width(d.padLarge))
 
             Box(
                 modifier = Modifier
                     .weight(1f)
-                    .height(50.dp)
-                    .clip(RoundedCornerShape(8.dp))
+                    .height(d.searchBarH)
+                    .clip(RoundedCornerShape(d.padSmall))
                     .background(TvSurfaceVariant)
-                    .padding(horizontal = 16.dp),
+                    .padding(horizontal = d.padLarge),
                 contentAlignment = Alignment.CenterStart,
             ) {
                 if (state.query.isEmpty()) {
-                    Text("Search movies, series, anime...", color = TvTextMuted, fontSize = 16.sp)
+                    Text("Search movies, series, anime...", color = TvTextMuted, fontSize = d.fontMedium)
                 }
                 BasicTextField(
                     value = state.query,
                     onValueChange = { viewModel.onQueryChange(it) },
-                    textStyle = TextStyle(color = TvOnSurface, fontSize = 16.sp),
+                    textStyle = TextStyle(color = TvOnSurface, fontSize = d.fontMedium),
                     singleLine = true,
                     cursorBrush = SolidColor(TvPrimary),
                     modifier = Modifier
@@ -103,9 +101,8 @@ fun SearchScreen(
             }
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(d.padLarge))
 
-        // Filter chips row
         FilterSection(
             label = "Type",
             options = viewModel.contentTypes,
@@ -113,7 +110,7 @@ fun SearchScreen(
             onSelect = { viewModel.onContentTypeChange(it) },
         )
 
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(d.padSmall))
 
         FilterSection(
             label = "Genre",
@@ -122,7 +119,7 @@ fun SearchScreen(
             onSelect = { viewModel.onGenreChange(it) },
         )
 
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(d.padSmall))
 
         FilterSection(
             label = "Language",
@@ -131,23 +128,22 @@ fun SearchScreen(
             onSelect = { viewModel.onLanguageChange(it) },
         )
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(d.padLarge))
 
-        // Results
         if (state.isLoading) {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text("Searching...", color = TvTextMuted, fontSize = 18.sp)
+                Text("Searching...", color = TvTextMuted, fontSize = d.fontLarge)
             }
         } else if (state.results.isEmpty() && state.hasSearched) {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text("No results found", color = TvTextMuted, fontSize = 18.sp)
+                Text("No results found", color = TvTextMuted, fontSize = d.fontLarge)
             }
         } else {
             TvLazyVerticalGrid(
-                columns = TvGridCells.Adaptive(160.dp),
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-                contentPadding = PaddingValues(bottom = 32.dp),
+                columns = TvGridCells.Adaptive(d.searchGridMinW),
+                horizontalArrangement = Arrangement.spacedBy(d.padLarge),
+                verticalArrangement = Arrangement.spacedBy(d.padLarge),
+                contentPadding = PaddingValues(bottom = d.padXXL),
             ) {
                 items(state.results, key = { it.id }) { movie ->
                     SearchResultCard(movie = movie, onClick = { onMovieClick(movie.id) })
@@ -165,21 +161,22 @@ private fun FilterSection(
     selected: String,
     onSelect: (String) -> Unit,
 ) {
+    val d = LocalTvDimens.current
     Row(verticalAlignment = Alignment.CenterVertically) {
         Text(
             text = "$label:",
-            fontSize = 14.sp,
+            fontSize = d.fontBody,
             color = TvTextMuted,
-            modifier = Modifier.width(80.dp),
+            modifier = Modifier.width(d.filterLabelW),
         )
         TvLazyRow(
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            horizontalArrangement = Arrangement.spacedBy(d.padSmall),
         ) {
             items(options) { option ->
                 val isSelected = option == selected
                 Surface(
                     onClick = { onSelect(option) },
-                    shape = ClickableSurfaceDefaults.shape(RoundedCornerShape(6.dp)),
+                    shape = ClickableSurfaceDefaults.shape(RoundedCornerShape(d.padSmall)),
                     colors = ClickableSurfaceDefaults.colors(
                         containerColor = if (isSelected) TvPrimary else TvSurfaceVariant,
                         focusedContainerColor = TvPrimary,
@@ -190,8 +187,8 @@ private fun FilterSection(
                 ) {
                     Text(
                         text = option,
-                        fontSize = 12.sp,
-                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
+                        fontSize = d.fontSmall,
+                        modifier = Modifier.padding(horizontal = d.padMedium, vertical = d.padSmall),
                     )
                 }
             }
@@ -202,11 +199,12 @@ private fun FilterSection(
 @OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
 private fun SearchResultCard(movie: MovieDto, onClick: () -> Unit) {
+    val d = LocalTvDimens.current
     Surface(
         onClick = onClick,
         modifier = Modifier
-            .width(160.dp)
-            .height(240.dp),
+            .width(d.searchCardW)
+            .height(d.searchCardH),
         shape = ClickableSurfaceDefaults.shape(CardShape),
         colors = ClickableSurfaceDefaults.colors(
             containerColor = TvSurface,
@@ -230,7 +228,7 @@ private fun SearchResultCard(movie: MovieDto, onClick: () -> Unit) {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(70.dp)
+                    .fillMaxHeight(0.3f)
                     .align(Alignment.BottomCenter)
                     .background(
                         Brush.verticalGradient(
@@ -241,11 +239,11 @@ private fun SearchResultCard(movie: MovieDto, onClick: () -> Unit) {
             Column(
                 modifier = Modifier
                     .align(Alignment.BottomStart)
-                    .padding(8.dp),
+                    .padding(d.padSmall),
             ) {
                 Text(
                     text = movie.title,
-                    fontSize = 13.sp,
+                    fontSize = d.fontSmall,
                     fontWeight = FontWeight.Medium,
                     color = Color.White,
                     maxLines = 2,
@@ -253,7 +251,7 @@ private fun SearchResultCard(movie: MovieDto, onClick: () -> Unit) {
                 )
                 Text(
                     text = movie.contentType.replaceFirstChar { it.uppercase() },
-                    fontSize = 11.sp,
+                    fontSize = d.fontXSmall,
                     color = TvTextMuted,
                 )
             }
@@ -261,12 +259,12 @@ private fun SearchResultCard(movie: MovieDto, onClick: () -> Unit) {
                 Box(
                     modifier = Modifier
                         .align(Alignment.TopEnd)
-                        .padding(6.dp)
-                        .clip(RoundedCornerShape(4.dp))
+                        .padding(d.padSmall)
+                        .clip(RoundedCornerShape(d.padTiny))
                         .background(TvPremiumBadge)
-                        .padding(horizontal = 6.dp, vertical = 2.dp),
+                        .padding(horizontal = d.padSmall, vertical = d.padTiny),
                 ) {
-                    Text("PREMIUM", fontSize = 9.sp, fontWeight = FontWeight.Bold, color = Color.Black)
+                    Text("PREMIUM", fontSize = d.fontTiny, fontWeight = FontWeight.Bold, color = Color.Black)
                 }
             }
         }

@@ -21,6 +21,7 @@ import com.cinevault.tv.ui.screens.premium.PremiumGateScreen
 import com.cinevault.tv.ui.screens.search.SearchScreen
 import com.cinevault.tv.ui.screens.splash.SplashScreen
 import com.cinevault.tv.ui.theme.CineVaultTvTheme
+import com.cinevault.tv.ui.theme.ProvideTvDimens
 import kotlinx.coroutines.delay
 
 object TvRoutes {
@@ -43,6 +44,7 @@ object TvRoutes {
 @Composable
 fun TvApp() {
     CineVaultTvTheme {
+    ProvideTvDimens {
         val navController = rememberNavController()
         val authViewModel: AuthViewModel = hiltViewModel()
         val isLoggedIn by authViewModel.isLoggedIn.collectAsState()
@@ -171,5 +173,6 @@ fun TvApp() {
                 )
             }
         }
+    }
     }
 }

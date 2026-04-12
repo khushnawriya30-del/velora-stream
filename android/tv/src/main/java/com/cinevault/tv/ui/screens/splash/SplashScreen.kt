@@ -12,14 +12,13 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.cinevault.tv.ui.theme.*
 import kotlinx.coroutines.delay
 
 @Composable
 fun SplashScreen(onComplete: () -> Unit) {
     var visible by remember { mutableStateOf(false) }
+    val d = LocalTvDimens.current
 
     LaunchedEffect(Unit) {
         visible = true
@@ -42,7 +41,7 @@ fun SplashScreen(onComplete: () -> Unit) {
         // Background glow
         Box(
             modifier = Modifier
-                .size(400.dp)
+                .size(d.splashGlow)
                 .background(
                     Brush.radialGradient(
                         colors = listOf(
@@ -57,31 +56,30 @@ fun SplashScreen(onComplete: () -> Unit) {
             horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier.alpha(alpha)
         ) {
-            // App Name
             Text(
                 text = "VELORA",
-                fontSize = 56.sp,
+                fontSize = d.fontSplash,
                 fontWeight = FontWeight.ExtraBold,
                 color = TvPrimary,
-                letterSpacing = 6.sp,
+                letterSpacing = d.fontSmall * 0.5f,
             )
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(d.padSmall))
 
             Text(
                 text = "Premium Streaming",
-                fontSize = 16.sp,
+                fontSize = d.fontMedium,
                 fontWeight = FontWeight.Medium,
                 color = TvOnSurfaceVariant,
-                letterSpacing = 2.sp,
+                letterSpacing = d.fontSmall * 0.15f,
             )
 
-            Spacer(modifier = Modifier.height(40.dp))
+            Spacer(modifier = Modifier.height(d.padSection))
 
             CircularProgressIndicator(
-                modifier = Modifier.size(28.dp),
+                modifier = Modifier.size(d.splashProgress),
                 color = TvPrimary,
-                strokeWidth = 2.dp,
+                strokeWidth = d.padTiny,
             )
         }
     }

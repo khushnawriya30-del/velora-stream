@@ -3,7 +3,9 @@ package com.cinevault.tv.ui.screens.login
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -16,7 +18,6 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.tv.material3.ExperimentalTvMaterial3Api
 import androidx.tv.material3.Text
@@ -29,6 +30,7 @@ fun QrLoginScreen(
     viewModel: QrLoginViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsState()
+    val d = LocalTvDimens.current
 
     LaunchedEffect(state.loginSuccess) {
         if (state.loginSuccess) {
@@ -44,8 +46,9 @@ fun QrLoginScreen(
     ) {
         Row(
             modifier = Modifier
-                .fillMaxWidth(0.8f)
-                .fillMaxHeight(0.8f),
+                .fillMaxWidth(d.qrLoginFractionW)
+                .fillMaxHeight(d.qrLoginFractionH)
+                .verticalScroll(rememberScrollState()),
             horizontalArrangement = Arrangement.Center,
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -53,32 +56,32 @@ fun QrLoginScreen(
             Column(
                 modifier = Modifier
                     .weight(1f)
-                    .padding(end = 48.dp),
+                    .padding(end = d.padXXL),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center,
             ) {
                 Text(
                     text = "VELORA",
-                    fontSize = 48.sp,
+                    fontSize = d.fontDisplay,
                     fontWeight = FontWeight.ExtraBold,
                     color = TvPrimary,
-                    letterSpacing = 6.sp,
+                    letterSpacing = d.fontSmall * 0.5f,
                 )
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(d.padSmall))
                 Text(
                     text = "PREMIUM TV",
-                    fontSize = 20.sp,
+                    fontSize = d.fontXL,
                     fontWeight = FontWeight.Light,
                     color = TvOnSurfaceVariant,
-                    letterSpacing = 8.sp,
+                    letterSpacing = d.fontSmall * 0.6f,
                 )
-                Spacer(modifier = Modifier.height(32.dp))
+                Spacer(modifier = Modifier.height(d.padXXL))
                 Text(
                     text = "Stream unlimited movies & series\non the big screen",
-                    fontSize = 16.sp,
+                    fontSize = d.fontMedium,
                     color = TvTextMuted,
                     textAlign = TextAlign.Center,
-                    lineHeight = 24.sp,
+                    lineHeight = d.lineHeightLarge,
                 )
             }
 
@@ -86,52 +89,52 @@ fun QrLoginScreen(
             Column(
                 modifier = Modifier
                     .weight(1f)
-                    .clip(RoundedCornerShape(16.dp))
+                    .clip(RoundedCornerShape(d.padLarge))
                     .background(TvSurface)
-                    .padding(40.dp),
+                    .padding(d.padXXL),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center,
             ) {
                 Text(
                     text = "Scan to Login",
-                    fontSize = 24.sp,
+                    fontSize = d.fontXXL,
                     fontWeight = FontWeight.SemiBold,
                     color = TvOnSurface,
                 )
 
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(d.padSmall))
 
                 Text(
                     text = "Open Velora app on your phone\nand scan this QR code",
-                    fontSize = 14.sp,
+                    fontSize = d.fontBody,
                     color = TvTextMuted,
                     textAlign = TextAlign.Center,
-                    lineHeight = 20.sp,
+                    lineHeight = d.lineHeightBody,
                 )
 
-                Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(d.padXL))
 
                 if (state.isLoading) {
                     Box(
                         modifier = Modifier
-                            .size(220.dp)
-                            .clip(RoundedCornerShape(12.dp))
+                            .size(d.qrSize)
+                            .clip(RoundedCornerShape(d.padMedium))
                             .background(Color.White.copy(alpha = 0.1f)),
                         contentAlignment = Alignment.Center,
                     ) {
                         Text(
                             text = "Loading...",
                             color = TvTextMuted,
-                            fontSize = 16.sp,
+                            fontSize = d.fontMedium,
                         )
                     }
                 } else if (state.qrBitmap != null) {
                     Box(
                         modifier = Modifier
-                            .size(220.dp)
-                            .clip(RoundedCornerShape(12.dp))
+                            .size(d.qrSize)
+                            .clip(RoundedCornerShape(d.padMedium))
                             .background(Color.White)
-                            .padding(12.dp),
+                            .padding(d.padMedium),
                     ) {
                         Image(
                             bitmap = state.qrBitmap!!.asImageBitmap(),
@@ -142,23 +145,23 @@ fun QrLoginScreen(
                 }
 
                 if (state.error != null) {
-                    Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(d.padLarge))
                     Text(
                         text = state.error!!,
                         color = TvPrimary,
-                        fontSize = 14.sp,
+                        fontSize = d.fontBody,
                         textAlign = TextAlign.Center,
                     )
                 }
 
-                Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(d.padXL))
 
                 // Steps
                 Column(horizontalAlignment = Alignment.Start) {
                     StepRow(number = "1", text = "Open Velora on your phone")
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(d.padSmall))
                     StepRow(number = "2", text = "Go to Profile → Link TV")
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(d.padSmall))
                     StepRow(number = "3", text = "Scan the QR code above")
                 }
             }
@@ -169,26 +172,27 @@ fun QrLoginScreen(
 @OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
 private fun StepRow(number: String, text: String) {
+    val d = LocalTvDimens.current
     Row(verticalAlignment = Alignment.CenterVertically) {
         Box(
             modifier = Modifier
-                .size(28.dp)
-                .clip(RoundedCornerShape(14.dp))
+                .size(d.stepCircle)
+                .clip(RoundedCornerShape(d.stepCircle / 2))
                 .background(TvPrimary),
             contentAlignment = Alignment.Center,
         ) {
             Text(
                 text = number,
                 color = Color.White,
-                fontSize = 14.sp,
+                fontSize = d.fontBody,
                 fontWeight = FontWeight.Bold,
             )
         }
-        Spacer(modifier = Modifier.width(12.dp))
+        Spacer(modifier = Modifier.width(d.padMedium))
         Text(
             text = text,
             color = TvOnSurfaceVariant,
-            fontSize = 14.sp,
+            fontSize = d.fontBody,
         )
     }
 }

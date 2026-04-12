@@ -15,14 +15,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
-import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.tv.foundation.lazy.list.TvLazyColumn
 import androidx.tv.foundation.lazy.list.TvLazyRow
@@ -51,6 +49,7 @@ fun HomeScreen(
     viewModel: HomeViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsState()
+    val d = LocalTvDimens.current
     var selectedTabIndex by remember { mutableIntStateOf(tabKeys.indexOf(initialTab).coerceAtLeast(0)) }
 
     LaunchedEffect(initialTab) {
@@ -66,9 +65,8 @@ fun HomeScreen(
     ) {
         TvLazyColumn(
             modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(bottom = 40.dp),
+            contentPadding = PaddingValues(bottom = d.padSection),
         ) {
-            // Top bar with tabs
             item {
                 TopBar(
                     selectedTab = selectedTabIndex,
@@ -87,14 +85,13 @@ fun HomeScreen(
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(400.dp),
+                            .height(d.bannerHeight),
                         contentAlignment = Alignment.Center
                     ) {
-                        Text("Loading...", color = TvOnSurfaceVariant, fontSize = 18.sp)
+                        Text("Loading...", color = TvOnSurfaceVariant, fontSize = d.fontLarge)
                     }
                 }
             } else {
-                // Hero banner carousel
                 if (state.banners.isNotEmpty()) {
                     item {
                         HeroBannerCarousel(
@@ -106,7 +103,6 @@ fun HomeScreen(
                     }
                 }
 
-                // Continue watching row
                 if (state.continueWatching.isNotEmpty()) {
                     item {
                         ContinueWatchingRow(
@@ -116,7 +112,6 @@ fun HomeScreen(
                     }
                 }
 
-                // Trending row
                 if (state.trending.isNotEmpty()) {
                     item {
                         ContentRow(
@@ -128,7 +123,6 @@ fun HomeScreen(
                     }
                 }
 
-                // Dynamic home sections
                 items(state.sections.size) { index ->
                     val section = state.sections[index]
                     if (section.type == "mid_banner" && section.bannerImageUrl != null) {
@@ -155,25 +149,24 @@ private fun TopBar(
     onSearchClick: () -> Unit,
     onLogout: () -> Unit,
 ) {
+    val d = LocalTvDimens.current
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 48.dp, vertical = 16.dp),
+            .padding(horizontal = d.screenPadH, vertical = d.padLarge),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        // App name
         Text(
             text = "VELORA",
-            fontSize = 28.sp,
+            fontSize = d.fontTitle,
             fontWeight = FontWeight.ExtraBold,
             color = TvPrimary,
-            letterSpacing = 3.sp,
+            letterSpacing = d.fontSmall * 0.25f,
         )
 
-        // Nav tabs
         Row(
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            horizontalArrangement = Arrangement.spacedBy(d.padSmall),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             tabs.forEachIndexed { index, tab ->
@@ -210,16 +203,15 @@ private fun TopBar(
                 ) {
                     Text(
                         text = tab,
-                        fontSize = if (isSelected) 16.sp else 14.sp,
+                        fontSize = if (isSelected) d.fontMedium else d.fontBody,
                         fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                        modifier = Modifier.padding(horizontal = d.padLarge, vertical = d.padSmall),
                     )
                 }
             }
         }
 
-        // Right side actions
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(d.padMedium)) {
             Surface(
                 onClick = onSearchClick,
                 shape = ClickableSurfaceDefaults.shape(CircleShape),
@@ -233,7 +225,7 @@ private fun TopBar(
                 Icon(
                     imageVector = Icons.Default.Search,
                     contentDescription = "Search",
-                    modifier = Modifier.padding(12.dp).size(24.dp),
+                    modifier = Modifier.padding(d.padMedium).size(d.iconMedium),
                 )
             }
 
@@ -250,7 +242,7 @@ private fun TopBar(
                 Icon(
                     imageVector = Icons.Default.AccountCircle,
                     contentDescription = "Account / Logout",
-                    modifier = Modifier.padding(12.dp).size(24.dp),
+                    modifier = Modifier.padding(d.padMedium).size(d.iconMedium),
                 )
             }
         }
@@ -263,6 +255,7 @@ private fun HeroBannerCarousel(
     banners: List<BannerDto>,
     onBannerClick: (BannerDto) -> Unit,
 ) {
+    val d = LocalTvDimens.current
     var currentIndex by remember { mutableIntStateOf(0) }
 
     LaunchedEffect(banners.size) {
@@ -279,8 +272,8 @@ private fun HeroBannerCarousel(
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(380.dp)
-            .padding(horizontal = 48.dp, vertical = 8.dp),
+            .height(d.bannerHeight)
+            .padding(horizontal = d.screenPadH, vertical = d.padSmall),
     ) {
         Surface(
             onClick = { onBannerClick(banner) },
@@ -305,7 +298,6 @@ private fun HeroBannerCarousel(
                     contentScale = ContentScale.Crop,
                 )
 
-                // Left gradient
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
@@ -320,7 +312,6 @@ private fun HeroBannerCarousel(
                         )
                 )
 
-                // Bottom gradient
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -333,88 +324,77 @@ private fun HeroBannerCarousel(
                         )
                 )
 
-                // Content overlay
                 Column(
                     modifier = Modifier
                         .align(Alignment.BottomStart)
-                        .padding(32.dp)
+                        .padding(d.padXXL)
                         .fillMaxWidth(0.5f),
                 ) {
                     banner.title?.let { title ->
                         Text(
                             text = title,
-                            fontSize = 28.sp,
+                            fontSize = d.fontTitle,
                             fontWeight = FontWeight.ExtraBold,
                             color = Color.White,
                             maxLines = 2,
                             overflow = TextOverflow.Ellipsis,
-                            letterSpacing = 1.sp,
                         )
                     }
 
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(d.padSmall))
 
-                    // Meta info row
                     Row(
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        horizontalArrangement = Arrangement.spacedBy(d.padMedium),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         banner.starRating?.let { rating ->
                             Text(
                                 text = "\u2B50 ${String.format("%.1f", rating)}",
-                                fontSize = 14.sp,
+                                fontSize = d.fontBody,
                                 fontWeight = FontWeight.Medium,
                                 color = TvRatingGold,
                             )
                         }
                         banner.releaseYear?.let { year ->
-                            Text(
-                                text = year.toString(),
-                                fontSize = 14.sp,
-                                color = TvOnSurfaceVariant,
-                            )
+                            Text(text = year.toString(), fontSize = d.fontBody, color = TvOnSurfaceVariant)
                         }
                         banner.contentType?.let { type ->
                             Text(
                                 text = type.uppercase().replace("_", " "),
-                                fontSize = 12.sp,
+                                fontSize = d.fontSmall,
                                 fontWeight = FontWeight.Medium,
                                 color = TvOnSurfaceVariant,
-                                letterSpacing = 0.8.sp,
                             )
                         }
                     }
 
-                    // Genre tags
                     banner.genreTags?.take(3)?.let { tags ->
                         if (tags.isNotEmpty()) {
-                            Spacer(modifier = Modifier.height(8.dp))
+                            Spacer(modifier = Modifier.height(d.padSmall))
                             Text(
                                 text = tags.joinToString(" \u2022 ") { it.uppercase() },
-                                fontSize = 12.sp,
+                                fontSize = d.fontSmall,
                                 fontWeight = FontWeight.Medium,
                                 color = TvPrimary,
-                                letterSpacing = 0.8.sp,
                             )
                         }
                     }
                 }
 
-                // Page indicators
                 Row(
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
-                        .padding(bottom = 16.dp),
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        .padding(bottom = d.padLarge),
+                    horizontalArrangement = Arrangement.spacedBy(d.padSmall),
                 ) {
                     banners.forEachIndexed { index, _ ->
                         Box(
                             modifier = Modifier
                                 .size(
-                                    width = if (index == currentIndex) 24.dp else 8.dp,
-                                    height = 6.dp,
+                                    width = if (index == currentIndex) d.padXL else d.padSmall,
+                                    height = d.padSmall * 0.75f,
                                 )
-                                .clip(RoundedCornerShape(3.dp))
+                                .clip(RoundedCornerShape(d.padTiny))
                                 .background(
                                     if (index == currentIndex) TvPrimary else TvTextMuted.copy(alpha = 0.4f)
                                 )
@@ -432,24 +412,25 @@ private fun ContinueWatchingRow(
     items: List<WatchProgressDto>,
     onItemClick: (WatchProgressDto) -> Unit,
 ) {
-    Column(modifier = Modifier.padding(top = 20.dp)) {
+    val d = LocalTvDimens.current
+    Column(modifier = Modifier.padding(top = d.padXL)) {
         Text(
             text = "\u25B6\uFE0F Continue Watching",
-            fontSize = 18.sp,
+            fontSize = d.fontLarge,
             fontWeight = FontWeight.SemiBold,
             color = TvOnSurface,
-            modifier = Modifier.padding(horizontal = 48.dp, vertical = 8.dp),
+            modifier = Modifier.padding(horizontal = d.screenPadH, vertical = d.padSmall),
         )
         TvLazyRow(
-            contentPadding = PaddingValues(horizontal = 48.dp),
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            contentPadding = PaddingValues(horizontal = d.screenPadH),
+            horizontalArrangement = Arrangement.spacedBy(d.padLarge),
         ) {
             items(items, key = { "${it.contentId}_${it.id}" }) { item ->
                 Surface(
                     onClick = { onItemClick(item) },
                     modifier = Modifier
-                        .width(200.dp)
-                        .height(130.dp),
+                        .width(d.continueCardW)
+                        .height(d.continueCardH),
                     shape = ClickableSurfaceDefaults.shape(CardShape),
                     colors = ClickableSurfaceDefaults.colors(
                         containerColor = TvSurface,
@@ -473,7 +454,7 @@ private fun ContinueWatchingRow(
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(60.dp)
+                                .fillMaxHeight(0.45f)
                                 .align(Alignment.BottomCenter)
                                 .background(
                                     Brush.verticalGradient(
@@ -484,11 +465,11 @@ private fun ContinueWatchingRow(
                         Column(
                             modifier = Modifier
                                 .align(Alignment.BottomStart)
-                                .padding(8.dp)
+                                .padding(d.padSmall)
                         ) {
                             Text(
                                 text = item.contentTitle ?: "Untitled",
-                                fontSize = 12.sp,
+                                fontSize = d.fontSmall,
                                 fontWeight = FontWeight.SemiBold,
                                 color = Color.White,
                                 maxLines = 1,
@@ -497,19 +478,18 @@ private fun ContinueWatchingRow(
                             item.episodeTitle?.let {
                                 Text(
                                     text = it,
-                                    fontSize = 10.sp,
+                                    fontSize = d.fontXSmall,
                                     color = TvOnSurfaceVariant,
                                     maxLines = 1,
                                 )
                             }
                         }
-                        // Progress bar
                         val progress = if (item.totalDuration > 0)
                             item.currentTime.toFloat() / item.totalDuration else 0f
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(3.dp)
+                                .height(d.padTiny)
                                 .align(Alignment.BottomCenter)
                                 .background(TvBorderSubtle)
                         ) {
@@ -530,15 +510,16 @@ private fun ContinueWatchingRow(
 @OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
 private fun MidBannerRow(section: HomeSectionDto, onMovieClick: (String) -> Unit) {
+    val d = LocalTvDimens.current
     val contentId = section.contentId ?: return
     val imageUrl = section.bannerImageUrl ?: return
 
-    Box(modifier = Modifier.padding(horizontal = 48.dp, vertical = 16.dp)) {
+    Box(modifier = Modifier.padding(horizontal = d.screenPadH, vertical = d.padLarge)) {
         Surface(
             onClick = { onMovieClick(contentId) },
             modifier = Modifier
                 .fillMaxWidth()
-                .height(180.dp),
+                .height(d.midBannerHeight),
             shape = ClickableSurfaceDefaults.shape(BannerShape),
             colors = ClickableSurfaceDefaults.colors(
                 containerColor = TvSurface,
@@ -570,12 +551,12 @@ private fun MidBannerRow(section: HomeSectionDto, onMovieClick: (String) -> Unit
                 )
                 Text(
                     text = section.title,
-                    fontSize = 22.sp,
+                    fontSize = d.fontXXL,
                     fontWeight = FontWeight.Bold,
                     color = Color.White,
                     modifier = Modifier
                         .align(Alignment.CenterStart)
-                        .padding(start = 32.dp),
+                        .padding(start = d.padXXL),
                 )
             }
         }
@@ -592,20 +573,20 @@ private fun ContentRow(
     onMovieClick: (String) -> Unit,
 ) {
     if (movies.isEmpty()) return
+    val d = LocalTvDimens.current
 
-    Column(modifier = Modifier.padding(top = 20.dp)) {
+    Column(modifier = Modifier.padding(top = d.padXL)) {
         Text(
             text = title,
-            fontSize = 18.sp,
+            fontSize = d.fontLarge,
             fontWeight = FontWeight.SemiBold,
             color = TvOnSurface,
-            modifier = Modifier.padding(horizontal = 48.dp, vertical = 8.dp),
-            letterSpacing = 0.5.sp,
+            modifier = Modifier.padding(horizontal = d.screenPadH, vertical = d.padSmall),
         )
 
         TvLazyRow(
-            contentPadding = PaddingValues(horizontal = 48.dp),
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            contentPadding = PaddingValues(horizontal = d.screenPadH),
+            horizontalArrangement = Arrangement.spacedBy(d.padLarge),
         ) {
             items(movies.size) { index ->
                 val movie = movies[index]
@@ -630,8 +611,9 @@ private fun ContentRow(
 @OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
 private fun MovieCard(movie: MovieDto, isLarge: Boolean = false, onClick: () -> Unit) {
-    val cardWidth = if (isLarge) 180.dp else 140.dp
-    val cardHeight = if (isLarge) 270.dp else 210.dp
+    val d = LocalTvDimens.current
+    val cardWidth = if (isLarge) d.movieCardLargeW else d.movieCardW
+    val cardHeight = if (isLarge) d.movieCardLargeH else d.movieCardH
 
     Surface(
         onClick = onClick,
@@ -659,7 +641,6 @@ private fun MovieCard(movie: MovieDto, isLarge: Boolean = false, onClick: () -> 
                 contentScale = ContentScale.Crop,
             )
 
-            // Bottom gradient
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -672,83 +653,76 @@ private fun MovieCard(movie: MovieDto, isLarge: Boolean = false, onClick: () -> 
                     )
             )
 
-            // Language badge - top right
             movie.languageLabel?.let { lang ->
                 Box(
                     modifier = Modifier
                         .align(Alignment.TopEnd)
-                        .padding(6.dp)
-                        .clip(RoundedCornerShape(4.dp))
+                        .padding(d.padSmall)
+                        .clip(RoundedCornerShape(d.padTiny))
                         .background(Color.Black.copy(alpha = 0.7f))
-                        .padding(horizontal = 5.dp, vertical = 2.dp),
+                        .padding(horizontal = d.padTiny, vertical = d.padTiny / 2),
                 ) {
-                    Text(text = lang, fontSize = 9.sp, color = Color.White, fontWeight = FontWeight.Medium)
+                    Text(text = lang, fontSize = d.fontTiny, color = Color.White, fontWeight = FontWeight.Medium)
                 }
             }
 
-            // Video quality badge - bottom left
             movie.videoQuality?.let { quality ->
                 Box(
                     modifier = Modifier
                         .align(Alignment.BottomStart)
-                        .padding(start = 6.dp, bottom = 28.dp)
-                        .clip(RoundedCornerShape(3.dp))
+                        .padding(start = d.padSmall, bottom = d.padXXL)
+                        .clip(RoundedCornerShape(d.padTiny))
                         .background(TvPrimary.copy(alpha = 0.8f))
-                        .padding(horizontal = 4.dp, vertical = 1.dp),
+                        .padding(horizontal = d.padTiny, vertical = d.padTiny / 2),
                 ) {
-                    Text(text = quality, fontSize = 8.sp, fontWeight = FontWeight.Bold, color = Color.Black)
+                    Text(text = quality, fontSize = d.fontTiny, fontWeight = FontWeight.Bold, color = Color.Black)
                 }
             }
 
-            // Rating - bottom right
             val rating = movie.averageRating
             if (rating > 0) {
                 Box(
                     modifier = Modifier
                         .align(Alignment.BottomEnd)
-                        .padding(end = 6.dp, bottom = 28.dp)
-                        .clip(RoundedCornerShape(4.dp))
+                        .padding(end = d.padSmall, bottom = d.padXXL)
+                        .clip(RoundedCornerShape(d.padTiny))
                         .background(Color.Black.copy(alpha = 0.7f))
-                        .padding(horizontal = 4.dp, vertical = 1.dp),
+                        .padding(horizontal = d.padTiny, vertical = d.padTiny / 2),
                 ) {
                     Text(
                         text = "\u2B50 ${String.format("%.1f", rating)}",
-                        fontSize = 10.sp,
+                        fontSize = d.fontXSmall,
                         fontWeight = FontWeight.Bold,
                         color = TvRatingGold,
                     )
                 }
             }
 
-            // Premium badge - top left
             if (movie.isEffectivelyPremium) {
                 Box(
                     modifier = Modifier
                         .align(Alignment.TopStart)
-                        .padding(6.dp)
-                        .clip(RoundedCornerShape(4.dp))
+                        .padding(d.padSmall)
+                        .clip(RoundedCornerShape(d.padTiny))
                         .background(
-                            Brush.horizontalGradient(
-                                listOf(TvPrimary, TvPrimaryVariant)
-                            )
+                            Brush.horizontalGradient(listOf(TvPrimary, TvPrimaryVariant))
                         )
-                        .padding(horizontal = 6.dp, vertical = 2.dp),
+                        .padding(horizontal = d.padSmall, vertical = d.padTiny),
                 ) {
-                    Text(text = "\uD83D\uDC51", fontSize = 12.sp)
+                    Text(text = "\uD83D\uDC51", fontSize = d.fontSmall)
                 }
             }
 
-            // Title
             Text(
                 text = movie.title,
-                fontSize = 12.sp,
+                fontSize = d.fontSmall,
                 fontWeight = FontWeight.SemiBold,
                 color = Color.White,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier
                     .align(Alignment.BottomStart)
-                    .padding(8.dp),
+                    .padding(d.padSmall),
             )
         }
     }
@@ -757,23 +731,21 @@ private fun MovieCard(movie: MovieDto, isLarge: Boolean = false, onClick: () -> 
 @OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
 private fun TrendingCard(movie: MovieDto, rank: Int, onClick: () -> Unit) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        // Large rank number
+    val d = LocalTvDimens.current
+    Row(verticalAlignment = Alignment.CenterVertically) {
         Text(
             text = rank.toString(),
-            fontSize = 60.sp,
+            fontSize = d.fontTrending,
             fontWeight = FontWeight.ExtraBold,
             color = TvPrimary.copy(alpha = 0.3f),
-            modifier = Modifier.width(50.dp),
+            modifier = Modifier.width(d.trendingRankW),
         )
 
         Surface(
             onClick = onClick,
             modifier = Modifier
-                .width(120.dp)
-                .height(180.dp),
+                .width(d.trendingCardW)
+                .height(d.trendingCardH),
             shape = ClickableSurfaceDefaults.shape(CardShape),
             colors = ClickableSurfaceDefaults.colors(
                 containerColor = TvSurface,
@@ -807,14 +779,14 @@ private fun TrendingCard(movie: MovieDto, rank: Int, onClick: () -> Unit) {
                 )
                 Text(
                     text = movie.title,
-                    fontSize = 11.sp,
+                    fontSize = d.fontXSmall,
                     fontWeight = FontWeight.SemiBold,
                     color = Color.White,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier
                         .align(Alignment.BottomStart)
-                        .padding(6.dp),
+                        .padding(d.padSmall),
                 )
             }
         }

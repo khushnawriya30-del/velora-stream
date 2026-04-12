@@ -16,8 +16,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.key.*
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.media3.common.MediaItem
@@ -43,6 +41,7 @@ fun PlayerScreen(
     val state by viewModel.state.collectAsState()
     val context = LocalContext.current
     val focusRequester = remember { FocusRequester() }
+    val d = LocalTvDimens.current
 
     var showControls by remember { mutableStateOf(true) }
     var player by remember { mutableStateOf<ExoPlayer?>(null) }
@@ -50,7 +49,6 @@ fun PlayerScreen(
     var totalDurationMs by remember { mutableLongStateOf(0L) }
     var isPlaying by remember { mutableStateOf(false) }
 
-    // Auto-hide controls
     LaunchedEffect(showControls) {
         if (showControls) {
             delay(5000)
@@ -58,7 +56,6 @@ fun PlayerScreen(
         }
     }
 
-    // Create player
     DisposableEffect(Unit) {
         val exoPlayer = ExoPlayer.Builder(context).build()
         player = exoPlayer
@@ -68,7 +65,6 @@ fun PlayerScreen(
             }
         })
         onDispose {
-            // Save final progress
             val p = player
             if (p != null && p.duration > 0) {
                 viewModel.saveProgress(p.currentPosition, p.duration)
@@ -78,10 +74,9 @@ fun PlayerScreen(
         }
     }
 
-    // Periodic progress save
     LaunchedEffect(player, state.streamUrl) {
         while (true) {
-            delay(10_000) // Update every 10 seconds
+            delay(10_000)
             val p = player ?: continue
             if (p.isPlaying && p.duration > 0) {
                 currentPositionMs = p.currentPosition
@@ -91,7 +86,6 @@ fun PlayerScreen(
         }
     }
 
-    // Load stream URL
     LaunchedEffect(state.streamUrl) {
         val currentPlayer = player ?: return@LaunchedEffect
         val url = state.streamUrl ?: return@LaunchedEffect
@@ -106,7 +100,6 @@ fun PlayerScreen(
         }
         currentPlayer.prepare()
 
-        // Resume from last position
         if (state.resumePositionMs > 0) {
             currentPlayer.seekTo(state.resumePositionMs)
         }
@@ -114,7 +107,6 @@ fun PlayerScreen(
         currentPlayer.playWhenReady = true
     }
 
-    // Position tracking for UI
     LaunchedEffect(player) {
         while (true) {
             delay(1000)
@@ -183,14 +175,13 @@ fun PlayerScreen(
     ) {
         if (state.isLoading) {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text("Loading player...", color = TvTextMuted, fontSize = 20.sp)
+                Text("Loading player...", color = TvTextMuted, fontSize = d.fontXL)
             }
         } else if (state.error != null) {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text(state.error ?: "Error", color = TvError, fontSize = 18.sp)
+                Text(state.error ?: "Error", color = TvError, fontSize = d.fontLarge)
             }
         } else {
-            // Player view
             player?.let { exoPlayer ->
                 AndroidView(
                     factory = { ctx ->
@@ -203,45 +194,41 @@ fun PlayerScreen(
                 )
             }
 
-            // Overlay controls
             if (showControls) {
-                // Top bar
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
                         .align(Alignment.TopCenter)
                         .background(Color.Black.copy(alpha = 0.6f))
-                        .padding(horizontal = 32.dp, vertical = 16.dp),
+                        .padding(horizontal = d.padXXL, vertical = d.padLarge),
                 ) {
                     Column {
                         Text(
                             text = state.title,
-                            fontSize = 22.sp,
+                            fontSize = d.fontXXL,
                             fontWeight = FontWeight.Bold,
                             color = Color.White,
                         )
                         state.episodeTitle?.let {
-                            Text(text = it, fontSize = 14.sp, color = TvOnSurfaceVariant)
+                            Text(text = it, fontSize = d.fontBody, color = TvOnSurfaceVariant)
                         }
                         if (state.episodeTitle == null && state.movie != null) {
                             Text(
                                 text = state.movie?.title ?: "",
-                                fontSize = 14.sp,
+                                fontSize = d.fontBody,
                                 color = TvOnSurfaceVariant,
                             )
                         }
                     }
                 }
 
-                // Bottom controls
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
                         .align(Alignment.BottomCenter)
                         .background(Color.Black.copy(alpha = 0.6f))
-                        .padding(horizontal = 32.dp, vertical = 12.dp),
+                        .padding(horizontal = d.padXXL, vertical = d.padMedium),
                 ) {
-                    // Progress bar
                     if (totalDurationMs > 0) {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
@@ -249,15 +236,15 @@ fun PlayerScreen(
                         ) {
                             Text(
                                 text = formatTime(currentPositionMs),
-                                fontSize = 12.sp,
+                                fontSize = d.fontSmall,
                                 color = TvOnSurfaceVariant,
                             )
                             Box(
                                 modifier = Modifier
                                     .weight(1f)
-                                    .height(4.dp)
-                                    .padding(horizontal = 12.dp)
-                                    .clip(RoundedCornerShape(2.dp))
+                                    .height(d.progressBarH)
+                                    .padding(horizontal = d.padMedium)
+                                    .clip(RoundedCornerShape(d.padTiny))
                                     .background(TvSurfaceVariant)
                             ) {
                                 val progress = (currentPositionMs.toFloat() / totalDurationMs).coerceIn(0f, 1f)
@@ -265,20 +252,19 @@ fun PlayerScreen(
                                     modifier = Modifier
                                         .fillMaxWidth(progress)
                                         .fillMaxHeight()
-                                        .clip(RoundedCornerShape(2.dp))
+                                        .clip(RoundedCornerShape(d.padTiny))
                                         .background(TvPrimary)
                                 )
                             }
                             Text(
                                 text = formatTime(totalDurationMs),
-                                fontSize = 12.sp,
+                                fontSize = d.fontSmall,
                                 color = TvOnSurfaceVariant,
                             )
                         }
-                        Spacer(modifier = Modifier.height(8.dp))
+                        Spacer(modifier = Modifier.height(d.padSmall))
                     }
 
-                    // Control hints
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceEvenly,
@@ -309,18 +295,19 @@ private fun formatTime(ms: Long): String {
 @kotlin.OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
 private fun ControlHint(icon: String, label: String) {
+    val d = LocalTvDimens.current
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        horizontalArrangement = Arrangement.spacedBy(d.padSmall),
     ) {
         Box(
             modifier = Modifier
-                .clip(RoundedCornerShape(4.dp))
+                .clip(RoundedCornerShape(d.padTiny))
                 .background(TvSurfaceVariant)
-                .padding(horizontal = 8.dp, vertical = 4.dp),
+                .padding(horizontal = d.padSmall, vertical = d.padTiny),
         ) {
-            Text(text = icon, fontSize = 14.sp, color = Color.White)
+            Text(text = icon, fontSize = d.fontBody, color = Color.White)
         }
-        Text(text = label, fontSize = 12.sp, color = TvOnSurfaceVariant)
+        Text(text = label, fontSize = d.fontSmall, color = TvOnSurfaceVariant)
     }
 }

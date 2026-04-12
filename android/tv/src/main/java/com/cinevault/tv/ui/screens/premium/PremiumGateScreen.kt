@@ -2,7 +2,9 @@ package com.cinevault.tv.ui.screens.premium
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -13,7 +15,6 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.tv.material3.Button
 import androidx.tv.material3.ButtonDefaults
 import androidx.tv.material3.ExperimentalTvMaterial3Api
@@ -24,87 +25,73 @@ import com.cinevault.tv.ui.theme.*
 @Composable
 fun PremiumGateScreen(onLogout: () -> Unit) {
     val focusRequester = remember { FocusRequester() }
+    val d = LocalTvDimens.current
 
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(TvBackground),
+            .background(TvBackground)
+            .verticalScroll(rememberScrollState()),
         contentAlignment = Alignment.Center,
     ) {
         Column(
             modifier = Modifier
-                .fillMaxWidth(0.5f)
-                .clip(RoundedCornerShape(20.dp))
+                .fillMaxWidth(d.premiumGateFraction)
+                .clip(RoundedCornerShape(d.padXL))
                 .background(TvSurface)
-                .padding(48.dp),
+                .padding(d.padSection),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Text(
                 text = "👑",
-                fontSize = 56.sp,
+                fontSize = d.fontSplash,
             )
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(d.padLarge))
 
             Text(
                 text = "Premium Required",
-                fontSize = 32.sp,
+                fontSize = d.fontHero,
                 fontWeight = FontWeight.Bold,
                 color = TvPrimary,
             )
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(d.padMedium))
 
             Text(
                 text = "Velora TV requires a Premium subscription\nto play content. You can still browse.",
-                fontSize = 16.sp,
+                fontSize = d.fontMedium,
                 color = TvTextMuted,
                 textAlign = TextAlign.Center,
-                lineHeight = 24.sp,
+                lineHeight = d.lineHeightLarge,
             )
 
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(d.padXXL))
 
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(12.dp))
+                    .clip(RoundedCornerShape(d.padMedium))
                     .background(TvSurfaceVariant)
-                    .padding(24.dp),
+                    .padding(d.padXL),
             ) {
                 Text(
                     text = "How to get Premium on TV:",
-                    fontSize = 16.sp,
+                    fontSize = d.fontMedium,
                     fontWeight = FontWeight.SemiBold,
                     color = TvOnSurface,
                 )
-                Spacer(modifier = Modifier.height(12.dp))
-                Text(
-                    text = "1. Open Velora app on your phone",
-                    fontSize = 14.sp,
-                    color = TvOnSurfaceVariant,
-                )
-                Spacer(modifier = Modifier.height(6.dp))
-                Text(
-                    text = "2. Go to Premium section",
-                    fontSize = 14.sp,
-                    color = TvOnSurfaceVariant,
-                )
-                Spacer(modifier = Modifier.height(6.dp))
-                Text(
-                    text = "3. Subscribe to any plan",
-                    fontSize = 14.sp,
-                    color = TvOnSurfaceVariant,
-                )
-                Spacer(modifier = Modifier.height(6.dp))
-                Text(
-                    text = "4. Login again on TV",
-                    fontSize = 14.sp,
-                    color = TvOnSurfaceVariant,
-                )
+                Spacer(modifier = Modifier.height(d.padMedium))
+                Text(text = "1. Open Velora app on your phone", fontSize = d.fontBody, color = TvOnSurfaceVariant)
+                Spacer(modifier = Modifier.height(d.padSmall))
+                Text(text = "2. Go to Premium section", fontSize = d.fontBody, color = TvOnSurfaceVariant)
+                Spacer(modifier = Modifier.height(d.padSmall))
+                Text(text = "3. Subscribe to any plan", fontSize = d.fontBody, color = TvOnSurfaceVariant)
+                Spacer(modifier = Modifier.height(d.padSmall))
+                Text(text = "4. Login again on TV", fontSize = d.fontBody, color = TvOnSurfaceVariant)
             }
 
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(d.padXXL))
 
             Button(
                 onClick = onLogout,
@@ -116,8 +103,8 @@ fun PremiumGateScreen(onLogout: () -> Unit) {
             ) {
                 Text(
                     text = "Logout & Try Again",
-                    fontSize = 16.sp,
-                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 4.dp),
+                    fontSize = d.fontMedium,
+                    modifier = Modifier.padding(horizontal = d.padXL, vertical = d.padTiny),
                 )
             }
         }

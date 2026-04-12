@@ -16,7 +16,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.tv.foundation.lazy.list.TvLazyColumn
 import androidx.tv.foundation.lazy.list.TvLazyRow
@@ -39,6 +38,7 @@ fun DetailScreen(
 ) {
     val state by viewModel.state.collectAsState()
     val movie = state.movie
+    val d = LocalTvDimens.current
     var showPremiumPopup by remember { mutableStateOf(false) }
 
     Box(
@@ -54,14 +54,13 @@ fun DetailScreen(
     ) {
         if (state.isLoading) {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text("Loading...", color = TvTextMuted, fontSize = 20.sp)
+                Text("Loading...", color = TvTextMuted, fontSize = d.fontXL)
             }
         } else if (movie != null) {
             TvLazyColumn(
                 modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(bottom = 48.dp),
+                contentPadding = PaddingValues(bottom = d.padSection),
             ) {
-                // Hero section with backdrop
                 item {
                     HeroSection(
                         movie = movie,
@@ -79,37 +78,34 @@ fun DetailScreen(
                     )
                 }
 
-                // Synopsis
                 if (!movie.synopsis.isNullOrBlank()) {
                     item {
                         Text(
                             text = movie.synopsis,
-                            fontSize = 15.sp,
+                            fontSize = d.fontBody,
                             color = TvOnSurfaceVariant,
-                            lineHeight = 22.sp,
+                            lineHeight = d.lineHeightLarge,
                             maxLines = 4,
                             overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.padding(horizontal = 48.dp, vertical = 12.dp),
+                            modifier = Modifier.padding(horizontal = d.screenPadH, vertical = d.padMedium),
                         )
                     }
                 }
 
-                // Cast
                 if (!movie.cast.isNullOrEmpty()) {
                     item {
                         Text(
                             text = "Cast: ${movie.cast.take(5).joinToString(", ") { it.name }}",
-                            fontSize = 14.sp,
+                            fontSize = d.fontBody,
                             color = TvTextMuted,
-                            modifier = Modifier.padding(horizontal = 48.dp, vertical = 4.dp),
+                            modifier = Modifier.padding(horizontal = d.screenPadH, vertical = d.padTiny),
                         )
                     }
                 }
 
-                // Seasons & Episodes (for series/anime)
                 if (state.seasons.isNotEmpty()) {
                     item {
-                        Spacer(modifier = Modifier.height(16.dp))
+                        Spacer(modifier = Modifier.height(d.padLarge))
                         SeasonSelector(
                             seasons = state.seasons,
                             selectedIndex = state.selectedSeasonIndex,
@@ -133,20 +129,19 @@ fun DetailScreen(
                     }
                 }
 
-                // Related content
                 if (state.related.isNotEmpty()) {
                     item {
-                        Spacer(modifier = Modifier.height(24.dp))
+                        Spacer(modifier = Modifier.height(d.padXL))
                         Text(
                             text = "You May Also Like",
-                            fontSize = 18.sp,
+                            fontSize = d.fontLarge,
                             fontWeight = FontWeight.SemiBold,
                             color = TvOnSurface,
-                            modifier = Modifier.padding(horizontal = 48.dp, vertical = 8.dp),
+                            modifier = Modifier.padding(horizontal = d.screenPadH, vertical = d.padSmall),
                         )
                         TvLazyRow(
-                            contentPadding = PaddingValues(horizontal = 48.dp),
-                            horizontalArrangement = Arrangement.spacedBy(16.dp),
+                            contentPadding = PaddingValues(horizontal = d.screenPadH),
+                            horizontalArrangement = Arrangement.spacedBy(d.padLarge),
                         ) {
                             items(state.related, key = { it.id }) { relatedMovie ->
                                 RelatedCard(movie = relatedMovie, onClick = { onMovieClick(relatedMovie.id) })
@@ -157,11 +152,10 @@ fun DetailScreen(
             }
         } else {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text("Failed to load content", color = TvTextMuted, fontSize = 18.sp)
+                Text("Failed to load content", color = TvTextMuted, fontSize = d.fontLarge)
             }
         }
 
-        // Premium popup overlay
         if (showPremiumPopup) {
             PremiumPopup(onDismiss = { showPremiumPopup = false })
         }
@@ -171,6 +165,7 @@ fun DetailScreen(
 @OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
 private fun PremiumPopup(onDismiss: () -> Unit) {
+    val d = LocalTvDimens.current
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -179,29 +174,29 @@ private fun PremiumPopup(onDismiss: () -> Unit) {
     ) {
         Column(
             modifier = Modifier
-                .fillMaxWidth(0.4f)
-                .clip(RoundedCornerShape(16.dp))
+                .fillMaxWidth(d.premiumPopupFraction)
+                .clip(RoundedCornerShape(d.padLarge))
                 .background(TvSurface)
-                .padding(32.dp),
+                .padding(d.padXXL),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Text(text = "\uD83D\uDC51", fontSize = 48.sp)
-            Spacer(modifier = Modifier.height(12.dp))
+            Text(text = "\uD83D\uDC51", fontSize = d.fontDisplay)
+            Spacer(modifier = Modifier.height(d.padMedium))
             Text(
                 text = "Premium Content",
-                fontSize = 24.sp,
+                fontSize = d.fontXXL,
                 fontWeight = FontWeight.Bold,
                 color = TvPrimary,
             )
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(d.padSmall))
             Text(
                 text = "This content requires a Premium subscription.\nUpgrade from the mobile app to watch.",
-                fontSize = 14.sp,
+                fontSize = d.fontBody,
                 color = TvOnSurfaceVariant,
                 textAlign = TextAlign.Center,
-                lineHeight = 20.sp,
+                lineHeight = d.lineHeightBody,
             )
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(d.padXL))
             Button(
                 onClick = onDismiss,
                 colors = ButtonDefaults.colors(
@@ -211,9 +206,9 @@ private fun PremiumPopup(onDismiss: () -> Unit) {
             ) {
                 Text(
                     text = "OK",
-                    fontSize = 16.sp,
+                    fontSize = d.fontMedium,
                     fontWeight = FontWeight.SemiBold,
-                    modifier = Modifier.padding(horizontal = 32.dp, vertical = 4.dp),
+                    modifier = Modifier.padding(horizontal = d.padXXL, vertical = d.padTiny),
                 )
             }
         }
@@ -230,10 +225,11 @@ private fun HeroSection(
     onWatchlistClick: () -> Unit,
     onBack: () -> Unit,
 ) {
+    val d = LocalTvDimens.current
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(400.dp),
+            .height(d.heroHeight),
     ) {
         AsyncImage(
             model = movie.bannerUrl ?: movie.posterUrl,
@@ -271,10 +267,9 @@ private fun HeroSection(
         Column(
             modifier = Modifier
                 .align(Alignment.BottomStart)
-                .padding(start = 48.dp, bottom = 32.dp, end = 48.dp),
+                .padding(start = d.screenPadH, bottom = d.padXXL, end = d.screenPadH),
         ) {
-            // Info chips
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(d.padSmall)) {
                 InfoChip(text = movie.contentType.replaceFirstChar { it.uppercase() })
                 movie.contentRating?.let { InfoChip(text = it) }
                 movie.releaseYear?.let { InfoChip(text = it.toString()) }
@@ -293,36 +288,34 @@ private fun HeroSection(
                 }
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(d.padMedium))
 
             Text(
                 text = movie.title,
-                fontSize = 36.sp,
+                fontSize = d.fontHero,
                 fontWeight = FontWeight.ExtraBold,
                 color = Color.White,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
-                letterSpacing = 0.5.sp,
             )
 
             movie.languageLabel?.let { lang ->
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(text = lang, fontSize = 12.sp, color = TvPrimary, fontWeight = FontWeight.Medium)
+                Spacer(modifier = Modifier.height(d.padTiny))
+                Text(text = lang, fontSize = d.fontSmall, color = TvPrimary, fontWeight = FontWeight.Medium)
             }
 
             if (movie.genres.isNotEmpty()) {
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(d.padSmall))
                 Text(
                     text = movie.genres.joinToString(" \u2022 "),
-                    fontSize = 14.sp,
+                    fontSize = d.fontBody,
                     color = TvOnSurfaceVariant,
                 )
             }
 
-            Spacer(modifier = Modifier.height(20.dp))
+            Spacer(modifier = Modifier.height(d.padXL))
 
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                // Play button
+            Row(horizontalArrangement = Arrangement.spacedBy(d.padMedium)) {
                 Button(
                     onClick = onPlayClick,
                     colors = ButtonDefaults.colors(
@@ -334,13 +327,12 @@ private fun HeroSection(
                     Text(
                         text = if (movie.contentType == "series" || movie.contentType == "anime")
                             "\u25B6  Play S1:E1" else "\u25B6  Play Now",
-                        fontSize = 16.sp,
+                        fontSize = d.fontMedium,
                         fontWeight = FontWeight.SemiBold,
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+                        modifier = Modifier.padding(horizontal = d.padLarge, vertical = d.padTiny),
                     )
                 }
 
-                // Watchlist button
                 Button(
                     onClick = onWatchlistClick,
                     colors = ButtonDefaults.colors(
@@ -351,12 +343,11 @@ private fun HeroSection(
                 ) {
                     Text(
                         text = if (isInWatchlist) "\u2713  In Watchlist" else "+  Watchlist",
-                        fontSize = 14.sp,
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
+                        fontSize = d.fontBody,
+                        modifier = Modifier.padding(horizontal = d.padMedium, vertical = d.padTiny),
                     )
                 }
 
-                // Back button
                 Button(
                     onClick = onBack,
                     colors = ButtonDefaults.colors(
@@ -367,8 +358,8 @@ private fun HeroSection(
                 ) {
                     Text(
                         text = "\u2190 Back",
-                        fontSize = 14.sp,
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
+                        fontSize = d.fontBody,
+                        modifier = Modifier.padding(horizontal = d.padMedium, vertical = d.padTiny),
                     )
                 }
             }
@@ -379,18 +370,19 @@ private fun HeroSection(
 @OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
 private fun InfoChip(text: String, highlight: Boolean = false) {
+    val d = LocalTvDimens.current
     Box(
         modifier = Modifier
-            .clip(RoundedCornerShape(4.dp))
+            .clip(RoundedCornerShape(d.padTiny))
             .background(
                 if (highlight) TvPrimary.copy(alpha = 0.2f)
                 else TvSurfaceVariant.copy(alpha = 0.8f)
             )
-            .padding(horizontal = 8.dp, vertical = 4.dp),
+            .padding(horizontal = d.padSmall, vertical = d.padTiny),
     ) {
         Text(
             text = text,
-            fontSize = 12.sp,
+            fontSize = d.fontSmall,
             color = if (highlight) TvPrimary else TvOnSurfaceVariant,
             fontWeight = if (highlight) FontWeight.SemiBold else FontWeight.Normal,
         )
@@ -404,9 +396,10 @@ private fun SeasonSelector(
     selectedIndex: Int,
     onSelect: (Int) -> Unit,
 ) {
+    val d = LocalTvDimens.current
     TvLazyRow(
-        contentPadding = PaddingValues(horizontal = 48.dp),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        contentPadding = PaddingValues(horizontal = d.screenPadH),
+        horizontalArrangement = Arrangement.spacedBy(d.padMedium),
     ) {
         items(seasons.size) { index ->
             val isSelected = index == selectedIndex
@@ -422,9 +415,9 @@ private fun SeasonSelector(
             ) {
                 Text(
                     text = "Season ${seasons[index].seasonNumber}",
-                    fontSize = 14.sp,
+                    fontSize = d.fontBody,
                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 10.dp),
+                    modifier = Modifier.padding(horizontal = d.padXL, vertical = d.padMedium),
                 )
             }
         }
@@ -439,24 +432,25 @@ private fun EpisodesRow(
     onEpisodeClick: (EpisodeDto) -> Unit,
 ) {
     if (episodes.isEmpty()) return
+    val d = LocalTvDimens.current
 
-    Column(modifier = Modifier.padding(top = 12.dp)) {
+    Column(modifier = Modifier.padding(top = d.padMedium)) {
         Text(
             text = "Episodes",
-            fontSize = 18.sp,
+            fontSize = d.fontLarge,
             fontWeight = FontWeight.SemiBold,
             color = TvOnSurface,
-            modifier = Modifier.padding(horizontal = 48.dp, vertical = 8.dp),
+            modifier = Modifier.padding(horizontal = d.screenPadH, vertical = d.padSmall),
         )
 
         TvLazyRow(
-            contentPadding = PaddingValues(horizontal = 48.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            contentPadding = PaddingValues(horizontal = d.screenPadH),
+            horizontalArrangement = Arrangement.spacedBy(d.padMedium),
         ) {
             items(episodes, key = { it.id }) { episode ->
                 Surface(
                     onClick = { onEpisodeClick(episode) },
-                    modifier = Modifier.width(220.dp).height(72.dp),
+                    modifier = Modifier.width(d.episodeCardW).height(d.episodeCardH),
                     shape = ClickableSurfaceDefaults.shape(ChipShape),
                     colors = ClickableSurfaceDefaults.colors(
                         containerColor = TvSurfaceVariant,
@@ -472,30 +466,30 @@ private fun EpisodesRow(
                     Row(
                         modifier = Modifier
                             .fillMaxSize()
-                            .padding(horizontal = 16.dp),
+                            .padding(horizontal = d.padLarge),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Text(
                             text = "E${episode.episodeNumber}",
-                            fontSize = 18.sp,
+                            fontSize = d.fontLarge,
                             fontWeight = FontWeight.Bold,
                             color = TvPrimary,
                         )
-                        Spacer(modifier = Modifier.width(12.dp))
+                        Spacer(modifier = Modifier.width(d.padMedium))
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
                                 text = episode.title.ifBlank { "Episode ${episode.episodeNumber}" },
-                                fontSize = 14.sp,
+                                fontSize = d.fontBody,
                                 color = TvOnSurface,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis,
                             )
                             episode.duration?.let {
-                                Text(text = "${it}m", fontSize = 12.sp, color = TvTextMuted)
+                                Text(text = "${it}m", fontSize = d.fontSmall, color = TvTextMuted)
                             }
                         }
                         if (episode.isPremium) {
-                            Text("\uD83D\uDC51", fontSize = 16.sp)
+                            Text("\uD83D\uDC51", fontSize = d.fontMedium)
                         }
                     }
                 }
@@ -507,9 +501,10 @@ private fun EpisodesRow(
 @OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
 private fun RelatedCard(movie: MovieDto, onClick: () -> Unit) {
+    val d = LocalTvDimens.current
     Surface(
         onClick = onClick,
-        modifier = Modifier.width(140.dp).height(210.dp),
+        modifier = Modifier.width(d.relatedCardW).height(d.relatedCardH),
         shape = ClickableSurfaceDefaults.shape(CardShape),
         colors = ClickableSurfaceDefaults.colors(
             containerColor = TvSurface,
@@ -533,7 +528,7 @@ private fun RelatedCard(movie: MovieDto, onClick: () -> Unit) {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(60.dp)
+                    .fillMaxHeight(0.3f)
                     .align(Alignment.BottomCenter)
                     .background(
                         Brush.verticalGradient(
@@ -543,25 +538,25 @@ private fun RelatedCard(movie: MovieDto, onClick: () -> Unit) {
             )
             Text(
                 text = movie.title,
-                fontSize = 12.sp,
+                fontSize = d.fontSmall,
                 fontWeight = FontWeight.SemiBold,
                 color = Color.White,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier
                     .align(Alignment.BottomStart)
-                    .padding(8.dp),
+                    .padding(d.padSmall),
             )
             if (movie.isEffectivelyPremium) {
                 Box(
                     modifier = Modifier
                         .align(Alignment.TopEnd)
-                        .padding(4.dp)
-                        .clip(RoundedCornerShape(4.dp))
+                        .padding(d.padTiny)
+                        .clip(RoundedCornerShape(d.padTiny))
                         .background(TvPrimary)
-                        .padding(horizontal = 4.dp, vertical = 1.dp),
+                        .padding(horizontal = d.padTiny, vertical = d.padTiny / 2),
                 ) {
-                    Text("\uD83D\uDC51", fontSize = 10.sp)
+                    Text("\uD83D\uDC51", fontSize = d.fontXSmall)
                 }
             }
         }
