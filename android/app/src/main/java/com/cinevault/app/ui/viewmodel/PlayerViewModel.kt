@@ -34,7 +34,7 @@ data class PlayerUiState(
     val isPlaying: Boolean = false,
     val currentPosition: Long = 0L,
     val totalDuration: Long = 0L,
-    val selectedQuality: String = "auto",
+    val selectedQuality: String = "720p",
     val availableQualities: List<String> = listOf("auto"),
     val isAdaptive: Boolean = false,
     val playbackSpeed: Float = 1.0f,
@@ -308,7 +308,7 @@ class PlayerViewModel @Inject constructor(
                         fallbackUrls = fallbacks,
                         availableQualities = qualities,
                         isAdaptive = isHls,
-                        selectedQuality = if (isHls) "auto" else if (hasMultipleSources) "auto" else "720p",
+                        selectedQuality = "720p",
                         currentPosition = if (resumePosition >= 0) resumePosition else it.currentPosition,
                     ) }
                     return@launch
@@ -325,6 +325,7 @@ class PlayerViewModel @Inject constructor(
                     streamingUrl = hlsUrl,
                     availableQualities = qualities,
                     isAdaptive = true,
+                    selectedQuality = "720p",
                     currentPosition = if (resumePosition >= 0) resumePosition else it.currentPosition,
                 ) }
                 return@launch
@@ -365,7 +366,7 @@ class PlayerViewModel @Inject constructor(
                     fallbackUrls = fallbacks,
                     availableQualities = qualities,
                     isAdaptive = hasMultipleSources,
-                    selectedQuality = if (!hasMultipleSources) "1080p" else it.selectedQuality,
+                    selectedQuality = "720p",
                     currentPosition = if (resumePosition >= 0) resumePosition else it.currentPosition,
                 ) }
                 return@launch
