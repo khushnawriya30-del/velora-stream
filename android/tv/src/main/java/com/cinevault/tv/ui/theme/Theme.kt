@@ -17,7 +17,8 @@ private val TvDarkColorScheme = darkColorScheme(
     onBackground = TvOnBackground,
     surfaceVariant = TvSurfaceVariant,
     onSurfaceVariant = TvOnSurfaceVariant,
-    border = TvBorder,
+    border = TvBorderSubtle,
+    error = TvError,
 )
 
 @OptIn(ExperimentalTvMaterial3Api::class)
@@ -29,5 +30,7 @@ fun CineVaultTvTheme(content: @Composable () -> Unit) {
     )
 }
 
-val CardShape = RoundedCornerShape(8.dp)
+val CardShape = RoundedCornerShape(10.dp)
 val BannerShape = RoundedCornerShape(12.dp)
+val ChipShape = RoundedCornerShape(8.dp)
+val PillShape = RoundedCornerShape(22.dp)

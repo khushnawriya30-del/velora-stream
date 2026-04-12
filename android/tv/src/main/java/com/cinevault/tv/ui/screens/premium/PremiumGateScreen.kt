@@ -50,15 +50,15 @@ fun PremiumGateScreen(onLogout: () -> Unit) {
                 text = "Premium Required",
                 fontSize = 32.sp,
                 fontWeight = FontWeight.Bold,
-                color = TvGold,
+                color = TvPrimary,
             )
 
             Spacer(modifier = Modifier.height(12.dp))
 
             Text(
-                text = "CineVault TV is exclusively available\nfor Premium members",
+                text = "Velora TV requires a Premium subscription\nto play content. You can still browse.",
                 fontSize = 16.sp,
-                color = TvDimText,
+                color = TvTextMuted,
                 textAlign = TextAlign.Center,
                 lineHeight = 24.sp,
             )
@@ -73,14 +73,14 @@ fun PremiumGateScreen(onLogout: () -> Unit) {
                     .padding(24.dp),
             ) {
                 Text(
-                    text = "How to get Premium:",
+                    text = "How to get Premium on TV:",
                     fontSize = 16.sp,
                     fontWeight = FontWeight.SemiBold,
                     color = TvOnSurface,
                 )
                 Spacer(modifier = Modifier.height(12.dp))
                 Text(
-                    text = "1. Open CineVault app on your phone",
+                    text = "1. Open Velora app on your phone",
                     fontSize = 14.sp,
                     color = TvOnSurfaceVariant,
                 )

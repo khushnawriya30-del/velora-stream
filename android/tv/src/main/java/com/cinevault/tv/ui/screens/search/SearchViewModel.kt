@@ -3,7 +3,7 @@ package com.cinevault.tv.ui.screens.search
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.cinevault.tv.data.model.MovieDto
-import com.cinevault.tv.data.remote.CineVaultApi
+import com.cinevault.tv.data.repository.ContentRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -24,7 +24,7 @@ data class SearchState(
 
 @HiltViewModel
 class SearchViewModel @Inject constructor(
-    private val api: CineVaultApi,
+    private val contentRepo: ContentRepository,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(SearchState())
@@ -33,21 +33,46 @@ class SearchViewModel @Inject constructor(
     private var searchJob: Job? = null
 
     val contentTypes = listOf("All", "movie", "series", "anime")
-    val genres = listOf(
+
+    private val _genres = MutableStateFlow(listOf(
         "All", "Action", "Adventure", "Animation", "Comedy", "Crime", "Documentary",
         "Drama", "Family", "Fantasy", "Horror", "Mystery", "Romance",
         "Sci-Fi", "Thriller", "War",
-    )
-    val languages = listOf(
+    ))
+    val genres: List<String> get() = _genres.value
+
+    private val _languages = MutableStateFlow(listOf(
         "All", "Hindi", "English", "Tamil", "Telugu", "Malayalam",
         "Kannada", "Bengali", "Marathi", "Punjabi", "Korean", "Japanese",
-    )
+    ))
+    val languages: List<String> get() = _languages.value
+
+    init {
+        loadFilters()
+    }
+
+    private fun loadFilters() {
+        viewModelScope.launch {
+            contentRepo.getGenres().getOrNull()?.let { genreList ->
+                if (genreList.isNotEmpty()) {
+                    _genres.value = listOf("All") + genreList
+                }
+            }
+        }
+        viewModelScope.launch {
+            contentRepo.getLanguages().getOrNull()?.let { langList ->
+                if (langList.isNotEmpty()) {
+                    _languages.value = listOf("All") + langList
+                }
+            }
+        }
+    }
 
     fun onQueryChange(query: String) {
         _state.value = _state.value.copy(query = query)
         searchJob?.cancel()
         searchJob = viewModelScope.launch {
-            delay(500) // debounce
+            delay(500)
             performSearch()
         }
     }
@@ -77,21 +102,17 @@ class SearchViewModel @Inject constructor(
         viewModelScope.launch {
             val s = _state.value
             _state.value = s.copy(isLoading = true, hasSearched = true)
-            try {
-                val response = api.search(
-                    query = s.query.ifBlank { null },
-                    contentType = s.selectedContentType,
-                    genre = s.selectedGenre,
-                    language = s.selectedLanguage,
-                    limit = 40,
-                )
-                _state.value = _state.value.copy(
-                    results = response.body()?.results ?: emptyList(),
-                    isLoading = false,
-                )
-            } catch (_: Exception) {
-                _state.value = _state.value.copy(isLoading = false)
-            }
+            val result = contentRepo.search(
+                query = s.query.ifBlank { null },
+                contentType = s.selectedContentType,
+                genre = s.selectedGenre,
+                language = s.selectedLanguage,
+                limit = 40,
+            )
+            _state.value = _state.value.copy(
+                results = result.getOrNull()?.results ?: emptyList(),
+                isLoading = false,
+            )
         }
     }
 }

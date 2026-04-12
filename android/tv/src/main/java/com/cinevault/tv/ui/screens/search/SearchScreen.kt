@@ -36,6 +36,7 @@ import com.cinevault.tv.ui.theme.*
 @OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
 fun SearchScreen(
+    isPremium: Boolean = false,
     onMovieClick: (String) -> Unit,
     onBack: () -> Unit,
     viewModel: SearchViewModel = hiltViewModel(),
@@ -87,7 +88,7 @@ fun SearchScreen(
                 contentAlignment = Alignment.CenterStart,
             ) {
                 if (state.query.isEmpty()) {
-                    Text("Search movies, series, anime...", color = TvDimText, fontSize = 16.sp)
+                    Text("Search movies, series, anime...", color = TvTextMuted, fontSize = 16.sp)
                 }
                 BasicTextField(
                     value = state.query,
@@ -135,11 +136,11 @@ fun SearchScreen(
         // Results
         if (state.isLoading) {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text("Searching...", color = TvDimText, fontSize = 18.sp)
+                Text("Searching...", color = TvTextMuted, fontSize = 18.sp)
             }
         } else if (state.results.isEmpty() && state.hasSearched) {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text("No results found", color = TvDimText, fontSize = 18.sp)
+                Text("No results found", color = TvTextMuted, fontSize = 18.sp)
             }
         } else {
             TvLazyVerticalGrid(
@@ -168,7 +169,7 @@ private fun FilterSection(
         Text(
             text = "$label:",
             fontSize = 14.sp,
-            color = TvDimText,
+            color = TvTextMuted,
             modifier = Modifier.width(80.dp),
         )
         TvLazyRow(
@@ -253,16 +254,16 @@ private fun SearchResultCard(movie: MovieDto, onClick: () -> Unit) {
                 Text(
                     text = movie.contentType.replaceFirstChar { it.uppercase() },
                     fontSize = 11.sp,
-                    color = TvDimText,
+                    color = TvTextMuted,
                 )
             }
-            if (movie.isPremium == true) {
+            if (movie.isEffectivelyPremium) {
                 Box(
                     modifier = Modifier
                         .align(Alignment.TopEnd)
                         .padding(6.dp)
                         .clip(RoundedCornerShape(4.dp))
-                        .background(TvGold)
+                        .background(TvPremiumBadge)
                         .padding(horizontal = 6.dp, vertical = 2.dp),
                 ) {
                     Text("PREMIUM", fontSize = 9.sp, fontWeight = FontWeight.Bold, color = Color.Black)

@@ -6,8 +6,10 @@ import androidx.lifecycle.viewModelScope
 import com.cinevault.tv.data.model.EpisodeDto
 import com.cinevault.tv.data.model.MovieDto
 import com.cinevault.tv.data.model.SeasonDto
-import com.cinevault.tv.data.remote.CineVaultApi
+import com.cinevault.tv.data.repository.ContentRepository
+import com.cinevault.tv.data.repository.WatchlistRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
@@ -19,6 +21,7 @@ data class DetailState(
     val episodes: List<EpisodeDto> = emptyList(),
     val related: List<MovieDto> = emptyList(),
     val selectedSeasonIndex: Int = 0,
+    val isInWatchlist: Boolean = false,
     val isLoading: Boolean = true,
     val error: String? = null,
 )
@@ -26,7 +29,8 @@ data class DetailState(
 @HiltViewModel
 class DetailViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
-    private val api: CineVaultApi,
+    private val contentRepo: ContentRepository,
+    private val watchlistRepo: WatchlistRepository,
 ) : ViewModel() {
 
     private val movieId: String = savedStateHandle.get<String>("movieId") ?: ""
@@ -42,27 +46,33 @@ class DetailViewModel @Inject constructor(
         viewModelScope.launch {
             _state.value = DetailState(isLoading = true)
             try {
-                val movieResponse = api.getMovie(movieId)
-                val movie = movieResponse.body()
-                val relatedResponse = api.getRelated(movieId)
+                val movieDef = async { contentRepo.getMovie(movieId).getOrNull() }
+                val relatedDef = async { contentRepo.getRelated(movieId).getOrElse { emptyList() } }
+                val watchlistDef = async { watchlistRepo.checkWatchlist(movieId) }
+
+                val movie = movieDef.await()
+                val related = relatedDef.await()
+                val inWatchlist = watchlistDef.await()
 
                 var seasons: List<SeasonDto> = emptyList()
                 var episodes: List<EpisodeDto> = emptyList()
 
-                if (movie != null && movie.contentType == "series") {
-                    val seasonsResponse = api.getSeasons(movieId)
-                    seasons = seasonsResponse.body() ?: emptyList()
+                if (movie != null && (movie.contentType == "series" || movie.contentType == "anime")) {
+                    seasons = contentRepo.getSeasons(movieId).getOrElse { emptyList() }
                     if (seasons.isNotEmpty()) {
-                        val episodesResponse = api.getEpisodes(seasons[0].id)
-                        episodes = episodesResponse.body() ?: emptyList()
+                        episodes = contentRepo.getEpisodes(seasons[0].id).getOrElse { emptyList() }
                     }
                 }
+
+                // Track view
+                contentRepo.trackView(movieId)
 
                 _state.value = DetailState(
                     movie = movie,
                     seasons = seasons,
                     episodes = episodes,
-                    related = relatedResponse.body() ?: emptyList(),
+                    related = related,
+                    isInWatchlist = inWatchlist,
                     isLoading = false,
                 )
             } catch (e: Exception) {
@@ -78,12 +88,20 @@ class DetailViewModel @Inject constructor(
         _state.value = _state.value.copy(selectedSeasonIndex = index)
 
         viewModelScope.launch {
-            try {
-                val episodesResponse = api.getEpisodes(seasons[index].id)
-                _state.value = _state.value.copy(
-                    episodes = episodesResponse.body() ?: emptyList()
-                )
-            } catch (_: Exception) {}
+            val episodes = contentRepo.getEpisodes(seasons[index].id).getOrElse { emptyList() }
+            _state.value = _state.value.copy(episodes = episodes)
+        }
+    }
+
+    fun toggleWatchlist() {
+        viewModelScope.launch {
+            val isIn = _state.value.isInWatchlist
+            if (isIn) {
+                watchlistRepo.removeFromWatchlist(movieId)
+            } else {
+                watchlistRepo.addToWatchlist(movieId)
+            }
+            _state.value = _state.value.copy(isInWatchlist = !isIn)
         }
     }
 }

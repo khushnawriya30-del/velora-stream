@@ -58,24 +58,25 @@ fun QrLoginScreen(
                 verticalArrangement = Arrangement.Center,
             ) {
                 Text(
-                    text = "CineVault",
+                    text = "VELORA",
                     fontSize = 48.sp,
-                    fontWeight = FontWeight.Bold,
+                    fontWeight = FontWeight.ExtraBold,
                     color = TvPrimary,
+                    letterSpacing = 6.sp,
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = "TV",
-                    fontSize = 28.sp,
+                    text = "PREMIUM TV",
+                    fontSize = 20.sp,
                     fontWeight = FontWeight.Light,
                     color = TvOnSurfaceVariant,
-                    letterSpacing = 12.sp,
+                    letterSpacing = 8.sp,
                 )
                 Spacer(modifier = Modifier.height(32.dp))
                 Text(
                     text = "Stream unlimited movies & series\non the big screen",
                     fontSize = 16.sp,
-                    color = TvDimText,
+                    color = TvTextMuted,
                     textAlign = TextAlign.Center,
                     lineHeight = 24.sp,
                 )
@@ -101,9 +102,9 @@ fun QrLoginScreen(
                 Spacer(modifier = Modifier.height(8.dp))
 
                 Text(
-                    text = "Open CineVault app on your phone\nand scan this QR code",
+                    text = "Open Velora app on your phone\nand scan this QR code",
                     fontSize = 14.sp,
-                    color = TvDimText,
+                    color = TvTextMuted,
                     textAlign = TextAlign.Center,
                     lineHeight = 20.sp,
                 )
@@ -120,7 +121,7 @@ fun QrLoginScreen(
                     ) {
                         Text(
                             text = "Loading...",
-                            color = TvDimText,
+                            color = TvTextMuted,
                             fontSize = 16.sp,
                         )
                     }
@@ -154,7 +155,7 @@ fun QrLoginScreen(
 
                 // Steps
                 Column(horizontalAlignment = Alignment.Start) {
-                    StepRow(number = "1", text = "Open CineVault on your phone")
+                    StepRow(number = "1", text = "Open Velora on your phone")
                     Spacer(modifier = Modifier.height(8.dp))
                     StepRow(number = "2", text = "Go to Profile → Link TV")
                     Spacer(modifier = Modifier.height(8.dp))

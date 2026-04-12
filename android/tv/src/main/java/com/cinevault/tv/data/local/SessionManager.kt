@@ -6,6 +6,7 @@ import androidx.datastore.preferences.core.*
 import androidx.datastore.preferences.preferencesDataStore
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -25,6 +26,8 @@ class SessionManager @Inject constructor(@ApplicationContext private val context
         private val IS_PREMIUM = booleanPreferencesKey("is_premium")
         private val PREMIUM_PLAN = stringPreferencesKey("premium_plan")
         private val PREMIUM_EXPIRES_AT = stringPreferencesKey("premium_expires_at")
+        private val ACTIVE_PROFILE_ID = stringPreferencesKey("active_profile_id")
+        private val ACTIVE_PROFILE_NAME = stringPreferencesKey("active_profile_name")
     }
 
     val accessToken: Flow<String?> = context.dataStore.data.map { it[ACCESS_TOKEN] }
@@ -35,6 +38,14 @@ class SessionManager @Inject constructor(@ApplicationContext private val context
     val userName: Flow<String?> = context.dataStore.data.map { it[USER_NAME] }
     val userEmail: Flow<String?> = context.dataStore.data.map { it[USER_EMAIL] }
     val userAvatar: Flow<String?> = context.dataStore.data.map { it[USER_AVATAR] }
+    val activeProfileId: Flow<String?> = context.dataStore.data.map { it[ACTIVE_PROFILE_ID] }
+    val premiumPlan: Flow<String?> = context.dataStore.data.map { it[PREMIUM_PLAN] }
+    val premiumExpiresAt: Flow<String?> = context.dataStore.data.map { it[PREMIUM_EXPIRES_AT] }
+
+    suspend fun getAccessTokenSync(): String? = context.dataStore.data.first()[ACCESS_TOKEN]
+    suspend fun getRefreshTokenSync(): String? = context.dataStore.data.first()[REFRESH_TOKEN]
+    suspend fun getProfileIdSync(): String? = context.dataStore.data.first()[ACTIVE_PROFILE_ID]
+    suspend fun getUserIdSync(): String? = context.dataStore.data.first()[USER_ID]
 
     suspend fun saveSession(
         accessToken: String,
@@ -57,6 +68,8 @@ class SessionManager @Inject constructor(@ApplicationContext private val context
             prefs[IS_PREMIUM] = isPremium
             premiumPlan?.let { prefs[PREMIUM_PLAN] = it }
             premiumExpiresAt?.let { prefs[PREMIUM_EXPIRES_AT] = it }
+            // Use user ID as default profile on TV
+            prefs[ACTIVE_PROFILE_ID] = userId
         }
     }
 
@@ -73,6 +86,13 @@ class SessionManager @Inject constructor(@ApplicationContext private val context
             prefs[IS_PREMIUM] = isPremium
             plan?.let { prefs[PREMIUM_PLAN] = it }
             expiresAt?.let { prefs[PREMIUM_EXPIRES_AT] = it }
+        }
+    }
+
+    suspend fun setActiveProfile(profileId: String, profileName: String) {
+        context.dataStore.edit { prefs ->
+            prefs[ACTIVE_PROFILE_ID] = profileId
+            prefs[ACTIVE_PROFILE_NAME] = profileName
         }
     }
 

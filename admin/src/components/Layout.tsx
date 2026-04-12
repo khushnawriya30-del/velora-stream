@@ -24,6 +24,7 @@ import {
   Bot,
   UserPlus,
   Camera,
+  Monitor,
 } from 'lucide-react';
 import { useState } from 'react';
 import { useAuthStore } from '../store/auth';
@@ -50,6 +51,7 @@ const navItems = [
   { to: '/telegram-payments', icon: Bot, label: 'Telegram Bot' },
   { to: '/referrals', icon: UserPlus, label: 'Referrals' },
   { to: '/earner-proofs', icon: Camera, label: 'Earnings Proofs' },
+  { to: '/tv-management', icon: Monitor, label: 'TV App' },
   { to: '/settings', icon: Settings, label: 'Settings' },
 ];
 

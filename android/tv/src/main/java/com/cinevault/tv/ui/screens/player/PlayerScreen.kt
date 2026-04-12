@@ -21,6 +21,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.media3.common.MediaItem
+import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.hls.HlsMediaSource
@@ -45,6 +46,9 @@ fun PlayerScreen(
 
     var showControls by remember { mutableStateOf(true) }
     var player by remember { mutableStateOf<ExoPlayer?>(null) }
+    var currentPositionMs by remember { mutableLongStateOf(0L) }
+    var totalDurationMs by remember { mutableLongStateOf(0L) }
+    var isPlaying by remember { mutableStateOf(false) }
 
     // Auto-hide controls
     LaunchedEffect(showControls) {
@@ -58,9 +62,32 @@ fun PlayerScreen(
     DisposableEffect(Unit) {
         val exoPlayer = ExoPlayer.Builder(context).build()
         player = exoPlayer
+        exoPlayer.addListener(object : Player.Listener {
+            override fun onIsPlayingChanged(playing: Boolean) {
+                isPlaying = playing
+            }
+        })
         onDispose {
+            // Save final progress
+            val p = player
+            if (p != null && p.duration > 0) {
+                viewModel.saveProgress(p.currentPosition, p.duration)
+            }
             exoPlayer.release()
             player = null
+        }
+    }
+
+    // Periodic progress save
+    LaunchedEffect(player, state.streamUrl) {
+        while (true) {
+            delay(10_000) // Update every 10 seconds
+            val p = player ?: continue
+            if (p.isPlaying && p.duration > 0) {
+                currentPositionMs = p.currentPosition
+                totalDurationMs = p.duration
+                viewModel.saveProgress(p.currentPosition, p.duration)
+            }
         }
     }
 
@@ -78,7 +105,23 @@ fun PlayerScreen(
             currentPlayer.setMediaItem(MediaItem.fromUri(url))
         }
         currentPlayer.prepare()
+
+        // Resume from last position
+        if (state.resumePositionMs > 0) {
+            currentPlayer.seekTo(state.resumePositionMs)
+        }
+
         currentPlayer.playWhenReady = true
+    }
+
+    // Position tracking for UI
+    LaunchedEffect(player) {
+        while (true) {
+            delay(1000)
+            val p = player ?: continue
+            currentPositionMs = p.currentPosition
+            totalDurationMs = if (p.duration > 0) p.duration else 0
+        }
     }
 
     LaunchedEffect(Unit) {
@@ -117,11 +160,13 @@ fun PlayerScreen(
                             true
                         }
                         Key.DirectionUp -> {
+                            if (state.episodes.isNotEmpty()) {
+                                viewModel.playPreviousEpisode()
+                            }
                             showControls = true
                             true
                         }
                         Key.DirectionDown -> {
-                            // Next episode
                             if (state.episodes.isNotEmpty()) {
                                 viewModel.playNextEpisode()
                             }
@@ -138,11 +183,11 @@ fun PlayerScreen(
     ) {
         if (state.isLoading) {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text("Loading player...", color = TvDimText, fontSize = 20.sp)
+                Text("Loading player...", color = TvTextMuted, fontSize = 20.sp)
             }
         } else if (state.error != null) {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text(state.error ?: "Error", color = TvPrimary, fontSize = 18.sp)
+                Text(state.error ?: "Error", color = TvError, fontSize = 18.sp)
             }
         } else {
             // Player view
@@ -175,39 +220,90 @@ fun PlayerScreen(
                             fontWeight = FontWeight.Bold,
                             color = Color.White,
                         )
-                        if (state.movie != null && state.episodes.isNotEmpty()) {
+                        state.episodeTitle?.let {
+                            Text(text = it, fontSize = 14.sp, color = TvOnSurfaceVariant)
+                        }
+                        if (state.episodeTitle == null && state.movie != null) {
                             Text(
                                 text = state.movie?.title ?: "",
                                 fontSize = 14.sp,
-                                color = TvDimText,
+                                color = TvOnSurfaceVariant,
                             )
                         }
                     }
                 }
 
-                // Bottom controls hint
-                Box(
+                // Bottom controls
+                Column(
                     modifier = Modifier
                         .fillMaxWidth()
                         .align(Alignment.BottomCenter)
                         .background(Color.Black.copy(alpha = 0.6f))
                         .padding(horizontal = 32.dp, vertical = 12.dp),
                 ) {
+                    // Progress bar
+                    if (totalDurationMs > 0) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Text(
+                                text = formatTime(currentPositionMs),
+                                fontSize = 12.sp,
+                                color = TvOnSurfaceVariant,
+                            )
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(4.dp)
+                                    .padding(horizontal = 12.dp)
+                                    .clip(RoundedCornerShape(2.dp))
+                                    .background(TvSurfaceVariant)
+                            ) {
+                                val progress = (currentPositionMs.toFloat() / totalDurationMs).coerceIn(0f, 1f)
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth(progress)
+                                        .fillMaxHeight()
+                                        .clip(RoundedCornerShape(2.dp))
+                                        .background(TvPrimary)
+                                )
+                            }
+                            Text(
+                                text = formatTime(totalDurationMs),
+                                fontSize = 12.sp,
+                                color = TvOnSurfaceVariant,
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(8.dp))
+                    }
+
+                    // Control hints
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceEvenly,
                     ) {
-                        ControlHint("◀◀", "Rewind 10s")
-                        ControlHint("⏯", "Play/Pause")
-                        ControlHint("▶▶", "Forward 10s")
+                        ControlHint("\u25C0\u25C0", "Rewind 10s")
+                        ControlHint(if (isPlaying) "\u23F8" else "\u25B6", "Play/Pause")
+                        ControlHint("\u25B6\u25B6", "Forward 10s")
                         if (state.episodes.isNotEmpty()) {
-                            ControlHint("▼", "Next Episode")
+                            ControlHint("\u25B2", "Prev Episode")
+                            ControlHint("\u25BC", "Next Episode")
                         }
                     }
                 }
             }
         }
     }
+}
+
+private fun formatTime(ms: Long): String {
+    val totalSeconds = ms / 1000
+    val hours = totalSeconds / 3600
+    val minutes = (totalSeconds % 3600) / 60
+    val seconds = totalSeconds % 60
+    return if (hours > 0) String.format("%d:%02d:%02d", hours, minutes, seconds)
+    else String.format("%d:%02d", minutes, seconds)
 }
 
 @kotlin.OptIn(ExperimentalTvMaterial3Api::class)
@@ -225,6 +321,6 @@ private fun ControlHint(icon: String, label: String) {
         ) {
             Text(text = icon, fontSize = 14.sp, color = Color.White)
         }
-        Text(text = label, fontSize = 12.sp, color = TvDimText)
+        Text(text = label, fontSize = 12.sp, color = TvOnSurfaceVariant)
     }
 }
