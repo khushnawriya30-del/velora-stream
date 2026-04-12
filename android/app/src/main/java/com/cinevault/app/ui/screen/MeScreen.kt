@@ -520,15 +520,15 @@ private fun DynamicPremiumSubscribeCard(
                 .align(Alignment.TopStart)
                 .fillMaxWidth(0.58f)
                 .padding(start = LocalAppDimens.current.pad20, top = 18.dp),
-            verticalArrangement = Arrangement.spacedBy(LocalAppDimens.current.pad16),
+            verticalArrangement = Arrangement.spacedBy(LocalAppDimens.current.pad6),
         ) {
             if (offer?.bannerText?.isNotBlank() == true) {
                 Text(
                     text = offer.bannerText,
-                    fontSize = LocalAppDimens.current.font15,
+                    fontSize = 13.5.sp,
                     fontWeight = FontWeight.SemiBold,
                     color = Color.White.copy(alpha = 0.90f),
-                    lineHeight = LocalAppDimens.current.lineHeight18,
+                    lineHeight = 16.sp,
                     maxLines = 2,
                 )
             }
