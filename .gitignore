@@ -37,6 +37,7 @@ android/app/build/
 android/local.properties
 android/*.apk
 android/*.aab
+*.apk
 
 # Backend
 backend/dist/
