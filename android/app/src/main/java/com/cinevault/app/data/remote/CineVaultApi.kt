@@ -297,6 +297,10 @@ interface CineVaultApi {
     @GET("app-version")
     suspend fun getAppVersion(): Response<AppVersionResponse>
 
+    // TV QR Login
+    @POST("auth/tv/qr-approve")
+    suspend fun approveTvQrLogin(@Body body: Map<String, String>): Response<MessageResponse>
+
     // ── Wallet ──
     @GET("wallet/balance")
     suspend fun getWalletBalance(): Response<WalletBalanceResponse>

@@ -233,6 +233,34 @@ export class AuthController {
     return { message: 'Logged out successfully' };
   }
 
+  // ── TV QR Login ──────────────────────────────────────────────
+
+  @Post('tv/qr-generate')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Generate a QR token for TV login' })
+  async generateTvQrToken() {
+    return this.authService.generateTvQrToken();
+  }
+
+  @Post('tv/qr-check')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Check QR token status (TV polls this)' })
+  async checkTvQrToken(@Body() body: { token: string }) {
+    return this.authService.checkTvQrToken(body.token);
+  }
+
+  @Post('tv/qr-approve')
+  @UseGuards(AuthGuard('jwt'))
+  @HttpCode(HttpStatus.OK)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Approve a TV QR login (mobile app calls this)' })
+  async approveTvQrToken(
+    @Body() body: { token: string },
+    @CurrentUser('userId') userId: string,
+  ) {
+    return this.authService.approveTvQrToken(body.token, userId);
+  }
+
   private setRefreshTokenCookie(res: Response, token: string) {
     res.cookie('refreshToken', token, {
       httpOnly: true,

@@ -116,6 +116,15 @@ let AuthController = class AuthController {
         });
         return { message: 'Logged out successfully' };
     }
+    async generateTvQrToken() {
+        return this.authService.generateTvQrToken();
+    }
+    async checkTvQrToken(body) {
+        return this.authService.checkTvQrToken(body.token);
+    }
+    async approveTvQrToken(body, userId) {
+        return this.authService.approveTvQrToken(body.token, userId);
+    }
     setRefreshTokenCookie(res, token) {
         res.cookie('refreshToken', token, {
             httpOnly: true,
@@ -322,6 +331,35 @@ __decorate([
     __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", Promise)
 ], AuthController.prototype, "logout", null);
+__decorate([
+    (0, common_1.Post)('tv/qr-generate'),
+    (0, common_1.HttpCode)(common_1.HttpStatus.OK),
+    (0, swagger_1.ApiOperation)({ summary: 'Generate a QR token for TV login' }),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", Promise)
+], AuthController.prototype, "generateTvQrToken", null);
+__decorate([
+    (0, common_1.Post)('tv/qr-check'),
+    (0, common_1.HttpCode)(common_1.HttpStatus.OK),
+    (0, swagger_1.ApiOperation)({ summary: 'Check QR token status (TV polls this)' }),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], AuthController.prototype, "checkTvQrToken", null);
+__decorate([
+    (0, common_1.Post)('tv/qr-approve'),
+    (0, common_1.UseGuards)((0, passport_1.AuthGuard)('jwt')),
+    (0, common_1.HttpCode)(common_1.HttpStatus.OK),
+    (0, swagger_1.ApiBearerAuth)(),
+    (0, swagger_1.ApiOperation)({ summary: 'Approve a TV QR login (mobile app calls this)' }),
+    __param(0, (0, common_1.Body)()),
+    __param(1, (0, current_user_decorator_1.CurrentUser)('userId')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, String]),
+    __metadata("design:returntype", Promise)
+], AuthController.prototype, "approveTvQrToken", null);
 exports.AuthController = AuthController = __decorate([
     (0, swagger_1.ApiTags)('Authentication'),
     (0, common_1.Controller)('auth'),

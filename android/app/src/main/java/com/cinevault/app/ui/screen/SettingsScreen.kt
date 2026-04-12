@@ -37,6 +37,7 @@ fun SettingsScreen(
     onNavigateToPrivacyPolicy: () -> Unit = {},
     onNavigateToTerms: () -> Unit = {},
     onNavigateToPremium: () -> Unit = {},
+    onNavigateToLinkTv: () -> Unit = {},
     authViewModel: AuthViewModel = hiltViewModel(),
 ) {
     var showLogoutDialog by remember { mutableStateOf(false) }
@@ -109,6 +110,15 @@ fun SettingsScreen(
             Surface(shape = RoundedCornerShape(14.dp), color = CineVaultTheme.colors.surface, modifier = Modifier.fillMaxWidth()) {
                 Column {
                     SettingsRowItem(icon = Icons.Filled.Star, title = "Premium Subscription", onClick = onNavigateToPremium)
+                }
+            }
+
+            Spacer(Modifier.height(20.dp))
+
+            SettingsGroupHeader("Devices")
+            Surface(shape = RoundedCornerShape(14.dp), color = CineVaultTheme.colors.surface, modifier = Modifier.fillMaxWidth()) {
+                Column {
+                    SettingsRowItem(icon = Icons.Filled.Tv, title = "Link TV", onClick = onNavigateToLinkTv)
                 }
             }
 

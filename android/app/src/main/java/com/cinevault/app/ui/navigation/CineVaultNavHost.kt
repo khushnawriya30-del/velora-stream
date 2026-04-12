@@ -706,7 +706,12 @@ fun CineVaultNavHost(navController: NavHostController = rememberNavController())
                     onNavigateToPrivacyPolicy = { navController.navigate(Screen.PrivacyPolicy.route) },
                     onNavigateToTerms = { navController.navigate(Screen.TermsOfService.route) },
                     onNavigateToPremium = { navController.navigate(Screen.ActivatePremium.route) },
+                    onNavigateToLinkTv = { navController.navigate(Screen.LinkTv.route) },
                 )
+            }
+
+            composable(Screen.LinkTv.route) {
+                TvLinkScreen(onBack = { navController.popBackStack() })
             }
 
             composable(Screen.ChangePassword.route) {

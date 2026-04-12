@@ -20,6 +20,7 @@ const google_strategy_1 = require("./strategies/google.strategy");
 const user_schema_1 = require("../../schemas/user.schema");
 const phone_otp_schema_1 = require("../../schemas/phone-otp.schema");
 const email_otp_schema_1 = require("../../schemas/email-otp.schema");
+const tv_qr_token_schema_1 = require("../../schemas/tv-qr-token.schema");
 const referral_module_1 = require("../referral/referral.module");
 const optionalProviders = [];
 if (process.env.GOOGLE_CLIENT_ID) {
@@ -46,6 +47,7 @@ exports.AuthModule = AuthModule = __decorate([
                 { name: user_schema_1.User.name, schema: user_schema_1.UserSchema },
                 { name: phone_otp_schema_1.PhoneOtp.name, schema: phone_otp_schema_1.PhoneOtpSchema },
                 { name: email_otp_schema_1.EmailOtp.name, schema: email_otp_schema_1.EmailOtpSchema },
+                { name: tv_qr_token_schema_1.TvQrToken.name, schema: tv_qr_token_schema_1.TvQrTokenSchema },
             ]),
             referral_module_1.ReferralModule,
         ],

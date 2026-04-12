@@ -11,6 +11,7 @@ import { GoogleStrategy } from './strategies/google.strategy';
 import { User, UserSchema } from '../../schemas/user.schema';
 import { PhoneOtp, PhoneOtpSchema } from '../../schemas/phone-otp.schema';
 import { EmailOtp, EmailOtpSchema } from '../../schemas/email-otp.schema';
+import { TvQrToken, TvQrTokenSchema } from '../../schemas/tv-qr-token.schema';
 import { ReferralModule } from '../referral/referral.module';
 
 const optionalProviders = [];
@@ -35,6 +36,7 @@ if (process.env.GOOGLE_CLIENT_ID) {
       { name: User.name, schema: UserSchema },
       { name: PhoneOtp.name, schema: PhoneOtpSchema },
       { name: EmailOtp.name, schema: EmailOtpSchema },
+      { name: TvQrToken.name, schema: TvQrTokenSchema },
     ]),
     ReferralModule,
   ],

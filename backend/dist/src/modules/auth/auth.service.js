@@ -26,12 +26,14 @@ const crypto_1 = require("crypto");
 const user_schema_1 = require("../../schemas/user.schema");
 const phone_otp_schema_1 = require("../../schemas/phone-otp.schema");
 const email_otp_schema_1 = require("../../schemas/email-otp.schema");
+const tv_qr_token_schema_1 = require("../../schemas/tv-qr-token.schema");
 const referral_service_1 = require("../referral/referral.service");
 let AuthService = AuthService_1 = class AuthService {
-    constructor(userModel, phoneOtpModel, emailOtpModel, jwtService, configService, referralService) {
+    constructor(userModel, phoneOtpModel, emailOtpModel, tvQrTokenModel, jwtService, configService, referralService) {
         this.userModel = userModel;
         this.phoneOtpModel = phoneOtpModel;
         this.emailOtpModel = emailOtpModel;
+        this.tvQrTokenModel = tvQrTokenModel;
         this.jwtService = jwtService;
         this.configService = configService;
         this.referralService = referralService;
@@ -721,6 +723,56 @@ let AuthService = AuthService_1 = class AuthService {
         const tokens = await this.generateTokens(user);
         return { ...tokens, user: this.sanitizeUser(user) };
     }
+    async generateTvQrToken() {
+        const token = (0, crypto_1.randomBytes)(32).toString('hex');
+        const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
+        await this.tvQrTokenModel.create({ token, status: 'pending', expiresAt });
+        return { token, expiresAt };
+    }
+    async checkTvQrToken(token) {
+        const qrToken = await this.tvQrTokenModel.findOne({ token });
+        if (!qrToken) {
+            return { status: 'expired' };
+        }
+        if (qrToken.expiresAt < new Date()) {
+            await this.tvQrTokenModel.deleteOne({ _id: qrToken._id });
+            return { status: 'expired' };
+        }
+        if (qrToken.status === 'approved' && qrToken.approvedByUserId) {
+            const user = await this.userModel.findById(qrToken.approvedByUserId);
+            if (!user) {
+                return { status: 'expired' };
+            }
+            const tokens = await this.generateTokens(user);
+            await this.tvQrTokenModel.deleteOne({ _id: qrToken._id });
+            return {
+                status: 'approved',
+                accessToken: tokens.accessToken,
+                refreshToken: tokens.refreshToken,
+                user: {
+                    ...this.sanitizeUser(user),
+                    isPremium: user.isPremium || false,
+                    premiumPlan: user.premiumPlan,
+                    premiumExpiresAt: user.premiumExpiresAt,
+                },
+            };
+        }
+        return { status: 'pending' };
+    }
+    async approveTvQrToken(token, userId) {
+        const qrToken = await this.tvQrTokenModel.findOne({ token, status: 'pending' });
+        if (!qrToken) {
+            throw new common_1.BadRequestException('Invalid or expired QR token');
+        }
+        if (qrToken.expiresAt < new Date()) {
+            await this.tvQrTokenModel.deleteOne({ _id: qrToken._id });
+            throw new common_1.BadRequestException('QR code has expired');
+        }
+        qrToken.status = 'approved';
+        qrToken.approvedByUserId = userId;
+        await qrToken.save();
+        return { message: 'TV login approved successfully' };
+    }
     async validateUser(userId) {
         return this.userModel.findById(userId);
     }
@@ -752,7 +804,9 @@ exports.AuthService = AuthService = AuthService_1 = __decorate([
     __param(0, (0, mongoose_1.InjectModel)(user_schema_1.User.name)),
     __param(1, (0, mongoose_1.InjectModel)(phone_otp_schema_1.PhoneOtp.name)),
     __param(2, (0, mongoose_1.InjectModel)(email_otp_schema_1.EmailOtp.name)),
+    __param(3, (0, mongoose_1.InjectModel)(tv_qr_token_schema_1.TvQrToken.name)),
     __metadata("design:paramtypes", [mongoose_2.Model,
+        mongoose_2.Model,
         mongoose_2.Model,
         mongoose_2.Model,
         jwt_1.JwtService,

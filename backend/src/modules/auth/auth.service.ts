@@ -17,6 +17,7 @@ import { randomBytes } from 'crypto';
 import { User, UserDocument, AuthProvider } from '../../schemas/user.schema';
 import { PhoneOtp, PhoneOtpDocument } from '../../schemas/phone-otp.schema';
 import { EmailOtp, EmailOtpDocument } from '../../schemas/email-otp.schema';
+import { TvQrToken, TvQrTokenDocument } from '../../schemas/tv-qr-token.schema';
 import { ReferralService } from '../referral/referral.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
@@ -27,6 +28,7 @@ export class AuthService implements OnModuleInit {
     @InjectModel(User.name) private userModel: Model<UserDocument>,
     @InjectModel(PhoneOtp.name) private phoneOtpModel: Model<PhoneOtpDocument>,
     @InjectModel(EmailOtp.name) private emailOtpModel: Model<EmailOtpDocument>,
+    @InjectModel(TvQrToken.name) private tvQrTokenModel: Model<TvQrTokenDocument>,
     private jwtService: JwtService,
     private configService: ConfigService,
     private readonly referralService: ReferralService,
@@ -877,6 +879,76 @@ export class AuthService implements OnModuleInit {
 
     const tokens = await this.generateTokens(user);
     return { ...tokens, user: this.sanitizeUser(user) };
+  }
+
+  // ── TV QR Login ──────────────────────────────────────────────
+
+  async generateTvQrToken(): Promise<{ token: string; expiresAt: Date }> {
+    const token = randomBytes(32).toString('hex');
+    const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
+
+    await this.tvQrTokenModel.create({ token, status: 'pending', expiresAt });
+
+    return { token, expiresAt };
+  }
+
+  async checkTvQrToken(token: string) {
+    const qrToken = await this.tvQrTokenModel.findOne({ token });
+
+    if (!qrToken) {
+      return { status: 'expired' };
+    }
+
+    if (qrToken.expiresAt < new Date()) {
+      await this.tvQrTokenModel.deleteOne({ _id: qrToken._id });
+      return { status: 'expired' };
+    }
+
+    if (qrToken.status === 'approved' && qrToken.approvedByUserId) {
+      const user = await this.userModel.findById(qrToken.approvedByUserId);
+      if (!user) {
+        return { status: 'expired' };
+      }
+
+      // Generate tokens for the TV session
+      const tokens = await this.generateTokens(user);
+
+      // Clean up used token
+      await this.tvQrTokenModel.deleteOne({ _id: qrToken._id });
+
+      return {
+        status: 'approved',
+        accessToken: tokens.accessToken,
+        refreshToken: tokens.refreshToken,
+        user: {
+          ...this.sanitizeUser(user),
+          isPremium: user.isPremium || false,
+          premiumPlan: user.premiumPlan,
+          premiumExpiresAt: user.premiumExpiresAt,
+        },
+      };
+    }
+
+    return { status: 'pending' };
+  }
+
+  async approveTvQrToken(token: string, userId: string) {
+    const qrToken = await this.tvQrTokenModel.findOne({ token, status: 'pending' });
+
+    if (!qrToken) {
+      throw new BadRequestException('Invalid or expired QR token');
+    }
+
+    if (qrToken.expiresAt < new Date()) {
+      await this.tvQrTokenModel.deleteOne({ _id: qrToken._id });
+      throw new BadRequestException('QR code has expired');
+    }
+
+    qrToken.status = 'approved';
+    qrToken.approvedByUserId = userId as any;
+    await qrToken.save();
+
+    return { message: 'TV login approved successfully' };
   }
 
   async validateUser(userId: string): Promise<UserDocument | null> {

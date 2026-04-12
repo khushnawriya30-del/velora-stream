@@ -15,8 +15,8 @@ android {
         applicationId = "com.cinevault.app"
         minSdk = 26
         targetSdk = 34
-        versionCode = 94
-        versionName = "2.7.3"
+        versionCode = 95
+        versionName = "2.8.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         vectorDrawables {
@@ -166,6 +166,12 @@ dependencies {
 
     // Pull-to-refresh (Accompanist)
     implementation("com.google.accompanist:accompanist-swiperefresh:0.33.2-alpha")
+
+    // CameraX + ML Kit (QR scanner for TV login)
+    implementation("androidx.camera:camera-camera2:1.3.1")
+    implementation("androidx.camera:camera-lifecycle:1.3.1")
+    implementation("androidx.camera:camera-view:1.3.1")
+    implementation("com.google.mlkit:barcode-scanning:17.2.0")
 
     // Testing
     testImplementation("junit:junit:4.13.2")

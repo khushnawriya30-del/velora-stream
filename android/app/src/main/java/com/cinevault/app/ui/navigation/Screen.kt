@@ -27,6 +27,7 @@ sealed class Screen(val route: String) {
     data object PrivacyPolicy : Screen("privacy_policy")
     data object TermsOfService : Screen("terms_of_service")
     data object ActivatePremium : Screen("activate_premium")
+    data object LinkTv : Screen("link_tv")
     data object EarnMoney : Screen("earn_money")
     data object WithdrawEarning : Screen("withdraw_earning/{tab}") {
         fun createRoute(tab: Int = 0) = "withdraw_earning/$tab"

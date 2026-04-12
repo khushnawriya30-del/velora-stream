@@ -16,3 +16,4 @@ dependencyResolutionManagement {
 
 rootProject.name = "CineVault"
 include(":app")
+include(":tv")

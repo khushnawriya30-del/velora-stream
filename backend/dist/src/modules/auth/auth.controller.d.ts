@@ -120,5 +120,38 @@ export declare class AuthController {
     logout(res: Response): Promise<{
         message: string;
     }>;
+    generateTvQrToken(): Promise<{
+        token: string;
+        expiresAt: Date;
+    }>;
+    checkTvQrToken(body: {
+        token: string;
+    }): Promise<{
+        status: string;
+        accessToken?: undefined;
+        refreshToken?: undefined;
+        user?: undefined;
+    } | {
+        status: string;
+        accessToken: string;
+        refreshToken: string;
+        user: {
+            isPremium: boolean;
+            premiumPlan: string;
+            premiumExpiresAt: Date;
+            id: import("mongoose").Types.ObjectId;
+            name: string;
+            email: string;
+            avatarUrl: string;
+            role: import("../../schemas/user.schema").UserRole;
+            authProvider: import("../../schemas/user.schema").AuthProvider;
+            isEmailVerified: boolean;
+        };
+    }>;
+    approveTvQrToken(body: {
+        token: string;
+    }, userId: string): Promise<{
+        message: string;
+    }>;
     private setRefreshTokenCookie;
 }
